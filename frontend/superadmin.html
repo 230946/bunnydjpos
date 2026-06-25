@@ -485,6 +485,19 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL QR -->
+<div class="modal-bg" id="qr-modal" style="display:none" onclick="if(event.target===this)closeModal('qr-modal')">
+  <div class="modal" style="max-width:520px;width:95%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 id="qr-modal-title">Códigos QR</h3>
+      <button onclick="closeModal('qr-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">✕</button>
+    </div>
+    <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px"></div>
+    <div style="margin-top:18px;font-size:11px;color:var(--text2);text-align:center">Escanea con la cámara del celular · Toca el QR para descargar</div>
+    <button class="btn btn-outline" style="width:100%;margin-top:14px" onclick="closeModal('qr-modal')">Cerrar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -584,6 +597,42 @@ function showPanel(p,btn){
 }
 
 function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+function showQR(negocioId, nombre, tipo){
+  const base = window.location.origin;
+  const urls = {
+    restaurante: [
+      { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
+      { label:'Portal Empleados', url:`${base}/empleado-portal.html?n=${negocioId}` },
+    ],
+    minimercado: [
+      { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
+      { label:'Portal Empleados', url:`${base}/empleado-portal.html?n=${negocioId}` },
+    ],
+    peluqueria: [
+      { label:'Reservar cita', url:`${base}/peluqueria-reservar.html?n=${negocioId}` },
+      { label:'Portal Empleados', url:`${base}/empleado-portal.html?n=${negocioId}` },
+      { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
+    ],
+  };
+  const items = urls[tipo] || [
+    { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
+    { label:'Portal Empleados', url:`${base}/empleado-portal.html?n=${negocioId}` },
+  ];
+  document.getElementById('qr-modal-title').textContent = `QR — ${nombre}`;
+  document.getElementById('qr-grid').innerHTML = items.map(item=>{
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(item.url)}&size=180x180&margin=10`;
+    return `<div style="text-align:center;background:var(--bg2);border-radius:var(--rl);padding:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)">${item.label}</div>
+      <a href="${qrUrl}" download="qr-${item.label.replace(/\s+/g,'-').toLowerCase()}.png" title="Descargar QR">
+        <img src="${qrUrl}" style="width:180px;height:180px;border-radius:8px;display:block;margin:0 auto" alt="QR ${item.label}">
+      </a>
+      <div style="font-size:10px;color:var(--text2);margin-top:8px;word-break:break-all">${item.url}</div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;font-size:11px;width:100%" onclick="copiarURL('${item.url}')">📋 Copiar URL</button>
+    </div>`;
+  }).join('');
+  document.getElementById('qr-modal').style.display='flex';
+}
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 function copiarURL(url){ navigator.clipboard.writeText(url).then(()=>showToast('URL copiada ✓')).catch(()=>{ prompt('Copia esta URL de acceso:',url); }); }
 
@@ -677,6 +726,7 @@ async function loadNegocios(){
         <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-outline btn-sm" onclick="openNegocioModal('${n.id}')">Editar</button>
           <button class="btn btn-primary btn-sm" onclick="openCrearAdminModal('${n.id}','${n.nombre}')">+ Admin</button>
+          <button class="btn btn-outline btn-sm" onclick="showQR('${n.id}','${n.nombre}','${n.tipo}')" title="Ver códigos QR">🔲 QR</button>
           ${esRest ? `<a class="btn btn-outline btn-sm" href="${base}/admin?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos?n=${n.id}" target="_blank" style="text-decoration:none">POS</a>` : ''}
           ${esMini ? `<a class="btn btn-outline btn-sm" href="${base}/minimercado-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-minimercado.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a>` : ''}
           ${esPel  ? `<a class="btn btn-outline btn-sm" href="${base}/peluqueria-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-peluqueria.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a><a class="btn btn-primary btn-sm" href="${base}/peluqueria-reservar.html?n=${n.id}" target="_blank" style="text-decoration:none">Reservas</a><a class="btn btn-outline btn-sm" href="${base}/empleado-portal.html?n=${n.id}" target="_blank" style="text-decoration:none">Portal Emp.</a>` : ''}
