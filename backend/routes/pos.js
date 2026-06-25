@@ -49,7 +49,7 @@ router.post('/mesas', requirePermiso('pos_mesas'), async (req, res) => {
       [id, nid(req), numero, nombre||`Mesa ${numero}`, capacidad||4, zona||null]
     );
     await pool.query(
-      `INSERT INTO mesa_estado (mesa_id, pedido) VALUES (${ph(1)}, CAST('[]' AS JSON))`, [id]
+      `INSERT INTO mesa_estado (mesa_id, pedido) VALUES (${ph(1)}, '[]')`, [id]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -94,7 +94,7 @@ router.put('/mesas/:id/pedido', async (req, res) => {
 router.post('/mesas/:id/liberar', async (req, res) => {
   try {
     await pool.query(`
-      UPDATE mesa_estado SET ocupada=0, pedido=CAST('[]' AS JSON), actualizado=NOW()
+      UPDATE mesa_estado SET ocupada=0, pedido='[]', actualizado=NOW()
       WHERE mesa_id=${ph(1)}
     `, [req.params.id]);
     await pool.query(`
