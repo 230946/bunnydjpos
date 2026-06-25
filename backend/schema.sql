@@ -102,12 +102,12 @@ CREATE TABLE IF NOT EXISTS sesiones (
 -- ── CONFIGURACIÓN DE FACTURA POR NEGOCIO ─────────────────────────
 CREATE TABLE IF NOT EXISTS config_factura (
   negocio_id    VARCHAR(36)   PRIMARY KEY REFERENCES negocios(id) ON DELETE CASCADE,
-  datos         JSON          NOT NULL DEFAULT '{}',
+  datos         JSON          NOT NULL,
   actualizado   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ── MÓDULOS SEED ─────────────────────────────────────────────────
-INSERT INTO modulos (id, clave, nombre, descripcion, icono, orden) VALUES
+INSERT IGNORE INTO modulos (id, clave, nombre, descripcion, icono, orden) VALUES
   ('mod-01', 'pos_mesas',     'Mesas POS',         'Gestión de mesas del restaurante',   'layout-grid',   1),
   ('mod-02', 'pos_menu',      'Menú POS',          'Carta digital con fotos y categorías','book',          2),
   ('mod-03', 'pos_cocina',    'Cocina',            'Comandas en tiempo real',             'chef-hat',      3),
@@ -119,8 +119,7 @@ INSERT INTO modulos (id, clave, nombre, descripcion, icono, orden) VALUES
   ('mod-09', 'reportes',      'Reportes',          'Ventas, caja diaria y estadísticas',  'chart-bar',     9),
   ('mod-10', 'gastos',        'Gastos',            'Relación de gastos del negocio',      'receipt',       10),
   ('mod-11', 'horarios',      'Horarios',          'Turnos y asistencia de empleados',    'clock',         11),
-  ('mod-12', 'personal',      'Personal',          'Gestión de empleados y roles',        'users',         12)
-ON CONFLICT (clave) DO NOTHING;
+  ('mod-12', 'personal',      'Personal',          'Gestión de empleados y roles',        'users',         12);
 
 -- ── ÍNDICES ──────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_usuarios_negocio  ON usuarios(negocio_id);
