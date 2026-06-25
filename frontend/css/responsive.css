@@ -1,0 +1,63 @@
+/* Responsive helper CSS shared across frontend pages */
+/* Normalize images and media */
+img, video, canvas { max-width: 100%; height: auto; display: block; }
+
+/* Layout utilities */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 12px; }
+
+/* Table scrolling */
+.table-wrap, .tw, .inv-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap table, .tw table, .inv-table-wrap table { min-width: 100%; }
+
+/* General mobile helpers */
+@media (max-width: 900px) {
+  .stats-row, .two-col, .three-col, .tc, .modg, .horario-grid, .mg { grid-template-columns: 1fr !important; }
+  .two-col, .tc, .modg, .horario-grid, .mg { gap: 12px !important; }
+  .btn-block, .bbl, .btn, .btn-sm { width: 100% !important; }
+  .card, .modal, .caja-estado, .table-wrap, .tw, .inv-table-wrap { width: 100% !important; }
+  .panel { padding: 0 !important; }
+}
+
+@media (max-width: 700px) {
+  html, body { font-size: 14px; overflow: auto !important; height: auto !important; }
+  body { min-height: auto; }
+  .app, .mn, .main, .content, .ct, .panel-body, .content-area, .menu-layout, .cobro-layout, .mw { flex-direction: column !important; }
+  .app, .mn, .main, .menu-layout, .cobro-layout, .mw { min-height: auto !important; height: auto !important; overflow: visible !important; }
+  .sidebar, .sb { display: none !important; }
+  #sb-hamburger { display: block !important; }
+  .topbar, .tb, .panel-topbar, .table-header { flex-wrap: wrap !important; gap: 10px; }
+  .topbar, .tb, .panel-topbar { justify-content: center !important; align-items: stretch !important; }
+  .topbar-title, .tb-title, .panel-title { width: 100%; text-align: center !important; }
+  .content, .ct, .panel-body, .menu-cats, .menu-items-grid, .cobro-left, .cobro-right, .pedido-panel, .pp, .pedido-header, .sbnav, .nav-btn, .nb { width: 100% !important; }
+  .menu-cats, .bcat, .mg, .mesas-grid, .menu-items-grid, .kg, .cocina-grid, .big { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+  .menu-layout, .cobro-layout { gap: 0 !important; }
+  .pedido-panel { position: static !important; width: 100% !important; border-left: none !important; border-top: 0.5px solid var(--border) !important; box-shadow: none !important; max-height: none !important; }
+  .pedido-footer, .ph, .pf { padding: 12px !important; }
+  .panel { min-height: auto !important; }
+  .modal { width: 100% !important; max-width: 100% !important; margin: 0 10px; }
+  .field, .fi { width: 100% !important; }
+  .field label, .fi label { font-size: 12px !important; }
+  .menu-cats { width: 100% !important; border-right: none !important; display: flex !important; flex-wrap: wrap !important; gap: 8px; padding: 8px 0; }
+  .cat-item { flex: 1 1 calc(50% - 8px); min-width: 120px; }
+  .sbnav { display: flex !important; flex-wrap: wrap !important; justify-content: center; gap: 6px; }
+  .nav-btn, .nb { width: calc(50% - 8px) !important; }
+  .nav-icon { width: 48px !important; height: 48px !important; }
+  .pedido-items, .pi, .cb, .card-body, .card { padding: 12px !important; }
+  .gasto-bar-item, .caja-row, .tr, .rr { flex-direction: column !important; align-items: stretch !important; gap: 4px; }
+  .gasto-bar-label, .gasto-bar-val, .pi-price, .tr span { width: 100% !important; text-align: left !important; }
+  .modal-actions, .ma { flex-direction: column !important; align-items: stretch !important; }
+  .table-wrap thead, .tw thead, .inv-table-wrap thead { display: none !important; }
+  .table-wrap tr, .tw tr, .inv-table-wrap tr { display: block !important; border-bottom: 1px solid var(--border) !important; margin-bottom: 12px; }
+  .table-wrap td, .tw td, .inv-table-wrap td { display: flex !important; justify-content: space-between !important; padding: 10px 8px !important; white-space: normal !important; }
+  .table-wrap td::before, .tw td::before, .inv-table-wrap td::before { content: attr(data-label); font-weight: 600; margin-right: 8px; color: var(--text2); }
+  .table-wrap td:last-child, .tw td:last-child, .inv-table-wrap td:last-child { border-bottom: none !important; }
+}
+
+/* Utility helpers */
+.hide-mobile { display: initial; }
+@media (max-width:700px){ .hide-mobile{display:none!important} }
+.show-mobile{display:none}
+@media (max-width:700px){ .show-mobile{display:block!important} }
+
+/* Improve touch targets */
+button, .nav-btn, .nav-icon, input, select, textarea, .badge { touch-action: manipulation; }

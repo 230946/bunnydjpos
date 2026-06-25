@@ -1,0 +1,8 @@
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+const mysql = require('mysql2/promise');
+const cfg = { host: process.env.DB_HOST||'127.0.0.1', port: parseInt(process.env.DB_PORT||'3306'), user: process.env.DB_USER||'root', password: process.env.DB_PASS||'', database: process.env.DB_NAME||'bunnydjpos' };
+mysql.createConnection(cfg).then(async con => {
+  const [cols] = await con.execute('SHOW COLUMNS FROM inventario');
+  cols.forEach(c => console.log(c.Field.padEnd(22), c.Type, c.Null, c.Default||''));
+  await con.end();
+}).catch(e => console.error(e.message));

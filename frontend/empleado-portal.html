@@ -1,0 +1,409 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portal del Empleado</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f0faf5;--bg2:#fff;--text:#102A24;--text2:#2a5040;--text3:#4a7060;
+    --acc:#0B8457;--acc-d:#086644;--acc-l:#e0f7ec;
+    --green:#0B8457;--green-l:#e0f7ec;
+    --amber:#d97706;--amber-l:#fef3c7;
+    --red:#dc2626;--red-l:#fee2e2;
+    --border:rgba(11,132,87,0.15);--radius:12px;--shadow:0 4px 20px rgba(0,0,0,.1);
+  }
+  body{background:var(--bg);font-family:'Segoe UI',sans-serif;color:var(--text);min-height:100vh}
+
+  /* ── LOGIN ── */
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+  .login-card{background:var(--bg2);border-radius:var(--radius);box-shadow:var(--shadow);padding:40px 36px;width:100%;max-width:380px;text-align:center}
+  .login-logo{font-size:48px;margin-bottom:8px}
+  .login-card h2{font-size:20px;font-weight:700;margin-bottom:4px}
+  .login-card p{font-size:13px;color:var(--text2);margin-bottom:28px}
+  .login-card label{display:block;text-align:left;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+  .login-card input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;outline:none;transition:.15s;font-family:monospace;letter-spacing:1px}
+  .login-card input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-l)}
+  .btn-login{width:100%;padding:13px;background:var(--acc);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:16px;transition:.15s}
+  .btn-login:hover{background:var(--acc-d)}
+  .btn-login:disabled{opacity:.6;cursor:not-allowed}
+  .login-err{background:var(--red-l);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-top:14px;display:none}
+
+  /* ── PORTAL ── */
+  .portal{display:none}
+  .header{background:var(--acc);color:#fff}
+  .header-nav{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,.15)}
+  .header-logo-img{width:36px;height:36px;object-fit:contain;border-radius:8px;flex-shrink:0;cursor:default;transition:none}
+  .header-logo-img:hover{transform:none}
+  .header-brand{font-size:13px;font-weight:700;letter-spacing:.4px;opacity:.9}
+  .header-nav .header-btns{display:flex;gap:8px;align-items:center;margin-left:auto;flex-shrink:0}
+  .header-emp{display:flex;align-items:center;gap:14px;padding:16px 20px}
+  .avatar{width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0;border:2px solid rgba(255,255,255,.4)}
+  .header-info h1{font-size:19px;font-weight:700;line-height:1.2}
+  .header-info p{font-size:13px;opacity:.85;margin-top:2px}
+  .badge-cedula{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:2px 10px;font-size:12px;font-family:monospace;margin-top:4px}
+  .fecha-hoy{font-size:12px;color:rgba(255,255,255,.7);margin-top:3px}
+  .btn-salir{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap}
+  .btn-salir:hover{background:rgba(255,255,255,.25)}
+  .btn-refresh{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;white-space:nowrap}
+  .btn-refresh:hover{background:rgba(255,255,255,.35)}
+  .last-update{font-size:9px;color:rgba(255,255,255,.6);text-align:right;margin-top:2px}
+
+  .container{max-width:720px;margin:0 auto;padding:20px 16px}
+  .section-title{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:.5px;margin:24px 0 10px}
+  .card{background:var(--bg2);border-radius:var(--radius);box-shadow:0 2px 12px rgba(0,0,0,.06);padding:16px;margin-bottom:12px}
+  .horario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+  .horario-dia{border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px}
+  .horario-dia.hoy{border-color:var(--acc);background:var(--acc-l)}
+  .horario-dia .dia-nombre{font-weight:600;margin-bottom:4px}
+  .horario-dia .dia-horas{color:var(--text2);font-size:12px}
+  .cita-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+  .cita-item:last-child{border-bottom:none;padding-bottom:0}
+  .cita-hora{font-size:20px;font-weight:700;color:var(--acc);min-width:52px;text-align:center;line-height:1.1}
+  .cita-hora small{display:block;font-size:10px;font-weight:400;color:var(--text3)}
+  .cita-info .cita-servicio{font-weight:600;font-size:14px}
+  .cita-info .cita-cliente{color:var(--text2);font-size:13px;margin-top:2px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-top:4px}
+  .badge-green{background:var(--green-l);color:var(--green)}
+  .badge-amber{background:var(--amber-l);color:var(--amber)}
+  .empty{text-align:center;padding:28px;color:var(--text3);font-size:13px}
+  .prox-fecha{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:14px 0 4px;padding-left:2px}
+    img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
+    img[src="/img/logo.png"]:hover{transform:scale(1.15)}
+    .header-logo-img{transition:none!important;cursor:default!important;transform:none!important;display:inline-block!important;margin:0!important}
+    .header-logo-img:hover{transform:none!important}
+
+  /* ── RESPONSIVE MÓVIL ── */
+  @media(max-width:600px){
+    /* Login */
+    .login-card{padding:28px 18px}
+    .login-card h2{font-size:18px}
+
+    /* Header nav */
+    .header-nav{padding:8px 12px;gap:8px}
+    .header-brand{display:none}
+    .btn-refresh{padding:5px 9px;font-size:11px}
+    .btn-salir{padding:5px 9px;font-size:11px}
+    .last-update{display:none}
+
+    /* Header empleado */
+    .header-emp{padding:12px 14px;gap:10px}
+    .avatar{width:44px;height:44px;font-size:18px}
+    .header-info{min-width:0}
+    .header-info h1{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .header-info p{font-size:12px}
+    .badge-cedula{font-size:11px;padding:2px 8px}
+    .fecha-hoy{font-size:11px}
+
+    /* Contenido */
+    .container{padding:12px 10px}
+    .section-title{margin:16px 0 8px}
+    .card{padding:12px}
+    .horario-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
+    .horario-dia{padding:8px 10px;font-size:12px}
+    .cita-hora{font-size:17px;min-width:44px}
+    .cita-info .cita-servicio{font-size:13px}
+    .cita-info .cita-cliente{font-size:12px}
+    .empty{padding:20px;font-size:12px}
+  }
+#contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
+#contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
+#contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}</style>
+</head>
+<body>
+<div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Portal no disponible</h2><p id="contrato-block-msg">El portal de empleados de este negocio no está disponible.<br>Contacta a tu empleador.</p></div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo"><img src="/img/logo.png" alt="Logo" style="width:100%;height:auto;max-height:200px;border-radius:14px;object-fit:contain"></div>
+    <h2>Portal del Empleado</h2>
+    <p id="loginSubtitle">Ingresa tu número de cédula para acceder</p>
+
+    <!-- Sin enlace válido → mensaje para el empleado -->
+    <div id="sinEnlaceMsg" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:16px;text-align:center;margin-bottom:4px">
+      <div style="font-size:22px;margin-bottom:8px">🔗</div>
+      <p style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:4px">Enlace no válido</p>
+      <p style="font-size:12px;color:#78350f">Solicita el enlace de acceso a tu empleador. Debe verse así:<br>
+      <code style="font-size:11px;word-break:break-all;color:#065f46">empleado-portal.html?n=ID-del-negocio</code></p>
+    </div>
+
+    <!-- Formulario normal (solo visible cuando hay ?n= o ?id= válido) -->
+    <div id="loginForm" style="display:none">
+      <label for="cedulaInput">Número de identificación</label>
+      <input id="cedulaInput" type="text" inputmode="numeric" placeholder="Ej: 1234567890"
+        onkeydown="if(event.key==='Enter')iniciarSesion()">
+      <button class="btn-login" id="btnLogin" onclick="iniciarSesion()">Entrar</button>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div class="portal" id="portalWrap">
+  <div class="header">
+    <div class="header-nav">
+      <img src="/img/logo.png" alt="Logo" class="header-logo-img">
+      <span class="header-brand">Portal del Empleado</span>
+      <div class="header-btns">
+        <div>
+          <button class="btn-refresh" onclick="refrescarManual()" id="btnRefresh">↻ Actualizar</button>
+          <div class="last-update" id="lastUpdate"></div>
+        </div>
+        <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+    </div>
+    <div class="header-emp">
+      <div class="avatar" id="pAvatar"></div>
+      <div class="header-info">
+        <h1 id="pNombre"></h1>
+        <p id="pCargo"></p>
+        <span class="badge-cedula" id="pCedula"></span>
+        <p class="fecha-hoy" id="pFecha"></p>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="section-title">Horario semanal</div>
+    <div class="card" id="pHorario"></div>
+    <div class="section-title">Citas de hoy</div>
+    <div class="card" id="pCitasHoy"></div>
+    <div class="section-title">Próximas citas (7 días)</div>
+    <div class="card" id="pProximas"></div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+const params = new URLSearchParams(location.search);
+// Validar que ?id= sea un UUID real (36 chars con guiones) — si no, ignorarlo
+const _rawId = params.get('id');
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const empId = (_rawId && UUID_RE.test(_rawId)) ? _rawId : null;
+const negocioId = params.get('n');
+
+function _getNegocioId() {
+  return negocioId || null;
+}
+function _getSesKey() {
+  if (empId) return 'portal_cedula_'+empId;
+  const nid = _getNegocioId();
+  return nid ? 'portal_neg_'+nid : null;
+}
+function _apiUrl(cedula) {
+  if (empId) return `${API}/peluqueria/portal-empleado/${encodeURIComponent(empId)}?cedula=${encodeURIComponent(cedula)}`;
+  return `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}?cedula=${encodeURIComponent(cedula)}`;
+}
+function _mostrarFormulario() {
+  document.getElementById('loginForm').style.display='block';
+  document.getElementById('sinEnlaceMsg').style.display='none';
+}
+function _mostrarSinEnlace() {
+  document.getElementById('loginForm').style.display='none';
+  document.getElementById('sinEnlaceMsg').style.display='block';
+  document.getElementById('loginSubtitle').style.display='none';
+}
+function _mostrarModoNegocio() {
+  // Ya no se usa campo de negocio — mostramos mensaje de "pide enlace"
+  _mostrarSinEnlace();
+}
+
+const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+const _pd=s=>{if(!s)return null;return new Date(String(s).replace(' ','T').replace('Z',''));};
+function fmtHora(iso){
+  const d=_pd(iso);if(!d)return'—';
+  return d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true});
+}
+function fmtFechaCorta(iso){
+  const d=_pd(iso);if(!d)return'';
+  return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
+}
+function hoyNombre(){
+  const d=new Date();
+  return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+}
+function estadoBadge(e){
+  if(e==='Confirmada')return`<span class="badge badge-green">Confirmada</span>`;
+  if(e==='Pendiente')return`<span class="badge badge-amber">Pendiente</span>`;
+  return`<span class="badge">${e}</span>`;
+}
+
+let _refreshInterval = null;
+let _cedulaActiva = null;
+
+async function cargarDatos(cedula) {
+  try {
+    const r = await fetch(_apiUrl(cedula));
+    if (!r.ok) return;
+    const data = await r.json();
+    actualizarSecciones(data);
+    const el = document.getElementById('lastUpdate');
+    if (el) el.textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'});
+  } catch {}
+}
+
+async function refrescarManual() {
+  if (!_cedulaActiva) return;
+  const btn = document.getElementById('btnRefresh');
+  if (btn) { btn.textContent = '...'; btn.disabled = true; }
+  await cargarDatos(_cedulaActiva);
+  if (btn) { btn.textContent = '↻ Actualizar'; btn.disabled = false; }
+}
+
+function actualizarSecciones({horarios, citasHoy, proximas}) {
+  const hoy = new Date().getDay();
+  document.getElementById('pHorario').innerHTML = horarios.length
+    ? `<div class="horario-grid">${horarios.map(h => {
+        const esHoy = Number(h.dia_semana) === hoy;
+        return `<div class="horario-dia${esHoy?' hoy':''}">
+          <div class="dia-nombre">${h.dia_nombre||DIAS[h.dia_semana]}${esHoy?' ★':''}</div>
+          <div class="dia-horas">${h.hora_entrada||'—'} – ${h.hora_salida||'—'}</div>
+        </div>`;
+      }).join('')}</div>`
+    : '<div class="empty">Sin horario asignado</div>';
+
+  document.getElementById('pCitasHoy').innerHTML = citasHoy.length
+    ? citasHoy.map(c => `<div class="cita-item">
+        <div class="cita-hora">${fmtHora(c.fecha_hora)}<small>${c.duracion_min?c.duracion_min+' min':''}</small></div>
+        <div class="cita-info">
+          <div class="cita-servicio">${c.servicio_nombre||'Sin servicio'}</div>
+          <div class="cita-cliente">👤 ${c.cliente_nombre||'—'}${c.cliente_apellido?' '+c.cliente_apellido:''}</div>
+          ${c.notas?`<div style="font-size:12px;color:#6b7280;margin-top:3px;font-style:italic">📝 ${c.notas}</div>`:''}
+          ${estadoBadge(c.estado)}
+        </div>
+      </div>`).join('')
+    : '<div class="empty">Sin citas programadas para hoy</div>';
+
+  if (!proximas.length) { document.getElementById('pProximas').innerHTML='<div class="empty">Sin citas próximas</div>'; return; }
+  let html='', fechaAct='';
+  proximas.forEach(c => {
+    const f = fmtFechaCorta(c.fecha_hora);
+    if (f !== fechaAct) { fechaAct=f; html+=`<div class="prox-fecha">${f}</div>`; }
+    html += `<div class="cita-item">
+      <div class="cita-hora">${fmtHora(c.fecha_hora)}<small>${c.duracion_min?c.duracion_min+' min':''}</small></div>
+      <div class="cita-info">
+        <div class="cita-servicio">${c.servicio_nombre||'Sin servicio'}</div>
+        <div class="cita-cliente">👤 ${c.cliente_nombre||'—'}${c.cliente_apellido?' '+c.cliente_apellido:''}</div>
+        ${c.notas?`<div style="font-size:12px;color:#6b7280;margin-top:3px;font-style:italic">📝 ${c.notas}</div>`:''}
+        ${estadoBadge(c.estado)}
+      </div>
+    </div>`;
+  });
+  document.getElementById('pProximas').innerHTML = html;
+}
+
+async function iniciarSesion(){
+  if(!empId && !_getNegocioId()){
+    document.getElementById('loginErr').textContent='Ingresa el código de negocio.';
+    document.getElementById('loginErr').style.display='block';
+    document.getElementById('negocioInput').focus();
+    return;
+  }
+  const cedula=document.getElementById('cedulaInput').value.trim();
+  if(!cedula){document.getElementById('loginErr').textContent='Ingresa tu número de cédula.';document.getElementById('loginErr').style.display='block';return;}
+  const btn=document.getElementById('btnLogin');
+  btn.disabled=true;btn.textContent='Verificando...';
+  document.getElementById('loginErr').style.display='none';
+  try{
+    const r=await fetch(_apiUrl(cedula));
+    const data=await r.json();
+    if(!r.ok){
+      // Si el empleado no existe con ese ID, pasar al modo negocio+cédula
+      if(r.status===404 && empId){
+        _mostrarModoNegocio();
+        document.getElementById('loginErr').textContent='Usa el enlace del portal compartido por tu negocio, o ingresa el código de negocio.';
+        document.getElementById('loginErr').style.display='block';
+        return;
+      }
+      document.getElementById('loginErr').textContent=data.error||'Cédula incorrecta. Intenta de nuevo.';
+      document.getElementById('loginErr').style.display='block';
+      return;
+    }
+    const key = _getSesKey();
+    if(key) sessionStorage.setItem(key, cedula);
+    _cedulaActiva = cedula;
+    const ok = await mostrarPortal(data);
+    if(ok !== false){
+      if(_refreshInterval) clearInterval(_refreshInterval);
+      _refreshInterval = setInterval(() => cargarDatos(cedula), 15000);
+    }
+  }catch(e){
+    document.getElementById('loginErr').textContent='Error de conexión. Intenta de nuevo.';
+    document.getElementById('loginErr').style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent='Entrar';
+  }
+}
+
+function cerrarSesion(){
+  if(_refreshInterval){clearInterval(_refreshInterval);_refreshInterval=null;}
+  const key=_getSesKey(); if(key) sessionStorage.removeItem(key);
+  document.getElementById('portalWrap').style.display='none';
+  document.getElementById('loginWrap').style.display='flex';
+  document.getElementById('cedulaInput').value='';
+}
+
+async function checkContrato(negId){
+  const blk=()=>{ document.getElementById('loginWrap').style.display='none'; document.getElementById('contrato-block').style.display='flex'; };
+  if(!negId){ blk(); return true; }
+  try{
+    const r=await fetch(`/api/negocio-pub/${negId}`);
+    if(!r.ok) return false;
+    const d=await r.json();
+    if(!d.contrato||['vencido','cancelado','pendiente'].includes(d.contrato.estado)){ blk(); return true; }
+  }catch(_){}
+  return false;
+}
+
+async function mostrarPortal({empleado:e, horarios, citasHoy, proximas}){
+  document.getElementById('loginWrap').style.display='none';
+  // Verificar contrato ANTES de mostrar el contenido
+  const bloqueado = await checkContrato(e.negocio_id||negocioId);
+  if(bloqueado) return false;
+  document.getElementById('portalWrap').style.display='block';
+  document.title=`Portal — ${e.nombre}`;
+  const iniciales=(e.nombre[0]+(e.apellido?.[0]||'')).toUpperCase();
+  document.getElementById('pAvatar').textContent=iniciales;
+  document.getElementById('pNombre').textContent=e.nombre+(e.apellido?' '+e.apellido:'');
+  document.getElementById('pCargo').textContent=e.cargo||e.especialidad||'Empleado';
+  document.getElementById('pCedula').textContent=e.cedula?'CC '+e.cedula:'';
+  document.getElementById('pFecha').textContent=hoyNombre();
+  actualizarSecciones({horarios, citasHoy, proximas});
+}
+
+// Auto-login si ya hay sesión guardada
+async function init(){
+  // Sin parámetros en URL → mostrar campo de código de negocio
+  if(!empId && !negocioId){
+    _mostrarSinEnlace();
+    return;
+  }
+  _mostrarFormulario();
+  // Verificar si tiene sesión activa
+  const key=_getSesKey();
+  const cedGuardada=key ? sessionStorage.getItem(key) : null;
+  if(cedGuardada){
+    try{
+      const r=await fetch(_apiUrl(cedGuardada));
+      if(r.ok){
+        _cedulaActiva = cedGuardada;
+        const ok = await mostrarPortal(await r.json());
+        if(ok !== false){
+          if(_refreshInterval) clearInterval(_refreshInterval);
+          _refreshInterval=setInterval(()=>cargarDatos(cedGuardada),15000);
+        }
+        return;
+      }
+    }catch{}
+    if(key) sessionStorage.removeItem(key);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

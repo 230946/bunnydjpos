@@ -1,0 +1,1170 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/responsive.css">
+<title>DJPOS — SuperAdmin</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --blue:#0B8457;--blue-l:#e0f7ec;--blue-d:#086644;
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber-l:#f5ffd6;--amber-d:#8aad00;
+  --purple:#534AB7;--purple-l:#EEEDFE;--purple-d:#26215C;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg3)}
+.login-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:36px 32px;width:360px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo h1{font-size:22px;font-weight:600;letter-spacing:-0.5px}
+.login-logo p{font-size:12px;color:var(--text2);margin-top:4px}
+.field{margin-bottom:14px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.field input{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;outline:none}
+.field input:focus{border-color:var(--blue)}
+.btn{width:100%;padding:11px;border:none;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:500}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-d)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:6px 14px;font-size:12px;width:auto}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text)}
+.btn-outline:hover{background:var(--bg2)}
+.error-msg{background:var(--red-l);color:var(--red);padding:9px 12px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:none}
+
+/* ── APP ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--bg);border-right:0.5px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:4px}
+.sidebar-logo{padding:8px 10px 18px;border-bottom:0.5px solid var(--border);margin-bottom:8px}
+.sidebar-logo h2{font-size:14px;font-weight:600}
+.sidebar-logo p{font-size:11px;color:var(--text2)}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:var(--r);border:none;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;width:100%;text-align:left}
+.nav-btn.active{background:var(--bg2);color:var(--text);font-weight:500}
+.nav-btn:hover:not(.active){background:var(--bg2)}
+.main{flex:1;overflow-y:auto}
+.topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:12px 22px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:15px;font-weight:500}
+.content{padding:18px 22px}
+
+/* ── TARJETAS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.stat-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px}
+.stat-label{font-size:12px;color:var(--text2);margin-bottom:4px}
+.stat-val{font-size:26px;font-weight:600}
+.table-wrap{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.table-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border)}
+.table-header h3{font-size:13px;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 14px;color:var(--text2);font-weight:500;border-bottom:0.5px solid var(--border);background:var(--bg2)}
+td{padding:10px 14px;border-bottom:0.5px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-green{background:var(--green-l);color:var(--green-d)}
+.badge-gray{background:var(--bg3);color:var(--text2)}
+.badge-purple{background:var(--purple-l);color:var(--purple-d)}
+.badge-blue{background:var(--blue-l);color:var(--blue-d)}
+.tipo-rest{background:var(--blue-l);color:var(--blue-d)}
+.tipo-mini{background:var(--amber-l);color:var(--amber-d)}
+.tipo-pel{background:var(--purple-l);color:var(--purple-d)}
+.tipo-bar{background:var(--green-l);color:var(--green-d)}
+.tipo-ext{background:#f0fdf4;color:#166534}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--rl);padding:24px;width:460px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+
+/* ── MÓDULOS TOGGLE ── */
+.mod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+.mod-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border-radius:var(--r);padding:10px 12px}
+.mod-name{font-size:13px;font-weight:500}
+.mod-desc{font-size:11px;color:var(--text2)}
+.toggle{position:relative;width:38px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-s{position:absolute;inset:0;background:var(--border2);border-radius:22px;cursor:pointer;transition:.2s}
+.toggle-s:before{position:absolute;content:"";width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-s{background:var(--green)}
+.toggle input:checked+.toggle-s:before{transform:translateX(16px)}
+
+.badge-red{background:var(--red-l);color:var(--red)}
+.badge-amber{background:var(--amber-l);color:var(--amber-d)}
+.filter-row{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.filter-row label{font-size:12px;color:var(--text2);white-space:nowrap}
+.filter-row input,.filter-row select{padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px}
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--rl);padding:12px 18px;font-size:13px;z-index:300;box-shadow:0 4px 20px rgba(0,0,0,.12);transform:translateY(80px);opacity:0;transition:.25s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.panel{display:none}.panel.active{display:block}
+/* ── ESTABLECIMIENTOS ── */
+.est-grid{display:grid;gap:14px}
+.est-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.est-card-header{padding:12px 16px;background:var(--bg2);border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.est-card-header h3{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.est-meta{font-size:11px;color:var(--text2)}
+    img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
+    img[src="/img/logo.png"]:hover{transform:scale(1.15)}
+/* ── CONTRATOS ── */
+.contrato-form .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.contrato-form .fg{display:flex;flex-direction:column;gap:4px}
+.contrato-form label{font-size:12px;color:var(--text2)}
+.contrato-form input,.contrato-form select,.contrato-form textarea{padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px;width:100%}
+.contrato-form textarea{resize:vertical;min-height:60px}
+.badge-pendiente{background:#fef3c7;color:#92400e}
+.badge-activo{background:var(--green-l);color:var(--green-d)}
+.badge-vencido{background:var(--red-l);color:var(--red)}
+.badge-cancelado{background:var(--bg3);color:var(--text3)}</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/img/logo.png" alt="Logo" style="width:100%;height:auto;max-height:200px;object-fit:contain;border-radius:14px;margin-bottom:10px">
+    </div>
+    <div class="error-msg" id="login-error">Credenciales incorrectas</div>
+    <div class="field"><label>Email o usuario</label><input id="l-login" type="text" placeholder="superadmin@bunnydjpos.com" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn btn-primary" onclick="doLogin()">Ingresar</button>
+    <div style="margin-top:10px;text-align:center"><button class="btn btn-outline btn-sm" onclick="openForgotModal()">¿Olvidaste tu contraseña?</button></div>
+  </div>
+</div>
+
+<div class="mb" id="forgot-modal" style="display:none">
+  <div class="md" style="max-width:360px">
+    <h3>Recuperar contraseña</h3>
+    <div class="fi"><label>Email o usuario</label><input id="fp-login" placeholder="usuario o correo"></div>
+    <div class="ma">
+      <button class="btn bo bsm" onclick="cm('forgot-modal')">Cancelar</button>
+      <button class="btn bp bsm" onclick="forgotPassword()">Enviar</button>
+    </div>
+    <div id="fp-message" style="font-size:13px;color:var(--text2);margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app-screen" style="display:none">
+  <div class="sidebar">
+    <div class="sidebar-logo" style="display:flex;align-items:center;justify-content:center;gap:9px">
+      <img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+    </div>
+    <button class="nav-btn active" onclick="showPanel('dashboard',this)">📊 Dashboard</button>
+    <button class="nav-btn" onclick="showPanel('negocios',this)">🏪 Negocios</button>
+    <button class="nav-btn" onclick="showPanel('usuarios',this)">👥 Usuarios</button>
+    <button class="nav-btn" onclick="showPanel('establecimientos',this)">🏪 Por establecimiento</button>
+    <button class="nav-btn" onclick="showPanel('facturacion',this)">💰 Facturación</button>
+    <button class="nav-btn" onclick="showPanel('planes',this)">📋 Planes</button>
+    <button class="nav-btn" onclick="showPanel('actividad',this)">📜 Actividad</button>
+    <button class="nav-btn" onclick="showPanel('contratos',this)">📄 Contratos</button>
+    <div style="margin-top:auto;padding-top:16px;border-top:0.5px solid var(--border)">
+      <button class="nav-btn" onclick="window.open('modules.html','_blank')" title="Portal de módulos">🗂️ Portal módulos</button>
+      <button class="nav-btn" onclick="doLogout()">🚪 Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <span id="topbar-user" style="font-size:12px;color:var(--text2)"></span>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">Negocios activos</div><div class="stat-val" id="s-negocios">—</div></div>
+          <div class="stat-card"><div class="stat-label">Usuarios totales</div><div class="stat-val" id="s-usuarios">—</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+          <div class="table-wrap">
+            <div class="table-header"><h3>Negocios recientes</h3></div>
+            <table><thead><tr><th>Negocio</th><th>Tipo</th><th>Usuarios</th><th>Estado</th></tr></thead>
+            <tbody id="dash-negocios"></tbody></table>
+          </div>
+          <div class="table-wrap">
+            <div class="table-header">
+              <h3>⚠️ Contratos por vencer</h3>
+              <button class="btn btn-outline btn-sm" onclick="showPanel('contratos',document.querySelector('.nav-btn:nth-child(8)'))">Ver todos</button>
+            </div>
+            <table><thead><tr><th>Negocio</th><th>Contrato</th><th>Vence</th><th>Días</th></tr></thead>
+            <tbody id="dash-contratos"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEGOCIOS -->
+      <div class="panel" id="panel-negocios">
+        <div class="table-wrap">
+          <div class="table-header">
+            <h3>Todos los negocios</h3>
+            <button class="btn btn-primary btn-sm" onclick="openNegocioModal(null)">+ Nuevo</button>
+          </div>
+          <table><thead><tr><th>Nombre</th><th>Tipo</th><th>Ciudad</th><th>Usuarios</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="negocios-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- USUARIOS -->
+      <div class="panel" id="panel-usuarios">
+        <div class="table-wrap">
+          <div class="table-header"><h3>Todos los usuarios</h3></div>
+          <table><thead><tr><th>#</th><th>Nombre</th><th>Email</th><th>Negocio</th><th>Rol</th><th>SuperAdmin</th><th>Estado</th></tr></thead>
+          <tbody id="usuarios-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- FACTURACIÓN -->
+      <div class="panel" id="panel-facturacion">
+        <div class="filter-row">
+          <label>Desde</label><input type="date" id="rep-desde">
+          <label>Hasta</label><input type="date" id="rep-hasta">
+          <button class="btn btn-primary btn-sm" onclick="loadReportes()">Consultar</button>
+        </div>
+        <div class="stats-row" style="margin-bottom:16px">
+          <div class="stat-card"><div class="stat-label">Ingresos plataforma</div><div class="stat-val" id="rep-total-ing">—</div></div>
+          <div class="stat-card"><div class="stat-label">Ventas totales</div><div class="stat-val" id="rep-total-ven">—</div></div>
+          <div class="stat-card"><div class="stat-label">Negocios con ventas</div><div class="stat-val" id="rep-con-ven">—</div></div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header"><h3>Ingresos por negocio</h3></div>
+          <table><thead><tr><th>Negocio</th><th>Tipo</th><th>Ventas</th><th>Ingresos</th><th>Promedio</th><th>Última venta</th></tr></thead>
+          <tbody id="rep-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- PLANES / LICENCIAS -->
+      <div class="panel" id="panel-planes">
+        <div class="table-wrap">
+          <div class="table-header"><h3>Licencias y planes</h3></div>
+          <table><thead><tr><th>Negocio</th><th>Tipo</th><th>Plan</th><th>Precio/mes</th><th>Válido hasta</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="planes-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ACTIVIDAD GLOBAL -->
+      <div class="panel" id="panel-actividad">
+        <div class="filter-row">
+          <label>Negocio</label>
+          <select id="act-negocio" onchange="loadActividad()" style="min-width:180px"><option value="">Todos</option></select>
+          <button class="btn btn-outline btn-sm" onclick="loadActividad()">🔄 Actualizar</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header"><h3>Log de actividad</h3><span id="act-count" style="font-size:12px;color:var(--text2)"></span></div>
+          <table><thead><tr><th>Fecha</th><th>Negocio</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
+          <tbody id="act-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ESTABLECIMIENTOS (usuarios por negocio) -->
+      <div class="panel" id="panel-establecimientos">
+        <div class="est-grid" id="est-grid">
+          <p style="color:var(--text2);font-size:13px">Cargando...</p>
+        </div>
+      </div>
+
+      <!-- CONTRATOS -->
+      <div class="panel" id="panel-contratos">
+        <div class="filter-row" style="margin-bottom:14px">
+          <select id="ctr-fil-estado" onchange="renderContratos()" style="min-width:140px">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="activo">Activo</option>
+            <option value="vencido">Vencido</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+          <input id="ctr-fil-buscar" placeholder="Buscar negocio..." oninput="renderContratos()" style="min-width:200px">
+          <button class="btn btn-primary btn-sm" onclick="abrirContrato()">+ Nuevo contrato</button>
+        </div>
+        <div class="stats-row" id="ctr-stats" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card"><div class="stat-label">Total</div><div class="stat-val" id="cs-total">—</div></div>
+          <div class="stat-card"><div class="stat-label">Activos</div><div class="stat-val" id="cs-activos" style="color:var(--green)">—</div></div>
+          <div class="stat-card"><div class="stat-label">Por vencer</div><div class="stat-val" id="cs-por-vencer" style="color:var(--amber-d)">—</div></div>
+          <div class="stat-card"><div class="stat-label">Valor mensual</div><div class="stat-val" id="cs-valor" style="font-size:18px;color:var(--blue)">—</div></div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <h3>Contratos de servicio</h3>
+            <span id="ctr-count" style="font-size:12px;color:var(--text2)"></span>
+          </div>
+          <table>
+            <thead><tr>
+              <th>N° Contrato</th><th>Negocio</th><th>Tipo</th><th>Plan</th>
+              <th>Valor/mes</th><th>Inicio</th><th>Vence</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="ctr-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTRATO -->
+<div class="modal-bg" id="contrato-modal" style="display:none">
+  <div class="modal contrato-form" style="width:540px">
+    <h3 id="ctr-modal-title">Nuevo contrato</h3>
+    <input type="hidden" id="ctr-id">
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg" style="grid-column:1/-1">
+        <label>Negocio *</label>
+        <select id="ctr-negocio"></select>
+      </div>
+    </div>
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg">
+        <label>N° Contrato</label>
+        <input id="ctr-numero" placeholder="Auto-generado">
+      </div>
+      <div class="fg">
+        <label>Plan</label>
+        <select id="ctr-plan">
+          <option value="free">Free</option>
+          <option value="basic" selected>Basic</option>
+          <option value="premium">Premium</option>
+          <option value="personalizado">Personalizado</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg">
+        <label>Tipo de ciclo</label>
+        <select id="ctr-tipo">
+          <option value="mensual">Mensual</option>
+          <option value="trimestral">Trimestral</option>
+          <option value="semestral">Semestral</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Valor mensual ($)</label>
+        <input id="ctr-valor" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg">
+        <label>Fecha inicio *</label>
+        <input id="ctr-inicio" type="date">
+      </div>
+      <div class="fg">
+        <label>Fecha vencimiento</label>
+        <input id="ctr-fin" type="date">
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <label>Estado</label>
+      <select id="ctr-estado">
+        <option value="pendiente">Pendiente</option>
+        <option value="activo">Activo</option>
+        <option value="vencido">Vencido</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+    </div>
+    <div class="fg" style="margin-bottom:16px">
+      <label>Notas / Términos</label>
+      <textarea id="ctr-notas" rows="3" placeholder="Condiciones, observaciones..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="ctr-btn-eliminar" onclick="eliminarContrato()" style="display:none;margin-right:auto">Eliminar</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('contrato-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarContrato()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NEGOCIO -->
+<div class="modal-bg" id="negocio-modal" style="display:none">
+  <div class="modal">
+    <h3 id="neg-modal-title">Nuevo negocio</h3>
+
+    <!-- Logo upload -->
+    <div style="margin-bottom:18px">
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:8px">Logo del negocio</label>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="neg-logo-preview" onclick="document.getElementById('neg-logo-input').click()" title="Clic para cambiar logo"
+          style="width:72px;height:72px;border-radius:12px;border:1.5px dashed var(--border2);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;position:relative;transition:.15s"
+          onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <span id="neg-logo-placeholder" style="font-size:22px;color:var(--text3)">🖼</span>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--text2);margin-bottom:6px">Haz clic en el recuadro para subir el logo del negocio</div>
+          <div style="font-size:11px;color:var(--text3)">PNG, JPG o WEBP · Máx. 5 MB · Recomendado: 200×200 px</div>
+          <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+            <img src="/img/logo.png" style="width:18px;height:18px;border-radius:4px;object-fit:contain" onerror="this.style.display='none'">
+            <span style="font-size:11px;color:var(--text3)">El logo de BunnyDJPOS aparecerá junto al tuyo</span>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="neg-logo-input" accept="image/*" style="display:none" onchange="previewLogoNeg(this)">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field" style="grid-column:1/-1"><label>Nombre *</label><input id="neg-nombre" placeholder="Mi Restaurante"></div>
+      <div class="field"><label>Tipo</label>
+        <select id="neg-tipo" style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px">
+          <option value="restaurante">Restaurante</option>
+          <option value="minimercado">Minimercado</option>
+          <option value="peluqueria">Peluquería / Salón</option>
+          <option value="bar">Bar / Cafetería</option>
+          <option value="veterinaria">Veterinaria</option>
+          <option value="taller">Taller Mecánico</option>
+          <option value="lavanderia">Lavandería</option>
+          <option value="gimnasio">Gimnasio</option>
+          <option value="farmacia">Farmacia</option>
+        </select>
+      </div>
+      <div class="field"><label>NIT</label><input id="neg-nit" placeholder="900.123.456-7"></div>
+      <div class="field"><label>Ciudad</label><input id="neg-ciudad" placeholder="Bogotá"></div>
+      <div class="field"><label>Teléfono</label><input id="neg-tel" placeholder="+57 300..."></div>
+      <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="neg-dir" placeholder="Calle 123 # 45-67"></div>
+      <div class="field" style="grid-column:1/-1"><label>Email</label><input id="neg-email" type="email" placeholder="info@negocio.com"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('negocio-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveNegocio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CREAR ADMIN -->
+<div class="modal-bg" id="crear-admin-modal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h3 id="crear-admin-titulo">Crear administrador</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px" id="crear-admin-negocio"></div>
+    <div class="field"><label>Nombre completo *</label><input id="ca-nombre" placeholder="Juan Pérez"></div>
+    <div class="field"><label>Usuario (para login) *</label><input id="ca-username" placeholder="admin_bunnyburger"></div>
+    <div class="field"><label>Email</label><input id="ca-email" type="email" placeholder="admin@bunnyburger.com"></div>
+    <div class="field"><label>Contraseña *</label><input id="ca-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('crear-admin-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveCrearAdmin()">Crear admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PLAN -->
+<div class="modal-bg" id="plan-modal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h3>Gestionar plan</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px" id="plan-negocio-nombre"></div>
+    <div class="field"><label>Plan</label>
+      <select id="plan-tipo" style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px">
+        <option value="free">Gratis</option>
+        <option value="basic">Básico</option>
+        <option value="premium">Premium</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label>Precio / mes</label><input id="plan-precio" type="number" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="field"><label>Válido hasta</label><input id="plan-hasta" type="date"></div>
+    </div>
+    <div class="field"><label>Notas</label><input id="plan-notas" placeholder="Observaciones..."></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('plan-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="savePlan()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin + '/api';
+let token = sessionStorage.getItem('bdj_token');
+let crearAdminNegocioId = null;
+
+// ── Auth ──────────────────────────────────────────────────────
+async function doLogin(){
+  const login = document.getElementById('l-login').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const err   = document.getElementById('login-error');
+  err.style.display='none';
+  try {
+    const r = await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login,password:pass})});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Error');
+    if(!d.user.es_superadmin) throw new Error('Solo superadmin puede acceder aquí');
+    token = d.token;
+    sessionStorage.setItem('bdj_token',token);
+    document.getElementById('topbar-user').textContent = d.user.nombre;
+    showApp();
+  } catch(e){
+    err.textContent = e.message;
+    err.style.display='block';
+  }
+}
+document.getElementById('l-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+function togglePassword(id, visible){ const el=document.getElementById(id); if(el) el.type = visible ? 'text' : 'password'; }
+function openForgotModal(){ document.getElementById('fp-login').value=''; document.getElementById('fp-message').textContent=''; document.getElementById('forgot-modal').style.display='flex'; }
+async function forgotPassword(){
+  const login = document.getElementById('fp-login').value.trim();
+  const msg = document.getElementById('fp-message'); msg.textContent='';
+  if(!login){ msg.textContent='Ingresa usuario o email.'; return; }
+  try {
+    const r = await fetch(`${API}/auth/forgot-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login})});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Error');
+    msg.textContent = d.tempPassword ? `Contraseña temporal: ${d.tempPassword}` : (d.message || 'Si el usuario existe, se ha generado recuperación.');
+  } catch(e){ msg.textContent = e.message; }
+}
+
+function doLogout(){
+  sessionStorage.removeItem('bdj_token');
+  token=null;
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+async function api(path,opts={}){
+  const r = await fetch(`${API}${path}`,{
+    ...opts,
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,...(opts.headers||{})}
+  });
+  const d = await r.json();
+  if(!r.ok) throw new Error(d.error||'Error');
+  return d;
+}
+
+// ── UI ────────────────────────────────────────────────────────
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='flex';
+  loadDashboard();
+}
+
+function showPanel(p,btn){
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('panel-'+p).classList.add('active');
+  if(btn) btn.classList.add('active');
+  const titles={dashboard:'Dashboard',negocios:'Negocios',usuarios:'Usuarios',establecimientos:'Por establecimiento',facturacion:'Facturación',planes:'Planes & Licencias',actividad:'Log de actividad',contratos:'Contratos'};
+  document.getElementById('topbar-title').textContent=titles[p]||p;
+  if(p==='negocios') loadNegocios();
+  if(p==='usuarios') loadUsuarios();
+  if(p==='establecimientos') loadEstablecimientos();
+  if(p==='facturacion') loadReportes();
+  if(p==='planes') loadPlanes();
+  if(p==='actividad') initActividad();
+  if(p==='contratos') loadContratos();
+}
+
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function copiarURL(url){ navigator.clipboard.writeText(url).then(()=>showToast('URL copiada ✓')).catch(()=>{ prompt('Copia esta URL de acceso:',url); }); }
+
+// ── Dashboard ─────────────────────────────────────────────────
+async function loadDashboard(){
+  try {
+    const [negocios, usuarios, contratos] = await Promise.all([
+      api('/superadmin/negocios'),
+      api('/superadmin/usuarios'),
+      api('/superadmin/contratos').catch(()=>[]),
+    ]);
+    document.getElementById('s-negocios').textContent = negocios.filter(n=>n.activo).length;
+    document.getElementById('s-usuarios').textContent  = usuarios.length;
+
+    document.getElementById('dash-negocios').innerHTML = negocios.slice(0,8).map(n=>`
+      <tr>
+        <td><b>${n.nombre}</b></td>
+        <td><span class="badge ${n.tipo==='minimercado'?'tipo-mini':n.tipo==='peluqueria'?'tipo-pel':n.tipo==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(n.tipo)?'tipo-ext':'tipo-rest'}">${n.tipo}</span></td>
+        <td><span class="badge badge-blue">${n.total_usuarios||0}</span></td>
+        <td><span class="badge ${n.activo?'badge-green':'badge-gray'}">${n.activo?'Activo':'Inactivo'}</span></td>
+      </tr>`).join('');
+
+    const hoy = new Date();
+    const proximos = contratos
+      .filter(c => c.estado === 'activo' && c.fecha_fin)
+      .map(c => ({ ...c, dias: Math.ceil((new Date(String(c.fecha_fin).slice(0,10)+'T12:00:00') - hoy) / 86400000) }))
+      .filter(c => c.dias <= 60)
+      .sort((a,b) => a.dias - b.dias);
+
+    const tbCtr = document.getElementById('dash-contratos');
+    if(!proximos.length){
+      tbCtr.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:18px;font-size:12px">Sin contratos próximos a vencer</td></tr>';
+    } else {
+      tbCtr.innerHTML = proximos.map(c => {
+        const diasColor = c.dias < 0 ? 'var(--red)' : c.dias <= 15 ? 'var(--red)' : c.dias <= 30 ? 'var(--amber-d)' : 'var(--text2)';
+        const diasLabel = c.dias < 0 ? `Vencido hace ${Math.abs(c.dias)}d` : `${c.dias}d`;
+        return `<tr onclick="abrirContrato('${c.id}')" style="cursor:pointer">
+          <td><b>${c.negocio_nombre}</b></td>
+          <td style="font-size:12px;color:var(--text2)">${c.numero||'—'}</td>
+          <td style="font-size:12px">${fmtFecha(c.fecha_fin)}</td>
+          <td><span style="font-weight:600;color:${diasColor};font-size:12px">${diasLabel}</span></td>
+        </tr>`;
+      }).join('');
+    }
+  } catch(e){ console.error(e); }
+}
+
+// ── Negocios ──────────────────────────────────────────────────
+let negociosCache = [];
+async function loadNegocios(){
+  try {
+    const data = await api('/superadmin/negocios');
+    negociosCache = data;
+    const base = window.location.origin;
+    document.getElementById('negocios-tbody').innerHTML = data.map(n=>{
+      const esRest = n.tipo === 'restaurante';
+      const esMini = n.tipo === 'minimercado';
+      const esPel  = n.tipo === 'peluqueria';
+      const esBar  = n.tipo === 'bar';
+      const esVet  = n.tipo === 'veterinaria';
+      const esTall = n.tipo === 'taller';
+      const esLav  = n.tipo === 'lavanderia';
+      const esGim  = n.tipo === 'gimnasio';
+      const esFarm = n.tipo === 'farmacia';
+      const urlsBtns = [
+        esRest ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/admin?n=${n.id}')" title="${base}/admin?n=${n.id}">📋 Admin</button>` : '',
+        esRest ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/pos?n=${n.id}')" title="${base}/pos?n=${n.id}">📋 POS</button>` : '',
+        esMini ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/minimercado-admin.html?n=${n.id}')" title="${base}/minimercado-admin.html?n=${n.id}">📋 Admin</button>` : '',
+        esMini ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/pos-minimercado.html?n=${n.id}')" title="${base}/pos-minimercado.html?n=${n.id}">📋 POS</button>` : '',
+        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/peluqueria-admin.html?n=${n.id}')" title="${base}/peluqueria-admin.html?n=${n.id}">📋 Admin</button>` : '',
+        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/pos-peluqueria.html?n=${n.id}')" title="${base}/pos-peluqueria.html?n=${n.id}">📋 POS</button>` : '',
+        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/peluqueria-reservar.html?n=${n.id}')" title="${base}/peluqueria-reservar.html?n=${n.id}">📋 Reservas</button>` : '',
+        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/empleado-portal.html?n=${n.id}')" title="${base}/empleado-portal.html?n=${n.id}">📋 Portal Empleados</button>` : '',
+        esBar  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/bar-admin.html?n=${n.id}')" title="${base}/bar-admin.html?n=${n.id}">📋 Admin</button>` : '',
+        esVet  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/vet-admin.html?n=${n.id}')" title="${base}/vet-admin.html?n=${n.id}">📋 Admin</button>` : '',
+        esTall ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/taller-admin.html?n=${n.id}')" title="${base}/taller-admin.html?n=${n.id}">📋 Admin</button>` : '',
+        esLav  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/lavanderia-admin.html?n=${n.id}')" title="${base}/lavanderia-admin.html?n=${n.id}">📋 Admin</button>` : '',
+        esGim  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/gimnasio-admin.html?n=${n.id}')" title="${base}/gimnasio-admin.html?n=${n.id}">📋 Admin</button>` : '',
+        esFarm ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/farmacia-admin.html?n=${n.id}')" title="${base}/farmacia-admin.html?n=${n.id}">📋 Admin</button>` : '',
+      ].filter(Boolean).join('');
+      return `<tr>
+        <td>
+          <b>${n.nombre}</b><br>
+          <span style="font-size:11px;color:var(--text2)">${n.ciudad||''}</span><br>
+          <div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">${urlsBtns}</div>
+        </td>
+        <td><span class="badge ${n.tipo==='minimercado'?'tipo-mini':n.tipo==='peluqueria'?'tipo-pel':n.tipo==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(n.tipo)?'tipo-ext':'tipo-rest'}">${n.tipo}</span></td>
+        <td>${n.ciudad||'—'}</td>
+        <td>${n.total_usuarios||0}</td>
+        <td><span class="badge ${n.activo?'badge-green':'badge-gray'}">${n.activo?'Activo':'Inactivo'}</span></td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-outline btn-sm" onclick="openNegocioModal('${n.id}')">Editar</button>
+          <button class="btn btn-primary btn-sm" onclick="openCrearAdminModal('${n.id}','${n.nombre}')">+ Admin</button>
+          ${esRest ? `<a class="btn btn-outline btn-sm" href="${base}/admin?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos?n=${n.id}" target="_blank" style="text-decoration:none">POS</a>` : ''}
+          ${esMini ? `<a class="btn btn-outline btn-sm" href="${base}/minimercado-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-minimercado.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a>` : ''}
+          ${esPel  ? `<a class="btn btn-outline btn-sm" href="${base}/peluqueria-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-peluqueria.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a><a class="btn btn-primary btn-sm" href="${base}/peluqueria-reservar.html?n=${n.id}" target="_blank" style="text-decoration:none">Reservas</a><a class="btn btn-outline btn-sm" href="${base}/empleado-portal.html?n=${n.id}" target="_blank" style="text-decoration:none">Portal Emp.</a>` : ''}
+          ${esBar  ? `<a class="btn btn-outline btn-sm" href="${base}/bar-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
+          ${esVet  ? `<a class="btn btn-outline btn-sm" href="${base}/vet-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
+          ${esTall ? `<a class="btn btn-outline btn-sm" href="${base}/taller-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
+          ${esLav  ? `<a class="btn btn-outline btn-sm" href="${base}/lavanderia-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
+          ${esGim  ? `<a class="btn btn-outline btn-sm" href="${base}/gimnasio-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
+          ${esFarm ? `<a class="btn btn-outline btn-sm" href="${base}/farmacia-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e){ showToast('Error cargando negocios'); }
+}
+
+let editingNegocioId = null;
+function openNegocioModal(id){
+  editingNegocioId = id;
+  document.getElementById('neg-modal-title').textContent = id ? 'Editar negocio' : 'Nuevo negocio';
+  const n = id ? negociosCache.find(x => x.id === id) : null;
+  document.getElementById('neg-nombre').value  = n?.nombre    || '';
+  document.getElementById('neg-tipo').value    = n?.tipo      || 'restaurante';
+  document.getElementById('neg-nit').value     = n?.nit       || '';
+  document.getElementById('neg-ciudad').value  = n?.ciudad    || '';
+  document.getElementById('neg-tel').value     = n?.telefono  || '';
+  document.getElementById('neg-dir').value     = n?.direccion || '';
+  document.getElementById('neg-email').value   = n?.email     || '';
+  // Reset logo input
+  document.getElementById('neg-logo-input').value = '';
+  const prev = document.getElementById('neg-logo-preview');
+  const ph   = document.getElementById('neg-logo-placeholder');
+  // Show existing logo or placeholder
+  const existImg = prev.querySelector('img.neg-logo-img');
+  if (existImg) existImg.remove();
+  if (n?.logo_url) {
+    ph.style.display = 'none';
+    const img = document.createElement('img');
+    img.className = 'neg-logo-img';
+    img.src = n.logo_url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:10px';
+    prev.appendChild(img);
+  } else {
+    ph.style.display = '';
+  }
+  document.getElementById('negocio-modal').style.display='flex';
+}
+
+function previewLogoNeg(input) {
+  if (!input.files?.[0]) return;
+  const prev = document.getElementById('neg-logo-preview');
+  const ph   = document.getElementById('neg-logo-placeholder');
+  ph.style.display = 'none';
+  const existImg = prev.querySelector('img.neg-logo-img');
+  if (existImg) existImg.remove();
+  const img = document.createElement('img');
+  img.className = 'neg-logo-img';
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:10px';
+  img.src = URL.createObjectURL(input.files[0]);
+  prev.appendChild(img);
+}
+
+async function saveNegocio(){
+  const body = {
+    nombre:   document.getElementById('neg-nombre').value.trim(),
+    tipo:     document.getElementById('neg-tipo').value,
+    nit:      document.getElementById('neg-nit').value,
+    ciudad:   document.getElementById('neg-ciudad').value,
+    telefono: document.getElementById('neg-tel').value,
+    direccion:document.getElementById('neg-dir').value,
+    email:    document.getElementById('neg-email').value,
+  };
+  try {
+    let negId = editingNegocioId;
+    if(editingNegocioId){
+      await api(`/superadmin/negocios/${editingNegocioId}`,{method:'PUT',body:JSON.stringify({...body,activo:true})});
+    } else {
+      const res = await api('/superadmin/negocios',{method:'POST',body:JSON.stringify(body)});
+      negId = res.id;
+    }
+    // Upload logo if selected
+    const logoFile = document.getElementById('neg-logo-input').files?.[0];
+    if (logoFile && negId) {
+      const fd = new FormData();
+      fd.append('logo', logoFile);
+      const uploadRes = await fetch(`/api/negocios/${negId}/logo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd
+      });
+      if (!uploadRes.ok) console.warn('Logo upload failed', await uploadRes.text());
+    }
+    closeModal('negocio-modal');
+    showToast(editingNegocioId?'Negocio actualizado ✓':'Negocio creado ✓');
+    loadNegocios(); loadDashboard();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ── Usuarios ──────────────────────────────────────────────────
+async function loadUsuarios(){
+  try {
+    const data = await api('/superadmin/usuarios');
+    document.getElementById('usuarios-tbody').innerHTML = data.map((u,i)=>`
+      <tr>
+        <td style="color:var(--text2);font-size:12px;font-weight:600">${String(i+1).padStart(3,'0')}</td>
+        <td><b>${u.nombre}</b></td>
+        <td>${u.email||u.username||'—'}</td>
+        <td>${u.negocio_nombre||'—'}</td>
+        <td>${u.rol_nombre||'—'}</td>
+        <td>${u.es_superadmin?'<span class="badge badge-purple">Sí</span>':'No'}</td>
+        <td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
+      </tr>`).join('');
+  } catch(e){ showToast('Error cargando usuarios'); }
+}
+
+// ── Usuarios por establecimiento ──────────────────────────────
+async function loadEstablecimientos(){
+  const grid = document.getElementById('est-grid');
+  grid.innerHTML = '<p style="color:var(--text2);font-size:13px">Cargando...</p>';
+  try {
+    const [negocios, usuarios] = await Promise.all([
+      api('/superadmin/negocios'),
+      api('/superadmin/usuarios')
+    ]);
+
+    // Agrupar usuarios por negocio_id
+    const porNegocio = {};
+    negocios.forEach(n => { porNegocio[n.id] = { negocio: n, usuarios: [] }; });
+
+    // Usuarios sin negocio asignado
+    const sinNegocio = [];
+    usuarios.forEach(u => {
+      if (u.negocio_id && porNegocio[u.negocio_id]) {
+        porNegocio[u.negocio_id].usuarios.push(u);
+      } else if (!u.es_superadmin) {
+        sinNegocio.push(u);
+      }
+    });
+
+    const grupos = Object.values(porNegocio);
+
+    if (!grupos.length) {
+      grid.innerHTML = '<p style="color:var(--text2);font-size:13px">No hay establecimientos registrados.</p>';
+      return;
+    }
+
+    grid.innerHTML = grupos.map(({ negocio: n, usuarios: us }) => `
+      <div class="est-card">
+        <div class="est-card-header">
+          <h3>
+            <span class="badge ${n.tipo==='restaurante'?'tipo-rest':'tipo-mini'}">${n.tipo}</span>
+            ${n.nombre}
+          </h3>
+          <span class="est-meta">${us.length} usuario${us.length!==1?'s':''} · ${n.ciudad||'Sin ciudad'}</span>
+        </div>
+        ${us.length ? `
+        <table>
+          <thead><tr><th>#</th><th>Nombre</th><th>Email / Usuario</th><th>Rol</th><th>Estado</th></tr></thead>
+          <tbody>
+            ${us.map(u => `
+            <tr>
+              <td style="color:var(--text2);font-size:12px;font-weight:600">${u.numero_empleado!=null?String(u.numero_empleado).padStart(3,'0'):'—'}</td>
+              <td><b>${u.nombre}</b></td>
+              <td style="color:var(--text2)">${u.email||u.username||'—'}</td>
+              <td><span class="badge badge-blue">${u.rol_nombre||'Sin rol'}</span></td>
+              <td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>` :
+        `<div style="padding:16px;color:var(--text2);font-size:13px">Sin usuarios asignados</div>`}
+      </div>`).join('') +
+      (sinNegocio.length ? `
+      <div class="est-card">
+        <div class="est-card-header">
+          <h3>⚠️ Sin establecimiento asignado</h3>
+          <span class="est-meta">${sinNegocio.length} usuario${sinNegocio.length!==1?'s':''}</span>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>Nombre</th><th>Email / Usuario</th><th>Rol</th><th>Estado</th></tr></thead>
+          <tbody>
+            ${sinNegocio.map(u => `
+            <tr>
+              <td style="color:var(--text2);font-size:12px;font-weight:600">${u.numero_empleado!=null?String(u.numero_empleado).padStart(3,'0'):'—'}</td>
+              <td><b>${u.nombre}</b></td>
+              <td style="color:var(--text2)">${u.email||u.username||'—'}</td>
+              <td><span class="badge badge-gray">${u.rol_nombre||'Sin rol'}</span></td>
+              <td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : '');
+  } catch(e){ grid.innerHTML = `<p style="color:var(--text2);font-size:13px">Error al cargar: ${e.message}</p>`; }
+}
+
+// ── Crear Admin de Negocio ───────────────────────────────────
+function openCrearAdminModal(negocioId, nombre){
+  crearAdminNegocioId = negocioId;
+  document.getElementById('crear-admin-titulo').textContent = 'Crear administrador';
+  document.getElementById('crear-admin-negocio').textContent = 'Negocio: ' + nombre;
+  ['ca-nombre','ca-username','ca-email','ca-pass'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('crear-admin-modal').style.display='flex';
+}
+async function saveCrearAdmin(){
+  const nombre   = document.getElementById('ca-nombre').value.trim();
+  const username = document.getElementById('ca-username').value.trim();
+  const email    = document.getElementById('ca-email').value.trim();
+  const password = document.getElementById('ca-pass').value;
+  if(!nombre||!password||!username){ showToast('Nombre, usuario y contraseña son requeridos'); return; }
+  try {
+    const r = await api(`/superadmin/negocios/${crearAdminNegocioId}/crear-admin`, {
+      method:'POST', body: JSON.stringify({nombre,username,email,password})
+    });
+    closeModal('crear-admin-modal');
+    showToast(`✅ ${r.mensaje}`);
+    loadUsuarios();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ── Facturación ───────────────────────────────────────────────
+const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n);
+const fmtDate = s => s ? new Date(s).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+const fmtDT = s => s ? new Date(s).toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+
+async function loadReportes(){
+  const hoy = new Date().toISOString().slice(0,10);
+  const primerDia = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10);
+  const desdeEl = document.getElementById('rep-desde');
+  const hastaEl = document.getElementById('rep-hasta');
+  if(!desdeEl.value) desdeEl.value = primerDia;
+  if(!hastaEl.value) hastaEl.value = hoy;
+  try {
+    const d = await api(`/superadmin/reportes?desde=${desdeEl.value}&hasta=${hastaEl.value}`);
+    document.getElementById('rep-total-ing').textContent = fmt(d.totalIngresos);
+    document.getElementById('rep-total-ven').textContent = d.totalVentas;
+    document.getElementById('rep-con-ven').textContent   = d.conVentas;
+    document.getElementById('rep-tbody').innerHTML = d.rows.map(r=>`
+      <tr>
+        <td><b>${r.nombre}</b></td>
+        <td><span class="badge ${r.tipo==='minimercado'?'tipo-mini':'tipo-rest'}">${r.tipo}</span></td>
+        <td>${parseInt(r.total_ventas)||0}</td>
+        <td><b>${fmt(r.ingresos)}</b></td>
+        <td style="color:var(--text2)">${parseInt(r.total_ventas) ? fmt(r.promedio) : '—'}</td>
+        <td style="font-size:12px;color:var(--text2)">${fmtDT(r.ultima_venta)}</td>
+      </tr>`).join('');
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ── Planes ────────────────────────────────────────────────────
+let editingPlanNegocioId = null;
+
+function planBadge(plan){
+  const m={free:'badge-gray',basic:'badge-blue',premium:'badge-purple'};
+  const l={free:'Gratis',basic:'Básico',premium:'Premium'};
+  return `<span class="badge ${m[plan]||'badge-gray'}">${l[plan]||plan}</span>`;
+}
+function planEstado(fechaFin){
+  if(!fechaFin) return '<span class="badge badge-gray">Sin fecha</span>';
+  const d = new Date(fechaFin);
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const diff = Math.ceil((d - hoy) / 86400000);
+  if(diff < 0) return '<span class="badge badge-red">Vencido</span>';
+  if(diff <= 15) return `<span class="badge badge-amber">Vence en ${diff}d</span>`;
+  return '<span class="badge badge-green">Activo</span>';
+}
+
+async function loadPlanes(){
+  try {
+    const data = await api('/superadmin/planes');
+    document.getElementById('planes-tbody').innerHTML = data.map(p=>`
+      <tr>
+        <td><b>${p.nombre}</b></td>
+        <td><span class="badge ${p.tipo==='minimercado'?'tipo-mini':'tipo-rest'}">${p.tipo}</span></td>
+        <td>${planBadge(p.plan)}</td>
+        <td>${parseFloat(p.precio)>0 ? fmt(p.precio) : '<span style="color:var(--text2)">—</span>'}</td>
+        <td style="font-size:12px;color:var(--text2)">${fmtDate(p.fecha_fin)}</td>
+        <td>${planEstado(p.fecha_fin)}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="openPlanModal('${p.negocio_id}','${p.nombre}','${p.plan}',${p.precio},'${p.fecha_fin||''}','${(p.notas||'').replace(/'/g,'')}')">Editar</button></td>
+      </tr>`).join('');
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+function openPlanModal(negocio_id, nombre, plan, precio, fecha_fin, notas){
+  editingPlanNegocioId = negocio_id;
+  document.getElementById('plan-negocio-nombre').textContent = 'Negocio: ' + nombre;
+  document.getElementById('plan-tipo').value   = plan || 'free';
+  document.getElementById('plan-precio').value = precio || '';
+  document.getElementById('plan-hasta').value  = fecha_fin || '';
+  document.getElementById('plan-notas').value  = notas || '';
+  document.getElementById('plan-modal').style.display='flex';
+}
+async function savePlan(){
+  const plan      = document.getElementById('plan-tipo').value;
+  const precio    = document.getElementById('plan-precio').value;
+  const fecha_fin = document.getElementById('plan-hasta').value;
+  const notas     = document.getElementById('plan-notas').value;
+  try {
+    await api(`/superadmin/planes/${editingPlanNegocioId}`,{method:'PUT',body:JSON.stringify({plan,precio,fecha_fin,notas})});
+    closeModal('plan-modal');
+    showToast('Plan actualizado ✓');
+    loadPlanes();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ── Actividad ─────────────────────────────────────────────────
+const accionLabels = {negocio_creado:'Negocio creado',admin_creado:'Admin creado',plan_cambiado:'Plan cambiado'};
+const accionColors = {negocio_creado:'badge-blue',admin_creado:'badge-green',plan_cambiado:'badge-purple'};
+
+async function initActividad(){
+  try {
+    const negocios = await api('/superadmin/negocios');
+    const sel = document.getElementById('act-negocio');
+    sel.innerHTML = '<option value="">Todos los negocios</option>' +
+      negocios.map(n=>`<option value="${n.id}">${n.nombre}</option>`).join('');
+  } catch {}
+  loadActividad();
+}
+async function loadActividad(){
+  try {
+    const nid = document.getElementById('act-negocio').value;
+    const url = `/superadmin/actividad${nid?`?negocio_id=${nid}`:''}`;
+    const data = await api(url);
+    document.getElementById('act-count').textContent = `${data.length} registro${data.length!==1?'s':''}`;
+    document.getElementById('act-tbody').innerHTML = data.length ? data.map(r=>`
+      <tr>
+        <td style="font-size:12px;white-space:nowrap">${fmtDT(r.creado)}</td>
+        <td>${r.negocio_nombre||'<span style="color:var(--text2)">—</span>'}</td>
+        <td style="color:var(--text2)">${r.usuario_nombre||'—'}</td>
+        <td><span class="badge ${accionColors[r.accion]||'badge-gray'}">${accionLabels[r.accion]||r.accion}</span></td>
+        <td style="font-size:12px;color:var(--text2)">${r.detalle||'—'}</td>
+      </tr>`).join('') :
+      `<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">Sin actividad registrada</td></tr>`;
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+if(token){
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if(payload.es_superadmin && payload.exp > Date.now()/1000){
+      document.getElementById('topbar-user').textContent = payload.nombre;
+      showApp();
+    } else { sessionStorage.removeItem('bdj_token'); }
+  } catch { sessionStorage.removeItem('bdj_token'); }
+}
+
+// ── CONTRATOS ─────────────────────────────────────────────────
+let _contratos = [], _negociosCtr = [];
+
+const fmtMes = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n||0);
+const fmtFecha = s => { if(!s) return '—'; const d=new Date(String(s).slice(0,10)+'T12:00:00'); return isNaN(d)?'—':d.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}); };
+
+function _estadoBadge(e){
+  const m={pendiente:'badge-pendiente',activo:'badge-activo',vencido:'badge-vencido',cancelado:'badge-cancelado'};
+  const l={pendiente:'Pendiente',activo:'Activo',vencido:'Vencido',cancelado:'Cancelado'};
+  return `<span class="badge ${m[e]||'badge-gray'}">${l[e]||e}</span>`;
+}
+
+function _diasParaVencer(fin){
+  if(!fin) return null;
+  return Math.ceil((new Date(String(fin).slice(0,10)+'T12:00:00')-new Date())/(1000*60*60*24));
+}
+
+function _actualizarSelNeg(){
+  const sel = document.getElementById('ctr-negocio');
+  if(sel) sel.innerHTML = _negociosCtr.map(n=>`<option value="${n.id}">${n.nombre} (${n.tipo})</option>`).join('');
+}
+async function loadContratos(){
+  try{
+    [_contratos, _negociosCtr] = await Promise.all([
+      api('/superadmin/contratos'),
+      api('/superadmin/negocios'),
+    ]);
+    _actualizarSelNeg();
+    renderContratos();
+  }catch(e){showToast('Error cargando contratos: '+e.message);}
+}
+
+function renderContratos(){
+  const filtEst = document.getElementById('ctr-fil-estado').value;
+  const filtBus = (document.getElementById('ctr-fil-buscar').value||'').toLowerCase();
+
+  let lista = _contratos.filter(c=>{
+    if(filtEst && c.estado !== filtEst) return false;
+    if(filtBus && !c.negocio_nombre.toLowerCase().includes(filtBus) && !(c.numero||'').toLowerCase().includes(filtBus)) return false;
+    return true;
+  });
+
+  // stats
+  const activos = _contratos.filter(c=>c.estado==='activo');
+  const porVencer = activos.filter(c=>{ const d=_diasParaVencer(c.fecha_fin); return d!==null&&d>=0&&d<=30; });
+  const valorTotal = activos.reduce((s,c)=>s+parseFloat(c.valor||0),0);
+  document.getElementById('cs-total').textContent = _contratos.length;
+  document.getElementById('cs-activos').textContent = activos.length;
+  document.getElementById('cs-por-vencer').textContent = porVencer.length;
+  document.getElementById('cs-valor').textContent = fmtMes(valorTotal);
+  document.getElementById('ctr-count').textContent = lista.length + ' contrato(s)';
+
+  const tbody = document.getElementById('ctr-tbody');
+  if(!lista.length){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px">Sin contratos registrados</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista.map(c=>{
+    const dias = _diasParaVencer(c.fecha_fin);
+    let venceHTML = fmtFecha(c.fecha_fin);
+    if(dias !== null && dias >= 0 && dias <= 30)
+      venceHTML = `<span style="color:var(--amber-d);font-weight:500">${venceHTML} <span style="font-size:10px">(${dias}d)</span></span>`;
+    else if(dias !== null && dias < 0)
+      venceHTML = `<span style="color:var(--red)">${venceHTML}</span>`;
+    const tipo = {mensual:'Mensual',trimestral:'Trimestral',semestral:'Semestral',anual:'Anual'}[c.tipo]||c.tipo;
+    return `<tr>
+      <td style="font-weight:500">${c.numero||'—'}</td>
+      <td>${c.negocio_nombre}</td>
+      <td>${tipo}</td>
+      <td><span class="badge badge-blue">${c.plan}</span></td>
+      <td>${fmtMes(c.valor)}</td>
+      <td>${fmtFecha(c.fecha_inicio)}</td>
+      <td>${venceHTML}</td>
+      <td>${_estadoBadge(c.estado)}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="abrirContrato('${c.id}')">Editar</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function abrirContrato(id){
+  if(!_negociosCtr.length){
+    try{ _negociosCtr = await api('/superadmin/negocios'); _actualizarSelNeg(); }catch{}
+  }
+  if(id && !_contratos.length){
+    try{ _contratos = await api('/superadmin/contratos'); }catch{}
+  }
+  const c = id ? _contratos.find(x=>x.id===id) : null;
+  document.getElementById('ctr-id').value = c?.id||'';
+  document.getElementById('ctr-modal-title').textContent = c ? 'Editar contrato' : 'Nuevo contrato';
+  document.getElementById('ctr-numero').value = c?.numero||'';
+  document.getElementById('ctr-negocio').value = c?.negocio_id||(_negociosCtr[0]?.id||'');
+  document.getElementById('ctr-plan').value = c?.plan||'basic';
+  document.getElementById('ctr-tipo').value = c?.tipo||'mensual';
+  document.getElementById('ctr-valor').value = c?.valor||'';
+  document.getElementById('ctr-inicio').value = c?.fecha_inicio?.slice(0,10)||new Date().toISOString().slice(0,10);
+  document.getElementById('ctr-fin').value = c?.fecha_fin?.slice(0,10)||'';
+  document.getElementById('ctr-estado').value = c?.estado||'pendiente';
+  document.getElementById('ctr-notas').value = c?.notas||'';
+  document.getElementById('ctr-btn-eliminar').style.display = c ? '' : 'none';
+  document.getElementById('contrato-modal').style.display = 'flex';
+}
+
+async function guardarContrato(){
+  const id = document.getElementById('ctr-id').value;
+  const body = {
+    negocio_id: document.getElementById('ctr-negocio').value,
+    numero: document.getElementById('ctr-numero').value.trim()||null,
+    tipo: document.getElementById('ctr-tipo').value,
+    plan: document.getElementById('ctr-plan').value,
+    valor: document.getElementById('ctr-valor').value,
+    fecha_inicio: document.getElementById('ctr-inicio').value,
+    fecha_fin: document.getElementById('ctr-fin').value||null,
+    estado: document.getElementById('ctr-estado').value,
+    notas: document.getElementById('ctr-notas').value.trim()||null,
+  };
+  if(!body.negocio_id||!body.fecha_inicio){ showToast('Completa los campos obligatorios'); return; }
+  try{
+    if(id) await api('/superadmin/contratos/'+id, {method:'PUT', body:JSON.stringify(body)});
+    else await api('/superadmin/contratos', {method:'POST', body:JSON.stringify(body)});
+    closeModal('contrato-modal');
+    showToast(id ? 'Contrato actualizado ✓' : 'Contrato creado ✓');
+    await loadContratos();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+async function eliminarContrato(){
+  const id = document.getElementById('ctr-id').value;
+  if(!id||!confirm('¿Eliminar este contrato?')) return;
+  try{
+    await api('/superadmin/contratos/'+id, {method:'DELETE'});
+    closeModal('contrato-modal');
+    showToast('Contrato eliminado');
+    await loadContratos();
+  }catch(e){showToast('Error: '+e.message);}
+}
+</script>
+
+<script>
+/* Eye toggle para campos de contraseña */
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('input[type="password"]').forEach(function(inp){
+    var w=document.createElement('div');
+    w.style.cssText='position:relative;display:block';
+    inp.parentNode.insertBefore(w,inp);
+    w.appendChild(inp);
+    inp.style.paddingRight='38px';
+    var b=document.createElement('button');
+    b.type='button';
+    b.title='Ver/ocultar contraseña';
+    b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    b.style.cssText='position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;padding:2px;line-height:0;display:flex;align-items:center;justify-content:center;opacity:.6;transition:.1s';
+    b.onmousedown=function(e){e.preventDefault()};
+    b.onclick=function(){
+      var show=inp.type==='password';
+      inp.type=show?'text':'password';
+      b.style.opacity=show?'1':'.6';
+      b.style.color=show?'#0B8457':'#888';
+    };
+    w.appendChild(b);
+  });
+});
+</script>
+</body>
+</html>
+

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portal de acceso</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,sans-serif;min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+
+    /* ── Header negocio ── */
+    .portal-header{text-align:center;margin-bottom:40px}
+    .portal-logo{width:88px;height:88px;border-radius:20px;object-fit:cover;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+    .portal-nombre{font-size:1.7rem;font-weight:800;color:#f1f5f9;letter-spacing:-.02em}
+    .portal-tipo{font-size:.88rem;color:#94a3b8;margin-top:5px;font-weight:500}
+
+    /* ── Tarjetas ── */
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;max-width:720px;width:100%}
+    .card{background:#fff;border-radius:18px;padding:30px 20px 24px;text-align:center;text-decoration:none;color:inherit;box-shadow:0 2px 8px rgba(0,0,0,.12);border:2.5px solid transparent;transition:transform .18s,box-shadow .18s,border-color .18s;display:flex;flex-direction:column;align-items:center;gap:10px}
+    .card:hover{transform:translateY(-5px);box-shadow:0 12px 32px rgba(0,0,0,.18);border-color:var(--cc)}
+    .card:active{transform:translateY(-2px)}
+    .card-icon{font-size:3rem;line-height:1}
+    .card-title{font-size:1rem;font-weight:700;color:#0f172a;margin-top:4px}
+    .card-desc{font-size:.78rem;color:#64748b;line-height:1.5;min-height:32px}
+    .card-badge{background:var(--cc);color:#fff;padding:4px 14px;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.04em;margin-top:6px}
+
+    .card-admin  {--cc:#6366f1}
+    .card-pos    {--cc:#10b981}
+    .card-reservar{--cc:#f59e0b}
+    .card-empleado{--cc:#3b82f6}
+
+    /* ── Estados ── */
+    #loading{color:#94a3b8;font-size:1rem;text-align:center}
+    #error-wrap{text-align:center;color:#f1f5f9}
+    #error-wrap .err-icon{font-size:3rem;margin-bottom:12px}
+    #error-wrap p{color:#94a3b8;font-size:.9rem;margin-top:6px;max-width:320px}
+
+    /* ── Alerta contrato ── */
+    #contrato-alert{display:none;background:#f59e0b;color:#1a1a1a;padding:10px 18px;border-radius:10px;font-size:.82rem;font-weight:600;text-align:center;margin-bottom:20px;max-width:480px;width:100%}
+
+    /* ── Bloqueo contrato ── */
+    #contrato-block{display:none;text-align:center;color:#f1f5f9}
+    #contrato-block .blk-icon{font-size:3.5rem;margin-bottom:14px}
+    #contrato-block h2{font-size:1.3rem;color:#ff6b6b;margin-bottom:8px}
+    #contrato-block p{color:#94a3b8;font-size:.88rem;max-width:340px;line-height:1.6}
+
+    /* ── Footer ── */
+    .portal-footer{margin-top:36px;color:#475569;font-size:.72rem;text-align:center}
+
+    @media(max-width:480px){
+      .cards{grid-template-columns:1fr 1fr}
+      .card{padding:22px 14px 18px}
+    }
+    @media(max-width:320px){
+      .cards{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading">Cargando…</div>
+
+<div id="error-wrap" style="display:none">
+  <div class="err-icon">⚠️</div>
+  <h2 id="error-titulo" style="font-size:1.1rem;font-weight:700"></h2>
+  <p id="error-msg"></p>
+</div>
+
+<div id="portal" style="display:none;flex-direction:column;align-items:center;width:100%">
+  <div class="portal-header">
+    <img id="p-logo" src="/img/logo.png" class="portal-logo" alt="Logo"
+         onerror="this.src='/img/logo.png'">
+    <div id="p-nombre" class="portal-nombre"></div>
+    <div id="p-tipo" class="portal-tipo"></div>
+  </div>
+
+  <div id="contrato-alert"></div>
+  <div id="contrato-block">
+    <div class="blk-icon">🔒</div>
+    <h2 id="blk-titulo">Acceso suspendido</h2>
+    <p id="blk-msg">El servicio de este negocio no está disponible.<br>Contacta al administrador del sistema.</p>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="portal-footer">Powered by BunnyDJPOS</div>
+</div>
+
+<script>
+const nid = new URLSearchParams(location.search).get('n');
+
+const TIPOS = {
+  restaurante:'Restaurante', peluqueria:'Peluquería / Salón de Belleza',
+  minimercado:'Minimercado', bar:'Bar', veterinaria:'Veterinaria',
+  taller:'Taller', lavanderia:'Lavandería', gimnasio:'Gimnasio', farmacia:'Farmacia',
+};
+
+const ADMIN_URL = {
+  restaurante:'admin-restaurante.html', peluqueria:'peluqueria-admin.html',
+  minimercado:'minimercado-admin.html', bar:'admin-restaurante.html',
+  veterinaria:'admin-restaurante.html', taller:'admin-restaurante.html',
+  lavanderia:'admin-restaurante.html', gimnasio:'admin-restaurante.html',
+  farmacia:'admin-restaurante.html',
+};
+const POS_URL = {
+  restaurante:'restaurante-pos.html', peluqueria:'pos-peluqueria.html',
+  minimercado:'pos-minimercado.html', bar:'restaurante-pos.html',
+  veterinaria:'restaurante-pos.html', taller:'restaurante-pos.html',
+  lavanderia:'restaurante-pos.html', gimnasio:'restaurante-pos.html',
+  farmacia:'restaurante-pos.html',
+};
+
+function showError(titulo, msg){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('error-titulo').textContent=titulo;
+  document.getElementById('error-msg').textContent=msg;
+  document.getElementById('error-wrap').style.display='block';
+}
+
+async function init(){
+  if(!nid){ showError('URL inválida','Pide el enlace de acceso al administrador del negocio.'); return; }
+
+  try{
+    const r = await fetch(`/api/negocio-pub/${nid}`);
+    if(!r.ok) throw new Error('Negocio no encontrado');
+    const d = await r.json();
+
+    // Datos básicos del negocio
+    document.getElementById('p-nombre').textContent = d.nombre;
+    document.title = d.nombre + ' — Acceso';
+    document.getElementById('p-tipo').textContent = TIPOS[d.tipo] || d.tipo || '';
+    if(d.logo_url) document.getElementById('p-logo').src = d.logo_url;
+
+    document.getElementById('loading').style.display='none';
+    document.getElementById('portal').style.display='flex';
+
+    // Verificar contrato
+    if(d.contrato){
+      const {estado, dias_para_vencer} = d.contrato;
+      if(estado==='vencido'||estado==='cancelado'||estado==='pendiente'){
+        const msgs = {
+          vencido:'El contrato de este negocio ha vencido. Contacta al administrador del sistema.',
+          cancelado:'El contrato de este negocio fue cancelado. Contacta al administrador del sistema.',
+          pendiente:'El contrato de este negocio aún no ha iniciado. Contacta al administrador del sistema.',
+        };
+        document.getElementById('blk-msg').textContent = msgs[estado];
+        document.getElementById('contrato-block').style.display='block';
+        return;
+      }
+      if(estado==='activo' && dias_para_vencer!==null && dias_para_vencer<=5){
+        const dias = dias_para_vencer;
+        document.getElementById('contrato-alert').textContent = dias<=0
+          ? '⚠️ El contrato de este negocio venció hoy. Renuévalo para continuar.'
+          : `⚠️ El contrato vence en ${dias} día${dias===1?'':'s'}. Contacta al administrador para renovarlo.`;
+        document.getElementById('contrato-alert').style.display='block';
+      }
+    } else {
+      // Sin contrato → bloquear
+      document.getElementById('blk-msg').textContent = 'Este negocio no tiene un contrato activo. Contacta al administrador del sistema.';
+      document.getElementById('contrato-block').style.display='block';
+      return;
+    }
+
+    // Construir tarjetas de acceso
+    const tipo = d.tipo || 'restaurante';
+    const accesos = [
+      {
+        url: (ADMIN_URL[tipo]||'admin-restaurante.html')+'?n='+nid,
+        clase:'admin', icon:'⚙️',
+        title:'Panel Administrativo',
+        desc:'Gestión, reportes e inventario',
+        badge:'ADMIN',
+      },
+      {
+        url: (POS_URL[tipo]||'restaurante-pos.html')+'?n='+nid,
+        clase:'pos', icon:'🛒',
+        title:'Punto de Venta',
+        desc:'Registrar ventas y cobros',
+        badge:'POS',
+      },
+    ];
+    if(tipo==='peluqueria'){
+      accesos.push(
+        {url:'peluqueria-reservar.html?n='+nid, clase:'reservar', icon:'📅', title:'Reservas en línea', desc:'Agenda de citas para clientes', badge:'CLIENTES'},
+        {url:'empleado-portal.html?n='+nid, clase:'empleado', icon:'👤', title:'Portal Empleado', desc:'Consulta tu horario y citas', badge:'EMPLEADOS'},
+      );
+    }
+
+    document.getElementById('cards').innerHTML = accesos.map(a=>`
+      <a href="${a.url}" class="card card-${a.clase}">
+        <div class="card-icon">${a.icon}</div>
+        <div class="card-title">${a.title}</div>
+        <div class="card-desc">${a.desc}</div>
+        <div class="card-badge">${a.badge}</div>
+      </a>
+    `).join('');
+
+  } catch(e){
+    showError('Error al cargar', e.message);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,2584 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Peluquería Admin — DJPOS</title>
+  <link rel="icon" href="/img/logo.png" type="image/png">
+  <style>
+    :root{
+      --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+      --acc:#0B8457;--acc-d:#086644;--acc-l:#C6F135;--acc-ll:rgba(11,132,87,0.1);
+      --green:#0B8457;--red:#E24B4A;--yellow:#C6F135;
+      --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+      --border:rgba(0,0,0,0.1);--r:8px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+    .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .login-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:36px 32px;width:360px}
+    .login-logo{text-align:center;margin-bottom:24px}
+    .login-logo img{width:100%;height:auto;max-height:200px;border-radius:14px;object-fit:contain;margin-bottom:10px;display:none}
+    .login-logo img.show{display:block;margin:0 auto 10px}
+    .field{margin-bottom:13px}
+    .field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;font-weight:500}
+    .field input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);font-size:14px;outline:none}
+    .field input:focus{border-color:var(--acc)}
+    .error-msg{background:rgba(226,75,74,.12);color:var(--red);padding:9px 12px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:none}
+    .btn{padding:8px 14px;border:none;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600;transition:.12s;display:inline-flex;align-items:center;gap:5px}
+    .btn-primary{background:var(--acc);color:#fff}.btn-primary:hover{background:var(--acc-d)}
+    .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-outline:hover{border-color:var(--acc);color:var(--acc)}
+    .btn-block{width:100%;justify-content:center}
+    .btn-sm{padding:5px 12px;font-size:12px}
+    .app{display:flex;height:100vh;overflow:hidden}
+    .sidebar{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;transition:width .22s ease,min-width .22s ease;flex-shrink:0}
+    .sidebar.collapsed{width:0;min-width:0;overflow:hidden;border-right:none}
+    .btn-menu{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;flex-shrink:0}
+    .btn-menu:hover{color:var(--acc-d);background:var(--acc-ll)}
+    .sb-logo{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:10px}
+    .sb-logo span{font-size:14px;font-weight:700;color:var(--acc)}
+    .nav-item{padding:10px 16px;cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:10px;font-size:13px;border-left:3px solid transparent;transition:.12s}
+    .nav-item:hover{background:var(--acc-ll);color:var(--text)}
+    .nav-item.active{background:var(--acc-ll);color:var(--acc);border-left-color:var(--acc);font-weight:600}
+    .nav-sub{padding-left:32px;font-size:12px;}
+    .nav-subnav{overflow:hidden;transition:max-height .2s ease;max-height:0}
+    .nav-subnav.open{max-height:120px}
+    .sb-user{padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
+    .sb-user strong{display:block;color:var(--text2);margin-bottom:2px;font-size:13px}
+    .sb-rol{display:block;font-size:11px;color:var(--acc);font-weight:600;margin-bottom:8px;}
+    .btn-salir{width:100%;margin-top:6px;padding:7px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);cursor:pointer;font-size:12px}
+    .btn-salir:hover{border-color:var(--red);color:var(--red)}
+    .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+    .topbar{height:52px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+    .topbar-title{font-weight:700;font-size:1rem;flex:1;color:var(--acc)}
+    .content{flex:1;overflow-y:auto;padding:20px}
+    input,select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;font-family:inherit}
+    input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+    .btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:13px;font-family:inherit;transition:.1s}
+    .btn:hover{border-color:var(--acc);color:var(--acc)}
+    .btn-acc{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:700}
+    .btn-acc:hover{background:var(--acc-d)}
+    .btn-sm{padding:5px 10px;font-size:11px}
+    .btn-green{background:var(--green);color:#fff;border-color:var(--green)}
+    .btn-sm-outline{padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-family:inherit;transition:.1s}
+    .btn-sm-outline:hover{border-color:var(--acc);color:var(--acc)}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+    .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+    .stat-card .label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .stat-card .value{font-size:22px;font-weight:700}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{text-align:left;padding:8px 12px;color:var(--text2);font-weight:600;font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+    td{padding:9px 12px;border-bottom:1px solid var(--border)}
+    tr:hover td{background:var(--bg3)}
+    .tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+    .chip-Pendiente{background:#e5e7eb;color:#6b7280}
+    .chip-Confirmada{background:#fef3c7;color:var(--yellow)}
+    .chip-EnProceso{background:var(--acc-ll);color:var(--acc-d)}
+    .chip-Completada{background:#d1fae5;color:var(--green)}
+    .chip-Cancelada{background:#fee2e2;color:var(--red)}
+    .modal-bg{position:fixed;inset:0;background:#0009;z-index:50;display:flex;align-items:center;justify-content:center}
+    .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:580px;max-width:98vw;max-height:90vh;display:flex;flex-direction:column}
+    .modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .modal-head h3{font-size:16px;font-weight:700;color:var(--acc)}
+    .modal-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer}
+    .modal-close:hover{color:var(--red)}
+    .modal-body{padding:20px;overflow-y:auto;flex:1}
+    .modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+    .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .frow.col1{grid-template-columns:1fr}
+    .frow.col3{grid-template-columns:1fr 1fr 1fr}
+    .fg{display:flex;flex-direction:column;gap:4px}
+    .fg label{font-size:12px;color:var(--text2);font-weight:500}
+    .fg input,.fg select,.fg textarea{width:100%}
+    .cita-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;border-left:3px solid var(--acc)}
+    .cita-card.Completada{border-left-color:var(--green)}
+    .cita-card.Cancelada{border-left-color:var(--red);opacity:.6}
+    .cita-card.Pendiente{border-left-color:var(--text3)}
+    .hora-badge{background:var(--acc-ll);color:var(--acc);font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap}
+    .search-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+    .search-bar input{flex:1;min-width:200px}
+    .pagination{display:flex;gap:6px;margin-top:12px;align-items:center}
+    .pag-info{font-size:12px;color:var(--text2);flex:1;text-align:center}
+    #toast{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+    .toast{padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;animation:fadein .2s}
+    .toast.ok{background:#22c55e;color:#fff}
+    .toast.err{background:#ef4444;color:#fff}
+    @keyframes fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    #alerts-container{position:fixed;top:52px;right:12px;z-index:90;display:flex;flex-direction:column;gap:8px;width:320px;pointer-events:none}
+    .cita-alert{background:#fffbeb;border:1px solid var(--yellow);border-left:4px solid var(--yellow);border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;box-shadow:0 6px 24px #0002;pointer-events:all;animation:slidein .3s ease}
+    .cita-alert.urgent{border-color:var(--red);border-left-color:var(--red);background:#fff5f5}
+    .cita-alert .al-icon{font-size:20px;line-height:1;flex-shrink:0;margin-top:1px}
+    .cita-alert .al-body{flex:1;font-size:12px;line-height:1.5}
+    .cita-alert .al-body strong{display:block;font-size:13px;color:var(--yellow);margin-bottom:2px}
+    .cita-alert.urgent .al-body strong{color:var(--red)}
+    .cita-alert .al-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0}
+    .cita-alert .al-close:hover{color:var(--text)}
+    @keyframes slidein{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+    /* ── Secciones admin adicionales ── */
+    .nav-sep{padding:6px 12px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-radius:6px;transition:.12s}
+    .nav-sep:hover{background:var(--acc-ll);color:var(--text2)}
+    .nav-sep .sep-arrow{font-size:9px;transition:transform .2s;flex-shrink:0}
+    .nav-group{overflow:hidden;transition:max-height .25s ease;max-height:400px}
+    .nav-group.collapsed{max-height:0}
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
+    .card-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .card-header h3{font-size:14px;font-weight:700;color:var(--acc)}
+    .card-header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .card-body{padding:14px 16px}
+    .table-wrap{overflow-x:auto}
+    .table-wrap table{width:100%}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+    .field label{font-size:12px;color:var(--text2);font-weight:500}
+    .field input,.field select,.field textarea{width:100%}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+    .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+    .badge-green{background:#22c55e22;color:#22c55e}
+    .badge-red{background:#ef444422;color:#ef4444}
+    .badge-amber{background:#f59e0b22;color:#f59e0b}
+    .badge-gray{background:#47556922;color:#94a3b8}
+    .badge-blue{background:#3b82f622;color:#3b82f6}
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px}
+    .stat-val{font-size:20px;font-weight:700;margin-top:4px}
+    .stat-label{font-size:11px;color:var(--text2)}
+    .gasto-bar-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border)}
+    .gasto-bar-label{min-width:80px;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .gasto-bar-track{flex:1.2;height:8px;background:var(--bg3);border-radius:99px;overflow:hidden}
+    .gasto-bar-fill{height:100%;border-radius:99px}
+    .gasto-bar-val{font-size:12px;color:var(--text2);white-space:nowrap}
+    .rep-q.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+    .toggle{display:inline-flex;cursor:pointer;align-items:center}
+    .toggle input{display:none}
+    .toggle-s{width:36px;height:20px;background:var(--border);border-radius:99px;position:relative;transition:.2s}
+    .toggle input:checked+.toggle-s{background:var(--acc)}
+    .toggle-s::after{content:'';position:absolute;width:14px;height:14px;border-radius:99px;background:#fff;top:3px;left:3px;transition:.2s}
+    .toggle input:checked+.toggle-s::after{left:19px}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
+    .toggle-label{font-size:13px}
+    .horario-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .dia-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .dia-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase}
+    .dia-slot{width:100%;min-height:48px;border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;gap:2px}
+    .dia-slot.activo{background:var(--acc-ll);border-color:var(--acc);color:var(--acc);font-weight:600}
+    .dia-slot.vacio{color:var(--text3);cursor:pointer}
+    .recibo{font-family:monospace;font-size:12px;max-width:300px;margin:0 auto}
+    .recibo-center{text-align:center;margin:2px 0}
+    .recibo-row{display:flex;justify-content:space-between;padding:2px 0}
+    .recibo-total{font-weight:700}
+    .recibo-cambio{color:var(--green)}
+    .recibo-hr{border:none;border-top:1px dashed var(--border);margin:6px 0}
+    .btn-primary{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+    .btn-primary:hover{background:var(--acc-d)}
+    .btn-outline{background:transparent;border-color:var(--border);color:var(--text2)}
+    .btn-outline:hover{border-color:var(--acc);color:var(--acc)}
+    .btn-danger{background:#ef444422;color:#ef4444;border:1px solid #ef444444}
+    .btn-success{background:#22c55e;color:#fff;border-color:#16a34a;font-weight:600}
+    .btn-block{width:100%;margin-top:4px}
+    .caja-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+      img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
+    img[src="/img/logo.png"]:hover{transform:scale(1.15)}
+#contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
+#contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
+#contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
+#contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
+#contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}</style>
+</head>
+<body>
+<div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">Tu contrato ha vencido o fue cancelado.<br>Contacta al administrador del sistema.</p></div>
+<div id="contrato-alert"><span id="contrato-alert-msg"></span> <button onclick="document.getElementById('contrato-alert').style.display='none'">✕</button></div>
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img id="login-logo-img" src="/img/logo.png" alt="Logo" class="show">
+      <p id="login-neg-nombre" style="font-size:17px;font-weight:700;color:var(--acc);margin-top:6px;display:none"></p>
+    </div>
+    <div class="error-msg" id="login-error"></div>
+    <div class="field"><label>Usuario o email</label><input id="l-login" type="text" placeholder="usuario@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>Contraseña</label><input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-top:4px">Ingresar</button>
+  </div>
+</div>
+<div class="app" id="app" style="display:none">
+  <nav class="sidebar">
+    <div class="sb-logo"><img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0"></div>
+    <div class="nav-sep" onclick="toggleGrupo('grp-principal')">Principal <span class="sep-arrow" id="arr-principal">▼</span></div>
+    <div class="nav-group" id="grp-principal">
+      <div class="nav-item active" data-nav="dashboard" onclick="nav('dashboard')">📊 Dashboard</div>
+      <div class="nav-item" data-nav="agenda" onclick="nav('agenda')">📅 Agenda</div>
+      <div class="nav-item" data-nav="reportes" onclick="nav('reportes')">📈 Reportes</div>
+    </div>
+    <div class="nav-sep" onclick="toggleGrupo('grp-finanzas')">Finanzas <span class="sep-arrow" id="arr-finanzas">▼</span></div>
+    <div class="nav-group" id="grp-finanzas">
+      <div class="nav-item" data-nav="servicios" onclick="nav('servicios')">📂 Servicios</div>
+      <div class="nav-item" data-nav="paquetes" onclick="nav('paquetes')">🎁 Paquetes</div>
+      <div class="nav-item" data-nav="inventario" onclick="nav('inventario')">📦 Inventario</div>
+      <div class="nav-item" data-nav="caja" onclick="nav('caja')">💰 Caja del día</div>
+      <div class="nav-item" id="nav-toggle-comisiones" onclick="toggleSubNav('subnav-comisiones')">💸 Comisiones <span id="subarr-comisiones" style="margin-left:auto;font-size:10px;transition:transform .2s">▾</span></div>
+      <div class="nav-subnav" id="subnav-comisiones">
+        <div class="nav-item nav-sub" data-nav="comisiones" onclick="nav('comisiones')">📋 Ver comisiones</div>
+        <div class="nav-item nav-sub" data-nav="cfg-comisiones" onclick="nav('cfg-comisiones')">⚙️ Configuración</div>
+      </div>
+      <div class="nav-item" data-nav="gastos" onclick="nav('gastos')">📋 Gastos</div>
+      <div class="nav-item" data-nav="facturas" onclick="nav('facturas')">🧾 Facturas</div>
+      <div class="nav-item" data-nav="proveedores" onclick="nav('proveedores')">🚚 Proveedores</div>
+      <div class="nav-item" data-nav="pedidos-prov" onclick="nav('pedidos-prov')">🛒 Pedidos prov.</div>
+    </div>
+    <div class="nav-sep" onclick="toggleGrupo('grp-personal')">Personal <span class="sep-arrow" id="arr-personal">▼</span></div>
+    <div class="nav-group" id="grp-personal">
+      <div class="nav-item" data-nav="clientes" onclick="nav('clientes')">👤 Clientes</div>
+      <div class="nav-item" data-nav="empleados" onclick="nav('empleados')">👥 Empleados</div>
+      <div class="nav-item" data-nav="personal" onclick="nav('personal')">🔑 Usuarios</div>
+      <div class="nav-item" data-nav="roles" onclick="nav('roles')">🔐 Roles</div>
+      <div class="nav-item" data-nav="horarios" onclick="nav('horarios')">🕐 Horarios</div>
+    </div>
+    <div class="nav-sep" onclick="toggleGrupo('grp-cfg')">Configuración <span class="sep-arrow" id="arr-cfg">▼</span></div>
+    <div class="nav-group" id="grp-cfg">
+      <div class="nav-item" data-nav="cfg-factura" onclick="nav('cfg-factura')">🧾 Config factura</div>
+      <div class="nav-item" data-nav="cfg-impresora" onclick="nav('cfg-impresora')">🖨️ Config impresora</div>
+    </div>
+    <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
+  </nav>
+  <div class="main">
+    <div class="topbar">
+      <button class="btn-menu" onclick="toggleSidebar()" title="Menú">☰</button>
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <button class="btn btn-sm" onclick="refreshPage()">↻</button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+<div id="alerts-container"></div>
+<div id="toast"></div>
+
+<!-- MODAL NUEVA CITA -->
+<div class="modal-bg" id="modalCita" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3 id="citaTitulo">Nueva Cita</h3><button class="modal-close" onclick="cerrarModal('modalCita')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow">
+        <div class="fg"><label>Cliente *</label><input id="cNombre" placeholder="Nombre del cliente"></div>
+        <div class="fg"><label>Teléfono</label><input id="cTel"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Servicio *</label>
+          <select id="cSvcId" onchange="autoFillCita()">
+            <option value="">— seleccionar —</option>
+          </select>
+        </div>
+        <div class="fg"><label>Precio cobrado</label><input id="cPrecio" type="number"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Fecha *</label><input type="date" id="cFecha" onchange="filtrarHorasDisponibles()"></div>
+        <div class="fg"><label>Hora *</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="cHora" onchange="filtrarHorasDisponibles()" style="flex:1"></select>
+            <span style="font-weight:700;color:var(--text2);font-size:18px">:</span>
+            <select id="cMinuto" style="width:72px"></select>
+          </div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Empleado</label>
+          <select id="cEmpleado" onchange="verificarHorarioEmpleado()">
+            <option value="">— Sin asignar —</option>
+          </select>
+          <div id="cEmpWarn" style="display:none;color:#b45309;font-size:12px;margin-top:4px;padding:4px 8px;background:#fef3c7;border-radius:4px">⚠️ Este empleado no tiene horario laboral registrado</div>
+        </div>
+      </div>
+      <div class="frow col1"><div class="fg"><label>Notas</label><textarea id="cNotas"></textarea></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('modalCita')">Cancelar</button>
+      <button class="btn btn-acc" onclick="crearCita()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SERVICIO -->
+<div class="modal-bg" id="svc-modal" style="display:none">
+  <div class="modal" style="width:460px">
+    <div class="modal-head"><h3 id="svc-modal-title">Nuevo servicio</h3><button class="modal-close" onclick="cerrarModal('svc-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow col1"><div class="fg"><label>Nombre *</label><input id="svc-nombre" placeholder="Ej: Corte de cabello"></div></div>
+      <div class="frow col1"><div class="fg"><label>Categoría</label><select id="svc-cat"><option value="">— Sin categoría —</option></select></div></div>
+      <div class="frow col1"><div class="fg"><label>Descripción</label><textarea id="svc-desc" rows="2" placeholder="Descripción opcional"></textarea></div></div>
+      <div class="frow">
+        <div class="fg"><label>Precio (COP)</label><input id="svc-precio" type="number" min="0" placeholder="0"></div>
+        <div class="fg"><label>Duración (minutos)</label><input id="svc-dur" type="number" min="5" step="5" placeholder="30"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('svc-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarServicio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CATEGORIAS SERVICIO -->
+<div class="modal-bg" id="cat-modal" style="display:none">
+  <div class="modal" style="width:420px">
+    <div class="modal-head"><h3>Categorías de servicio</h3><button class="modal-close" onclick="cerrarModal('cat-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="cat-nueva-nombre" placeholder="Nueva categoría..." style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+        <button class="btn-acc" onclick="crearCategoria()" style="white-space:nowrap">+ Agregar</button>
+      </div>
+      <div id="cat-list" style="max-height:320px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-acc" onclick="cerrarModal('cat-modal')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMPLEADO -->
+<div class="modal-bg" id="emp-modal" style="display:none">
+  <div class="modal" style="width:480px">
+    <div class="modal-head"><h3 id="emp-modal-title">Nuevo empleado</h3><button class="modal-close" onclick="cerrarModal('emp-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow">
+        <div class="fg"><label>Nombre *</label><input id="emp-nombre" placeholder="Nombre"></div>
+        <div class="fg"><label>Apellido</label><input id="emp-apellido" placeholder="Apellido"></div>
+      </div>
+      <div class="frow">
+        <div class="fg" style="flex:0 0 180px"><label>N° Identificación (Cédula)</label><input id="emp-cedula" placeholder="Ej: 1234567890"></div>
+        <div class="fg"><label>Cargo</label><input id="emp-cargo" placeholder="Estilista, Barbero..."></div>
+        <div class="fg"><label>Especialidad</label><input id="emp-especialidad" placeholder="Colorista, Manicure..."></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Teléfono</label><input id="emp-tel" placeholder="Número de contacto"></div>
+        <div class="fg"><label>Email</label><input id="emp-email" type="email" placeholder="email@ejemplo.com"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin:10px 0 6px">Remuneración</div>
+      <div class="frow">
+        <div class="fg"><label>Sueldo básico</label><input id="emp-sueldo" type="number" min="0" step="1000" placeholder="0"></div>
+        <div class="fg"><label>Tarifa por hora</label><input id="emp-tarifa" type="number" min="0" step="500" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('emp-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarEmpleado()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INVENTARIO -->
+<div class="modal-bg" id="inv-modal" style="display:none">
+  <div class="modal" style="width:480px">
+    <div class="modal-head"><h3 id="inv-modal-title">Nuevo producto</h3><button class="modal-close" onclick="cerrarModal('inv-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow">
+        <div class="fg" style="flex:2"><label>Nombre *</label><input id="inv-nombre" placeholder="Ej: Shampoo hidratante"></div>
+        <div class="fg" style="flex:1"><label>Código / SKU</label><input id="inv-sku" placeholder="Ej: COD-001"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Categoría</label><input id="inv-cat" placeholder="Ej: Shampoos, Tintes..."></div>
+        <div class="fg"><label>Unidad</label><input id="inv-unidad" placeholder="Ej: und, ml, g"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Stock actual</label><input id="inv-stock" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div class="fg"><label>Stock mínimo</label><input id="inv-stock-min" type="number" min="0" step="0.01" placeholder="0"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Costo</label><input id="inv-costo" type="number" min="0" step="100" placeholder="0" oninput="invRecalcPrecio()"></div>
+        <div class="fg"><label>Margen %</label><input id="inv-margen" type="number" step="0.1" placeholder="0" oninput="invRecalcPrecio()"></div>
+        <div class="fg"><label>Precio venta</label><input id="inv-precio" type="number" min="0" step="100" placeholder="0" oninput="invRecalcMargen()"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('inv-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarInv()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJUSTE STOCK -->
+<div class="modal-bg" id="inv-ajuste-modal" style="display:none">
+  <div class="modal" style="width:360px">
+    <div class="modal-head"><h3 id="inv-ajuste-title">Ajustar stock</h3><button class="modal-close" onclick="cerrarModal('inv-ajuste-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow col1"><div class="fg"><label>Tipo</label>
+        <select id="inv-ajuste-tipo">
+          <option value="entrada">Entrada (agregar)</option>
+          <option value="salida">Salida (descontar)</option>
+          <option value="ajuste">Ajuste (fijar cantidad exacta)</option>
+        </select>
+      </div></div>
+      <div class="frow col1"><div class="fg"><label>Cantidad</label><input id="inv-ajuste-cant" type="number" min="0" step="0.01" placeholder="0"></div></div>
+      <div class="frow col1"><div class="fg"><label>Nota</label><input id="inv-ajuste-nota" placeholder="Motivo del ajuste"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('inv-ajuste-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="confirmarAjuste()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE CITA -->
+<div class="modal-bg" id="modalDetCita" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3 id="detCitaTitulo">Cita</h3><button class="modal-close" onclick="cerrarModal('modalDetCita')">✕</button></div>
+    <div class="modal-body" id="detCitaBody"></div>
+    <div class="modal-foot" id="detCitaFoot"></div>
+  </div>
+</div>
+
+<!-- MODAL GASTO -->
+<div class="modal-bg" id="gasto-modal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head"><h3 id="gasto-modal-title">Registrar gasto</h3><button class="modal-close" onclick="cerrarModal('gasto-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Descripción *</label><input id="g-desc" placeholder="Compra de productos..."></div>
+      <div class="frow">
+        <div class="fg"><label>Monto *</label><input id="g-monto" type="number" min="0" placeholder="0"></div>
+        <div class="fg"><label>Fecha</label><input id="g-fecha" type="date"></div>
+        <div class="fg"><label>Categoría</label><select id="g-cat"></select></div>
+        <div class="fg"><label>Método de pago</label><select id="g-metodo"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></select></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('gasto-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarGasto()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL CATEGORIA GASTO -->
+<div class="modal-bg" id="cat-modal" style="display:none">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-head"><h3>Nueva categoría</h3><button class="modal-close" onclick="cerrarModal('cat-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre</label><input id="cat-nombre" placeholder="Insumos, Servicios..."></div>
+      <div class="field"><label>Color</label><input id="cat-color" type="color" value="#ec4899" style="height:38px;cursor:pointer;padding:2px 6px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('cat-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarCategoria()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL PERSONAL -->
+<div class="modal-bg" id="personal-modal" style="display:none">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h3 id="pers-modal-title">Nuevo empleado</h3>
+        <span id="p-status-badge" class="badge badge-green">Activo</span>
+      </div>
+      <button class="modal-close" onclick="cerrarModal('personal-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre completo *</label><input id="p-nombre"></div>
+      <div class="frow">
+        <div class="fg"><label>Email</label><input id="p-email" type="email"></div>
+        <div class="fg"><label>Usuario (login)</label><input id="p-user"></div>
+        <div class="fg"><label id="p-pass-label">Contraseña</label><input id="p-pass" type="password" placeholder="Mín. 6 caracteres"></div>
+        <div class="fg"><label>Rol</label><select id="p-rol"></select></div>
+      </div>
+      <div class="fg"><label style="display:flex;align-items:center;gap:8px"><input id="p-activo" type="checkbox" onchange="actualizarBadgePersonal()"> Activo</label></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('personal-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarPersonal()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL PROVEEDOR -->
+<div class="modal-bg" id="prov-modal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head"><h3 id="prov-modal-title">Nuevo proveedor</h3><button class="modal-close" onclick="cerrarModal('prov-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre *</label><input id="pv-nombre" placeholder="Nombre del proveedor"></div>
+      <div class="frow">
+        <div class="fg"><label>Teléfono</label><input id="pv-tel" placeholder="Número de contacto"></div>
+        <div class="fg"><label>Email</label><input id="pv-email" type="email" placeholder="email@proveedor.com"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('prov-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarProveedor()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL PEDIDO PROVEEDOR -->
+<div class="modal-bg" id="pedido-prov-modal" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head"><h3>Nueva solicitud de pedido</h3><button class="modal-close" onclick="cerrarModal('pedido-prov-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Proveedor *</label><select id="pp-prov"></select></div>
+      <div class="field"><label>Fecha de entrega esperada</label><input id="pp-fecha" type="date"></div>
+      <div class="field"><label>Notas / Lista de productos</label><textarea id="pp-notas" rows="4" placeholder="- 10 unidades producto A&#10;- 5 unidades producto B..."></textarea></div>
+      <div class="field"><label>Total estimado ($)</label><input id="pp-total" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('pedido-prov-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarPedidoProv()">Enviar solicitud</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL ROL -->
+<div class="modal-bg" id="rol-modal" style="display:none">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head"><h3 id="rol-modal-title">Nuevo rol</h3><button class="modal-close" onclick="cerrarModal('rol-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre del rol</label><input id="r-nombre" placeholder="Cajero, Estilista..."></div>
+      <div class="field"><label>Descripción</label><input id="r-desc"></div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:4px;color:var(--text2)">Permisos</div>
+      <div id="permisos-grid" style="max-height:50vh;overflow-y:auto;padding-right:4px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('rol-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarRol()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL ASIGNAR USUARIOS A ROL -->
+<div class="modal-bg" id="role-assign-modal" style="display:none">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head"><h3 id="role-assign-title">Asignar usuarios</h3><button class="modal-close" onclick="cerrarModal('role-assign-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <input id="role-assign-search" placeholder="Buscar usuario..." style="flex:1">
+        <button class="btn btn-outline btn-sm" onclick="seleccionarTodosRol()">Todos</button>
+        <button class="btn btn-outline btn-sm" onclick="limpiarSeleccionRol()">Ninguno</button>
+      </div>
+      <div style="max-height:50vh;overflow:auto" id="role-assign-list"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('role-assign-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarAsignacionRol()">Guardar asignación</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL HORARIO -->
+<div class="modal-bg" id="horario-modal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head"><h3 id="h-modal-title">Agregar turno</h3><button class="modal-close" onclick="cerrarModal('horario-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="h-turno-id">
+      <div class="field"><label>Empleado</label><select id="h-empleado"></select></div>
+      <div class="field"><label>Día de la semana</label>
+        <select id="h-dia"><option value="0">Domingo</option><option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option></select>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Hora entrada</label><input id="h-entrada" type="time" value="08:00"></div>
+        <div class="fg"><label>Hora salida</label><input id="h-salida" type="time" value="17:00"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="h-btn-eliminar" onclick="eliminarHorarioActual()" style="display:none;margin-right:auto">Eliminar</button>
+      <button class="btn" onclick="cerrarModal('horario-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarHorario()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL PAQUETE -->
+<div class="modal-bg" id="paq-modal" style="display:none">
+  <div class="modal" style="width:540px">
+    <div class="modal-head"><h3 id="paq-modal-title">Nuevo paquete</h3><button class="modal-close" onclick="cerrarModal('paq-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow col1"><div class="fg"><label>Nombre *</label><input id="paq-nombre" placeholder="Ej: Pack 5 cortes"></div></div>
+      <div class="frow col1"><div class="fg"><label>Descripción</label><textarea id="paq-desc" rows="2" placeholder="Descripción opcional"></textarea></div></div>
+      <div class="frow">
+        <div class="fg"><label>Precio (COP) *</label><input id="paq-precio" type="number" min="0" step="1000" placeholder="0"></div>
+        <div class="fg"><label>Tipo</label>
+          <select id="paq-tipo">
+            <option value="sesiones">Por sesiones</option>
+            <option value="tiempo">Tiempo ilimitado</option>
+          </select>
+        </div>
+        <div class="fg"><label>Vigencia (días)</label><input id="paq-vigencia" type="number" min="1" value="30" placeholder="30"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin:10px 0 6px">Servicios incluidos</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <select id="paq-svc-sel" style="flex:1"><option value="">— Seleccionar servicio —</option></select>
+        <button class="btn btn-sm btn-acc" onclick="_addPaqServicio()">+ Agregar</button>
+      </div>
+      <div id="paq-svc-list"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('paq-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarPaquete()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL FACTURA REIMPRIMIR -->
+<div id="fact-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);width:360px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:14px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-weight:600;font-size:14px">🧾 Factura</span>
+      <button onclick="cerrarFactModal()" style="border:none;background:none;font-size:18px;cursor:pointer;color:var(--text2)">×</button>
+    </div>
+    <div id="fact-recibo-wrap" style="flex:1;overflow-y:auto;padding:12px 16px"></div>
+    <div style="padding:12px 16px;border-top:0.5px solid var(--border)">
+      <button class="btn btn-primary btn-block" onclick="imprimirFactura()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+<!-- CONFIG IMPRESORA (modal reutilizable) -->
+<div class="modal-bg" id="cfg-imp-modal" style="display:none">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head"><h3>Configuración de impresora</h3><button class="modal-close" onclick="cerrarModal('cfg-imp-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Tipo</label>
+        <select id="imp-tipo" onchange="toggleCamposImpresora()">
+          <option value="termica">Térmica (USB/Red)</option><option value="laser">Láser / Tinta</option><option value="pdf">Solo PDF</option>
+        </select></div>
+      <div class="field"><label>Nombre / Modelo</label><input id="imp-nombre" placeholder="Epson TM-T20III"></div>
+      <div class="field"><label>Ancho de papel</label><select id="imp-ancho"><option value="58">58 mm</option><option value="80" selected>80 mm</option></select></div>
+      <div id="imp-red-section">
+        <div class="field"><label>IP de impresora</label><input id="imp-ip" placeholder="192.168.1.200"></div>
+        <div class="field"><label>Puerto</label><input id="imp-puerto" type="number" placeholder="9100"></div>
+      </div>
+      <div class="field"><label>Copias por ticket</label><input id="imp-copias" type="number" min="1" max="5" placeholder="1"></div>
+      <div class="toggle-row"><div class="toggle-label">Imprimir logo</div><label class="toggle"><input type="checkbox" id="imp-logo" checked><span class="toggle-s"></span></label></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('cfg-imp-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarCfgImpresora()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='/api';
+const urlNegocio=new URLSearchParams(window.location.search).get('n')||'';
+let TOKEN=sessionStorage.getItem('pel_token')||'';
+let USER_NOMBRE=sessionStorage.getItem('pel_nombre')||'';
+let USER_ROL=sessionStorage.getItem('pel_rol')||'';
+let PERMISOS=JSON.parse(sessionStorage.getItem('pel_permisos')||'{}');
+let IS_SUPERADMIN=sessionStorage.getItem('pel_superadmin')==='1';
+
+// Permiso requerido por sección de nav
+const NAV_PERMS={
+  reportes:['reportes'],servicios:['personal'],paquetes:['personal'],
+  inventario:['inventario'],caja:['pos_cobro'],gastos:['gastos'],
+  facturas:['facturacion'],proveedores:['proveedores'],'pedidos-prov':['proveedores'],
+  empleados:['personal'],personal:['personal'],roles:['personal'],
+  horarios:['horarios'],'cfg-factura':['personal'],'cfg-impresora':['personal'],
+  comisiones:['personal'],'cfg-comisiones':['personal'],
+};
+function perm(keys){return IS_SUPERADMIN||keys.some(k=>PERMISOS[k]);}
+
+function aplicarPermisos(){
+  if(IS_SUPERADMIN)return;
+  // Ocultar items de nav sin permiso
+  document.querySelectorAll('.nav-item[data-nav]').forEach(el=>{
+    const req=NAV_PERMS[el.dataset.nav];
+    if(req)el.style.display=perm(req)?'':'none';
+  });
+  // Ocultar comisiones toggle si no tiene permiso
+  if(!perm(['personal'])){
+    const t=document.getElementById('nav-toggle-comisiones');
+    const s=document.getElementById('subnav-comisiones');
+    if(t)t.style.display='none';
+    if(s)s.style.display='none';
+  }
+  // Ocultar grupos vacíos y sus encabezados
+  document.querySelectorAll('.nav-group').forEach(g=>{
+    const visible=[...g.querySelectorAll('.nav-item,.nav-subnav')].some(el=>el.style.display!=='none');
+    const prev=g.previousElementSibling;
+    if(!visible){g.style.display='none';if(prev&&prev.classList.contains('nav-sep'))prev.style.display='none';}
+  });
+}
+// Prellenar y ocultar campo negocio si viene en URL + mostrar nombre del negocio
+(function(){
+  if(urlNegocio){
+    fetch(`/api/negocio-pub/${urlNegocio}`)
+      .then(r=>r.ok?r.json():null)
+      .then(info=>{
+        if(!info||!info.nombre)return;
+        const el=document.getElementById('login-neg-nombre');
+        if(el){el.textContent=info.nombre;el.style.display='block';}
+        document.title=`${info.nombre} — Admin`;
+      })
+      .catch(()=>{});
+  }
+})();
+let _citaId=null,_editCitaId=null,_svcsCat=[],_empsCat=[],_alertedCitas=new Set(),_alertInterval=null,_empsConHorario=new Set();
+
+const fmt=n=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n||0);
+// Normaliza "YYYY-MM-DD HH:MM:SS" (MySQL) o ISO string a objeto Date local
+const _parseDate=d=>{if(!d)return null;const s=String(d).replace(' ','T').replace('Z','');return new Date(s);};
+const fmtDate=d=>{const dt=_parseDate(d);return dt?dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';};
+const fmtDT=d=>{const dt=_parseDate(d);return dt?dt.toLocaleString('es-CO',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';};
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function showToast(msg,type='ok'){const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;document.getElementById('toast').appendChild(t);setTimeout(()=>t.remove(),3500);}
+async function apiFetch(path,opts={}){
+  const r=await fetch(path,{headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN,...(opts.headers||{})},...opts});
+  if(r.status===401){salir();return null;}if(!r.ok){let msg='Error '+r.status;try{const j=await r.json();msg=j.message||msg;}catch{}throw new Error(msg);}
+  if(r.status===204)return null;return r.json();
+}
+async function doLogin(){
+  const negocio_id=urlNegocio;
+  const errEl=document.getElementById('login-error');
+  if(!negocio_id){errEl.textContent='Debes acceder mediante la URL de tu negocio (ej: /peluqueria-admin.html?n=ID)';errEl.style.display='block';return;}
+  try{
+    const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login:document.getElementById('l-login').value.trim(),password:document.getElementById('l-pass').value,negocio_id})});
+    if(!r.ok)throw new Error();const d=await r.json();TOKEN=d.token;USER_NOMBRE=d.user?.nombre||'';
+    USER_ROL=d.user?.rol_nombre||(d.user?.es_superadmin?'Super Admin':'');
+    PERMISOS=typeof d.user?.permisos==='string'?JSON.parse(d.user.permisos):(d.user?.permisos||{});
+    IS_SUPERADMIN=d.user?.es_superadmin||false;
+    sessionStorage.setItem('pel_token',TOKEN);sessionStorage.setItem('pel_nombre',USER_NOMBRE);
+    sessionStorage.setItem('pel_rol',USER_ROL);
+    sessionStorage.setItem('pel_permisos',JSON.stringify(PERMISOS));
+    sessionStorage.setItem('pel_superadmin',IS_SUPERADMIN?'1':'0');
+    iniciar();
+  }catch{errEl.textContent='Credenciales inválidas';errEl.style.display='block';}
+}
+function salir(){TOKEN='';sessionStorage.removeItem('pel_token');clearInterval(_alertInterval);_alertInterval=null;_alertedCitas.clear();document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';}
+async function checkContrato(negocioId){
+  if(IS_SUPERADMIN) return;
+  try{
+    const r=await fetch(`/api/negocio-pub/${negocioId}`);
+    if(!r.ok) return;
+    const d=await r.json();
+    if(!d.contrato){
+      document.getElementById('contrato-block-msg').innerHTML='No tienes un contrato activo.<br>Contacta al administrador del sistema.';
+      document.getElementById('contrato-block').style.display='flex';
+      return;
+    }
+    const {estado,dias_para_vencer}=d.contrato;
+    if(estado==='vencido'||estado==='cancelado'||estado==='pendiente'){
+      const msgs={vencido:'Tu contrato ha vencido.<br>Contacta al administrador del sistema.',cancelado:'Tu contrato fue cancelado.<br>Contacta al administrador del sistema.',pendiente:'Tu contrato aún no ha iniciado.<br>Contacta al administrador del sistema.'};
+      document.getElementById('contrato-block-msg').innerHTML=msgs[estado]||msgs.vencido;
+      document.getElementById('contrato-block').style.display='flex';
+      return;
+    }
+    if(estado==='activo'&&dias_para_vencer!==null&&dias_para_vencer<=5){
+      const dias=dias_para_vencer;
+      document.getElementById('contrato-alert-msg').textContent=dias<=0
+        ?' Tu contrato venció hoy. Renuévalo para continuar usando el sistema.'
+        :` Tu contrato vence en ${dias} día${dias===1?'':'s'}. Contáctanos para renovarlo.`;
+      document.getElementById('contrato-alert').style.display='flex';
+    }
+  }catch(_){}
+}
+
+async function iniciar(){
+  document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';
+  document.getElementById('sbNombre').textContent=USER_NOMBRE;
+  const rolEl=document.getElementById('sbRol');if(rolEl)rolEl.textContent=USER_ROL;
+  if(localStorage.getItem('pel_sb')==='0') document.querySelector('.sidebar').classList.add('collapsed');
+  aplicarPermisos();
+  const nid=sessionStorage.getItem('pel_negocio_id')||urlNegocio;
+  if(nid) checkContrato(nid);
+  await cargarSvcs();nav('dashboard');iniciarAlertas();
+}
+async function cargarSvcs(){
+  try{
+    _svcsCat=await apiFetch(`${API}/peluqueria/servicios?soloActivos=true`)||[];
+    const sel=document.getElementById('cSvcId');
+    sel.innerHTML='<option value="">— seleccionar —</option>'+_svcsCat.map(s=>`<option value="${s.id}" data-precio="${s.precio}" data-dur="${s.duracion_min||30}">${esc(s.nombre)} (${fmt(s.precio)})</option>`).join('');
+  }catch{}
+  try{
+    const [emps, hors]=await Promise.all([
+      apiFetch(`${API}/peluqueria/empleados?soloActivos=true`),
+      apiFetch(`${API}/admin/horarios`).catch(()=>[]),
+    ]);
+    _empsCat=emps||[];
+    _empsConHorario=new Set((hors||[]).map(h=>h.empleado_pel_id).filter(Boolean));
+    const sel=document.getElementById('cEmpleado');
+    sel.innerHTML='<option value="">— Sin asignar —</option>'+_empsCat.map(e=>`<option value="${esc(e.id)}" data-nombre="${esc(e.nombre)}">${esc(e.nombre)}${e.especialidad?` · ${esc(e.especialidad)}`:''}</option>`).join('');
+  }catch{}
+}
+
+let _pg='dashboard';
+const titles={dashboard:'Dashboard',agenda:'Agenda',clientes:'Clientes',servicios:'Catálogo de servicios',empleados:'Empleados',comisiones:'Comisiones','cfg-comisiones':'Configuración de comisiones',paquetes:'Paquetes / Membresías',inventario:'Inventario',caja:'Caja del día',gastos:'Gastos',reportes:'Reportes',facturas:'Facturas',proveedores:'Proveedores','pedidos-prov':'Pedidos a proveedores',personal:'Usuarios',roles:'Roles y permisos',horarios:'Horarios',asistencia:'Asistencia','cfg-factura':'Config. factura','cfg-impresora':'Config. impresora'};
+function nav(p){
+  // Verificar permiso antes de navegar
+  const req=NAV_PERMS[p];
+  if(req&&!perm(req)){showToast('Sin permiso para acceder a esta sección','err');return;}
+  _pg=p;
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`.nav-item[data-nav="${p}"]`)?.classList.add('active');
+  // Si es sub-item de comisiones, abrir el submenú
+  if(p==='comisiones'||p==='cfg-comisiones'){
+    const sub=document.getElementById('subnav-comisiones');
+    if(sub&&!sub.classList.contains('open')){sub.classList.add('open');document.getElementById('subarr-comisiones').style.transform='';}
+  }
+  document.getElementById('topbarTitle').textContent=titles[p]||'';
+  ({dashboard:renderDashboard,agenda:renderAgenda,clientes:renderClientes,servicios:renderServicios,empleados:renderEmpleados,comisiones:renderComisiones,'cfg-comisiones':renderCfgComisiones,paquetes:renderPaquetes,inventario:renderInventario,caja:renderCaja,gastos:renderGastos,reportes:renderReportes,facturas:renderFacturas,proveedores:renderProveedores,'pedidos-prov':renderPedidosProv,personal:renderPersonal,roles:renderRoles,horarios:renderHorarios,asistencia:renderAsistencia,'cfg-factura':renderCfgFactura,'cfg-impresora':renderCfgImpresora})[p]?.();
+}
+function toggleSubNav(id){
+  const sub=document.getElementById(id);if(!sub)return;
+  const open=sub.classList.toggle('open');
+  const arr=document.getElementById(id.replace('subnav-','subarr-'));
+  if(arr)arr.style.transform=open?'':'rotate(-90deg)';
+}
+function refreshPage(){nav(_pg);}
+function toggleSidebar(){
+  const sb=document.querySelector('.sidebar');
+  sb.classList.toggle('collapsed');
+  localStorage.setItem('pel_sb',sb.classList.contains('collapsed')?'0':'1');
+}
+function toggleGrupo(id){
+  const grp=document.getElementById(id);if(!grp)return;
+  const key=id.replace('grp-','arr-');
+  const arr=document.getElementById(key);
+  const collapsed=grp.classList.toggle('collapsed');
+  if(arr)arr.style.transform=collapsed?'rotate(-90deg)':'';
+  localStorage.setItem('pel_'+id,collapsed?'0':'1');
+}
+(function(){
+  ['grp-principal','grp-finanzas','grp-personal','grp-cfg'].forEach(id=>{
+    if(localStorage.getItem('pel_'+id)==='0'){
+      const grp=document.getElementById(id);if(grp)grp.classList.add('collapsed');
+      const arr=document.getElementById(id.replace('grp-','arr-'));if(arr)arr.style.transform='rotate(-90deg)';
+    }
+  });
+})();
+function cerrarModal(id){document.getElementById(id).style.display='none';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['modalCita','modalDetCita','svc-modal','emp-modal','inv-modal','inv-ajuste-modal','gasto-modal','cat-modal','personal-modal','prov-modal','pedido-prov-modal','rol-modal','role-assign-modal','horario-modal','cfg-imp-modal','paq-modal'].forEach(id=>cerrarModal(id));});
+
+async function renderDashboard(){
+  document.getElementById('content').innerHTML='<div style="color:var(--text2)">Cargando...</div>';
+  try{const d=await apiFetch(`${API}/peluqueria/dashboard`);if(!d)return;
+  document.getElementById('content').innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">Citas hoy</div><div class="value" style="color:var(--acc)">${d.citasHoy||0}</div></div>
+      <div class="stat-card"><div class="label">Completadas</div><div class="value" style="color:var(--green)">${d.completadasHoy||0}</div></div>
+      <div class="stat-card"><div class="label">Pendientes</div><div class="value" style="color:var(--yellow)">${d.pendientesHoy||0}</div></div>
+      <div class="stat-card"><div class="label">Canceladas hoy</div><div class="value" style="color:var(--red)">${d.canceladasHoy||0}</div></div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;font-weight:700">Próximas citas</div>
+      ${(d.proximasCitas||[]).length===0?'<p style="font-size:12px;color:var(--text3)">No hay citas próximas.</p>':
+        (d.proximasCitas||[]).map(c=>`<div onclick="verCita('${c.id}')" style="cursor:pointer;display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><b>${esc(c.clienteNombre)}</b> <span style="font-size:12px;color:var(--text2)">· ${esc(c.servicioNombre||'')}</span>
+          ${c.empleadoNombre?`<span style="font-size:11px;color:var(--text3)"> · ${esc(c.empleadoNombre)}</span>`:''}</div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="hora-badge">${fmtDT(c.fechaHora)}</span><span class="chip chip-${c.estado}">${esc(c.estado)}</span></div>
+        </div>`).join('')}
+    </div>
+    ${(d.citasCanceladas||[]).length>0?`
+    <div style="background:var(--bg2);border:1px solid #f8514933;border-radius:var(--r);padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;text-transform:uppercase;color:#f85149;margin-bottom:10px;font-weight:700">Canceladas hoy (${d.citasCanceladas.length})</div>
+      ${d.citasCanceladas.map(c=>`<div onclick="verCita('${c.id}')" style="cursor:pointer;display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f8514922;opacity:.8">
+        <div><b>${esc(c.clienteNombre)}</b> <span style="font-size:12px;color:var(--text2)">· ${esc(c.servicioNombre||'')}</span>
+        ${c.empleadoNombre?`<span style="font-size:11px;color:var(--text3)"> · ${esc(c.empleadoNombre)}</span>`:''}</div>
+        <span class="hora-badge" style="align-self:center">${fmtDT(c.fechaHora)}</span>
+      </div>`).join('')}
+    </div>`:''}
+    ${(d.invAlertas||[]).length>0?`
+    <div style="background:var(--bg2);border:1px solid #e3b34133;border-radius:var(--r);padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:12px;text-transform:uppercase;color:var(--yellow);font-weight:700">Alerta de inventario (${d.invAlertas.length})</div>
+        <button class="btn btn-sm" onclick="nav('inventario')" style="font-size:11px">Ver inventario</button>
+      </div>
+      ${d.invAlertas.map(i=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #e3b34122">
+          <div>
+            <span style="font-weight:600;font-size:13px">${esc(i.nombre)}</span>
+            ${i.categoria?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${esc(i.categoria)}</span>`:''}
+          </div>
+          <span style="font-size:12px;font-weight:700;color:${i.agotado?'var(--red)':'var(--yellow)'};white-space:nowrap">
+            ${i.agotado?'AGOTADO':`${parseFloat(i.stock)} ${esc(i.unidad||'und')} (mín: ${parseFloat(i.stock_min)})`}
+          </span>
+        </div>`).join('')}
+    </div>`:''}
+    `;}
+  catch(e){document.getElementById('content').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+async function renderAgenda(){
+  const _hoyLocal=()=>{const d=new Date();const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;};
+  const hoy=document.getElementById('agendaFecha')?.value||_hoyLocal();
+  document.getElementById('content').innerHTML=`
+    <div class="search-bar">
+      <input id="agendaFecha" type="date" value="${hoy}" onchange="renderAgenda()">
+      <button class="btn btn-acc btn-sm" onclick="abrirNuevaCita()">+ Nueva cita</button>
+    </div><div id="agendaList">Cargando...</div>`;
+  try{const d=await apiFetch(`${API}/peluqueria/citas?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59&tamPagina=50`);
+  const citas=(d?.items||[]).filter(c=>c.estado!=='Cancelada'&&c.estado!=='NoAsistio');
+  document.getElementById('agendaList').innerHTML=citas.length===0?'<div style="color:var(--text3);text-align:center;padding:40px">No hay citas para este día.</div>':
+    citas.sort((a,b)=>new Date(a.fechaHora)-new Date(b.fechaHora)).map(c=>`
+      <div class="cita-card ${c.estado}" onclick="verCita('${c.id}')">
+        <div>
+          <div style="font-size:15px;font-weight:700">${esc(c.clienteNombre)}</div>
+          <div style="font-size:13px;color:var(--acc);margin-top:2px">${(c.servicios&&c.servicios.length)?c.servicios.map(s=>esc(s.nombre)).join(' · '):esc(c.servicioNombre||'Sin servicio')}</div>
+          ${c.empleadoNombre?`<div style="font-size:12px;color:var(--text2)">✂️ ${esc(c.empleadoNombre)}</div>`:`<div style="font-size:11px;font-weight:700;color:#d97706;margin-top:2px">⚠️ Sin empleado asignado</div>`}
+          ${c.notas?`<div style="font-size:12px;color:var(--text3);margin-top:4px">${esc(c.notas)}</div>`:''}
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <span class="hora-badge">${fmtDT(c.fechaHora)}</span>
+          <span class="chip chip-${c.estado}">${esc(c.estado)}</span>
+          <span style="font-weight:700;font-size:14px">${fmt(c.precio||c.montoTotal||0)}</span>
+        </div>
+      </div>`).join('');}
+  catch(e){document.getElementById('agendaList').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+async function renderClientes(pag=1){
+  const busq=document.getElementById('cBusq')?.value||'';
+  document.getElementById('content').innerHTML=`
+    <div class="search-bar"><input id="cBusq" placeholder="Buscar cliente..." value="${esc(busq)}" onkeydown="if(event.key==='Enter')renderClientes(1)">
+    <button class="btn btn-acc btn-sm" onclick="renderClientes(1)">Buscar</button></div>
+    <div id="cList">Cargando...</div>`;
+  let url=`${API}/peluqueria/clientes?pagina=${pag}&tamPagina=20`;
+  if(busq)url+=`&busqueda=${encodeURIComponent(busq)}`;
+  try{const d=await apiFetch(url);const cl=d?.items||[];
+  document.getElementById('cList').innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>Cliente</th><th>Teléfono</th><th>Última visita</th><th>Total visitas</th><th>Gasto total</th></tr></thead>
+    <tbody>${cl.map(c=>`<tr>
+      <td style="font-weight:600">${esc(c.nombre)}</td>
+      <td style="font-size:12px;color:var(--text2)">${esc(c.telefono||'—')}</td>
+      <td style="font-size:12px">${fmtDate(c.ultimaVisita)}</td>
+      <td style="color:var(--acc)">${c.totalVisitas||0}</td>
+      <td style="font-weight:700">${fmt(c.gastoTotal||0)}</td>
+    </tr>`).join('')}</tbody></table></div>
+    <div class="pagination"><button class="btn btn-sm" onclick="renderClientes(${pag-1})" ${pag<=1?'disabled':''}>‹</button>
+    <span class="pag-info">Pág ${pag} · ${d?.totalCount||0}</span>
+    <button class="btn btn-sm" onclick="renderClientes(${pag+1})" ${!d?.hasNextPage?'disabled':''}>›</button></div>`;}
+  catch(e){document.getElementById('cList').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+async function renderServicios(){
+  document.getElementById('content').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:13px;color:var(--text2)" id="svcs-count"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="abrirModalCategorias()" style="font-size:12px;padding:6px 12px">🏷️ Categorías</button>
+        <button class="btn-acc" onclick="abrirModalServicio()">+ Agregar servicio</button>
+      </div>
+    </div>
+    <div id="svcs-list"><div style="color:var(--text2)">Cargando...</div></div>`;
+  await recargarServicios();
+}
+
+async function recargarServicios(){
+  try{
+    const svcs=await apiFetch(`${API}/peluqueria/servicios?soloActivos=false`)||[];
+    _svcsData=svcs;
+    document.getElementById('svcs-count').textContent=`${svcs.length} servicio${svcs.length!==1?'s':''}`;
+    document.getElementById('svcs-list').innerHTML=svcs.length?`
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Duración</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${svcs.map(s=>`<tr>
+          <td style="font-weight:600">${esc(s.nombre)}</td>
+          <td style="font-size:12px;color:var(--text2)">${esc(s.descripcion||'—')}</td>
+          <td style="font-weight:700">${fmt(s.precio)}</td>
+          <td style="color:var(--text2)">${s.duracion_min||0} min</td>
+          <td><span style="font-size:12px;font-weight:600;color:${s.activo?'var(--green)':'var(--text3)'}">${s.activo?'Activo':'Inactivo'}</span></td>
+          <td style="display:flex;gap:6px;white-space:nowrap">
+            <button class="btn-sm-outline" onclick="abrirModalServicioById('${s.id}')">Editar</button>
+            <button class="btn-sm-outline" style="color:${s.activo?'var(--red)':'var(--green)'}" onclick="toggleServicio('${s.id}',${s.activo?1:0})">${s.activo?'Desactivar':'Activar'}</button>
+          </td>
+        </tr>`).join('')}</tbody>
+      </table></div>`
+    :'<div style="color:var(--text2);padding:24px;text-align:center">Sin servicios registrados</div>';
+  }catch(e){document.getElementById('svcs-list').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+let _editSvcId=null,_svcsData=[];
+async function abrirModalServicioById(id){
+  const s=_svcsData.find(x=>x.id==id);if(!s)return;
+  _editSvcId=s.id;
+  document.getElementById('svc-modal-title').textContent='Editar servicio';
+  document.getElementById('svc-nombre').value=s.nombre||'';
+  document.getElementById('svc-desc').value=s.descripcion||'';
+  document.getElementById('svc-precio').value=s.precio||0;
+  document.getElementById('svc-dur').value=s.duracion_min||30;
+  await _cargarCatsSvc();
+  document.getElementById('svc-cat').value=s.categoria_id||'';
+  document.getElementById('svc-modal').style.display='flex';
+}
+async function abrirModalServicio(){
+  _editSvcId=null;
+  document.getElementById('svc-modal-title').textContent='Nuevo servicio';
+  ['svc-nombre','svc-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('svc-precio').value=0;
+  document.getElementById('svc-dur').value=30;
+  await _cargarCatsSvc();
+  document.getElementById('svc-modal').style.display='flex';
+}
+async function _cargarCatsSvc(){
+  try{
+    const cats=await apiFetch(`${API}/peluqueria/categorias-servicio`)||[];
+    const sel=document.getElementById('svc-cat');
+    sel.innerHTML='<option value="">— Sin categoría —</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  }catch{}
+}
+async function abrirModalCategorias(){
+  document.getElementById('cat-nueva-nombre').value='';
+  document.getElementById('cat-modal').style.display='flex';
+  await _renderCatList();
+}
+async function _renderCatList(){
+  const listEl=document.getElementById('cat-list');
+  listEl.innerHTML='<div style="color:var(--text2);font-size:13px">Cargando...</div>';
+  try{
+    const cats=await apiFetch(`${API}/peluqueria/categorias-servicio`)||[];
+    if(!cats.length){listEl.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px">Sin categorías. Agrega una arriba.</div>';return;}
+    listEl.innerHTML=cats.map(c=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-bottom:1px solid var(--border);gap:8px" id="cat-row-${c.id}">
+        <span style="font-size:13px;flex:1" id="cat-text-${c.id}">${esc(c.nombre)}</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm-outline" onclick="editarCategoria('${c.id}','${esc(c.nombre).replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 8px">Renombrar</button>
+          <button class="btn-sm-outline" style="color:var(--red);font-size:11px;padding:3px 8px" onclick="eliminarCategoria('${c.id}')">Eliminar</button>
+        </div>
+      </div>`).join('');
+  }catch(e){listEl.innerHTML=`<div style="color:var(--red);font-size:13px">${esc(e.message)}</div>`;}
+}
+async function crearCategoria(){
+  const nombre=document.getElementById('cat-nueva-nombre').value.trim();
+  if(!nombre){showToast('Escribe un nombre','err');return;}
+  try{
+    await apiFetch(`${API}/peluqueria/categorias-servicio`,{method:'POST',body:JSON.stringify({nombre})});
+    document.getElementById('cat-nueva-nombre').value='';
+    showToast('Categoría creada ✓');
+    await _renderCatList();
+  }catch(e){showToast(e.message,'err');}
+}
+async function editarCategoria(id,nombreActual){
+  const nuevoNombre=prompt('Nuevo nombre para la categoría:',nombreActual);
+  if(!nuevoNombre||nuevoNombre.trim()===nombreActual)return;
+  try{
+    await apiFetch(`${API}/peluqueria/categorias-servicio/${id}`,{method:'PUT',body:JSON.stringify({nombre:nuevoNombre.trim()})});
+    showToast('Categoría actualizada ✓');
+    await _renderCatList();
+  }catch(e){showToast(e.message,'err');}
+}
+async function eliminarCategoria(id){
+  if(!confirm('¿Eliminar esta categoría? Los servicios que la usen quedarán sin categoría.'))return;
+  try{
+    await apiFetch(`${API}/peluqueria/categorias-servicio/${id}`,{method:'DELETE'});
+    showToast('Categoría eliminada');
+    await _renderCatList();
+  }catch(e){showToast(e.message,'err');}
+}
+async function guardarServicio(){
+  const nombre=document.getElementById('svc-nombre').value.trim();
+  const descripcion=document.getElementById('svc-desc').value.trim();
+  const precio=parseFloat(document.getElementById('svc-precio').value)||0;
+  const duracionMinutos=parseInt(document.getElementById('svc-dur').value)||30;
+  const categoriaId=document.getElementById('svc-cat').value||null;
+  if(!nombre){showToast('El nombre es obligatorio','err');return;}
+  try{
+    if(_editSvcId){
+      await apiFetch(`${API}/peluqueria/servicios/${_editSvcId}`,{method:'PUT',body:JSON.stringify({nombre,descripcion,precio,duracionMinutos,categoriaId})});
+      showToast('Servicio actualizado ✓');
+    }else{
+      await apiFetch(`${API}/peluqueria/servicios`,{method:'POST',body:JSON.stringify({nombre,descripcion,precio,duracionMinutos,categoriaId})});
+      showToast('Servicio creado ✓');
+    }
+    cerrarModal('svc-modal');
+    await recargarServicios();
+    await cargarSvcs();
+  }catch(e){showToast(e.message,'err');}
+}
+async function toggleServicio(id,activo){
+  try{
+    await apiFetch(`${API}/peluqueria/servicios/${id}/toggle`,{method:'PATCH'});
+    showToast(activo?'Servicio desactivado':'Servicio activado ✓');
+    await recargarServicios();
+    await cargarSvcs();
+  }catch(e){showToast(e.message,'err');}
+}
+
+async function renderEmpleados(){
+  const portalUrl=urlNegocio?`${location.origin}/empleado-portal.html?n=${urlNegocio}`:'';
+  document.getElementById('content').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:13px;color:var(--text2)" id="emp-count"></span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        ${portalUrl?`<button class="btn-outline btn-sm" onclick="copiarPortalUrl()" title="Copiar enlace del portal de empleados">🔗 Copiar enlace del portal</button>`:''}
+        <button class="btn-acc" onclick="abrirModalEmpleado()">+ Agregar empleado</button>
+      </div>
+    </div>
+    ${portalUrl?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text3);flex-shrink:0">🔗 Portal empleados:</span>
+      <code style="font-size:11px;color:var(--acc);word-break:break-all;flex:1">${portalUrl}</code>
+      <button class="btn-outline btn-sm" onclick="copiarPortalUrl()" style="flex-shrink:0">Copiar</button>
+    </div>`:''}
+    <div id="emp-list"><div style="color:var(--text2)">Cargando...</div></div>`;
+  await recargarEmpleados();
+}
+function copiarPortalUrl(){
+  const url=`${location.origin}/empleado-portal.html?n=${urlNegocio}`;
+  navigator.clipboard.writeText(url).then(()=>{
+    showToast('Enlace copiado al portapapeles','ok');
+  }).catch(()=>{
+    prompt('Copia este enlace:',url);
+  });
+}
+
+async function recargarEmpleados(){
+  try{
+    const emps=await apiFetch(`${API}/peluqueria/empleados?soloActivos=false`)||[];
+    _empsData=emps;_empsCat=emps.filter(e=>e.activo);
+    document.getElementById('emp-count').textContent=`${emps.length} empleado${emps.length!==1?'s':''}`;
+    const comLabel=e=>e.tipo_comision==='porcentaje'?`${e.pct_comision}%`:e.tipo_comision==='fijo'?fmt(e.monto_comision):'—';
+    document.getElementById('emp-list').innerHTML=emps.length?`
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Cédula</th><th>Nombre</th><th>Cargo</th><th>Especialidad</th><th>Teléfono</th><th>Comisión</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${emps.map(e=>`<tr>
+          <td style="font-size:12px;color:var(--text2);font-family:monospace">${esc(e.cedula||'—')}</td>
+          <td style="font-weight:600">${esc(e.nombre)}${e.apellido?' '+esc(e.apellido):''}</td>
+          <td style="font-size:12px;color:var(--text2)">${esc(e.cargo||'—')}</td>
+          <td style="font-size:12px;color:var(--text2)">${esc(e.especialidad||'—')}</td>
+          <td style="font-size:12px;color:var(--text2)">${esc(e.telefono||'—')}</td>
+          <td style="font-size:12px">${comLabel(e)}</td>
+          <td><span style="font-size:12px;font-weight:600;color:${e.activo?'var(--green)':'var(--text3)'}">${e.activo?'Activo':'Inactivo'}</span></td>
+          <td style="display:flex;gap:6px;white-space:nowrap">
+            <button class="btn-sm-outline" onclick="abrirModalEmpleadoById('${e.id}')">Editar</button>
+            <button class="btn-sm-outline" onclick="window.open('empleado-portal.html?id=${e.id}','_blank')" title="Ver portal del empleado">🔗 Portal</button>
+            <button class="btn-sm-outline" style="color:${e.activo?'var(--red)':'var(--green)'}" onclick="toggleEmpleado('${e.id}',${e.activo?1:0})">${e.activo?'Desactivar':'Activar'}</button>
+          </td>
+        </tr>`).join('')}</tbody>
+      </table></div>`
+    :'<div style="color:var(--text2);padding:24px;text-align:center">Sin empleados registrados</div>';
+  }catch(e){document.getElementById('emp-list').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+let _editEmpId=null,_empsData=[];
+function toggleCamposComision(){
+  const tipo=_gel('emp-tipo-comision')?.value;
+  if(_gel('emp-pct-wrap')) _gel('emp-pct-wrap').style.display=tipo==='porcentaje'?'flex':'none';
+  if(_gel('emp-monto-wrap')) _gel('emp-monto-wrap').style.display=tipo==='fijo'?'flex':'none';
+}
+function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)return;
+  _editEmpId=e.id;
+  document.getElementById('emp-modal-title').textContent='Editar empleado';
+  document.getElementById('emp-nombre').value=e.nombre||'';
+  document.getElementById('emp-apellido').value=e.apellido||'';
+  document.getElementById('emp-cedula').value=e.cedula||'';
+  document.getElementById('emp-cargo').value=e.cargo||'';
+  document.getElementById('emp-especialidad').value=e.especialidad||'';
+  document.getElementById('emp-tel').value=e.telefono||'';
+  document.getElementById('emp-email').value=e.email||'';
+  document.getElementById('emp-sueldo').value=e.sueldo_base||'';
+  document.getElementById('emp-tarifa').value=e.tarifa_hora||'';
+  document.getElementById('emp-modal').style.display='flex';
+}
+function abrirModalEmpleado(){
+  _editEmpId=null;
+  document.getElementById('emp-modal-title').textContent='Nuevo empleado';
+  ['emp-nombre','emp-apellido','emp-cedula','emp-cargo','emp-especialidad','emp-tel','emp-email','emp-sueldo','emp-tarifa'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('emp-modal').style.display='flex';
+}
+async function guardarEmpleado(){
+  const nombre=document.getElementById('emp-nombre').value.trim();
+  if(!nombre){showToast('El nombre es obligatorio','err');return;}
+  const body={
+    nombre,
+    apellido:document.getElementById('emp-apellido').value.trim()||null,
+    cedula:document.getElementById('emp-cedula').value.trim()||null,
+    cargo:document.getElementById('emp-cargo').value.trim()||null,
+    especialidad:document.getElementById('emp-especialidad').value.trim()||null,
+    telefono:document.getElementById('emp-tel').value.trim()||null,
+    email:document.getElementById('emp-email').value.trim()||null,
+    sueldoBase:parseFloat(document.getElementById('emp-sueldo').value)||null,
+    tarifaHora:parseFloat(document.getElementById('emp-tarifa').value)||null,
+  };
+  try{
+    if(_editEmpId){
+      await apiFetch(`${API}/peluqueria/empleados/${_editEmpId}`,{method:'PUT',body:JSON.stringify(body)});
+      showToast('Empleado actualizado ✓');
+    }else{
+      await apiFetch(`${API}/peluqueria/empleados`,{method:'POST',body:JSON.stringify(body)});
+      showToast('Empleado creado ✓');
+    }
+    cerrarModal('emp-modal');
+    await recargarEmpleados();
+    await cargarSvcs();
+  }catch(e){showToast(e.message,'err');}
+}
+async function toggleEmpleado(id,activo){
+  try{
+    await apiFetch(`${API}/peluqueria/empleados/${id}/toggle`,{method:'PATCH'});
+    showToast(activo?'Empleado desactivado':'Empleado activado ✓');
+    await recargarEmpleados();
+    await cargarSvcs();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ══════════════════ COMISIONES ══════════════════
+async function renderComisiones(){
+  const hoy=new Date().toISOString().split('T')[0];
+  const primerDia=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0];
+  document.getElementById('content').innerHTML=`
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <input type="date" id="com-desde" value="${primerDia}" onchange="cargarComisiones()">
+      <input type="date" id="com-hasta" value="${hoy}" onchange="cargarComisiones()">
+      <select id="com-emp" onchange="cargarComisiones()" style="min-width:160px">
+        <option value="">Todos los empleados</option>
+        ${_empsCat.map(e=>`<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('')}
+      </select>
+      <select id="com-estado" onchange="cargarComisiones()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="pagada">Pagada</option>
+      </select>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="recalcularComisiones()" style="margin-bottom:10px">🔄 Recalcular pendientes</button>
+    <div id="com-resumen" style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap"></div>
+    <div id="com-list"><div style="color:var(--text2)">Cargando...</div></div>`;
+  await cargarComisiones();
+}
+
+async function renderCfgComisiones(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+        <h3>Configuración de comisiones por empleado</h3>
+        <button class="btn btn-outline btn-sm" onclick="cargarCfgComisiones()">↻ Actualizar</button>
+      </div>
+      <p style="font-size:12px;color:var(--text2);margin:0 0 12px">Define el tipo y valor de comisión para cada empleado. Los cambios aplican a ventas futuras; usa "Recalcular" en Ver comisiones para actualizar registros pasados.</p>
+      <div class="table-wrap">
+        <table><thead><tr><th>Empleado</th><th>Tipo</th><th>Valor</th><th></th></tr></thead>
+        <tbody id="com-cfg-tbody"></tbody></table>
+      </div>
+    </div>`;
+  await cargarCfgComisiones();
+}
+
+async function recalcularComisiones(){
+  const empId=_gel('com-emp')?.value||'';
+  if(!empId){showToast('Selecciona un empleado para recalcular','err');return;}
+  const desde=_gel('com-desde')?.value||'';
+  const hasta=_gel('com-hasta')?.value||'';
+  try{
+    const r=await apiFetch(`${API}/peluqueria/comisiones/recalcular`,{method:'POST',body:JSON.stringify({empleadoId:empId,desde,hasta})});
+    showToast(`${r.actualizadas} comisiones actualizadas ✓`);
+    cargarComisiones();
+  }catch(e){showToast(e.message,'err');}
+}
+async function cargarCfgComisiones(){
+  try{
+    const emps=await apiFetch(`${API}/peluqueria/empleados?soloActivos=true`)||[];
+    const tb=_gel('com-cfg-tbody');if(!tb)return;
+    tb.innerHTML=emps.map(e=>`
+      <tr id="com-cfg-row-${e.id}">
+        <td><b>${esc(e.nombre+(e.apellido?' '+e.apellido:''))}</b></td>
+        <td>
+          <select onchange="toggleComCfgRow('${e.id}',this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+            <option value="ninguna" ${(e.tipo_comision||'ninguna')==='ninguna'?'selected':''}>Sin comisión</option>
+            <option value="porcentaje" ${e.tipo_comision==='porcentaje'?'selected':''}>% de venta</option>
+            <option value="fijo" ${e.tipo_comision==='fijo'?'selected':''}>Monto fijo</option>
+          </select>
+        </td>
+        <td>
+          <div id="com-cfg-pct-${e.id}" style="display:${e.tipo_comision==='porcentaje'?'flex':'none'};align-items:center;gap:4px">
+            <input type="number" min="0" max="100" step="0.5" value="${e.pct_comision||0}" style="width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px"> %
+          </div>
+          <div id="com-cfg-fijo-${e.id}" style="display:${e.tipo_comision==='fijo'?'flex':'none'};align-items:center;gap:4px">
+            $ <input type="number" min="0" step="1000" value="${e.monto_comision||0}" style="width:100px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+          </div>
+          <span id="com-cfg-none-${e.id}" style="display:${(!e.tipo_comision||e.tipo_comision==='ninguna')?'inline':'none'};color:var(--text3);font-size:12px">—</span>
+        </td>
+        <td><button class="btn btn-acc btn-sm" onclick="guardarCfgComision('${e.id}',this)">Guardar</button></td>
+      </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text2)">Sin empleados activos</td></tr>';
+  }catch(e){showToast(e.message,'err');}
+}
+function toggleComCfgRow(empId, tipo){
+  _gel(`com-cfg-pct-${empId}`).style.display=tipo==='porcentaje'?'flex':'none';
+  _gel(`com-cfg-fijo-${empId}`).style.display=tipo==='fijo'?'flex':'none';
+  _gel(`com-cfg-none-${empId}`).style.display=tipo==='ninguna'?'inline':'none';
+}
+async function guardarCfgComision(empId, btn){
+  try{
+    const row=_gel(`com-cfg-row-${empId}`);
+    const tipo=row.querySelector('select').value;
+    const pct=parseFloat(row.querySelector(`#com-cfg-pct-${empId} input`)?.value)||0;
+    const monto=parseFloat(row.querySelector(`#com-cfg-fijo-${empId} input`)?.value)||0;
+    btn.textContent='...';btn.disabled=true;
+    await apiFetch(`${API}/peluqueria/empleados/${empId}/comision`,{method:'PATCH',body:JSON.stringify({tipoComision:tipo,pctComision:pct,montoComision:monto})});
+    showToast('Comisión guardada ✓');
+  }catch(e){showToast(e.message,'err');}
+  finally{btn.textContent='Guardar';btn.disabled=false;}
+}
+async function cargarComisiones(){
+  const desde=_gel('com-desde')?.value||'';
+  const hasta=_gel('com-hasta')?.value||'';
+  const empleadoId=_gel('com-emp')?.value||'';
+  const estado=_gel('com-estado')?.value||'';
+  const el=_gel('com-list');if(!el)return;
+  el.innerHTML='<div style="color:var(--text2)">Cargando...</div>';
+  try{
+    let url=`${API}/peluqueria/comisiones?`;
+    if(desde)url+=`desde=${desde}&`;
+    if(hasta)url+=`hasta=${hasta}&`;
+    if(empleadoId)url+=`empleadoId=${encodeURIComponent(empleadoId)}&`;
+    if(estado)url+=`estado=${estado}`;
+    const data=await apiFetch(url)||[];
+
+    // Resumen por empleado
+    const porEmp={};
+    data.forEach(r=>{
+      if(!porEmp[r.empleado_id])porEmp[r.empleado_id]={id:r.empleado_id,nombre:r.empleado_nombre,total:0,pendiente:0};
+      porEmp[r.empleado_id].total+=parseFloat(r.monto_comision||0);
+      if(r.estado==='pendiente')porEmp[r.empleado_id].pendiente+=parseFloat(r.monto_comision||0);
+    });
+    const res=_gel('com-resumen');
+    if(res)res.innerHTML=Object.values(porEmp).map(emp=>`
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:16px">
+        <div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:2px">${esc(emp.nombre)}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--green)">${fmt(emp.total)}</div>
+          ${emp.pendiente>0?`<div style="font-size:11px;color:var(--yellow)">Pendiente: ${fmt(emp.pendiente)}</div>`:''}
+        </div>
+        ${emp.pendiente>0?`<button class="btn btn-sm btn-acc" onclick="pagarTodas('${emp.id}')">Pagar todo</button>`:''}
+      </div>`).join('')||'';
+
+    if(!data.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">No hay comisiones en el período seleccionado.</div>';return;}
+    el.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Fecha venta</th><th>Empleado</th><th>Servicio</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${data.map(r=>`<tr>
+        <td style="font-size:12px;color:var(--text2)">${fmtDate(r.venta_fecha)}</td>
+        <td style="font-weight:600">${esc(r.empleado_nombre)}</td>
+        <td style="font-size:12px;color:var(--text2)">${esc(r.servicio_desc||'—')}</td>
+        <td style="font-weight:700;color:var(--green)">${fmt(r.monto_comision)}</td>
+        <td><span class="badge ${r.estado==='pagada'?'badge-green':'badge-amber'}">${r.estado}</span></td>
+        <td>${r.estado==='pendiente'?`<button class="btn btn-sm" onclick="pagarComision('${r.id}')">Pagar</button>`:''}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }catch(e){el.innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+async function pagarComision(id){
+  try{
+    await apiFetch(`${API}/peluqueria/comisiones/${id}/pagar`,{method:'PATCH'});
+    showToast('Comisión marcada como pagada ✓');
+    await cargarComisiones();
+  }catch(e){showToast(e.message,'err');}
+}
+
+async function pagarTodas(empleadoId){
+  try{
+    await apiFetch(`${API}/peluqueria/comisiones/empleado/${empleadoId}/pagar-todas`,{method:'PATCH'});
+    showToast('Todas las comisiones pagadas ✓');
+    await cargarComisiones();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ══════════════════ PAQUETES ══════════════════
+let _paquetesData=[], _editPaqId=null, _paqServicios=[];
+
+async function renderPaquetes(){
+  document.getElementById('content').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:13px;color:var(--text2)" id="paq-count"></span>
+      <button class="btn-acc" onclick="abrirModalPaquete()">+ Nuevo paquete</button>
+    </div>
+    <div id="paq-list"><div style="color:var(--text2)">Cargando...</div></div>`;
+  await recargarPaquetes();
+}
+
+async function recargarPaquetes(){
+  try{
+    const data=await apiFetch(`${API}/peluqueria/paquetes`)||[];
+    _paquetesData=data;
+    const cnt=_gel('paq-count');if(cnt)cnt.textContent=`${data.length} paquete${data.length!==1?'s':''}`;
+    const el=_gel('paq-list');if(!el)return;
+    if(!data.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">No hay paquetes registrados.</div>';return;}
+    const tipoLabel={sesiones:'Sesiones',tiempo:'Tiempo ilimitado'};
+    el.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Nombre</th><th>Tipo</th><th>Precio</th><th>Vigencia</th><th>Servicios incluidos</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${data.map(p=>`<tr>
+        <td style="font-weight:600">${esc(p.nombre)}</td>
+        <td style="font-size:12px;color:var(--text2)">${tipoLabel[p.tipo]||p.tipo}</td>
+        <td style="font-weight:700;color:var(--green)">${fmt(p.precio)}</td>
+        <td style="font-size:12px;color:var(--text2)">${p.vigencia_dias||0} días</td>
+        <td style="font-size:12px;color:var(--text2)">${(p.servicios||[]).map(s=>`${esc(s.servicio_nombre)} ×${s.cantidad_incluida}`).join(', ')||'—'}</td>
+        <td><span class="badge ${p.activo?'badge-green':'badge-gray'}">${p.activo?'Activo':'Inactivo'}</span></td>
+        <td style="display:flex;gap:6px;white-space:nowrap">
+          <button class="btn btn-sm" onclick="abrirModalPaquete('${p.id}')">✏️</button>
+          <button class="btn btn-sm" style="color:${p.activo?'var(--red)':'var(--green)'}" onclick="togglePaquete('${p.id}',${p.activo?1:0})">${p.activo?'Desactivar':'Activar'}</button>
+        </td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }catch(e){const el=_gel('paq-list');if(el)el.innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+async function togglePaquete(id,activo){
+  try{
+    await apiFetch(`${API}/peluqueria/paquetes/${id}/toggle`,{method:'PATCH'});
+    showToast(activo?'Paquete desactivado':'Paquete activado ✓');
+    await recargarPaquetes();
+  }catch(e){showToast(e.message,'err');}
+}
+
+function abrirModalPaquete(id=null){
+  _editPaqId=id;
+  _paqServicios=[];
+  document.getElementById('paq-modal-title').textContent=id?'Editar paquete':'Nuevo paquete';
+  // Poblar el select de servicios
+  const sel=_gel('paq-svc-sel');
+  if(sel)sel.innerHTML='<option value="">— Seleccionar servicio —</option>'+_svcsCat.map(s=>`<option value="${esc(s.id)}">${esc(s.nombre)}</option>`).join('');
+  if(id){
+    const p=_paquetesData.find(x=>x.id===id)||{};
+    _gel('paq-nombre').value=p.nombre||'';
+    _gel('paq-desc').value=p.descripcion||'';
+    _gel('paq-precio').value=p.precio||0;
+    _gel('paq-tipo').value=p.tipo||'sesiones';
+    _gel('paq-vigencia').value=p.vigencia_dias||30;
+    _paqServicios=(p.servicios||[]).map(s=>({servicioId:s.servicio_id,cantidadIncluida:s.cantidad_incluida,nombre:s.servicio_nombre}));
+  }else{
+    ['paq-nombre','paq-desc'].forEach(f=>_gel(f).value='');
+    _gel('paq-precio').value=0;
+    _gel('paq-tipo').value='sesiones';
+    _gel('paq-vigencia').value=30;
+  }
+  _renderPaqServicios();
+  _gel('paq-modal').style.display='flex';
+}
+
+function _renderPaqServicios(){
+  const el=_gel('paq-svc-list');if(!el)return;
+  el.innerHTML=_paqServicios.length?_paqServicios.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border)">
+      <span style="flex:1;font-size:13px">${esc(s.nombre||s.servicioId)}</span>
+      <input type="number" min="1" max="99" value="${s.cantidadIncluida||1}" style="width:60px;text-align:center;padding:4px 6px" onchange="_paqServicios[${i}].cantidadIncluida=+this.value">
+      <span style="font-size:11px;color:var(--text2)">ses.</span>
+      <button onclick="_paqServicios.splice(${i},1);_renderPaqServicios()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;line-height:1">✕</button>
+    </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin servicios incluidos</div>';
+}
+
+function _addPaqServicio(){
+  const sel=_gel('paq-svc-sel');if(!sel||!sel.value)return;
+  const nombre=sel.options[sel.selectedIndex].text;
+  if(_paqServicios.find(s=>s.servicioId===sel.value))return showToast('Servicio ya agregado','err');
+  _paqServicios.push({servicioId:sel.value,cantidadIncluida:1,nombre});
+  sel.value='';
+  _renderPaqServicios();
+}
+
+async function guardarPaquete(){
+  const nombre=_gel('paq-nombre').value.trim();
+  const precio=parseFloat(_gel('paq-precio').value)||0;
+  if(!nombre||!precio)return showToast('Nombre y precio son obligatorios','err');
+  const body={
+    nombre,
+    descripcion:_gel('paq-desc').value.trim()||null,
+    precio,
+    tipo:_gel('paq-tipo').value||'sesiones',
+    vigenciaDias:parseInt(_gel('paq-vigencia').value)||30,
+    servicios:_paqServicios.map(s=>({servicioId:s.servicioId,cantidadIncluida:s.cantidadIncluida||1}))
+  };
+  try{
+    if(_editPaqId)await apiFetch(`${API}/peluqueria/paquetes/${_editPaqId}`,{method:'PUT',body:JSON.stringify(body)});
+    else await apiFetch(`${API}/peluqueria/paquetes`,{method:'POST',body:JSON.stringify(body)});
+    showToast(_editPaqId?'Paquete actualizado ✓':'Paquete creado ✓');
+    cerrarModal('paq-modal');_editPaqId=null;
+    await recargarPaquetes();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ══════════════════ INVENTARIO ══════════════════
+let _invData=[], _editInvId=null, _ajusteInvId=null;
+
+async function renderInventario(){
+  document.getElementById('content').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="inv-busq" placeholder="Buscar producto..." style="padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="filtrarInv()">
+        <span id="inv-count" style="font-size:12px;color:var(--text3)"></span>
+      </div>
+      <button class="btn-acc" onclick="abrirModalInv()">+ Agregar producto</button>
+    </div>
+    <div id="inv-list"><div style="color:var(--text2)">Cargando...</div></div>`;
+  await recargarInv();
+}
+
+async function recargarInv(){
+  try{
+    const rows=await apiFetch(`${API}/peluqueria/productos?soloActivos=false`);
+    _invData=Array.isArray(rows)?rows:[];
+    filtrarInv();
+  }catch(e){document.getElementById('inv-list').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+function filtrarInv(){
+  const q=(document.getElementById('inv-busq')?.value||'').toLowerCase();
+  const items=q?_invData.filter(i=>i.nombre.toLowerCase().includes(q)||(i.categoria||'').toLowerCase().includes(q)):_invData;
+  const el=document.getElementById('inv-list');if(!el)return;
+  const cnt=document.getElementById('inv-count');if(cnt)cnt.textContent=`${items.length} producto${items.length!==1?'s':''}`;
+  if(!items.length){el.innerHTML='<div style="color:var(--text3);text-align:center;padding:40px">No hay productos en inventario.</div>';return;}
+  el.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th></th></tr></thead>
+    <tbody>${items.map(i=>{
+      const bajo=parseInt(i.stock_actual)>0&&parseInt(i.stock_actual)<parseInt(i.stock_minimo);
+      const agotado=parseInt(i.stock_actual)<=0;
+      const stockColor=agotado?'var(--red)':bajo?'var(--yellow)':'var(--green)';
+      const costo=parseFloat(i.precio_costo||0), pventa=parseFloat(i.precio_venta||0);
+      const margen=costo>0?((pventa-costo)/costo*100):null;
+      const margenTxt=margen===null?'—':`${margen>=0?'+':''}${margen.toFixed(1)}%`;
+      const margenColor=margen===null?'var(--text3)':margen<0?'var(--red)':margen<20?'var(--yellow)':'var(--green)';
+      return `<tr>
+        <td style="font-weight:600">${esc(i.nombre)}</td>
+        <td style="font-size:12px;color:var(--text2);font-family:monospace">${esc(i.sku||'—')}</td>
+        <td style="font-size:12px;color:var(--text2)">${esc(i.categoria_nombre||'—')}</td>
+        <td style="font-weight:700;color:${stockColor}">${parseInt(i.stock_actual||0)}</td>
+        <td style="font-size:12px;color:var(--text3)">${parseInt(i.stock_minimo||0)}</td>
+        <td style="font-size:12px;color:var(--text2)">${esc(i.unidad||'unidad')}</td>
+        <td style="font-size:12px">${fmt(costo)}</td>
+        <td style="font-size:12px">${fmt(pventa)}</td>
+        <td style="font-weight:700;font-size:13px;color:${margenColor}">${margenTxt}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm" onclick="abrirAjuste('${i.id}','${esc(i.nombre)}')">Ajustar</button>
+          <button class="btn btn-sm" style="margin-left:4px" onclick="abrirModalInv('${i.id}')">✏️</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table></div>
+    ${_invData.some(i=>parseFloat(i.stock)>0&&parseFloat(i.stock)<parseFloat(i.stock_min))?
+      '<div style="margin-top:10px;padding:8px 12px;background:#e3b34111;border:1px solid #e3b34144;border-radius:6px;font-size:12px;color:var(--yellow)">⚠️ Algunos productos están por debajo del stock mínimo</div>':''
+    }`;
+}
+
+function invRecalcPrecio(){
+  const costo=parseFloat(document.getElementById('inv-costo').value)||0;
+  const margen=parseFloat(document.getElementById('inv-margen').value);
+  if(costo>0&&!isNaN(margen))
+    document.getElementById('inv-precio').value=Math.round(costo*(1+margen/100));
+}
+function invRecalcMargen(){
+  const costo=parseFloat(document.getElementById('inv-costo').value)||0;
+  const pventa=parseFloat(document.getElementById('inv-precio').value)||0;
+  if(costo>0)
+    document.getElementById('inv-margen').value=((pventa-costo)/costo*100).toFixed(1);
+}
+
+async function abrirModalInv(id=null){
+  _editInvId=id;
+  document.getElementById('inv-modal-title').textContent=id?'Editar producto':'Nuevo producto';
+  if(id){
+    const item=_invData.find(i=>i.id===id)||{};
+    document.getElementById('inv-nombre').value=item.nombre||'';
+    document.getElementById('inv-sku').value=item.sku||'';
+    document.getElementById('inv-cat').value=item.categoria_nombre||'';
+    document.getElementById('inv-unidad').value=item.unidad||'unidad';
+    document.getElementById('inv-stock').value=item.stock_actual||0;
+    document.getElementById('inv-stock-min').value=item.stock_minimo||0;
+    document.getElementById('inv-costo').value=item.precio_costo||0;
+    document.getElementById('inv-precio').value=item.precio_venta||0;
+    const c=parseFloat(item.precio_costo||0),p=parseFloat(item.precio_venta||0);
+    document.getElementById('inv-margen').value=c>0?((p-c)/c*100).toFixed(1):'';
+  }else{
+    ['inv-nombre','inv-sku','inv-cat'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('inv-unidad').value='unidad';
+    ['inv-stock','inv-stock-min','inv-costo','inv-precio','inv-margen'].forEach(id=>document.getElementById(id).value=0);
+  }
+  document.getElementById('inv-modal').style.display='flex';
+}
+
+async function guardarInv(){
+  const nombre=document.getElementById('inv-nombre').value.trim();
+  if(!nombre)return showToast('El nombre es obligatorio','err');
+  const skuVal=document.getElementById('inv-sku').value.trim();
+  const body={
+    nombre,
+    sku:skuVal||null,
+    unidad:document.getElementById('inv-unidad').value.trim()||'unidad',
+    stockActual:parseFloat(document.getElementById('inv-stock').value)||0,
+    stockMinimo:parseFloat(document.getElementById('inv-stock-min').value)||0,
+    precioCosto:parseFloat(document.getElementById('inv-costo').value)||0,
+    precioVenta:parseFloat(document.getElementById('inv-precio').value)||0,
+  };
+  try{
+    if(_editInvId){
+      await apiFetch(`${API}/peluqueria/productos/${_editInvId}`,{method:'PUT',body:JSON.stringify(body)});
+      showToast('Producto actualizado ✓');
+    }else{
+      await apiFetch(`${API}/peluqueria/productos`,{method:'POST',body:JSON.stringify(body)});
+      showToast('Producto creado ✓');
+    }
+    cerrarModal('inv-modal');_editInvId=null;
+    await recargarInv();
+  }catch(e){showToast(e.message,'err');}
+}
+
+function abrirAjuste(id,nombre){
+  _ajusteInvId=id;
+  document.getElementById('inv-ajuste-title').textContent=`Ajustar: ${nombre}`;
+  document.getElementById('inv-ajuste-tipo').value='entrada';
+  document.getElementById('inv-ajuste-cant').value='';
+  document.getElementById('inv-ajuste-nota').value='';
+  document.getElementById('inv-ajuste-modal').style.display='flex';
+}
+
+async function confirmarAjuste(){
+  const cant=parseFloat(document.getElementById('inv-ajuste-cant').value);
+  if(!cant||cant<=0)return showToast('Cantidad inválida','err');
+  const body={
+    tipo:document.getElementById('inv-ajuste-tipo').value,
+    cantidad:cant,
+    motivo:document.getElementById('inv-ajuste-nota').value.trim()||null,
+  };
+  try{
+    await apiFetch(`${API}/peluqueria/productos/${_ajusteInvId}/movimiento`,{method:'POST',body:JSON.stringify(body)});
+    showToast('Stock ajustado ✓');
+    cerrarModal('inv-ajuste-modal');_ajusteInvId=null;
+    await recargarInv();
+  }catch(e){showToast(e.message,'err');}
+}
+
+async function renderCaja(){
+  const hoy=document.getElementById('cajaFecha')?.value||new Date().toISOString().split('T')[0];
+  document.getElementById('content').innerHTML=`
+    <div class="search-bar"><input id="cajaFecha" type="date" value="${hoy}" onchange="renderCaja()"></div>
+    <div id="cajaData">Cargando...</div>`;
+  try{const d=await apiFetch(`${API}/peluqueria/caja?fecha=${hoy}`);
+  const citas=d?.citas||[];const total=d?.total||0;const poMetodo=d?.porMetodo||[];
+  document.getElementById('cajaData').innerHTML=`
+    <div class="stat-grid" style="margin-bottom:16px">
+      <div class="stat-card"><div class="label">Citas completadas</div><div class="value" style="color:var(--acc)">${citas.length}</div></div>
+      <div class="stat-card"><div class="label">Total del día</div><div class="value" style="color:var(--green);font-size:18px">${fmt(total)}</div></div>
+      ${poMetodo.map(m=>`<div class="stat-card"><div class="label">${esc(m.metodo)}</div><div class="value" style="font-size:18px">${fmt(m.monto)}</div></div>`).join('')}
+    </div>
+    ${citas.length?`<div class="tbl-wrap"><table>
+      <thead><tr><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Empleado</th><th>Monto</th><th>Método</th></tr></thead>
+      <tbody>${citas.map(c=>`<tr><td style="font-size:12px">${fmtDT(c.fechaHora)}</td><td>${esc(c.clienteNombre)}</td>
+        <td style="font-size:12px;color:var(--text2)">${esc(c.servicioNombre||'')}</td>
+        <td style="font-size:12px;color:var(--text2)">${esc(c.empleadoNombre||'—')}</td>
+        <td style="font-weight:700">${fmt(c.precio||c.montoTotal||0)}</td>
+        <td style="font-size:12px">${esc(c.metodoPago||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<p style="font-size:12px;color:var(--text3)">Sin citas completadas.</p>'}`;}
+  catch(e){document.getElementById('cajaData').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+function abrirNuevaCita(cita=null){
+  const rawId=cita?.id||cita?.cita_id||'';
+  _editCitaId=rawId.length>10?rawId:null;  // solo UUID válido (>10 chars)
+  document.getElementById('cNombre').value=cita?.clienteNombre||cita?.cliente_nombre||'';
+  document.getElementById('cTel').value=cita?.clienteTelefono||cita?.cliente_tel||'';
+  document.getElementById('cNotas').value=cita?.notas||'';
+  document.getElementById('cPrecio').value=cita?.precio||'';
+  document.getElementById('cSvcId').value=cita?.servicioId||cita?.servicio_id||'';
+  const _empSel=document.getElementById('cEmpleado');
+  const _empIdCita=cita?.empleadoId||cita?.empleado_id||'';
+  const _empNomCita=cita?.empleadoNombre||cita?.empleado_nombre||'';
+  // Intentar por UUID primero, luego por nombre (citas antiguas)
+  _empSel.value=_empIdCita;
+  if(!_empSel.value&&_empNomCita){
+    const opt=Array.from(_empSel.options).find(o=>o.dataset.nombre===_empNomCita||o.text.startsWith(_empNomCita));
+    if(opt)_empSel.value=opt.value;
+  }
+  inicializarSelectorTiempo();
+  const p=n=>String(n).padStart(2,'0');
+  const fhRaw=cita?.fechaHora||cita?.fecha_hora;
+  let td=fhRaw?_parseDate(fhRaw):null;
+  if(!td||isNaN(td)){td=new Date();td.setMinutes(Math.ceil(td.getMinutes()/5)*5%60?Math.ceil(td.getMinutes()/5)*5:0);if(td.getMinutes()===0&&new Date().getMinutes()>0)td.setHours(td.getHours()+1);}
+  document.getElementById('cFecha').value=`${td.getFullYear()}-${p(td.getMonth()+1)}-${p(td.getDate())}`;
+  document.getElementById('cHora').value=p(td.getHours());
+  document.getElementById('cMinuto').value=p(Math.round(td.getMinutes()/5)*5%60);
+  if(!_editCitaId){
+    const n=new Date();
+    document.getElementById('cFecha').min=`${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}`;
+  }else{
+    document.getElementById('cFecha').min='';
+  }
+  filtrarHorasDisponibles();
+  document.getElementById('citaTitulo').textContent=_editCitaId?'Editar Cita':'Nueva Cita';
+  const warn=document.getElementById('cEmpWarn');if(warn)warn.style.display='none';
+  verificarHorarioEmpleado();
+  document.getElementById('modalCita').style.display='flex';
+}
+function autoFillCita(){const sel=document.getElementById('cSvcId');const opt=sel.options[sel.selectedIndex];if(opt?.dataset?.precio)document.getElementById('cPrecio').value=opt.dataset.precio;}
+
+function inicializarSelectorTiempo(){
+  const selH=document.getElementById('cHora'),selM=document.getElementById('cMinuto');
+  if(!selH||!selM)return;
+  selH.innerHTML='';
+  for(let h=5;h<=23;h++){
+    const per=h<12?'a.m.':'p.m.',h12=h===0?12:h>12?h-12:h;
+    const o=document.createElement('option');
+    o.value=String(h).padStart(2,'0');
+    o.textContent=`${String(h12).padStart(2,'0')}:00 ${per}`;
+    selH.appendChild(o);
+  }
+  selM.innerHTML='';
+  for(let m=0;m<60;m+=5){
+    const o=document.createElement('option');
+    o.value=String(m).padStart(2,'0');
+    o.textContent=String(m).padStart(2,'0');
+    selM.appendChild(o);
+  }
+}
+
+function filtrarHorasDisponibles(){
+  const fecha=document.getElementById('cFecha').value;
+  const selH=document.getElementById('cHora');
+  if(!fecha||!selH)return;
+  const ahora=new Date();
+  const esHoy=fecha===`${ahora.getFullYear()}-${String(ahora.getMonth()+1).padStart(2,'0')}-${String(ahora.getDate()).padStart(2,'0')}`;
+  const hNow=ahora.getHours();
+  let hayHabilitada=false;
+  Array.from(selH.options).forEach(o=>{
+    o.disabled=esHoy&&parseInt(o.value)<hNow;
+    if(!o.disabled)hayHabilitada=true;
+  });
+  if(esHoy&&parseInt(selH.value)<hNow){
+    const primera=Array.from(selH.options).find(o=>!o.disabled);
+    if(primera)selH.value=primera.value;
+  }
+}
+function verificarHorarioEmpleado(){
+  const empId=document.getElementById('cEmpleado').value;
+  const warn=document.getElementById('cEmpWarn');
+  if(warn) warn.style.display=(empId&&!_empsConHorario.has(empId))?'block':'none';
+}
+async function crearCita(){
+  const fecha=document.getElementById('cFecha').value;
+  const hora=document.getElementById('cHora').value;
+  const minuto=document.getElementById('cMinuto').value||'00';
+  const fh=fecha&&hora?`${fecha} ${hora}:${minuto}:00`:null;
+  const empSel=document.getElementById('cEmpleado');
+  const empId=empSel.value||null;
+  const empNombreOpt=empSel.options[empSel.selectedIndex]?.dataset?.nombre||empSel.options[empSel.selectedIndex]?.text||null;
+  if(empId&&!_empsConHorario.has(empId)){showToast('El empleado no tiene horario laboral registrado','err');return;}
+  if(!_editCitaId&&fh&&new Date(fh.replace(' ','T'))<new Date()){showToast('No se pueden crear citas en fechas u horas pasadas','err');return;}
+  const body={clienteNombre:document.getElementById('cNombre').value.trim(),clienteTelefono:document.getElementById('cTel').value.trim()||null,servicioId:document.getElementById('cSvcId').value||null,precio:parseFloat(document.getElementById('cPrecio').value)||0,fechaHora:fh,empleadoId:empId,empleadoNombre:empId?empNombreOpt:null,notas:document.getElementById('cNotas').value.trim()||null};
+  if(!body.clienteNombre||!body.fechaHora){showToast('Cliente y hora son obligatorios','err');return;}
+  try{
+    if(_editCitaId&&_editCitaId.length>10){
+      await apiFetch(`${API}/peluqueria/citas/${encodeURIComponent(_editCitaId)}`,{method:'PUT',body:JSON.stringify(body)});
+      showToast('Cita actualizada ✓');
+    }else{
+      await apiFetch(`${API}/peluqueria/citas`,{method:'POST',body:JSON.stringify(body)});
+      showToast('Cita guardada ✓');
+    }
+    _editCitaId=null;
+    cerrarModal('modalCita');cerrarModal('modalDetCita');nav(_pg);
+  }catch(e){showToast(e.message,'err');}
+}
+
+let _detalleCitaData=null;
+function editarCitaDesdeDetalle(){if(_detalleCitaData){cerrarModal('modalDetCita');abrirNuevaCita(_detalleCitaData);}}
+
+async function verCita(id){
+  _citaId=id;_detalleCitaData=null;document.getElementById('modalDetCita').style.display='flex';
+  document.getElementById('detCitaBody').innerHTML='<div style="color:var(--text2)">Cargando...</div>';
+  if(!_empsCat.length){try{const e=await apiFetch(`${API}/peluqueria/empleados?soloActivos=true`);_empsCat=e||[];}catch{}}
+  try{const c=await apiFetch(`${API}/peluqueria/citas/${id}`);if(!c)return;
+  _detalleCitaData=c;
+  document.getElementById('detCitaTitulo').textContent=`${esc(c.clienteNombre)} — ${fmtDT(c.fechaHora)}`;
+  document.getElementById('detCitaBody').innerHTML=`
+    <div style="display:flex;gap:12px;margin-bottom:14px">
+      <div style="flex:1"><div style="font-size:15px;font-weight:700">${esc(c.clienteNombre)}</div>
+      <div style="font-size:13px;color:var(--text2)">${esc(c.clienteTelefono||'')}</div>
+      ${c.empleadoNombre
+        ?`<div style="font-size:12px;color:var(--text2);margin-top:4px">✂️ ${esc(c.empleadoNombre)}</div>`
+        :`<div style="margin-top:10px;padding:10px;background:#fef3c7;border-radius:8px;border:1px solid #fcd34d">
+            <div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">⚠️ Sin empleado asignado</div>
+            <div style="display:flex;gap:6px">
+              <select id="sel-asignar-emp" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff">
+                <option value="">Seleccionar empleado...</option>
+                ${(_empsCat||[]).map(e=>`<option value="${esc(e.id)}">${esc(e.nombre)}${e.especialidad?` · ${esc(e.especialidad)}`:''}</option>`).join('')}
+              </select>
+              <button class="btn btn-acc btn-sm" onclick="asignarEmpleadoCita()">Asignar</button>
+            </div>
+          </div>`}
+      ${(c.servicios&&c.servicios.length)?`
+        <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Servicios</div>
+          ${c.servicios.map(s=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">
+            <span style="color:var(--acc)">${esc(s.nombre)}</span>
+            <span style="font-weight:600;color:var(--text)">${fmt(s.precio||0)}</span>
+          </div>`).join('')}
+        </div>`:''}
+      ${c.notas?`<div style="font-size:12px;color:var(--text3);margin-top:8px;font-style:italic">📝 ${esc(c.notas)}</div>`:''}
+      </div>
+      <div style="text-align:right">
+        <span class="chip chip-${c.estado}">${esc(c.estado)}</span>
+        <div style="font-size:22px;font-weight:700;margin-top:8px">${fmt(c.precio||c.montoTotal||0)}</div>
+        ${c.metodoPago?`<div style="font-size:12px;color:var(--text2)">${esc(c.metodoPago)}</div>`:''}
+      </div>
+    </div>`;
+  const foot=document.getElementById('detCitaFoot');const btns=[];
+  const noFinal=c.estado!=='Completada'&&c.estado!=='Cancelada';
+  if(noFinal){
+    btns.push(`<button class="btn btn-sm" onclick="editarCitaDesdeDetalle()">✏️ Editar</button>`);
+    btns.push(`<button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="cambiarEstadoCita('Cancelada')">Cancelar</button>`);
+  }
+  if(c.estado==='Pendiente')btns.push(`<button class="btn btn-acc btn-sm" onclick="cambiarEstadoCita('Confirmada')">Confirmar</button>`);
+  if(c.estado==='Confirmada'||c.estado==='Pendiente')btns.push(`<button class="btn btn-acc btn-sm" onclick="cambiarEstadoCita('EnProceso')">Iniciar servicio</button>`);
+  if(c.estado==='EnProceso')btns.push(`<button class="btn btn-green btn-sm" onclick="completarCita()">✓ Completar y cobrar</button>`);
+  btns.push(`<button class="btn btn-sm" onclick="cerrarModal('modalDetCita')">Cerrar</button>`);
+  foot.innerHTML=btns.join('');}catch(e){document.getElementById('detCitaBody').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+async function cambiarEstadoCita(estado){
+  try{await apiFetch(`${API}/peluqueria/citas/${_citaId}/estado`,{method:'PATCH',body:JSON.stringify({estado})});showToast('Estado actualizado');cerrarModal('modalDetCita');nav(_pg);}catch(e){showToast(e.message,'err');}
+}
+async function asignarEmpleadoCita(){
+  const sel=document.getElementById('sel-asignar-emp');
+  if(!sel||!sel.value){showToast('Selecciona un empleado','err');return;}
+  try{
+    await apiFetch(`${API}/peluqueria/citas/${_citaId}/empleado`,{method:'PATCH',body:JSON.stringify({empleadoId:sel.value})});
+    showToast('Empleado asignado ✓');
+    cerrarModal('modalDetCita');
+    nav(_pg);
+  }catch(e){showToast(e.message,'err');}
+}
+async function completarCita(){
+  const metodo=prompt('Método de pago (Efectivo/Tarjeta/Nequi/Transferencia):','Efectivo');
+  if(!metodo)return;
+  try{await apiFetch(`${API}/peluqueria/citas/${_citaId}/completar`,{method:'PATCH',body:JSON.stringify({metodoPago:metodo})});showToast('Cita completada');cerrarModal('modalDetCita');nav(_pg);}catch(e){showToast(e.message,'err');}
+}
+// ── ALERTAS DE CITAS PRÓXIMAS ─────────────────────────────────────
+function _fmtLocal(d){
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+async function checkCitasProximas(){
+  try{
+    const ahora=new Date();
+    const en15=new Date(ahora.getTime()+16*60*1000);
+    const data=await apiFetch(`${API}/peluqueria/citas?desde=${encodeURIComponent(_fmtLocal(ahora))}&hasta=${encodeURIComponent(_fmtLocal(en15))}&tamPagina=50`);
+    for(const c of (data?.items||[])){
+      if(_alertedCitas.has(c.id))continue;
+      if(c.estado==='Cancelada'||c.estado==='Completada')continue;
+      _alertedCitas.add(c.id);
+      const diffMin=Math.round((new Date(c.fechaHora||c.fecha_hora)-ahora)/60000);
+      _mostrarAlertaCita(c,diffMin);
+    }
+  }catch{}
+}
+function _mostrarAlertaCita(c,diffMin){
+  const urgent=diffMin<=5;
+  const tiempo=diffMin<=0?'¡AHORA!':`En ${diffMin} min`;
+  const nombre=c.clienteNombre||c.cliente_nombre||'Cliente';
+  const servicio=c.servicioNombre||c.servicio_nombre||'';
+  const empleado=c.empleadoNombre||c.empleado_nombre||'';
+  // Banner in-app
+  const el=document.createElement('div');
+  el.className='cita-alert'+(urgent?' urgent':'');
+  el.innerHTML=`<span class="al-icon">${urgent?'🔴':'⏰'}</span>
+    <div class="al-body">
+      <strong>${tiempo} — ${esc(nombre)}</strong>
+      ${servicio?`<span>${esc(servicio)}</span>`:''}
+      ${empleado?`<span style="color:var(--text2)"> · ${esc(empleado)}</span>`:''}
+    </div>
+    <button class="al-close" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('alerts-container').appendChild(el);
+  setTimeout(()=>el.remove(),urgent?120000:90000);
+  // Notificación del navegador
+  if('Notification' in window&&Notification.permission==='granted'){
+    new Notification(`✂️ Cita ${tiempo}`,{
+      body:`${nombre}${servicio?' — '+servicio:''}${empleado?' con '+empleado:''}`,
+      icon:'/img/logo.png',tag:c.id,renotify:false
+    });
+  }
+}
+function iniciarAlertas(){
+  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+  checkCitasProximas();
+  _alertInterval=setInterval(checkCitasProximas,60000);
+}
+
+// ─── HELPERS ADMIN ADICIONALES ───────────────────────────────────
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+const fmtTime=s=>s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—';
+let gastoEditId=null,gastosData=[],personalEditId=null,provEditId=null,rolEditId=null,rolesCache=[];
+let _factActual=null,_factCfg=null;
+const DIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const CATEGORIAS_PERMISOS=[
+  {grupo:'🖥️ Punto de Venta',permisos:[['pos_cobro','Cobro / Caja'],['inventario','Inventario']]},
+  {grupo:'💰 Finanzas',permisos:[['gastos','Gastos'],['reportes','Reportes'],['facturacion','Facturación']]},
+  {grupo:'👥 Administración',permisos:[['personal','Personal'],['horarios','Horarios'],['proveedores','Proveedores']]},
+];
+const MODULOS_PERMISOS=CATEGORIAS_PERMISOS.flatMap(c=>c.permisos);
+const _gel=id=>document.getElementById(id);
+
+// ─── GASTOS ──────────────────────────────────────────────────────
+function renderGastos(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Registro de gastos</h3>
+        <div class="card-header-actions">
+          <input type="date" id="gastos-desde" class="btn btn-outline btn-sm" value="${today()}" onchange="cargarGastos()" style="cursor:pointer">
+          <button class="btn btn-primary btn-sm" onclick="abrirGastoModal(null)">+ Agregar</button>
+        </div></div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Método</th><th>Monto</th><th>Registrado por</th><th></th></tr></thead>
+        <tbody id="gastos-tbody"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Categorías de gasto</h3><button class="btn btn-outline btn-sm" onclick="abrirCatModal()">+ Categoría</button></div>
+      <div class="card-body" id="cats-container" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>`;
+  cargarGastos();cargarCategorias();
+}
+async function cargarGastos(){
+  try{
+    const desde=_gel('gastos-desde')?.value||today();
+    gastosData=await apiFetch(`${API}/admin/gastos?desde=${desde}&hasta=${desde}`)||[];
+    const tb=_gel('gastos-tbody');if(!tb)return;
+    tb.innerHTML=gastosData.length
+      ?gastosData.map(g=>`<tr><td>${fmtDate(g.fecha)}</td><td>${esc(g.descripcion)}</td><td>${g.categoria_nombre?`<span class="badge" style="background:${g.categoria_color}22;color:${g.categoria_color}">${esc(g.categoria_nombre)}</span>`:'—'}</td><td>${g.metodo_pago}</td><td><b>${fmt(g.monto)}</b></td><td>${g.usuario_nombre||'—'}</td><td style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="abrirGastoModal('${g.id}')">Editar</button><button class="btn btn-danger btn-sm" onclick="eliminarGasto('${g.id}','${esc(g.descripcion).replace(/'/g,"\\'")}')">Borrar</button></td></tr>`).join('')
+      :'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text2)">Sin gastos para esta fecha</td></tr>';
+  }catch(e){showToast(e.message,'err');}
+}
+async function cargarCategorias(){
+  try{
+    const cats=await apiFetch(`${API}/admin/gastos/categorias`)||[];
+    const sel=_gel('g-cat');
+    if(sel)sel.innerHTML='<option value="">Sin categoría</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    const cont=_gel('cats-container');
+    if(cont)cont.innerHTML=cats.map(c=>`<div style="display:flex;align-items:center;gap:6px;background:${c.color}22;border:0.5px solid ${c.color};border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:${c.color}"><span>${esc(c.nombre)}</span><button onclick="eliminarCategoria('${c.id}')" style="background:none;border:none;cursor:pointer;color:${c.color};font-size:14px;line-height:1;padding:0 0 0 4px">×</button></div>`).join('');
+  }catch{}
+}
+async function eliminarCategoria(id){if(!confirm('¿Eliminar categoría?'))return;await apiFetch(`${API}/admin/gastos/categorias/${id}`,{method:'DELETE'});cargarCategorias();}
+async function abrirGastoModal(id){
+  gastoEditId=id;
+  _gel('gasto-modal-title').textContent=id?'Editar gasto':'Registrar gasto';
+  _gel('g-desc').value='';_gel('g-monto').value='';_gel('g-fecha').value=today();_gel('g-metodo').value='efectivo';
+  await cargarCategorias();
+  if(id){
+    const g=gastosData.find(x=>x.id===id);
+    if(g){_gel('g-desc').value=g.descripcion||'';_gel('g-monto').value=g.monto||'';_gel('g-cat').value=g.categoria_id||'';_gel('g-metodo').value=g.metodo_pago||'efectivo';if(g.fecha)_gel('g-fecha').value=g.fecha.slice(0,10);}
+  }
+  _gel('gasto-modal').style.display='flex';
+}
+async function eliminarGasto(id,desc){
+  if(!confirm(`¿Borrar gasto "${desc}"?`))return;
+  try{await apiFetch(`${API}/admin/gastos/${id}`,{method:'DELETE'});showToast('Gasto eliminado');cargarGastos();}
+  catch(e){showToast(e.message,'err');}
+}
+async function guardarGasto(){
+  try{
+    const body={descripcion:_gel('g-desc').value,monto:+_gel('g-monto').value,metodo_pago:_gel('g-metodo').value,categoria_id:_gel('g-cat').value||null,fecha:_gel('g-fecha').value};
+    if(gastoEditId)await apiFetch(`${API}/admin/gastos/${gastoEditId}`,{method:'PUT',body:JSON.stringify(body)});
+    else await apiFetch(`${API}/admin/gastos`,{method:'POST',body:JSON.stringify(body)});
+    cerrarModal('gasto-modal');showToast('Gasto guardado ✓');cargarGastos();
+  }catch(e){showToast(e.message,'err');}
+}
+function abrirCatModal(){_gel('cat-nombre').value='';_gel('cat-color').value='#ec4899';_gel('cat-modal').style.display='flex';}
+async function guardarCategoria(){
+  try{
+    await apiFetch(`${API}/admin/gastos/categorias`,{method:'POST',body:JSON.stringify({nombre:_gel('cat-nombre').value,color:_gel('cat-color').value})});
+    cerrarModal('cat-modal');showToast('Categoría creada ✓');cargarCategorias();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── REPORTES ────────────────────────────────────────────────────
+function renderReportes(){
+  const d30=new Date();d30.setDate(d30.getDate()-29);
+  const ls=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  document.getElementById('content').innerHTML=`
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 16px">
+        <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'hoy')">Hoy</button>
+        <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'ayer')">Ayer</button>
+        <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'semana')">Esta semana</button>
+        <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'mes')">Este mes</button>
+        <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'30d')">Últimos 30 días</button>
+        <label style="font-size:12px;color:var(--text2)">Desde</label>
+        <input type="date" id="rep-desde" class="btn btn-outline btn-sm" value="${ls(d30)}" style="cursor:pointer">
+        <label style="font-size:12px;color:var(--text2)">Hasta</label>
+        <input type="date" id="rep-hasta" class="btn btn-outline btn-sm" value="${today()}" style="cursor:pointer">
+        <button class="btn btn-primary btn-sm" onclick="cargarReportes()">Consultar</button>
+      </div></div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Ventas</div><div class="stat-val" id="r-ventas">—</div></div>
+      <div class="stat-card"><div class="stat-label">Gastos</div><div class="stat-val" id="r-gastos">—</div></div>
+      <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="r-utilidad">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pedidos/Citas</div><div class="stat-val" id="r-pedidos">—</div></div>
+    </div>
+    <div class="two-col" style="margin-bottom:14px">
+      <div class="card"><div class="card-header"><h3>Por método de pago</h3></div><div class="card-body" id="r-metodos"></div></div>
+      <div class="card"><div class="card-header"><h3>Cajas del período</h3></div>
+        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cajero</th><th>Ventas</th><th>Gastos</th><th>Estado</th></tr></thead><tbody id="r-cajas"></tbody></table></div></div>
+    </div>
+    <div class="two-col">
+      <div class="card"><div class="card-header"><h3>Más vendidos</h3></div><div class="card-body" id="r-top" style="padding:4px 16px 16px"><p style="color:var(--text2);font-size:13px">Consulta un período para ver resultados</p></div></div>
+      <div class="card"><div class="card-header"><h3>Horas pico</h3></div><div class="card-body" id="r-horas" style="padding:4px 16px 16px"><p style="color:var(--text2);font-size:13px">Consulta un período para ver resultados</p></div></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-header"><h3>Producción por empleado</h3></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Empleado</th><th style="text-align:center">Ventas</th><th style="text-align:center">Servicios</th><th>Total generado</th><th>Servicios realizados</th></tr></thead>
+        <tbody id="r-emp-servicios"><tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Consulta un período para ver resultados</td></tr></tbody></table>
+      </div>
+    </div>`;
+  cargarReportes();
+}
+function repFiltro(ev,tipo){
+  const d=new Date();const ls=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  let desde,hasta=ls(d);
+  if(tipo==='hoy')desde=hasta;
+  else if(tipo==='ayer'){const y=new Date(d-864e5);desde=ls(y);hasta=ls(y);}
+  else if(tipo==='semana'){const s=new Date(d);s.setDate(d.getDate()-d.getDay());desde=ls(s);}
+  else if(tipo==='mes')desde=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+  else if(tipo==='30d'){const m=new Date(d);m.setDate(d.getDate()-29);desde=ls(m);}
+  document.querySelectorAll('.rep-q').forEach(b=>b.classList.remove('active'));ev.currentTarget.classList.add('active');
+  _gel('rep-desde').value=desde;_gel('rep-hasta').value=hasta;cargarReportes();
+}
+async function cargarReportes(){
+  try{
+    const desde=_gel('rep-desde').value,hasta=_gel('rep-hasta').value;
+    const [r,topItems,horas,empSvcs]=await Promise.all([
+      apiFetch(`${API}/peluqueria/reportes/resumen?desde=${desde}&hasta=${hasta}`),
+      apiFetch(`${API}/peluqueria/reportes/top-servicios?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+      apiFetch(`${API}/peluqueria/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+      apiFetch(`${API}/peluqueria/reportes/servicios-por-empleado?desde=${desde}&hasta=${hasta}`).catch(e=>{console.error('[rep-empleados]',e);return[];}),
+    ]);
+    if(_gel('r-ventas'))_gel('r-ventas').textContent=fmt(r.ventas.total_ventas);
+    if(_gel('r-gastos'))_gel('r-gastos').textContent=fmt(r.gastos.total_gastos);
+    if(_gel('r-pedidos'))_gel('r-pedidos').textContent=(r.ventas.citas||r.ventas.pedidos||0);
+    const ru=_gel('r-utilidad');if(ru){const util=r.utilidad;ru.textContent=fmt(util);ru.style.color=util>=0?'var(--green)':'var(--red)';}
+    const rm=_gel('r-metodos');if(rm)rm.innerHTML=`<div class="caja-row"><span>Efectivo</span><b>${fmt(r.ventas.efectivo)}</b></div><div class="caja-row"><span>Tarjeta</span><b>${fmt(r.ventas.tarjeta)}</b></div><div class="caja-row"><span>Nequi/QR</span><b>${fmt(r.ventas.nequi)}</b></div>`;
+    const rc=_gel('r-cajas');if(rc)rc.innerHTML=(r.cajas||[]).length?r.cajas.map(c=>`<tr><td>${fmtDate(c.fecha)}</td><td>${c.usuario_nombre||'—'}</td><td>${fmt(c.total_ventas)}</td><td>${fmt(c.total_gastos)}</td><td><span class="badge ${c.estado==='abierta'?'badge-green':'badge-gray'}">${c.estado}</span></td></tr>`).join(''):'<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sin cajas</td></tr>';
+    const rt=_gel('r-top');if(rt){if(topItems&&topItems.length){const mv=Math.max(...topItems.map(p=>+p.vendidos),1);rt.innerHTML=topItems.map((p,i)=>`<div class="gasto-bar-item"><span class="gasto-bar-label"><span style="color:var(--text2);font-size:11px;margin-right:4px">${i+1}.</span>${esc(p.nombre)}</span><div class="gasto-bar-track"><div class="gasto-bar-fill" style="width:${Math.round(+p.vendidos/mv*100)}%;background:var(--acc)"></div></div><span class="gasto-bar-val">${p.vendidos} × ${fmt(p.total)}</span></div>`).join('');} else {rt.innerHTML='<p style="color:var(--text2);text-align:center;padding:16px;font-size:13px">Sin datos en el período</p>';}}
+    const rh=_gel('r-horas');if(rh){if(horas&&horas.length){const mh=Math.max(...horas.map(h=>+h.total),1);rh.innerHTML=horas.map(h=>`<div class="gasto-bar-item"><span class="gasto-bar-label" style="min-width:48px">${String(h.hora).padStart(2,'0')}:00</span><div class="gasto-bar-track"><div class="gasto-bar-fill" style="width:${Math.round(+h.total/mh*100)}%;background:#8b5cf6"></div></div><span class="gasto-bar-val">${h.pedidos}ped·${fmt(h.total)}</span></div>`).join('');} else {rh.innerHTML='<p style="color:var(--text2);text-align:center;padding:16px;font-size:13px">Sin datos en el período</p>';}}
+    const re=_gel('r-emp-servicios');if(re){re.innerHTML=empSvcs&&empSvcs.length?empSvcs.map(e=>`<tr>
+      <td><b>${esc(e.empleado_nombre)}</b></td>
+      <td style="text-align:center">${e.ventas||0}</td>
+      <td style="text-align:center"><span class="badge badge-gray">${e.servicios||0}</span></td>
+      <td><b style="color:var(--green)">${fmt(e.total)}</b></td>
+      <td style="font-size:12px;color:var(--text2);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(e.detalle_servicios||'')}">${esc(e.detalle_servicios||'—')}</td>
+    </tr>`).join(''):'<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sin datos en el período</td></tr>';}
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── FACTURAS ───────────────────────────────────────────────────
+function renderFacturas(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Facturas</h3>
+        <div class="card-header-actions">
+          <input type="date" id="fact-desde" class="btn btn-outline btn-sm" onchange="cargarFacturas()" value="${today()}">
+          <input type="date" id="fact-hasta" class="btn btn-outline btn-sm" onchange="cargarFacturas()" value="${today()}">
+          <input id="fact-q" placeholder="N° o cliente..." oninput="cargarFacturas()" style="width:160px">
+          <button class="btn btn-outline btn-sm" onclick="cargarFacturas()">↻</button>
+        </div></div>
+      <div class="table-wrap"><table><thead><tr><th>N° Factura</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th><th>Cajero</th><th></th></tr></thead><tbody id="fact-tbody"></tbody></table></div>
+      <div id="fact-empty" style="display:none;text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin facturas en el rango seleccionado</div>
+      <div id="fact-loading" style="display:none;text-align:center;padding:24px;color:var(--text2)">Cargando...</div>
+    </div>`;
+  cargarFacturas();
+}
+async function cargarFacturas(){
+  const desde=_gel('fact-desde')?.value||today(),hasta=_gel('fact-hasta')?.value||today(),q=_gel('fact-q')?.value||'';
+  const fl=_gel('fact-loading'),fe=_gel('fact-empty'),ft=_gel('fact-tbody');
+  if(fl)fl.style.display='block';if(fe)fe.style.display='none';if(ft)ft.innerHTML='';
+  try{
+    let url=`${API}/admin/facturas?desde=${desde}&hasta=${hasta}`;if(q)url+=`&q=${encodeURIComponent(q)}`;
+    const data=await apiFetch(url)||[];
+    if(fl)fl.style.display='none';
+    if(!data.length){if(fe)fe.style.display='block';return;}
+    if(ft)ft.innerHTML=data.map(v=>`<tr><td><b>${v.numero_factura||'—'}</b></td><td>${fmtDate(v.creado)}</td><td>${v.cliente_nombre||'<span style="color:var(--text3)">Mostrador</span>'}</td><td style="font-size:12px">${v.metodo_pago||'—'}</td><td><b>${fmt(+v.total)}</b></td><td style="color:var(--text2);font-size:12px">${v.cajero_nombre||'—'}</td><td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td></tr>`).join('');
+  }catch(e){if(fl)fl.style.display='none';showToast(e.message,'err');}
+}
+async function abrirFactura(id){
+  try{
+    const [v,cfg]=await Promise.all([apiFetch(`${API}/admin/facturas/${id}`),_factCfg?Promise.resolve(_factCfg):apiFetch(`${API}/admin/config/factura`).then(c=>{_factCfg=c;return c;})]);
+    _factActual=v;const cf=cfg||{};const items=Array.isArray(v.items)?v.items:[];
+    const dt=new Date(v.creado),fecha=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}),hora=dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    let h=`<div class="recibo">`;
+    if(cf.nombre)h+=`<div class="recibo-center" style="font-weight:700;font-size:13px">${esc(cf.nombre)}</div>`;
+    if(cf.togNit!==false&&cf.nit)h+=`<div class="recibo-center">NIT: ${cf.nit}</div>`;
+    h+=`<hr class="recibo-hr"><div class="recibo-row recibo-total"><span>Factura</span><span>${v.numero_factura||'—'}</span></div>`;
+    h+=`<div class="recibo-row"><span>${fecha}</span><span>${hora}</span></div>`;
+    if(v.cliente_nombre)h+=`<div class="recibo-row"><span>Cliente</span><span>${esc(v.cliente_nombre)}</span></div>`;
+    h+=`<hr class="recibo-hr">`;
+    items.forEach(i=>{h+=`<div class="recibo-row"><span>${esc(i.nombre)}</span><span>${fmt((+i.precio)*(+i.qty))}</span></div>`;if(+i.qty>1)h+=`<div style="color:var(--text2);padding-left:6px;font-size:11px">${i.qty}×${fmt(+i.precio)}</div>`;});
+    h+=`<hr class="recibo-hr"><div class="recibo-row recibo-total" style="font-size:14px"><span>TOTAL</span><span>${fmt(+v.total)}</span></div></div>`;
+    _gel('fact-recibo-wrap').innerHTML=h;_gel('fact-modal').style.display='flex';
+  }catch(e){showToast('Error cargando factura: '+e.message,'err');}
+}
+function cerrarFactModal(){_gel('fact-modal').style.display='none';_factActual=null;}
+function imprimirFactura(){
+  const html=_gel('fact-recibo-wrap').innerHTML;const w=window.open('','_blank','width=400,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:monospace;font-size:12px;padding:10px;color:#000;background:#fff}.recibo{max-width:300px;margin:0 auto}.recibo-center{text-align:center;margin:2px 0}.recibo-row{display:flex;justify-content:space-between;padding:2px 0}.recibo-total{font-weight:700}.recibo-hr{border:none;border-top:1px dashed #000;margin:6px 0}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
+  w.document.close();
+}
+
+// ─── PROVEEDORES ─────────────────────────────────────────────────
+function renderProveedores(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Proveedores</h3><button class="btn btn-primary btn-sm" onclick="abrirProvModal(null)">+ Nuevo</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Estado</th><th></th></tr></thead><tbody id="prov-tbody"></tbody></table></div></div>`;
+  cargarProveedores();
+}
+let _provsCache=[];
+async function cargarProveedores(){
+  try{
+    const data=await apiFetch(`${API}/peluqueria/proveedores`)||[];
+    _provsCache=data;
+    const tb=_gel('prov-tbody');
+    if(tb)tb.innerHTML=data.map(p=>`<tr><td><b>${esc(p.nombre)}</b></td><td>${p.telefono||'—'}</td><td>${p.email||'—'}</td><td><span class="badge ${p.activo?'badge-green':'badge-gray'}">${p.activo?'Activo':'Inactivo'}</span></td><td><button class="btn btn-outline btn-sm" onclick="abrirProvModal('${p.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">Sin proveedores</td></tr>';
+  }catch(e){showToast(e.message,'err');}
+}
+async function abrirProvModal(id){
+  provEditId=id;
+  ['pv-nombre','pv-tel','pv-email'].forEach(f=>{const el=_gel(f);if(el)el.value='';});
+  _gel('prov-modal-title').textContent=id?'Editar proveedor':'Nuevo proveedor';
+  if(id){
+    const p=_provsCache.find(x=>x.id===id);
+    if(p){
+      if(_gel('pv-nombre'))_gel('pv-nombre').value=p.nombre||'';
+      if(_gel('pv-tel'))_gel('pv-tel').value=p.telefono||'';
+      if(_gel('pv-email'))_gel('pv-email').value=p.email||'';
+    }
+  }
+  _gel('prov-modal').style.display='flex';
+}
+async function guardarProveedor(){
+  try{
+    const b={nombre:_gel('pv-nombre').value,telefono:_gel('pv-tel').value,email:_gel('pv-email').value};
+    if(provEditId)await apiFetch(`${API}/peluqueria/proveedores/${provEditId}`,{method:'PUT',body:JSON.stringify(b)});
+    else await apiFetch(`${API}/peluqueria/proveedores`,{method:'POST',body:JSON.stringify(b)});
+    cerrarModal('prov-modal');showToast('Proveedor guardado ✓');cargarProveedores();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── PEDIDOS PROVEEDOR ────────────────────────────────────────────
+function renderPedidosProv(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Solicitudes a proveedores</h3><button class="btn btn-primary btn-sm" onclick="abrirPedidoProvModal()">+ Solicitud</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Fecha</th><th>Entrega</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody id="pedidos-prov-tbody"></tbody></table></div></div>`;
+  cargarPedidosProv();
+}
+async function cargarPedidosProv(){
+  try{
+    const data=await apiFetch(`${API}/admin/pedidos-proveedor`)||[];
+    const estados={pendiente:'badge-amber',enviado:'badge-blue',recibido:'badge-green',cancelado:'badge-red'};
+    const tb=_gel('pedidos-prov-tbody');
+    if(tb)tb.innerHTML=data.map(p=>`<tr><td><b>${esc(p.proveedor_nombre)}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estados[p.estado]||'badge-gray'}">${p.estado}</span></td><td><select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option value="">—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text2)">Sin solicitudes</td></tr>';
+  }catch(e){showToast(e.message,'err');}
+}
+async function cambiarEstadoPedido(id,estado){if(!estado)return;await apiFetch(`${API}/admin/pedidos-proveedor/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})});showToast('Estado actualizado');cargarPedidosProv();}
+async function abrirPedidoProvModal(){
+  try{
+    const provs=await apiFetch(`${API}/admin/proveedores`)||[];
+    const sel=_gel('pp-prov');if(sel)sel.innerHTML=provs.map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
+    ['pp-fecha','pp-notas','pp-total'].forEach(f=>{const el=_gel(f);if(el)el.value='';});
+    _gel('pedido-prov-modal').style.display='flex';
+  }catch(e){showToast(e.message,'err');}
+}
+async function guardarPedidoProv(){
+  try{
+    await apiFetch(`${API}/admin/pedidos-proveedor`,{method:'POST',body:JSON.stringify({proveedor_id:_gel('pp-prov').value,notas:_gel('pp-notas').value,total:+_gel('pp-total').value||0,fecha_entrega:_gel('pp-fecha').value||null})});
+    cerrarModal('pedido-prov-modal');showToast('Solicitud enviada ✓');cargarPedidosProv();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── PERSONAL/USUARIOS ────────────────────────────────────────────
+function renderPersonal(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Usuarios</h3><button class="btn btn-primary btn-sm" onclick="abrirPersonalModal(null)">+ Nuevo</button></div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody id="personal-tbody"></tbody></table></div></div>`;
+  cargarPersonal();
+}
+async function cargarPersonal(){
+  try{
+    const data=await apiFetch(`${API}/admin/usuarios`)||[];
+    const tb=_gel('personal-tbody');
+    if(tb)tb.innerHTML=data.map(u=>`<tr><td style="color:var(--text2);font-size:12px;font-weight:600">${u.numero_empleado!=null?String(u.numero_empleado).padStart(3,'0'):'—'}</td><td><b>${esc(u.nombre)}</b></td><td>${u.username||u.email||'—'}</td><td>${u.rol_nombre||'—'}</td><td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td><td><button class="btn btn-outline btn-sm" onclick="abrirPersonalModal('${u.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text2)">Sin usuarios</td></tr>';
+  }catch(e){showToast(e.message,'err');}
+}
+async function abrirPersonalModal(id){
+  personalEditId=id;
+  _gel('pers-modal-title').textContent=id?'Editar usuario':'Nuevo usuario';
+  ['p-nombre','p-email','p-user','p-pass','p-sueldo','p-tarifa','p-comision'].forEach(f=>{const el=_gel(f);if(el)el.value='';});
+  try{const roles=await apiFetch(`${API}/admin/roles`)||[];const sel=_gel('p-rol');if(sel)sel.innerHTML='<option value="">Sin rol</option>'+roles.map(r=>`<option value="${r.id}">${esc(r.nombre)}</option>`).join('');}catch{}
+  const lbl=_gel('p-pass-label');
+  if(lbl)lbl.textContent=id?'Nueva contraseña (dejar vacío para no cambiar)':'Contraseña *';
+  const passInp=_gel('p-pass');
+  if(passInp)passInp.placeholder=id?'Dejar vacío para no cambiar':'Mín. 6 caracteres';
+  if(id){
+    try{
+      const u=await apiFetch(`${API}/admin/usuarios/${id}`);
+      _gel('p-nombre').value=u.nombre||'';_gel('p-email').value=u.email||'';_gel('p-user').value=u.username||'';
+      const pr=_gel('p-rol');if(pr)pr.value=u.rol_id||'';
+      const pa=_gel('p-activo');if(pa)pa.checked=!!u.activo;
+      const ps=_gel('p-sueldo');if(ps)ps.value=u.sueldo_base||'';
+      const pt=_gel('p-tarifa');if(pt)pt.value=u.tarifa_hora||'';
+      const pc=_gel('p-comision');if(pc)pc.value=u.comision_pct||'';
+    }catch{}
+  }else{const pa=_gel('p-activo');if(pa)pa.checked=true;}
+  actualizarBadgePersonal();
+  _gel('personal-modal').style.display='flex';
+}
+function actualizarBadgePersonal(){const b=_gel('p-status-badge');if(!b)return;const a=_gel('p-activo')?.checked;b.textContent=a?'Activo':'Inactivo';b.className='badge '+(a?'badge-green':'badge-red');}
+async function guardarPersonal(){
+  try{
+    const nombre=_gel('p-nombre').value.trim();
+    const pass=_gel('p-pass').value;
+    if(!nombre)return showToast('El nombre es obligatorio','err');
+    if(!personalEditId&&!pass)return showToast('La contraseña es obligatoria para nuevos usuarios','err');
+    if(pass&&pass.length<6)return showToast('La contraseña debe tener al menos 6 caracteres','err');
+    const b={nombre,email:_gel('p-email').value.trim()||null,username:_gel('p-user').value.trim()||null,password:pass||undefined,rol_id:_gel('p-rol').value||null,activo:_gel('p-activo').checked,sueldo_base:+_gel('p-sueldo')?.value||null,tarifa_hora:+_gel('p-tarifa')?.value||null,comision_pct:+_gel('p-comision')?.value||null};
+    if(personalEditId){
+      await apiFetch(`${API}/admin/usuarios/${personalEditId}`,{method:'PUT',body:JSON.stringify(b)});
+      if(pass) await apiFetch(`${API}/admin/usuarios/${personalEditId}/password`,{method:'PUT',body:JSON.stringify({password:pass})});
+    }else{
+      await apiFetch(`${API}/admin/usuarios`,{method:'POST',body:JSON.stringify(b)});
+    }
+    cerrarModal('personal-modal');showToast('Usuario guardado ✓');cargarPersonal();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── ROLES ────────────────────────────────────────────────────────
+function renderRoles(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Roles y permisos</h3><button class="btn btn-primary btn-sm" onclick="abrirRolModal(null)">+ Nuevo rol</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Descripción</th><th>Usuarios</th><th></th></tr></thead><tbody id="roles-tbody"></tbody></table></div></div>`;
+  cargarRoles();
+}
+async function cargarRoles(){
+  try{
+    const data=await apiFetch(`${API}/admin/roles`)||[];rolesCache=data;
+    const tb=_gel('roles-tbody');
+    if(tb)tb.innerHTML=data.map(r=>`<tr><td><b>${esc(r.nombre)}</b></td><td style="color:var(--text2)">${r.descripcion||''}</td><td>${r.total_usuarios||0}</td><td style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="abrirAsignarUsersModal('${r.id}','${esc(r.nombre).replace(/'/g,"\\'")}')">Asignar</button><button class="btn btn-outline btn-sm" onclick="abrirRolModal('${r.id}')">Editar</button>${!r.es_sistema?`<button class="btn btn-danger btn-sm" onclick="eliminarRol('${r.id}')">Eliminar</button>`:''}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text2)">Sin roles</td></tr>';
+  }catch(e){showToast(e.message,'err');}
+}
+async function eliminarRol(id){if(!confirm('¿Eliminar rol?'))return;await apiFetch(`${API}/admin/roles/${id}`,{method:'DELETE'});cargarRoles();}
+async function abrirRolModal(id){
+  rolEditId=id;
+  _gel('rol-modal-title').textContent=id?'Editar rol':'Nuevo rol';
+  _gel('r-nombre').value='';_gel('r-desc').value='';
+  _gel('permisos-grid').innerHTML=CATEGORIAS_PERMISOS.map(cat=>`<div style="margin-top:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;padding-bottom:5px;border-bottom:0.5px solid var(--border);margin-bottom:6px">${cat.grupo}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">${cat.permisos.map(([k,n])=>`<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px 0"><input type="checkbox" id="perm-${k}" value="${k}"> ${n}</label>`).join('')}</div></div>`).join('');
+  if(id){
+    if(!rolesCache.length)await cargarRoles();
+    const rol=rolesCache.find(r=>r.id===id);
+    if(rol){
+      _gel('r-nombre').value=rol.nombre||'';_gel('r-desc').value=rol.descripcion||'';
+      const p=typeof rol.permisos==='string'?JSON.parse(rol.permisos):(rol.permisos||{});
+      MODULOS_PERMISOS.forEach(([k])=>{const el=_gel(`perm-${k}`);if(el)el.checked=!!p[k];});
+    }
+  }
+  _gel('rol-modal').style.display='flex';
+}
+async function guardarRol(){
+  try{
+    const permisos={};MODULOS_PERMISOS.forEach(([k])=>{if(_gel(`perm-${k}`)?.checked)permisos[k]=true;});
+    const b={nombre:_gel('r-nombre').value,descripcion:_gel('r-desc').value,permisos};
+    if(rolEditId)await apiFetch(`${API}/admin/roles/${rolEditId}`,{method:'PUT',body:JSON.stringify(b)});
+    else await apiFetch(`${API}/admin/roles`,{method:'POST',body:JSON.stringify(b)});
+    cerrarModal('rol-modal');showToast('Rol guardado ✓');cargarRoles();
+  }catch(e){showToast(e.message,'err');}
+}
+let _asigRolId=null;
+async function abrirAsignarUsersModal(roleId,roleNombre){
+  _asigRolId=roleId;_gel('role-assign-title').textContent=`Asignar usuarios — ${roleNombre}`;
+  try{
+    window._assignUsersCache=await apiFetch(`${API}/admin/usuarios`)||[];renderAsignacionList('');
+    const s=_gel('role-assign-search');if(s){s.value='';s.oninput=()=>renderAsignacionList(s.value.trim());}
+    _gel('role-assign-modal').style.display='flex';
+  }catch(e){showToast(e.message,'err');}
+}
+function renderAsignacionList(filter){
+  const users=window._assignUsersCache||[],q=(filter||'').toLowerCase();
+  const items=users.filter(u=>!q||(u.nombre||'').toLowerCase().includes(q)||(u.username||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q))
+    .map(u=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0"><input type="checkbox" class="assign-user-chk" value="${u.id}" ${String(u.rol_id)===String(_asigRolId)?'checked':''}><div style="flex:1"><b>${esc(u.nombre)}</b><div style="font-size:12px;color:var(--text2)">${u.username||u.email||''}</div></div></label>`).join('');
+  _gel('role-assign-list').innerHTML=items||'<div style="color:var(--text2)">No hay usuarios</div>';
+}
+async function guardarAsignacionRol(){
+  if(!_asigRolId)return;const checked=Array.from(document.querySelectorAll('.assign-user-chk:checked')).map(i=>i.value);
+  try{await apiFetch(`${API}/admin/roles/${_asigRolId}/usuarios`,{method:'POST',body:JSON.stringify({user_ids:checked})});cerrarModal('role-assign-modal');showToast('Asignación guardada ✓');cargarRoles();}
+  catch(e){showToast(e.message,'err');}
+}
+function seleccionarTodosRol(){document.querySelectorAll('.assign-user-chk').forEach(c=>c.checked=true);}
+function limpiarSeleccionRol(){document.querySelectorAll('.assign-user-chk').forEach(c=>c.checked=false);}
+
+// ─── HORARIOS ─────────────────────────────────────────────────────
+function _fechaParaDia(dia){
+  const hoy=new Date();
+  const offset=(dia-hoy.getDay()+7)%7;
+  const d=new Date(hoy);d.setDate(hoy.getDate()+offset);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function renderHorarios(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Distribución de horarios</h3><button class="btn btn-primary btn-sm" onclick="abrirHorarioModal()">+ Turno</button></div>
+      <div class="card-body" id="horarios-container"></div></div>`;
+  cargarHorarios();
+}
+async function cargarHorarios(){
+  try{
+    const [horarios]=await Promise.all([apiFetch(`${API}/admin/horarios`)||[]]);
+    const byUser={};(horarios||[]).forEach(h=>{const k=h.empleado_pel_id||h.usuario_id;if(!byUser[k])byUser[k]={nombre:h.usuario_nombre,turnos:{}};byUser[k].turnos[h.dia_semana]=h;});
+    const el=_gel('horarios-container');
+    const diaHoy=new Date().getDay();
+    if(el)el.innerHTML=Object.entries(byUser).map(([uid,u])=>`<div style="margin-bottom:14px;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden"><div style="padding:8px 12px;background:var(--bg3);font-size:13px;font-weight:500">${esc(u.nombre)}</div><div class="horario-grid" style="padding:10px">${DIAS.map((d,i)=>{const t=u.turnos[i];const eid=t?(t.empleado_pel_id||t.usuario_id):uid;const esPasado=(i-diaHoy+7)%7!==0&&i!==diaHoy&&(i<diaHoy);return `<div class="dia-col"><div class="dia-label" style="${esPasado?'color:var(--text3)':''}">${d}</div><div class="dia-slot ${t?'activo':'vacio'}" style="${esPasado?'opacity:.35;cursor:default':'cursor:pointer'}" ${!esPasado?(t?`onclick="editarHorarioSlot('${t.id}','${eid}',${i},'${t.hora_entrada.slice(0,5)}','${t.hora_salida.slice(0,5)}')"`:`onclick="abrirHorarioSlot('${uid}',${i})"`):''}>${t?`<span>${t.hora_entrada.slice(0,5)}</span><span>${t.hora_salida.slice(0,5)}</span>`:(esPasado?'':'+')} </div></div>`;}).join('')}</div></div>`).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">Sin horarios configurados. Agrega empleados primero en la sección Empleados.</div>';
+  }catch(e){showToast(e.message,'err');}
+}
+async function _cargarPersonalHorario(){
+  const personal=await apiFetch(`${API}/peluqueria/empleados?soloActivos=true`)||[];
+  const sel=_gel('h-empleado');if(sel)sel.innerHTML=personal.map(u=>`<option value="${u.id}">${esc(u.nombre+(u.apellido?' '+u.apellido:''))}</option>`).join('');
+  return personal;
+}
+async function abrirHorarioModal(){
+  try{
+    await _cargarPersonalHorario();
+    _gel('h-turno-id').value='';
+    _gel('h-modal-title').textContent='Agregar turno';
+    _gel('h-entrada').value='08:00';_gel('h-salida').value='17:00';
+    _gel('h-empleado').disabled=false;_gel('h-dia').disabled=false;
+    _gel('h-btn-eliminar').style.display='none';
+    _gel('horario-modal').style.display='flex';
+  }catch(e){showToast(e.message,'err');}
+}
+async function abrirHorarioSlot(uid,dia){
+  try{
+    const personal=await _cargarPersonalHorario();
+    _gel('h-turno-id').value='';
+    _gel('h-modal-title').textContent='Agregar turno';
+    _gel('h-empleado').value=uid;_gel('h-dia').value=dia;
+    _gel('h-entrada').value='08:00';_gel('h-salida').value='17:00';
+    _gel('h-empleado').disabled=true;_gel('h-dia').disabled=true;
+    _gel('h-btn-eliminar').style.display='none';
+    _gel('horario-modal').style.display='flex';
+  }catch(e){showToast(e.message,'err');}
+}
+async function editarHorarioSlot(id,uid,dia,entrada,salida){
+  try{
+    await _cargarPersonalHorario();
+    _gel('h-turno-id').value=id;
+    _gel('h-modal-title').textContent='Editar turno';
+    _gel('h-empleado').value=uid;_gel('h-dia').value=dia;
+    _gel('h-entrada').value=entrada;_gel('h-salida').value=salida;
+    _gel('h-empleado').disabled=true;_gel('h-dia').disabled=true;
+    _gel('h-btn-eliminar').style.display='';
+    _gel('horario-modal').style.display='flex';
+  }catch(e){showToast(e.message,'err');}
+}
+async function guardarHorario(){
+  try{
+    const tid=_gel('h-turno-id').value;
+    const diaSemana=+_gel('h-dia').value;
+    const fecha=_fechaParaDia(diaSemana);
+    if(tid)await apiFetch(`${API}/admin/horarios/${tid}`,{method:'DELETE'});
+    await apiFetch(`${API}/admin/horarios`,{method:'POST',body:JSON.stringify({usuario_id:_gel('h-empleado').value,dia_semana:diaSemana,hora_entrada:_gel('h-entrada').value,hora_salida:_gel('h-salida').value,fecha})});
+    cerrarModal('horario-modal');showToast('Turno guardado ✓');cargarHorarios();
+  }catch(e){showToast(e.message,'err');}
+}
+async function eliminarHorarioActual(){
+  try{
+    const tid=_gel('h-turno-id').value;if(!tid)return;
+    await apiFetch(`${API}/admin/horarios/${tid}`,{method:'DELETE'});
+    cerrarModal('horario-modal');showToast('Turno eliminado');cargarHorarios();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── ASISTENCIA ───────────────────────────────────────────────────
+const DIAS_NOMBRES=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+function renderAsistencia(){
+  const hoy=new Date();const diaNombre=DIAS_NOMBRES[hoy.getDay()];
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Disponibilidad de hoy — ${diaNombre}</h3></div>
+      <div class="table-wrap"><table><thead><tr><th>Empleado</th><th>Entrada</th><th>Salida</th><th>Duración</th><th style="text-align:right">Valor turno</th></tr></thead><tbody id="asist-tbody"></tbody></table></div>
+    </div>`;
+  cargarAsistencia();
+}
+function _calcDuracion(entrada,salida){
+  const [eh,em]=entrada.split(':').map(Number);
+  const [sh,sm]=salida.split(':').map(Number);
+  let mins=(sh*60+sm)-(eh*60+em);
+  if(mins<0)mins+=24*60;
+  const h=Math.floor(mins/60),m=mins%60;
+  return {label:m>0?`${h}h ${m}m`:`${h}h`, horas:mins/60};
+}
+function _calcValorTurno(h, horas){
+  const base=parseFloat(h.sueldo_base)||0;
+  const xhora=parseFloat(h.tarifa_hora)||0;
+  let total=0,partes=[];
+  if(base>0){total+=base;partes.push(`${fmt(base)} base`);}
+  if(xhora>0){const v=xhora*horas;total+=v;partes.push(`${fmt(v)} x hora`);}
+  if(!base&&!xhora)return{valor:null,detalle:'Sin configurar'};
+  return{valor:total,detalle:partes.join(' + ')};
+}
+async function cargarAsistencia(){
+  try{
+    const hoy=new Date().getDay();
+    const horarios=await apiFetch(`${API}/admin/horarios`)||[];
+    const hoyTurnos=horarios.filter(h=>h.dia_semana===hoy);
+    const tb=_gel('asist-tbody');
+    if(tb)tb.innerHTML=hoyTurnos.map(h=>{
+      const {label,horas}=_calcDuracion(h.hora_entrada.slice(0,5),h.hora_salida.slice(0,5));
+      const {valor,detalle}=_calcValorTurno(h,horas);
+      const valorHtml=valor!=null
+        ?`<div style="font-weight:600;color:var(--green)">${fmt(valor)}</div><div style="font-size:11px;color:var(--text3)">${detalle}</div>`
+        :`<div style="font-size:12px;color:var(--text3)">${detalle}</div>`;
+      return `<tr>
+        <td><b>${esc(h.usuario_nombre)}</b></td>
+        <td>${h.hora_entrada.slice(0,5)}</td>
+        <td>${h.hora_salida.slice(0,5)}</td>
+        <td>${label}</td>
+        <td style="text-align:right">${valorHtml}</td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">Ningún empleado programado para hoy</td></tr>';
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── CONFIG FACTURA ───────────────────────────────────────────────
+let _logoBase64=null;
+function previewLogo(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>512*1024){showToast('La imagen supera 500 KB','err');return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    _logoBase64=e.target.result;
+    const pr=_gel('f-logo-preview'),pl=_gel('f-logo-placeholder'),qb=_gel('f-logo-quitar');
+    pr.src=_logoBase64;pr.style.display='';pl.style.display='none';if(qb)qb.style.display='';
+  };r.readAsDataURL(file);
+}
+function quitarLogo(){
+  _logoBase64=null;
+  const pr=_gel('f-logo-preview'),pl=_gel('f-logo-placeholder'),qb=_gel('f-logo-quitar');
+  if(pr){pr.src='';pr.style.display='none';}if(pl)pl.style.display='';if(qb)qb.style.display='none';
+  const fi=_gel('f-logo-file');if(fi)fi.value='';
+}
+function renderCfgFactura(){
+  document.getElementById('content').innerHTML=`
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><h3>Datos del negocio</h3></div>
+        <div class="card-body">
+          <div class="field"><label>Logo del negocio</label>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+              <img id="f-logo-preview" src="" alt="" style="width:72px;height:72px;object-fit:contain;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);display:none">
+              <div id="f-logo-placeholder" style="width:72px;height:72px;border:2px dashed var(--border);border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:22px">🖼️</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <button class="btn" onclick="document.getElementById('f-logo-file').click()" type="button" style="font-size:12px;padding:6px 12px">📁 Subir imagen</button>
+                <button class="btn" id="f-logo-quitar" onclick="quitarLogo()" type="button" style="font-size:12px;padding:6px 12px;display:none">✕ Quitar logo</button>
+              </div>
+            </div>
+            <input type="file" id="f-logo-file" accept="image/*" style="display:none" onchange="previewLogo(this)">
+            <div style="font-size:11px;color:var(--text3)">PNG, JPG o SVG · máx 500 KB · se mostrará en facturas</div>
+          </div>
+          <div class="field"><label>Nombre</label><input id="f-nombre" placeholder="Mi Peluquería"></div>
+          <div class="field"><label>NIT / RUT</label><input id="f-nit" placeholder="900.123.456-7"></div>
+          <div class="field"><label>Dirección</label><input id="f-dir" placeholder="Calle 123 # 45-67"></div>
+          <div class="field"><label>Ciudad</label><input id="f-ciudad" placeholder="Bogotá"></div>
+          <div class="field"><label>Teléfono</label><input id="f-tel" placeholder="+57 300 123 4567"></div>
+          <div class="field"><label>Email</label><input id="f-email" type="email"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header"><h3>Opciones de factura</h3></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="field"><label>Prefijo</label><input id="f-prefijo" placeholder="FAC-"></div>
+              <div class="field"><label>Consecutivo</label><input id="f-consec" type="number" min="1" placeholder="1"></div>
+              <div class="field"><label>IVA (%)</label><select id="f-iva"><option value="0">0% — Sin IVA</option><option value="5">5%</option><option value="8">8%</option><option value="19">19%</option></select></div>
+              <div class="field"><label>Tipo doc.</label><select id="f-tipo"><option value="factura">Factura</option><option value="ticket">Ticket</option><option value="cuenta">Cuenta de cobro</option></select></div>
+            </div>
+            <div class="toggle-row"><div class="toggle-label">Mostrar NIT</div><label class="toggle"><input type="checkbox" id="f-tog-nit" checked><span class="toggle-s"></span></label></div>
+            <div class="toggle-row"><div class="toggle-label">Desglosar IVA</div><label class="toggle"><input type="checkbox" id="f-tog-iva" checked><span class="toggle-s"></span></label></div>
+            <div class="toggle-row"><div class="toggle-label">Método de pago</div><label class="toggle"><input type="checkbox" id="f-tog-metodo" checked><span class="toggle-s"></span></label></div>
+            <div class="toggle-row"><div class="toggle-label">Fecha y hora</div><label class="toggle"><input type="checkbox" id="f-tog-fecha" checked><span class="toggle-s"></span></label></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Pie de factura</h3></div>
+          <div class="card-body">
+            <div class="field"><label>Mensaje de agradecimiento</label><textarea id="f-gracias" placeholder="¡Gracias por su visita!"></textarea></div>
+            <div class="field"><label>Texto adicional</label><textarea id="f-footer" placeholder="Instagram: @mipeluqueria"></textarea></div>
+            <button class="btn btn-success btn-block" onclick="guardarCfgFactura()">💾 Guardar configuración</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  cargarCfgFactura();
+}
+async function cargarCfgFactura(){
+  try{
+    const d=await apiFetch(`${API}/admin/config/factura`)||{};
+    if(d.logo){const pr=_gel('f-logo-preview'),pl=_gel('f-logo-placeholder'),qb=_gel('f-logo-quitar');if(pr){pr.src=d.logo;pr.style.display='';pl.style.display='none';if(qb)qb.style.display='';}}_logoBase64=d.logo||null;
+    const fields={nombre:'f-nombre',nit:'f-nit',direccion:'f-dir',ciudad:'f-ciudad',telefono:'f-tel',email:'f-email',prefijo:'f-prefijo',gracias:'f-gracias',footer:'f-footer'};
+    Object.entries(fields).forEach(([k,f])=>{const el=_gel(f);if(el)el.value=d[k]||'';});
+    const fi=_gel('f-iva');if(fi)fi.value=String(d.iva??8);
+    const ft=_gel('f-tipo');if(ft)ft.value=d.tipoDoc||'factura';
+    const fc=_gel('f-consec');if(fc)fc.value=d.consecutivo||1;
+    const togs={togNit:'f-tog-nit',togIva:'f-tog-iva',togMetodo:'f-tog-metodo',togFecha:'f-tog-fecha'};
+    Object.entries(togs).forEach(([k,f])=>{const el=_gel(f);if(el)el.checked=d[k]!==false;});
+  }catch{}
+}
+async function guardarCfgFactura(){
+  try{
+    const body={logo:_logoBase64||null,nombre:_gel('f-nombre').value,nit:_gel('f-nit').value,direccion:_gel('f-dir').value,ciudad:_gel('f-ciudad').value,telefono:_gel('f-tel').value,email:_gel('f-email').value,prefijo:_gel('f-prefijo').value,consecutivo:+_gel('f-consec').value,iva:+_gel('f-iva').value,tipoDoc:_gel('f-tipo').value,gracias:_gel('f-gracias').value,footer:_gel('f-footer').value,togNit:_gel('f-tog-nit').checked,togIva:_gel('f-tog-iva').checked,togMetodo:_gel('f-tog-metodo').checked,togFecha:_gel('f-tog-fecha').checked};
+    await apiFetch(`${API}/admin/config/factura`,{method:'PUT',body:JSON.stringify(body)});showToast('Configuración guardada ✓');
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── CONFIG IMPRESORA ─────────────────────────────────────────────
+function renderCfgImpresora(){
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><h3>Configuración de impresora</h3></div>
+      <div class="card-body" style="max-width:440px">
+        <div class="field"><label>Tipo</label><select id="imp-tipo" onchange="toggleCamposImpresora()"><option value="termica">Térmica (USB/Red)</option><option value="laser">Láser / Tinta</option><option value="pdf">Solo PDF</option></select></div>
+        <div class="field"><label>Nombre / Modelo</label><input id="imp-nombre" placeholder="Epson TM-T20III"></div>
+        <div class="field"><label>Ancho de papel</label><select id="imp-ancho"><option value="58">58 mm</option><option value="80" selected>80 mm</option></select></div>
+        <div id="imp-red-section">
+          <div class="field"><label>IP de impresora</label><input id="imp-ip" placeholder="192.168.1.200"></div>
+          <div class="field"><label>Puerto</label><input id="imp-puerto" type="number" placeholder="9100"></div>
+        </div>
+        <div class="field"><label>Copias por ticket</label><input id="imp-copias" type="number" min="1" max="5" placeholder="1"></div>
+        <div class="toggle-row"><div class="toggle-label">Imprimir logo</div><label class="toggle"><input type="checkbox" id="imp-logo" checked><span class="toggle-s"></span></label></div>
+        <button class="btn btn-success btn-block" onclick="guardarCfgImpresora()">💾 Guardar</button>
+      </div>
+    </div>
+    <div class="card" style="max-width:440px">
+      <div class="card-header"><h3>Prueba de impresión</h3></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Imprime un ticket de prueba para verificar la configuración.</p>
+        <button class="btn btn-outline btn-block" onclick="imprimirPrueba()">🖨️ Imprimir ticket de prueba</button>
+        <div id="imp-preview" style="margin-top:16px;font-family:monospace;font-size:12px;background:var(--bg3);border-radius:var(--r);padding:14px;white-space:pre-wrap;display:none"></div>
+      </div>
+    </div>`;
+  cargarCfgImpresora();
+}
+function toggleCamposImpresora(){const es=_gel('imp-tipo')?.value==='termica';const s=_gel('imp-red-section');if(s)s.style.display=es?'block':'none';}
+async function cargarCfgImpresora(){
+  try{
+    const d=await apiFetch(`${API}/admin/config/impresora`)||{};
+    const ti=_gel('imp-tipo');if(ti)ti.value=d.tipo||'termica';
+    const nom=_gel('imp-nombre');if(nom)nom.value=d.nombre||'';
+    const an=_gel('imp-ancho');if(an)an.value=String(d.ancho_papel||80);
+    const ip=_gel('imp-ip');if(ip)ip.value=d.ip_impresora||'';
+    const pu=_gel('imp-puerto');if(pu)pu.value=d.puerto||9100;
+    const co=_gel('imp-copias');if(co)co.value=d.copias||1;
+    const lo=_gel('imp-logo');if(lo)lo.checked=d.imprimir_logo!==false;
+    toggleCamposImpresora();
+  }catch{}
+}
+async function guardarCfgImpresora(){
+  try{
+    await apiFetch(`${API}/admin/config/impresora`,{method:'PUT',body:JSON.stringify({tipo:_gel('imp-tipo').value,nombre:_gel('imp-nombre').value,ancho_papel:+_gel('imp-ancho').value,ip_impresora:_gel('imp-ip').value||null,puerto:+_gel('imp-puerto').value,copias:+_gel('imp-copias').value,imprimir_logo:_gel('imp-logo').checked})});
+    showToast('Configuración guardada ✓');
+  }catch(e){showToast(e.message,'err');}
+}
+function imprimirPrueba(){
+  const n=new Date();const p=_gel('imp-ancho')?.value==='58'?32:42;const linea='─'.repeat(p);const centro=t=>t.padStart(Math.floor((p+t.length)/2)).padEnd(p);
+  const ticket=[centro('✂️ DJPOS'),centro('TICKET DE PRUEBA'),linea,'Fecha: '+n.toLocaleString('es-CO'),linea,'1x Corte cabello             $25.000','1x Tinte                     $45.000',linea,'TOTAL:                       $70.000',linea,centro('¡Gracias por su visita!'),linea,''].join('\n');
+  const prev=_gel('imp-preview');if(prev){prev.textContent=ticket;prev.style.display='block';}showToast('Ticket de prueba generado ✓');
+}
+
+if(TOKEN)iniciar();
+</script>
+
+<script>
+/* Eye toggle para campos de contraseña */
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('input[type="password"]').forEach(function(inp){
+    var w=document.createElement('div');
+    w.style.cssText='position:relative;display:block';
+    inp.parentNode.insertBefore(w,inp);
+    w.appendChild(inp);
+    inp.style.paddingRight='38px';
+    var b=document.createElement('button');
+    b.type='button';
+    b.title='Ver/ocultar contraseña';
+    b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    b.style.cssText='position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;padding:2px;line-height:0;display:flex;align-items:center;justify-content:center;opacity:.6;transition:.1s';
+    b.onmousedown=function(e){e.preventDefault()};
+    b.onclick=function(){
+      var show=inp.type==='password';
+      inp.type=show?'text':'password';
+      b.style.opacity=show?'1':'.6';
+      b.style.color=show?'#0B8457':'#888';
+    };
+    w.appendChild(b);
+  });
+});
+</script>
+</body>
+</html>
+
