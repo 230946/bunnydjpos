@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Peluquería Admin — DJPOS</title>
   <link rel="icon" href="/img/logo.png" type="image/png">
+  <link rel="stylesheet" href="css/responsive.css">
   <style>
     :root{
       --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
@@ -199,8 +200,9 @@
     <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-top:4px">Ingresar</button>
   </div>
 </div>
+<div id="sb-overlay" onclick="closeMobileSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90"></div>
 <div class="app" id="app" style="display:none">
-  <nav class="sidebar">
+  <nav class="sidebar" id="sidebar">
     <div class="sb-logo"><img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0"></div>
     <div class="nav-sep" onclick="toggleGrupo('grp-principal')">Principal <span class="sep-arrow" id="arr-principal">▼</span></div>
     <div class="nav-group" id="grp-principal">
@@ -787,6 +789,7 @@ async function cargarSvcs(){
 let _pg='dashboard';
 const titles={dashboard:'Dashboard',agenda:'Agenda',clientes:'Clientes',servicios:'Catálogo de servicios',empleados:'Empleados',comisiones:'Comisiones','cfg-comisiones':'Configuración de comisiones',paquetes:'Paquetes / Membresías',inventario:'Inventario',caja:'Caja del día',gastos:'Gastos',reportes:'Reportes',facturas:'Facturas',proveedores:'Proveedores','pedidos-prov':'Pedidos a proveedores',personal:'Usuarios',roles:'Roles y permisos',horarios:'Horarios',asistencia:'Asistencia','cfg-factura':'Config. factura','cfg-impresora':'Config. impresora'};
 function nav(p){
+  if(window.innerWidth<=700)closeMobileSidebar();
   // Verificar permiso antes de navegar
   const req=NAV_PERMS[p];
   if(req&&!perm(req)){showToast('Sin permiso para acceder a esta sección','err');return;}
@@ -808,7 +811,22 @@ function toggleSubNav(id){
   if(arr)arr.style.transform=open?'':'rotate(-90deg)';
 }
 function refreshPage(){nav(_pg);}
+function openMobileSidebar(){
+  const sb=document.getElementById('sidebar'),ov=document.getElementById('sb-overlay');
+  if(!sb||!ov)return;
+  sb.style.setProperty('display','flex','important');
+  sb.style.position='fixed';sb.style.left='0';sb.style.top='0';sb.style.bottom='0';
+  sb.style.zIndex='100';sb.style.boxShadow='4px 0 20px rgba(0,0,0,.3)';
+  ov.style.display='block';
+}
+function closeMobileSidebar(){
+  const sb=document.getElementById('sidebar'),ov=document.getElementById('sb-overlay');
+  if(!sb||!ov)return;
+  if(window.innerWidth<=700){sb.style.removeProperty('display');sb.style.cssText='';}
+  ov.style.display='none';
+}
 function toggleSidebar(){
+  if(window.innerWidth<=700){openMobileSidebar();return;}
   const sb=document.querySelector('.sidebar');
   sb.classList.toggle('collapsed');
   localStorage.setItem('pel_sb',sb.classList.contains('collapsed')?'0':'1');

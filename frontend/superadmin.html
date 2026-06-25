@@ -177,9 +177,13 @@ tr:hover td{background:var(--bg2)}
     </div>
   </div>
 
+  <div id="sb-overlay" onclick="closeMobileSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90"></div>
   <div class="main">
     <div class="topbar">
-      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="sb-hamburger" class="show-mobile" onclick="openMobileSidebar()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 6px;border-radius:var(--r);color:var(--text);display:none">☰</button>
+        <span class="topbar-title" id="topbar-title">Dashboard</span>
+      </div>
       <span id="topbar-user" style="font-size:12px;color:var(--text2)"></span>
     </div>
     <div class="content">
@@ -548,7 +552,22 @@ function showApp(){
   loadDashboard();
 }
 
+function openMobileSidebar(){
+  const sb=document.querySelector('.sidebar'),ov=document.getElementById('sb-overlay');
+  if(!sb||!ov)return;
+  sb.style.setProperty('display','flex','important');
+  sb.style.position='fixed';sb.style.left='0';sb.style.top='0';sb.style.bottom='0';
+  sb.style.width='220px';sb.style.zIndex='100';sb.style.boxShadow='4px 0 20px rgba(0,0,0,.3)';
+  ov.style.display='block';
+}
+function closeMobileSidebar(){
+  const sb=document.querySelector('.sidebar'),ov=document.getElementById('sb-overlay');
+  if(!sb||!ov)return;
+  if(window.innerWidth<=700){sb.style.removeProperty('display');sb.style.cssText='';}
+  ov.style.display='none';
+}
 function showPanel(p,btn){
+  if(window.innerWidth<=700)closeMobileSidebar();
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
   document.getElementById('panel-'+p).classList.add('active');
