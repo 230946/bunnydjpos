@@ -218,15 +218,54 @@ table.inv tr:hover td{background:var(--bg2)}
 .anim-flash{animation:flashGreen .4s ease}
 .mb>.md{animation:slideUp .22s ease-out}
 
+/* ── TABLET ── */
+@media(min-width:768px) and (max-width:1023px){
+  .sidebar{width:64px}
+  .nav-icon span.lbl{display:none}
+  .pedido-panel{width:240px}
+  .menu-items-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .cobro-right{width:260px}
+}
+
 /* ── MOBILE ── */
-@media(max-width:700px){
-  .sidebar{width:56px} .nav-icon span.lbl{display:none}
-  .pedido-panel{position:fixed;bottom:0;left:56px;right:0;height:65vh;border-left:none;border-top:1px solid var(--border2);border-radius:16px 16px 0 0;z-index:50;box-shadow:0 -4px 20px rgba(0,0,0,.15)}
+@media(max-width:767px){
+  /* Sidebar oculto; hamburger lo despliega */
+  .sidebar{display:none !important}
+  .show-mobile{display:flex !important}
+
+  /* Topbar móvil */
+  #mobile-topbar{display:flex !important}
+
+  /* Panel de pedido flotante inferior */
+  .pedido-panel{position:fixed;bottom:0;left:0;right:0;height:65vh;border-left:none;border-top:1px solid var(--border2);border-radius:16px 16px 0 0;z-index:50;box-shadow:0 -4px 20px rgba(0,0,0,.15)}
   .pedido-panel.hidden{display:none}
-  .menu-cats{width:90px}
+
+  /* Menú */
+  .menu-cats{width:80px}
+  .menu-items-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));padding:8px}
+
+  /* Cobro stack vertical */
   .cobro-layout{flex-direction:column}
   .cobro-right{width:100%}
+
+  /* Mesas en 3 columnas */
   .mesas-grid{grid-template-columns:repeat(3,1fr)}
+  .mesa-card{min-height:74px;padding:12px 6px}
+
+  /* Botones táctiles mínimo 44px */
+  .btn{min-height:44px;padding:10px 16px}
+  .btn-sm{min-height:38px;padding:7px 12px}
+  .btn-block{min-height:48px}
+  .qty-btn{width:36px;height:36px;font-size:18px}
+  .pay-btn{min-height:64px;padding:10px 6px}
+  .nav-icon{min-height:52px;width:52px}
+  .ticket-btn{min-height:44px}
+
+  /* Modal pago pantalla completa */
+  .pay-modal-box{width:calc(100vw - 24px);max-width:420px}
+
+  /* Main sin sidebar */
+  .main{flex-direction:column}
 }
     img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
     img[src="/img/logo.png"]:hover{transform:scale(1.15)}
@@ -715,12 +754,12 @@ function openMobileSidebar(){
 function closeMobileSidebar(){
   const sb=document.querySelector('.sidebar'),ov=$('sb-overlay');
   if(!sb||!ov)return;
-  if(window.innerWidth<=700){sb.style.removeProperty('display');sb.style.cssText='';}
+  if(window.innerWidth<=767){sb.style.removeProperty('display');sb.style.cssText='';}
   ov.style.display='none';
 }
 // ─── Nav ──────────────────────────────────────────────────────
 function nav(p,btn){
-  if(window.innerWidth<=700)closeMobileSidebar();
+  if(window.innerWidth<=767)closeMobileSidebar();
   clearTimeout(cajaTimer);
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-icon').forEach(el=>el.classList.remove('active'));

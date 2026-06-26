@@ -226,6 +226,50 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .spi-dur{font-size:11px;color:var(--text3)}
 .spi-price{font-size:13px;font-weight:700;color:var(--acc);flex-shrink:0}
 
+/* ── RESPONSIVE ── */
+@media(min-width:768px){
+  #mob-cobro-fab,#mob-cobro-overlay{display:none!important}
+  .mob-close-cobro{display:none!important}
+}
+@media(min-width:768px) and (max-width:1023px){
+  .cobro-panel{width:280px}
+  .tab-btn{font-size:11px;padding:4px 9px}
+}
+@media(max-width:767px){
+  /* Topbar compacto */
+  .tb-time,.tb-user{display:none}
+  .tab-btn{font-size:11px;padding:5px 9px}
+  /* Botones táctiles */
+  .btn{min-height:44px;padding:9px 14px}
+  .btn-sm{min-height:38px;padding:7px 11px}
+  .btn-xs{min-height:34px;padding:5px 9px}
+  .cobrar-btn{min-height:52px;font-size:15px}
+  .fil-btn{padding:6px 12px;min-height:36px}
+  .btn-block{min-height:48px}
+  /* Citas panel full width */
+  .citas-panel{width:100%;flex:1}
+  /* Cobro: panel deslizante desde abajo */
+  .cobro-panel{
+    position:fixed;bottom:0;left:0;right:0;width:100%;
+    border-radius:16px 16px 0 0;
+    box-shadow:0 -4px 28px rgba(0,0,0,.22);
+    z-index:200;
+    transform:translateY(100%);
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    max-height:82vh;display:flex!important;
+  }
+  .cobro-panel.mob-open{transform:translateY(0)}
+  /* FAB para abrir cobro */
+  #mob-cobro-fab{
+    display:flex;position:fixed;bottom:18px;right:18px;z-index:150;
+    background:var(--acc);color:#fff;width:58px;height:58px;
+    border-radius:50%;align-items:center;justify-content:center;
+    font-size:22px;border:none;cursor:pointer;
+    box-shadow:0 4px 18px rgba(11,132,87,.5);
+  }
+  #mob-cobro-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190;display:none}
+  .mob-close-cobro{display:block!important}
+}
 @media print{.no-print{display:none!important}body{background:#fff;color:#000}.recibo{border:none;background:transparent}}
 img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
 img[src="/img/logo.png"]:hover{transform:scale(1.15)}
@@ -302,8 +346,13 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <!-- Panel de cobro -->
     <div class="cobro-panel">
       <div class="cobro-head">
-        <div class="cobro-head-title">Panel de cobro</div>
-        <div class="cobro-head-sub" id="cobroSub">Selecciona una cita para procesar el pago</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="cobro-head-title">Panel de cobro</div>
+            <div class="cobro-head-sub" id="cobroSub">Selecciona una cita para procesar el pago</div>
+          </div>
+          <button class="mob-close-cobro" onclick="closeMobCobro()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:14px;flex-shrink:0;margin-left:10px">✕</button>
+        </div>
       </div>
       <div class="cobro-empty" id="cobroEmpty">
         <div class="cobro-empty-icon">✂️</div>
@@ -319,6 +368,10 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
       </div>
     </div>
   </div>
+
+  <!-- FAB cobro (solo móvil) -->
+  <button id="mob-cobro-fab" onclick="toggleMobCobro()" title="Ver cobro" style="display:none">💳</button>
+  <div id="mob-cobro-overlay" onclick="closeMobCobro()"></div>
 
   <!-- VISTA CAJA -->
   <div id="vistaCaja" style="display:none" class="caja-view">
@@ -1099,6 +1152,17 @@ function switchTab(tab) {
 
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Cobro móvil (drawer) ──────────────────────────────────────
+function toggleMobCobro(){
+  const cp=document.querySelector('.cobro-panel'),ov=$('mob-cobro-overlay');
+  if(cp.classList.toggle('mob-open'))ov.style.display='block';
+  else ov.style.display='none';
+}
+function closeMobCobro(){
+  document.querySelector('.cobro-panel').classList.remove('mob-open');
+  const ov=$('mob-cobro-overlay');if(ov)ov.style.display='none';
 }
 
 // Auto-login
