@@ -479,7 +479,7 @@ router.get('/reportes/ventas-por-dia', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT DATE_FORMAT(DATE(creado),'%Y-%m-%d') AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
        FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}
-       GROUP BY DATE(creado) ORDER BY fecha`,
+       GROUP BY DATE_FORMAT(DATE(creado),'%Y-%m-%d') ORDER BY 1`,
       [nid(req), d, h]
     );
     res.json(rows);
