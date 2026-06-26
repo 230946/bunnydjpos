@@ -16,7 +16,6 @@ if (DB_TYPE === 'mysql' || DB_TYPE === 'mariadb') {
     database: process.env.DB_NAME     || 'bunnydjpos',
     waitForConnections: true,
     connectionLimit: 10,
-    timezone: '-05:00',
     // MariaDB/MySQL: parsear JSON automáticamente
     typeCast: function(field, next) {
       // Convertir TINYINT(1) a boolean JS
@@ -31,6 +30,11 @@ if (DB_TYPE === 'mysql' || DB_TYPE === 'mariadb') {
       }
       return next();
     }
+  });
+
+  // Fijar zona horaria Colombia (UTC-5) en cada nueva conexión
+  _pool.on('connection', (conn) => {
+    conn.query("SET time_zone = '-05:00'");
   });
 
   pool = {
