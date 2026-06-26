@@ -601,7 +601,7 @@ ${factura?`<div class="rc">Factura: ${esc(factura)}</div>`:''}
 
 // ── CAJA ──────────────────────────────────────────────────────────
 async function renderCaja(){
-  const hoy = new Date().toISOString().split('T')[0];
+  const _d = new Date(Date.now() - 5*60*60*1000); const hoy = `${_d.getUTCFullYear()}-${String(_d.getUTCMonth()+1).padStart(2,'0')}-${String(_d.getUTCDate()).padStart(2,'0')}`;
   const fe = $('caja-fecha');
   if (!fe.value) fe.value = hoy;
   const fecha = fe.value || hoy;

@@ -311,13 +311,13 @@ const toISO = v => {
   return String(v).replace(' ', 'T');
 };
 const localDate = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const d = new Date(Date.now() - 5*60*60*1000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
 };
 const localDateTime = () => {
-  const d = new Date();
+  const d = new Date(Date.now() - 5*60*60*1000);
   const p = n => String(n).padStart(2,'0');
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
 };
 
 // ── Auto-migración ────────────────────────────────────────────────
@@ -1897,9 +1897,9 @@ router.post('/clientes/:id/paquetes', async (req, res) => {
     const { rows: svcs } = await pool.query(
       `SELECT * FROM pel_paquete_servicios WHERE paquete_id=?`, [paqueteId]
     );
-    const hoy = new Date();
+    const hoy = new Date(Date.now() - 5*60*60*1000);
     const vencimiento = new Date(hoy.getTime() + paq.vigencia_dias * 86400000);
-    const vencStr = `${vencimiento.getFullYear()}-${String(vencimiento.getMonth()+1).padStart(2,'0')}-${String(vencimiento.getDate()).padStart(2,'0')}`;
+    const vencStr = `${vencimiento.getUTCFullYear()}-${String(vencimiento.getUTCMonth()+1).padStart(2,'0')}-${String(vencimiento.getUTCDate()).padStart(2,'0')}`;
     const cpId = uuid();
     await pool.query(
       `INSERT INTO pel_cliente_paquetes (id,negocio_id,cliente_id,paquete_id,venta_id,fecha_vencimiento)

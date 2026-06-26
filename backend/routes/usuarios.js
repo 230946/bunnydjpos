@@ -268,7 +268,7 @@ router.post('/horarios', requirePermiso('horarios'), async (req, res) => {
   try {
     const { usuario_id, dia_semana, hora_entrada, hora_salida, fecha } = req.body;
     const id = uuid();
-    const localDate = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+    const localDate = () => { const d = new Date(Date.now() - 5*60*60*1000); return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; };
     const fechaVal = fecha || localDate();
     await pool.query(
       `INSERT INTO horarios (id,empleado_pel_id,negocio_id,dia_semana,hora_entrada,hora_salida,fecha)

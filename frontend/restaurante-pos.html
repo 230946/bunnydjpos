@@ -339,7 +339,10 @@ table.inv tr:hover td{background:var(--bg2)}
       <div class="panel" id="panel-cocina">
         <div class="panel-topbar">
           <span class="panel-title">Cocina en tiempo real</span>
-          <button class="btn btn-sm btn-outline" onclick="loadCocina()">↻</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-outline" onclick="loadCocina()">↻</button>
+            <button class="btn btn-sm" style="background:var(--red-l,#fee2e2);color:var(--red,#dc2626);border:none" onclick="limpiarCocina()">🗑 Limpiar todo</button>
+          </div>
         </div>
         <div class="panel-body">
           <div class="cocina-grid" id="cocina-grid"></div>
@@ -846,6 +849,7 @@ function renderMenuItems(){
 
 // ─── PEDIDO ───────────────────────────────────────────────────
 function addToPedido(item){
+  if(!cajaAbierta){ toast('⚠️ La caja está cerrada — abre la caja para tomar pedidos'); Sound.error(); return; }
   if(!selMesaId){ toast('Primero selecciona una mesa'); Sound.error(); return; }
   const enPedido = pedido.find(i=>i.id===item.id);
   const cantActual = enPedido ? enPedido.qty : 0;
@@ -918,6 +922,7 @@ function removeItem(i){ pedido.splice(i,1); renderPedido(); if(selMesaId) api(`/
 function cerrarPedido(){ selMesaId=null; selMesaNum=null; pedido=[]; nav('mesas',document.querySelectorAll('.nav-icon')[0]); }
 
 async function enviarCocina(){
+  if(!cajaAbierta){ toast('⚠️ La caja está cerrada — no se puede enviar a cocina'); return; }
   if(!selMesaId){ toast('Selecciona una mesa'); return; }
   if(!pedido.length){ toast('Agrega artículos al pedido'); return; }
   try {
@@ -928,6 +933,16 @@ async function enviarCocina(){
 }
 
 // ─── COCINA ───────────────────────────────────────────────────
+async function limpiarCocina(){
+  if(!confirm('¿Marcar todas las comandas como entregadas y limpiar la cocina?')) return;
+  try {
+    await api('/pos/comandas/limpiar/todo', {method:'PUT'});
+    toast('✅ Cocina limpiada');
+    loadCocina();
+    updateCocinaBadge(0);
+  } catch(e){ toast('Error: '+e.message); }
+}
+
 async function loadCocina(){
   try {
     const data=await api('/pos/comandas');

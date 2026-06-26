@@ -10,7 +10,7 @@ const { enviarFactura } = require('../mailer');
 
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
-const localDate = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const localDate = () => { const d = new Date(Date.now() - 5*60*60*1000); return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; };
 
 // Todos los endpoints de admin requieren negocio_id en el token
 router.use((req, res, next) => {

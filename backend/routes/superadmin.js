@@ -267,9 +267,10 @@ router.get('/usuarios', async (_, res) => {
 // ════════════════════════════════════════════════════════════════
 router.get('/reportes', async (req, res) => {
   try {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
-    const today = now.toISOString().slice(0,10);
+    const now = new Date(Date.now() - 5*60*60*1000);
+    const pad = n => String(n).padStart(2,'0');
+    const firstDay = `${now.getUTCFullYear()}-${pad(now.getUTCMonth()+1)}-01`;
+    const today = `${now.getUTCFullYear()}-${pad(now.getUTCMonth()+1)}-${pad(now.getUTCDate())}`;
     const desde = req.query.desde || firstDay;
     const hasta = req.query.hasta || today;
     const { rows } = await pool.query(`
@@ -363,7 +364,7 @@ router.post('/contratos', async (req, res) => {
     const { negocio_id, numero, tipo, plan, valor, fecha_inicio, fecha_fin, estado, notas } = req.body;
     if (!negocio_id || !fecha_inicio) return res.status(400).json({ error: 'negocio_id y fecha_inicio requeridos' });
     const id = uuid();
-    const year = new Date().getFullYear();
+    const year = new Date(Date.now() - 5*60*60*1000).getUTCFullYear();
     const { rows: cnt } = await pool.query(`SELECT COUNT(*)+1 AS n FROM neg_contratos WHERE YEAR(creado)=?`, [year]);
     const autoNum = numero || `CONT-${year}-${String(cnt[0].n).padStart(3,'0')}`;
     await pool.query(

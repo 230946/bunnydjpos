@@ -11,7 +11,7 @@ const path    = require('path');
 
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
-const localDate = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const localDate = () => { const d = new Date(Date.now() - 5*60*60*1000); return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; };
 
 // Multer para fotos de menú
 const storage = multer.diskStorage({
@@ -398,6 +398,18 @@ router.put('/comandas/:id/estado', async (req, res) => {
       [estado, req.params.id, nid(req)]
     );
     req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { id: req.params.id, estado });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Marcar todas las comandas activas como entregadas (limpiar cocina)
+router.put('/comandas/limpiar/todo', async (req, res) => {
+  try {
+    await pool.query(
+      `UPDATE comandas SET estado='entregado', actualizado=NOW() WHERE negocio_id=${ph(1)} AND estado != 'entregado'`,
+      [nid(req)]
+    );
+    req.app.locals.broadcast?.(nid(req), 'cocina_limpiada', {});
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
