@@ -1259,6 +1259,7 @@ async function procesarPago(){
 
 // ── Paso 2: confirmar y registrar el pago ──────────────────────
 async function confirmarPago(){
+  if(!cajaAbierta){ toast('⚠️ La caja está cerrada — no se puede confirmar el pago'); return; }
   if(!pendPago){ toast('Error: no hay pago pendiente'); return; }
   const {mesa,items,sub,iva,total,recibido,cambio,pagos,cf,mostrarIva,mesaId,metodo,clienteId,clienteNombre,clienteData}=pendPago;
   $('pay-btns-preview').style.display='none'; // evitar doble clic
@@ -1410,6 +1411,7 @@ async function loadCaja(){
       api('/admin/ventas/recientes').catch(()=>[]),
     ]);
     cajaActual = caja;
+    cajaAbierta = !!(caja && caja.estado === 'abierta');
     renderCajaPanel(ventas);
   } catch(e){ toast('Error cargando caja: '+e.message); }
   // Refresco automático cada 30 s si el panel está visible
