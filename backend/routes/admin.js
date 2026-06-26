@@ -477,7 +477,7 @@ router.get('/reportes/ventas-por-dia', async (req, res) => {
       return `${dd.getUTCFullYear()}-${String(dd.getUTCMonth()+1).padStart(2,'0')}-${String(dd.getUTCDate()).padStart(2,'0')}`;
     })();
     const { rows } = await pool.query(
-      `SELECT DATE(creado) AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
+      `SELECT DATE_FORMAT(DATE(creado),'%Y-%m-%d') AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
        FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}
        GROUP BY DATE(creado) ORDER BY fecha`,
       [nid(req), d, h]
@@ -516,7 +516,7 @@ router.get('/ventas', async (req, res) => {
     const d = desde || localDate();
     const h = hasta  || d;
     let sql = `
-      SELECT v.id, DATE(v.creado) AS fecha,
+      SELECT v.id, DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') AS fecha,
              TIME_FORMAT(v.creado,'%H:%i') AS hora,
              COALESCE(m.nombre, CASE WHEN v.mesa_num IS NOT NULL THEN CONCAT('Mesa ',v.mesa_num) ELSE 'Mostrador' END) AS lugar,
              v.metodo_pago, v.total,

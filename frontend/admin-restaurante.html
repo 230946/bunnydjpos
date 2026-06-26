@@ -391,7 +391,7 @@ tr:hover td{background:var(--bg2)}
         <!-- Gráficas fila 2: últimos 7 días + gastos por categoría -->
         <div class="chart-row" style="margin-top:14px">
           <div class="card">
-            <div class="card-header"><h3>📅 Ventas últimos 7 días</h3></div>
+            <div class="card-header"><h3 id="chart-dias-title">📅 Ventas por período</h3></div>
             <div style="padding:12px 14px;height:210px;position:relative">
               <canvas id="chart-dias"></canvas>
             </div>
@@ -1795,8 +1795,14 @@ function renderCharts(r, gr, horas, dias, desde, hasta){
   for(let d=new Date(rangeStart); d<=rangeEnd; d.setUTCDate(d.getUTCDate()+1)){
     rangeDays.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`);
   }
-  const diasData   = rangeDays.map(f=>{ const row=(dias||[]).find(x=>x.fecha?.slice(0,10)===f); return row?+row.total:0; });
+  const diasData   = rangeDays.map(f=>{ const row=(dias||[]).find(x=>String(x.fecha||'').slice(0,10)===f); return row?+row.total:0; });
   const diasLabels = rangeDays.map(f=>{ const [,m,d]=f.split('-'); return `${d}/${m}`; });
+  // Título dinámico
+  const diasTitle = $('chart-dias-title');
+  if(diasTitle){
+    const n = rangeDays.length;
+    diasTitle.textContent = n===1 ? '📅 Ventas del día' : n<=7 ? `📅 Últimos ${n} días` : `📅 ${fmtDate(desde)} — ${fmtDate(hasta)}`;
+  }
   const ctxD = $('chart-dias').getContext('2d');
   const grad = ctxD.createLinearGradient(0,0,0,180);
   grad.addColorStop(0,'rgba(11,132,87,0.28)'); grad.addColorStop(1,'rgba(11,132,87,0.02)');
