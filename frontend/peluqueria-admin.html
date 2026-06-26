@@ -185,11 +185,39 @@
 #contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
 #contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}
 .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px}
-@media(max-width:700px){.chart-row{grid-template-columns:1fr}}
 .stat-trend{font-size:11px;font-weight:600;margin-top:5px;min-height:14px;transition:color .2s}
 .stat-trend.up{color:#15803d}.stat-trend.down{color:var(--red)}.stat-trend.neutral{color:var(--text3)}
 .stat-trend.up-inv{color:var(--red)}.stat-trend.down-inv{color:#15803d}
-.fin-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}</style>
+.fin-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+/* ── TABLET ── */
+@media(min-width:768px) and (max-width:1023px){
+  .sidebar{width:180px;min-width:180px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+}
+/* ── MOBILE ── */
+@media(max-width:767px){
+  /* Sidebar oculto; btn-menu lo abre */
+  .sidebar{display:none}
+  /* Grids */
+  .chart-row{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .fin-stat-grid{grid-template-columns:repeat(2,1fr)}
+  /* Tablas → tarjetas apiladas */
+  .tbl-wrap{overflow-x:visible}
+  .tbl-wrap table{display:block}
+  .tbl-wrap thead{display:none}
+  .tbl-wrap tbody{display:flex;flex-direction:column;gap:6px}
+  .tbl-wrap tr{display:block;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:2px 0}
+  .tbl-wrap td{display:flex;justify-content:flex-end;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);font-size:13px}
+  .tbl-wrap td:last-child{border-bottom:none}
+  .tbl-wrap td[data-label]::before{content:attr(data-label);font-weight:600;color:var(--text2);font-size:11px;margin-right:auto;text-align:left;padding-right:8px;flex-shrink:0}
+  /* Botones táctiles */
+  .btn{min-height:40px;padding:8px 13px}
+  .btn-sm,.btn-sm-outline{min-height:34px;padding:6px 10px}
+  /* Layout */
+  .topbar{padding:0 12px}
+  .content{padding:12px}
+}</style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -797,7 +825,7 @@ async function cargarSvcs(){
 let _pg='dashboard';
 const titles={dashboard:'Dashboard',agenda:'Agenda',clientes:'Clientes',servicios:'Catálogo de servicios',empleados:'Empleados',comisiones:'Comisiones','cfg-comisiones':'Configuración de comisiones',paquetes:'Paquetes / Membresías',inventario:'Inventario',caja:'Caja del día',gastos:'Gastos',reportes:'Reportes',facturas:'Facturas',proveedores:'Proveedores','pedidos-prov':'Pedidos a proveedores',personal:'Usuarios',roles:'Roles y permisos',horarios:'Horarios',asistencia:'Asistencia','cfg-factura':'Config. factura','cfg-impresora':'Config. impresora'};
 function nav(p){
-  if(window.innerWidth<=700)closeMobileSidebar();
+  if(window.innerWidth<=767)closeMobileSidebar();
   // Verificar permiso antes de navegar
   const req=NAV_PERMS[p];
   if(req&&!perm(req)){showToast('Sin permiso para acceder a esta sección','err');return;}
@@ -830,11 +858,11 @@ function openMobileSidebar(){
 function closeMobileSidebar(){
   const sb=document.getElementById('sidebar'),ov=document.getElementById('sb-overlay');
   if(!sb||!ov)return;
-  if(window.innerWidth<=700){sb.style.removeProperty('display');sb.style.cssText='';}
+  if(window.innerWidth<=767){sb.style.removeProperty('display');sb.style.cssText='';}
   ov.style.display='none';
 }
 function toggleSidebar(){
-  if(window.innerWidth<=700){openMobileSidebar();return;}
+  if(window.innerWidth<=767){openMobileSidebar();return;}
   const sb=document.querySelector('.sidebar');
   sb.classList.toggle('collapsed');
   localStorage.setItem('pel_sb',sb.classList.contains('collapsed')?'0':'1');

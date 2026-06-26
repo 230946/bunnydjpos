@@ -193,7 +193,6 @@ tr:hover td{background:var(--bg2)}
 .rep-q.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 /* DASHBOARD CHARTS */
 .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:14px}
-@media(max-width:700px){.chart-row{grid-template-columns:1fr}}
 .stat-trend{font-size:11px;font-weight:600;margin-top:5px;min-height:14px;transition:color .2s}
 .stat-trend.up{color:#15803d}.stat-trend.down{color:var(--red)}.stat-trend.neutral{color:var(--text3)}
 .stat-trend.up-inv{color:var(--red)}.stat-trend.down-inv{color:#15803d}
@@ -217,11 +216,40 @@ tr:hover td{background:var(--bg2)}
 .ventas-table td{padding:8px 12px;font-size:13px}
 .ventas-table th{padding:8px 12px}
 
-@media(max-width:700px){
-  .sidebar{display:none}
+/* ── TABLET ── */
+@media(min-width:768px) and (max-width:1023px){
+  .sidebar{width:180px;min-width:180px}
   .stats-row{grid-template-columns:repeat(2,1fr)}
-  .two-col,.three-col{grid-template-columns:1fr}
+  .three-col{grid-template-columns:1fr 1fr}
+}
+/* ── MOBILE ── */
+@media(max-width:767px){
+  /* Sidebar oculto; hamburger lo abre */
+  .sidebar{display:none}
+  #sb-hamburger{display:flex!important}
+  .show-mobile{display:flex!important}
+  /* Stats y grids */
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .two-col,.three-col,.chart-row{grid-template-columns:1fr}
   .horario-grid{grid-template-columns:repeat(4,1fr)}
+  /* Tablas → tarjetas apiladas */
+  .table-wrap{overflow-x:visible}
+  .table-wrap table,.table-wrap tbody{display:block}
+  .table-wrap thead{display:none}
+  .table-wrap tbody{display:flex;flex-direction:column;gap:6px}
+  .table-wrap tr{display:block;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r);padding:2px 0}
+  .table-wrap td{display:flex;justify-content:flex-end;align-items:center;padding:7px 12px;border-bottom:0.5px solid var(--border);font-size:13px}
+  .table-wrap td:last-child{border-bottom:none}
+  .table-wrap td[data-label]::before{content:attr(data-label);font-weight:500;color:var(--text2);font-size:11px;margin-right:auto;text-align:left;padding-right:8px;flex-shrink:0}
+  /* Botones táctiles */
+  .btn{min-height:40px;padding:9px 14px}
+  .btn-sm{min-height:34px;padding:6px 11px}
+  /* Layout */
+  .topbar{padding:9px 12px}
+  .content{padding:12px}
+  /* Modal como sheet inferior */
+  .modal-bg{align-items:flex-end;padding:0}
+  .modal{max-width:100%;border-radius:var(--rl) var(--rl) 0 0;max-height:90vh;margin:0}
 }
     img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
     img[src="/img/logo.png"]:hover{transform:scale(1.15)}
@@ -1421,7 +1449,7 @@ function openMobileSidebar(){
 function closeMobileSidebar(){
   const sb=$('sidebar'), ov=$('sb-overlay');
   if(!sb||!ov) return;
-  if(window.innerWidth<=700){
+  if(window.innerWidth<=767){
     sb.style.removeProperty('display');
     sb.style.position=''; sb.style.top=''; sb.style.left='';
     sb.style.height=''; sb.style.zIndex=''; sb.style.boxShadow='';
@@ -1528,7 +1556,7 @@ const navLoaders = {
 };
 let currentPage = 'dashboard';
 function nav(p, btn){
-  if(window.innerWidth<=700) closeMobileSidebar();
+  if(window.innerWidth<=767) closeMobileSidebar();
   currentPage = p;
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
