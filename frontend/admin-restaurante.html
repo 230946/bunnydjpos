@@ -325,15 +325,25 @@ tr:hover td{background:var(--bg2)}
       <!-- DASHBOARD -->
       <div class="panel active" id="panel-dashboard">
 
-        <!-- Cabecera en vivo -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <span class="live-badge"><span class="live-dot"></span>En vivo</span>
+        <!-- Filtros del dashboard -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rl);padding:10px 14px">
+          <button class="btn btn-outline btn-sm dash-q active" onclick="dashFiltro('hoy',event)">Hoy</button>
+          <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('ayer',event)">Ayer</button>
+          <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('semana',event)">Esta semana</button>
+          <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('mes',event)">Este mes</button>
+          <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
+          <label style="font-size:12px;color:var(--text2)">Desde</label>
+          <input type="date" id="dash-desde" class="btn btn-outline btn-sm" style="cursor:pointer">
+          <label style="font-size:12px;color:var(--text2)">Hasta</label>
+          <input type="date" id="dash-hasta" class="btn btn-outline btn-sm" style="cursor:pointer">
+          <button class="btn btn-primary btn-sm" onclick="loadDashboard()">Consultar</button>
+          <span class="live-badge" style="margin-left:auto"><span class="live-dot"></span><span id="dash-live-lbl">En vivo</span></span>
           <span class="live-update" id="dash-updated"></span>
         </div>
 
         <!-- Resumen totales -->
         <div class="stats-row" id="dash-stats">
-          <div class="stat-card"><div class="stat-label">Ventas hoy</div><div class="stat-val" id="d-ventas">—</div></div>
+          <div class="stat-card"><div class="stat-label" id="dash-lbl-ventas">Ventas hoy</div><div class="stat-val" id="d-ventas">—</div></div>
           <div class="stat-card"><div class="stat-label">Gastos hoy</div><div class="stat-val" id="d-gastos">—</div></div>
           <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="d-utilidad">—</div></div>
           <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="d-pedidos">—</div></div>
@@ -495,25 +505,43 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
 
-        <!-- Stats -->
-        <div class="stats-row" id="rep-stats">
-          <div class="stat-card"><div class="stat-label">Ventas</div><div class="stat-val" id="r-ventas">—</div></div>
-          <div class="stat-card"><div class="stat-label">Gastos</div><div class="stat-val" id="r-gastos">—</div></div>
-          <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="r-utilidad">—</div></div>
-          <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="r-pedidos">—</div></div>
+        <!-- Resumen + botón exportar -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin-bottom:14px">
+          <div class="stats-row" id="rep-stats" style="flex:1;margin:0">
+            <div class="stat-card"><div class="stat-label">Ventas</div><div class="stat-val" id="r-ventas">—</div></div>
+            <div class="stat-card"><div class="stat-label">Gastos</div><div class="stat-val" id="r-gastos">—</div></div>
+            <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="r-utilidad">—</div></div>
+            <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="r-pedidos">—</div></div>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="exportarExcel()" style="align-self:center;white-space:nowrap;padding:10px 18px">⬇ Exportar Excel</button>
         </div>
 
-        <!-- Métodos + Cajas -->
-        <div class="two-col" style="margin-top:14px">
-          <div class="card"><div class="card-header"><h3>Por método de pago</h3></div>
-            <div class="card-body" id="r-metodos"></div></div>
-          <div class="card"><div class="card-header"><h3>Cajas del período</h3></div>
-            <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cajero</th><th>Ventas</th><th>Gastos</th><th>Estado</th></tr></thead>
-            <tbody id="r-cajas"></tbody></table></div></div>
+        <!-- Métodos de pago (fila plana) -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><h3>Métodos de pago</h3></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0">
+            <div style="padding:12px 16px;border-right:0.5px solid var(--border)"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">💵 Efectivo</div><div id="rm-efectivo" style="font-size:18px;font-weight:600">—</div></div>
+            <div style="padding:12px 16px;border-right:0.5px solid var(--border)"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">💳 Tarjeta</div><div id="rm-tarjeta" style="font-size:18px;font-weight:600">—</div></div>
+            <div style="padding:12px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">📱 Nequi/QR</div><div id="rm-nequi" style="font-size:18px;font-weight:600">—</div></div>
+          </div>
         </div>
 
-        <!-- Top productos + Horas pico -->
-        <div class="two-col" style="margin-top:14px">
+        <!-- Detalle de ventas (tabla plana) -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header">
+            <h3>Detalle de ventas</h3>
+            <span id="r-ventas-count" style="font-size:12px;color:var(--text2)"></span>
+          </div>
+          <div class="table-wrap">
+            <table id="tbl-rep-ventas" style="font-size:12px">
+              <thead><tr><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Cliente</th><th>Método</th><th>Total</th><th>Cajero</th><th>Factura</th></tr></thead>
+              <tbody id="r-ventas-tbody"><tr><td colspan="8" style="color:var(--text2);text-align:center;padding:20px">Consulta un período para ver resultados</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Top productos + Horas pico (planos) -->
+        <div class="two-col" style="margin-bottom:14px">
           <div class="card">
             <div class="card-header"><h3>Productos más vendidos</h3></div>
             <div class="card-body" style="padding:4px 16px 16px" id="r-top-productos">
@@ -521,31 +549,21 @@ tr:hover td{background:var(--bg2)}
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><h3>Horas pico de ventas</h3></div>
+            <div class="card-header"><h3>Horas pico</h3></div>
             <div class="card-body" style="padding:4px 16px 16px" id="r-horas">
               <p style="color:var(--text2);font-size:13px">Consulta un período para ver resultados</p>
             </div>
           </div>
         </div>
 
-        <!-- INVENTARIO EN REPORTES -->
-        <div class="card" style="margin-top:14px">
+        <!-- Inventario -->
+        <div class="card">
           <div class="card-header">
             <h3>📦 Inventario actual</h3>
-            <div class="card-header-actions">
-              <span id="r-inv-actualizado" style="font-size:11px;color:var(--text2)"></span>
-            </div>
+            <span id="r-inv-actualizado" style="font-size:11px;color:var(--text2)"></span>
           </div>
-          <!-- Mini stats -->
-          <div class="stats-row" style="grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px 0" id="r-inv-stats">
-            <div class="stat-card" style="padding:10px 8px;text-align:center"><div class="stat-label" style="font-size:10px">Total artículos</div><div class="stat-val" id="ri-total" style="font-size:18px">—</div></div>
-            <div class="stat-card" style="padding:10px 8px;text-align:center;border-color:var(--green-d)"><div class="stat-label" style="font-size:10px;color:var(--green-d)">✓ OK</div><div class="stat-val" id="ri-ok" style="font-size:18px;color:var(--green-d)">—</div></div>
-            <div class="stat-card" style="padding:10px 8px;text-align:center;border-color:var(--amber-d)"><div class="stat-label" style="font-size:10px;color:var(--amber-d)">⚠ Bajo stock</div><div class="stat-val" id="ri-bajo" style="font-size:18px;color:var(--amber-d)">—</div></div>
-            <div class="stat-card" style="padding:10px 8px;text-align:center;border-color:var(--red-d)"><div class="stat-label" style="font-size:10px;color:var(--red-d)">✕ Agotados</div><div class="stat-val" id="ri-ago" style="font-size:18px;color:var(--red-d)">—</div></div>
-          </div>
-          <!-- Tabla completa -->
-          <div class="table-wrap" style="margin-top:12px">
-            <table style="font-size:12px">
+          <div class="table-wrap">
+            <table id="tbl-rep-inv" style="font-size:12px">
               <thead><tr><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mínimo</th><th>Unidad</th><th>Costo unit.</th><th>Valor total</th><th>Estado</th></tr></thead>
               <tbody id="r-inv-tbody"><tr><td colspan="8" style="color:var(--text2);text-align:center;padding:20px">Consulta un período para ver el inventario</td></tr></tbody>
             </table>
@@ -1465,8 +1483,10 @@ function showApp(){
   $('sb-user-name').textContent = me?.nombre || '';
   $('sb-user-rol').textContent = me?.es_superadmin ? 'Super Admin' : (me?.rol_nombre || '');
   $('topbar-fecha').textContent = new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  $('gastos-desde').value = today();
-  $('asist-fecha').value  = today();
+  $('gastos-desde').value  = today();
+  $('asist-fecha').value   = today();
+  $('dash-desde').value    = today();
+  $('dash-hasta').value    = today();
   const _d30 = new Date(); _d30.setDate(_d30.getDate()-29);
   $('rep-desde').value = `${_d30.getFullYear()}-${String(_d30.getMonth()+1).padStart(2,'0')}-${String(_d30.getDate()).padStart(2,'0')}`;
   $('rep-hasta').value = today();
@@ -1550,14 +1570,24 @@ function animateVal(id, target, isMoney){
 }
 
 async function loadDashboard(){
+  const desde = $('dash-desde')?.value || today();
+  const hasta  = $('dash-hasta')?.value || today();
+  const esHoy  = desde === today() && hasta === today();
+  // Indicador en vivo solo cuando el filtro es "hoy"
+  const ll = $('dash-live-lbl');
+  if(ll) ll.textContent = esHoy ? 'En vivo' : desde===hasta ? fmtDate(desde) : `${fmtDate(desde)} – ${fmtDate(hasta)}`;
+  // Etiqueta dinámica de la card de ventas
+  const lv = $('dash-lbl-ventas');
+  if(lv) lv.textContent = esHoy ? 'Ventas hoy' : 'Ventas período';
+
   const [r, cajas_hoy, gr, ventas, inv, horas, dias] = await Promise.all([
-    api(`/admin/reportes/resumen?desde=${today()}&hasta=${today()}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
-    api(`/admin/caja/resumen?fecha=${today()}`).catch(()=>[]),
-    api(`/admin/gastos/resumen?desde=${today()}&hasta=${today()}`).catch(()=>[]),
-    api('/admin/ventas/recientes').catch(()=>[]),
+    api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
+    api(`/admin/caja/resumen?fecha=${desde}`).catch(()=>[]),
+    api(`/admin/gastos/resumen?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+    api(`/admin/ventas/recientes?desde=${desde}`).catch(()=>[]),
     api('/inventario/').catch(()=>[]),
-    api(`/admin/reportes/ventas-por-hora?desde=${today()}&hasta=${today()}`).catch(()=>[]),
-    api('/admin/reportes/ventas-por-dia').catch(()=>[]),
+    api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+    api(`/admin/reportes/ventas-por-dia?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
   ]);
 
   // Totales con animación de contador
@@ -1587,7 +1617,7 @@ async function loadDashboard(){
   } else { dc.innerHTML='<div style="color:var(--text2);font-size:13px">Sin cajas abiertas hoy</div>'; }
 
   // Gráficas Chart.js
-  renderCharts(r, gr, horas, dias);
+  renderCharts(r, gr, horas, dias, desde, hasta);
 
   // Últimas ventas
   const metodoBadge = m => `<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
@@ -1632,12 +1662,34 @@ async function loadDashboard(){
   $('dash-updated').textContent = `Actualizado ${t}`;
 }
 
-function startDashTimer(){ clearInterval(dashTimer); dashTimer = setInterval(loadDashboard, 15000); }
+function startDashTimer(){
+  clearInterval(dashTimer);
+  // Solo auto-refresca si el filtro activo es "hoy"
+  dashTimer = setInterval(()=>{
+    const desde = $('dash-desde')?.value;
+    if(!desde || desde === today()) loadDashboard();
+  }, 15000);
+}
+
+function dashFiltro(tipo, e){
+  const d  = new Date();
+  const ls = dt => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  let desde, hasta = ls(d);
+  if(tipo==='hoy')   { desde = hasta; }
+  else if(tipo==='ayer')  { const y=new Date(d-864e5); desde=ls(y); hasta=ls(y); }
+  else if(tipo==='semana'){ const s=new Date(d); s.setDate(d.getDate()-d.getDay()); desde=ls(s); }
+  else if(tipo==='mes')   { desde=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
+  document.querySelectorAll('.dash-q').forEach(b=>b.classList.remove('active'));
+  if(e?.currentTarget) e.currentTarget.classList.add('active');
+  $('dash-desde').value = desde;
+  $('dash-hasta').value = hasta;
+  loadDashboard();
+}
 
 // ─── GRÁFICAS DASHBOARD ─────────────────────────────────────
 let _chartH=null,_chartM=null,_chartD=null,_chartG=null;
 
-function renderCharts(r, gr, horas, dias){
+function renderCharts(r, gr, horas, dias, desde, hasta){
   const dark = window.matchMedia('(prefers-color-scheme:dark)').matches;
   const gc   = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const tc   = dark ? '#a0c8b0' : '#4a7060';
@@ -1690,14 +1742,17 @@ function renderCharts(r, gr, horas, dias){
     }
   });
 
-  // 3. Últimos 7 días (línea)
+  // 3. Ventas por período (línea)
   if(_chartD){ _chartD.destroy(); _chartD=null; }
-  const last7 = Array.from({length:7},(_,i)=>{
-    const d=new Date(Date.now()-5*60*60*1000); d.setUTCDate(d.getUTCDate()-(6-i));
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-  });
-  const diasData = last7.map(f=>{ const row=(dias||[]).find(d=>d.fecha?.slice(0,10)===f); return row?+row.total:0; });
-  const diasLabels = last7.map(f=>{ const [,m,d]=f.split('-'); return `${d}/${m}`; });
+  // Genera todos los días entre desde y hasta
+  const rangeStart = new Date((desde||today())+'T12:00:00Z');
+  const rangeEnd   = new Date((hasta||today())+'T12:00:00Z');
+  const rangeDays  = [];
+  for(let d=new Date(rangeStart); d<=rangeEnd; d.setUTCDate(d.getUTCDate()+1)){
+    rangeDays.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`);
+  }
+  const diasData   = rangeDays.map(f=>{ const row=(dias||[]).find(x=>x.fecha?.slice(0,10)===f); return row?+row.total:0; });
+  const diasLabels = rangeDays.map(f=>{ const [,m,d]=f.split('-'); return `${d}/${m}`; });
   const ctxD = $('chart-dias').getContext('2d');
   const grad = ctxD.createLinearGradient(0,0,0,180);
   grad.addColorStop(0,'rgba(11,132,87,0.28)'); grad.addColorStop(1,'rgba(11,132,87,0.02)');
@@ -1931,11 +1986,12 @@ async function loadReportes(){
     const metodo=$('rep-metodo').value;
     const mq = metodo ? `&metodo_pago=${metodo}` : '';
 
-    const [r, platos, horas, inv] = await Promise.all([
+    const [r, platos, horas, inv, ventasList] = await Promise.all([
       api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`),
       api(`/pos/ventas/top-platos?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
       api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
       api('/inventario/').catch(()=>[]),
+      api(`/admin/ventas?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
     ]);
 
     // Stats
@@ -1945,16 +2001,30 @@ async function loadReportes(){
     const util=r.utilidad; const ru=$('r-utilidad');
     ru.textContent=fmt(util); ru.style.color=util>=0?'var(--green-d)':'var(--red)';
 
-    // Métodos
-    $('r-metodos').innerHTML=`
-      <div class="caja-row"><span>Efectivo</span><span><b>${fmt(r.ventas.efectivo)}</b></span></div>
-      <div class="caja-row"><span>Tarjeta</span><span><b>${fmt(r.ventas.tarjeta)}</b></span></div>
-      <div class="caja-row"><span>Nequi/QR</span><span><b>${fmt(r.ventas.nequi)}</b></span></div>`;
+    // Métodos (nuevos IDs planos)
+    $('rm-efectivo').textContent=fmt(r.ventas.efectivo);
+    $('rm-tarjeta').textContent =fmt(r.ventas.tarjeta);
+    $('rm-nequi').textContent   =fmt(r.ventas.nequi);
 
-    // Cajas
-    $('r-cajas').innerHTML=r.cajas.length
-      ? r.cajas.map(c=>`<tr><td>${fmtDate(c.fecha)}</td><td>${c.usuario_nombre||'—'}</td><td>${fmt(c.total_ventas)}</td><td>${fmt(c.total_gastos)}</td><td><span class="badge ${c.estado==='abierta'?'badge-green':'badge-gray'}">${c.estado}</span></td></tr>`).join('')
-      : '<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sin cajas en este período</td></tr>';
+    // Tabla detalle de ventas
+    const mb = m=>`<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
+    const vc = $('r-ventas-count');
+    if(vc) vc.textContent = ventasList.length ? `${ventasList.length} transacciones` : '';
+    $('r-ventas-tbody').innerHTML = ventasList.length
+      ? ventasList.map(v=>`<tr>
+          <td>${fmtDate(v.fecha||v.creado)}</td>
+          <td>${v.hora||''}</td>
+          <td>${v.lugar||'—'}</td>
+          <td style="color:var(--text2)">${v.cliente||'—'}</td>
+          <td>${mb(v.metodo_pago)}</td>
+          <td><b>${fmt(v.total)}</b></td>
+          <td style="color:var(--text2)">${v.cajero||'—'}</td>
+          <td style="color:var(--text2);font-size:11px">${v.numero_factura||'—'}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="8" style="color:var(--text2);text-align:center;padding:20px">Sin ventas en este período</td></tr>';
+
+    // Guardar datos para exportar
+    window._repData = { desde, hasta, r, ventasList, inv };
 
     // Top productos
     const maxV = Math.max(...platos.map(p=>+p.vendidos), 1);
@@ -2026,6 +2096,62 @@ async function loadReportes(){
     }
 
   } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ─── EXPORTAR EXCEL (CSV con BOM) ────────────────────────────
+function exportarExcel(){
+  const d = window._repData;
+  if(!d){ showToast('Consulta un período primero'); return; }
+  const { desde, hasta, r, ventasList, inv } = d;
+  const bom = '﻿';
+  const q   = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const rows = [];
+
+  // Encabezado del reporte
+  rows.push([q('REPORTE DE VENTAS — DJPOS')]);
+  rows.push([q(`Período: ${desde} al ${hasta}`)]);
+  rows.push([]);
+
+  // Resumen
+  rows.push([q('RESUMEN')]);
+  rows.push([q('Ventas totales'), q(r.ventas.total_ventas)]);
+  rows.push([q('Gastos totales'), q(r.gastos.total_gastos)]);
+  rows.push([q('Utilidad'),       q(r.utilidad)]);
+  rows.push([q('Pedidos'),        q(r.ventas.pedidos)]);
+  rows.push([q('Efectivo'),       q(r.ventas.efectivo)]);
+  rows.push([q('Tarjeta'),        q(r.ventas.tarjeta)]);
+  rows.push([q('Nequi/QR'),       q(r.ventas.nequi)]);
+  rows.push([]);
+
+  // Detalle de ventas
+  rows.push([q('DETALLE DE VENTAS')]);
+  rows.push([q('Fecha'),q('Hora'),q('Lugar'),q('Cliente'),q('Método'),q('Total'),q('Cajero'),q('Factura')].join(','));
+  ventasList.forEach(v=>{
+    rows.push([q(v.fecha||''),q(v.hora||''),q(v.lugar||''),q(v.cliente||''),q(v.metodo_pago||''),q(v.total),q(v.cajero||''),q(v.numero_factura||'')].join(','));
+  });
+  rows.push([]);
+
+  // Inventario
+  if(inv?.length){
+    rows.push([q('INVENTARIO')]);
+    rows.push([q('Artículo'),q('Categoría'),q('Stock'),q('Mínimo'),q('Unidad'),q('Costo unit.'),q('Estado')].join(','));
+    inv.forEach(i=>{
+      const ago=+i.stock<=0, bajo=!ago&&+i.stock_min>0&&+i.stock<+i.stock_min;
+      const est=ago?'Agotado':bajo?'Bajo stock':'OK';
+      const cu=(i.cantidad_paquete&&i.cantidad_paquete>1)?(i.costo||0)/i.cantidad_paquete:(i.costo||0);
+      rows.push([q(i.nombre),q(i.categoria),q(i.stock),q(i.stock_min),q(i.unidad),q(Math.round(cu)),q(est)].join(','));
+    });
+  }
+
+  const csv = bom + rows.map(r=>Array.isArray(r)?r.join(','):r).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `reporte_${desde}_${hasta}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✅ Exportado correctamente');
 }
 
 // ─── COLOMBIA DEPARTAMENTOS / CIUDADES ───────────────────────

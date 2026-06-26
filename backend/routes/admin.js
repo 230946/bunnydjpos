@@ -509,6 +509,33 @@ router.get('/ventas/recientes', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// Lista completa de ventas por período (para exportar)
+router.get('/ventas', async (req, res) => {
+  try {
+    const { desde, hasta, metodo_pago } = req.query;
+    const d = desde || localDate();
+    const h = hasta  || d;
+    let sql = `
+      SELECT v.id, DATE(v.creado) AS fecha,
+             TIME_FORMAT(v.creado,'%H:%i') AS hora,
+             COALESCE(m.nombre, CASE WHEN v.mesa_num IS NOT NULL THEN CONCAT('Mesa ',v.mesa_num) ELSE 'Mostrador' END) AS lugar,
+             v.metodo_pago, v.total,
+             v.monto_efectivo, v.monto_tarjeta, v.monto_nequi,
+             COALESCE(v.cliente_nombre,'') AS cliente,
+             u.nombre AS cajero,
+             v.numero_factura
+      FROM ventas v
+      LEFT JOIN usuarios u ON u.id = v.cajero_id
+      LEFT JOIN mesas m ON m.id = v.mesa_id
+      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    const params = [nid(req), d, h];
+    if(metodo_pago){ params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
+    sql += ' ORDER BY v.creado DESC';
+    const { rows } = await pool.query(sql, params);
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ════════════════════════════════════════════════════════════════
 // SINCRONIZAR MENÚ → INVENTARIO
 // ════════════════════════════════════════════════════════════════
