@@ -96,6 +96,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .stat-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px 16px}
 .stat-label{font-size:11px;color:var(--text2);margin-bottom:3px}
 .stat-val{font-size:22px;font-weight:600}
+.stat-trend{font-size:11px;font-weight:600;margin-top:5px;min-height:14px;transition:color .2s}
+.stat-trend.up{color:#15803d}.stat-trend.down{color:var(--red)}.stat-trend.neutral{color:var(--text3)}
+.stat-trend.up-inv{color:var(--red)}.stat-trend.down-inv{color:#15803d}
 .stat-sub{font-size:11px;color:var(--text2);margin-top:2px}
 .card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:14px}
 .card-header{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border)}
@@ -341,29 +344,33 @@ tr:hover td{background:var(--bg2)}
           <span class="live-update" id="dash-updated"></span>
         </div>
 
-        <!-- Resumen totales -->
+        <!-- Resumen totales con tendencia -->
         <div class="stats-row" id="dash-stats">
-          <div class="stat-card"><div class="stat-label" id="dash-lbl-ventas">Ventas hoy</div><div class="stat-val" id="d-ventas">—</div></div>
-          <div class="stat-card"><div class="stat-label">Gastos hoy</div><div class="stat-val" id="d-gastos">—</div></div>
-          <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="d-utilidad">—</div></div>
-          <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="d-pedidos">—</div></div>
+          <div class="stat-card">
+            <div class="stat-label" id="dash-lbl-ventas">Ventas hoy</div>
+            <div class="stat-val" id="d-ventas">—</div>
+            <div class="stat-trend neutral" id="d-ventas-trend"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Gastos</div>
+            <div class="stat-val" id="d-gastos">—</div>
+            <div class="stat-trend neutral" id="d-gastos-trend"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Utilidad</div>
+            <div class="stat-val" id="d-utilidad">—</div>
+            <div class="stat-trend neutral" id="d-utilidad-trend"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pedidos</div>
+            <div class="stat-val" id="d-pedidos">—</div>
+            <div class="stat-trend neutral" id="d-pedidos-trend"></div>
+          </div>
         </div>
-
-        <!-- Desglose por método de pago -->
-        <div class="stats-row" style="margin-top:10px;grid-template-columns:repeat(3,1fr)">
-          <div class="stat-card">
-            <div class="stat-label">💵 Efectivo</div>
-            <div class="stat-val" id="d-efectivo" style="font-size:20px">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">💳 Tarjeta</div>
-            <div class="stat-val" id="d-tarjeta" style="font-size:20px">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">📱 Nequi / QR</div>
-            <div class="stat-val" id="d-nequi" style="font-size:20px">—</div>
-          </div>
-        </div>
+        <!-- IDs ocultos para animateVal (usados por gráfica de dona) -->
+        <div id="d-efectivo" style="display:none"></div>
+        <div id="d-tarjeta"  style="display:none"></div>
+        <div id="d-nequi"    style="display:none"></div>
 
         <!-- Gráficas fila 1: ventas por hora + métodos de pago -->
         <div class="chart-row" style="margin-top:14px">
@@ -1580,7 +1587,16 @@ async function loadDashboard(){
   const lv = $('dash-lbl-ventas');
   if(lv) lv.textContent = esHoy ? 'Ventas hoy' : 'Ventas período';
 
-  const [r, cajas_hoy, gr, ventas, inv, horas, dias] = await Promise.all([
+  // Período anterior (mismo número de días, justo antes)
+  const msD   = new Date(desde+'T12:00:00Z').getTime();
+  const msH   = new Date(hasta+'T12:00:00Z').getTime();
+  const durMs = msH - msD + 86400000; // duración en ms
+  const prevHasta = new Date(msD - 86400000);
+  const prevDesde = new Date(msD - durMs);
+  const fmtUTC = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+  const prevD = fmtUTC(prevDesde), prevH = fmtUTC(prevHasta);
+
+  const [r, cajas_hoy, gr, ventas, inv, horas, dias, rPrev] = await Promise.all([
     api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
     api(`/admin/caja/resumen?fecha=${desde}`).catch(()=>[]),
     api(`/admin/gastos/resumen?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
@@ -1588,6 +1604,7 @@ async function loadDashboard(){
     api('/inventario/').catch(()=>[]),
     api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
     api(`/admin/reportes/ventas-por-dia?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+    api(`/admin/reportes/resumen?desde=${prevD}&hasta=${prevH}`).catch(()=>null),
   ]);
 
   // Totales con animación de contador
@@ -1605,6 +1622,12 @@ async function loadDashboard(){
     animateVal('d-utilidad', util, true);
     // Pulso en cards al actualizar
     document.querySelectorAll('#dash-stats .stat-card').forEach(c=>{ c.classList.add('anim-flash'); setTimeout(()=>c.classList.remove('anim-flash'),400); });
+    // Tendencias vs período anterior
+    const lbl = esHoy ? 'vs ayer' : 'vs período ant.';
+    renderTrend('d-ventas',   r.ventas.total_ventas,  rPrev?.ventas?.total_ventas,  false, lbl);
+    renderTrend('d-gastos',   r.gastos.total_gastos,  rPrev?.gastos?.total_gastos,  true,  lbl);
+    renderTrend('d-utilidad', r.utilidad,              rPrev?.utilidad,              false, lbl);
+    renderTrend('d-pedidos',  r.ventas.pedidos,        rPrev?.ventas?.pedidos,       false, lbl);
   }
 
   // Mini caja — agrega todas las cajas del día
@@ -1669,6 +1692,27 @@ function startDashTimer(){
     const desde = $('dash-desde')?.value;
     if(!desde || desde === today()) loadDashboard();
   }, 15000);
+}
+
+function renderTrend(id, current, previous, invertido, lbl){
+  const el = $(`${id}-trend`);
+  if(!el) return;
+  const cur = +current || 0;
+  const pre = +previous;
+  if(previous == null || isNaN(pre)){
+    el.textContent = ''; el.className = 'stat-trend neutral'; return;
+  }
+  if(pre === 0){
+    el.textContent = cur > 0 ? `↑ Nuevo ${lbl}` : '—';
+    el.className = `stat-trend ${cur>0?(invertido?'up-inv':'up'):'neutral'}`;
+    return;
+  }
+  const pct = ((cur - pre) / Math.abs(pre)) * 100;
+  const abs = Math.abs(pct).toFixed(1);
+  if(Math.abs(pct) < 0.1){ el.textContent = `→ Sin cambio ${lbl}`; el.className='stat-trend neutral'; return; }
+  const up = pct > 0;
+  el.textContent = `${up?'↑':'↓'} ${abs}% ${lbl}`;
+  el.className = `stat-trend ${up?(invertido?'up-inv':'up'):(invertido?'down-inv':'down')}`;
 }
 
 function dashFiltro(tipo, e){
