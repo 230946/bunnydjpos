@@ -466,6 +466,26 @@ router.get('/reportes/ventas-por-hora', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Ventas por día (gráfica de tendencia últimos N días)
+router.get('/reportes/ventas-por-dia', async (req, res) => {
+  try {
+    const { desde, hasta } = req.query;
+    const h = hasta || localDate();
+    const d = desde || (() => {
+      const dd = new Date(Date.now() - 5*60*60*1000);
+      dd.setUTCDate(dd.getUTCDate() - 6);
+      return `${dd.getUTCFullYear()}-${String(dd.getUTCMonth()+1).padStart(2,'0')}-${String(dd.getUTCDate()).padStart(2,'0')}`;
+    })();
+    const { rows } = await pool.query(
+      `SELECT DATE(creado) AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
+       FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}
+       GROUP BY DATE(creado) ORDER BY fecha`,
+      [nid(req), d, h]
+    );
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // Ventas recientes del día (últimas 30)
 router.get('/ventas/recientes', async (req, res) => {
   try {

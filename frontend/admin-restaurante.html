@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="css/responsive.css">
 <title>DJPOS — Administrativo</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -102,6 +103,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .card-header-actions{display:flex;gap:8px;align-items:center}
 .card-body{padding:16px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:14px}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 
 /* TABLA */
@@ -212,7 +214,7 @@ tr:hover td{background:var(--bg2)}
 @media(max-width:700px){
   .sidebar{display:none}
   .stats-row{grid-template-columns:repeat(2,1fr)}
-  .two-col,.three-col{grid-template-columns:1fr}
+  .two-col,.three-col,.chart-row{grid-template-columns:1fr}
   .horario-grid{grid-template-columns:repeat(4,1fr)}
 }
     img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
@@ -353,17 +355,43 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
 
-        <div class="two-col" style="margin-top:14px">
-          <!-- Estado de caja -->
+        <!-- Gráficas fila 1: ventas por hora + métodos de pago -->
+        <div class="chart-row" style="margin-top:14px">
           <div class="card">
-            <div class="card-header"><h3>Estado de caja</h3><button class="btn btn-sm btn-outline" onclick="nav('caja',null)">Ver caja</button></div>
-            <div class="card-body" id="dash-caja"></div>
+            <div class="card-header"><h3>📈 Ventas por hora — hoy</h3></div>
+            <div style="padding:12px 14px;height:210px;position:relative">
+              <canvas id="chart-horas"></canvas>
+            </div>
           </div>
-          <!-- Gastos por categoría -->
           <div class="card">
-            <div class="card-header"><h3>Gastos por categoría</h3></div>
-            <div class="card-body" id="dash-gastos-chart"></div>
+            <div class="card-header"><h3>💳 Métodos de pago</h3></div>
+            <div style="padding:12px;height:210px;position:relative">
+              <canvas id="chart-metodos"></canvas>
+            </div>
           </div>
+        </div>
+
+        <!-- Gráficas fila 2: últimos 7 días + gastos por categoría -->
+        <div class="chart-row" style="margin-top:14px">
+          <div class="card">
+            <div class="card-header"><h3>📅 Ventas últimos 7 días</h3></div>
+            <div style="padding:12px 14px;height:210px;position:relative">
+              <canvas id="chart-dias"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>📋 Gastos por categoría</h3></div>
+            <div style="padding:12px 14px;height:210px;position:relative" id="dash-gastos-chart">
+              <canvas id="chart-gastos"></canvas>
+              <div id="dash-gastos-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;color:var(--text2);font-size:13px">Sin gastos hoy</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado de caja -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-header"><h3>Estado de caja</h3><button class="btn btn-sm btn-outline" onclick="nav('caja',null)">Ver caja</button></div>
+          <div class="card-body" id="dash-caja"></div>
         </div>
 
         <!-- Últimas ventas del día -->
@@ -1522,12 +1550,14 @@ function animateVal(id, target, isMoney){
 }
 
 async function loadDashboard(){
-  const [r, cajas_hoy, gr, ventas, inv] = await Promise.all([
+  const [r, cajas_hoy, gr, ventas, inv, horas, dias] = await Promise.all([
     api(`/admin/reportes/resumen?desde=${today()}&hasta=${today()}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
     api(`/admin/caja/resumen?fecha=${today()}`).catch(()=>[]),
     api(`/admin/gastos/resumen?desde=${today()}&hasta=${today()}`).catch(()=>[]),
     api('/admin/ventas/recientes').catch(()=>[]),
     api('/inventario/').catch(()=>[]),
+    api(`/admin/reportes/ventas-por-hora?desde=${today()}&hasta=${today()}`).catch(()=>[]),
+    api('/admin/reportes/ventas-por-dia').catch(()=>[]),
   ]);
 
   // Totales con animación de contador
@@ -1556,12 +1586,8 @@ async function loadDashboard(){
     dc.innerHTML=`<div style="font-size:12px;color:var(--text2);margin-bottom:6px">${abiertas>0?`🟢 ${abiertas} caja${abiertas>1?'s':''} abierta${abiertas>1?'s':''}`:'🔴 Sin cajas abiertas'} · ${cajas_hoy.length} usuario${cajas_hoy.length>1?'s':''}</div><div class="caja-row"><span>Ventas totales</span><span>${fmt(tot_v)}</span></div><div class="caja-row"><span>Gastos totales</span><span>${fmt(tot_g)}</span></div>`;
   } else { dc.innerHTML='<div style="color:var(--text2);font-size:13px">Sin cajas abiertas hoy</div>'; }
 
-  // Gastos chart con animación de barras
-  const maxG = Math.max(...gr.map(g=>+g.total),1);
-  $('dash-gastos-chart').innerHTML = gr.length
-    ? gr.map(g=>`<div class="gasto-bar-item"><span class="gasto-bar-label">${g.categoria||'Sin categoría'}</span><div class="gasto-bar-track"><div class="gasto-bar-fill" data-w="${Math.round(+g.total/maxG*100)}" style="width:0%;background:${g.color||'var(--blue)'}"></div></div><span class="gasto-bar-val">${fmt(g.total)}</span></div>`).join('')
-    : '<div style="color:var(--text2);font-size:13px">Sin gastos hoy</div>';
-  requestAnimationFrame(()=>{ document.querySelectorAll('.gasto-bar-fill[data-w]').forEach(el=>{ el.style.transition='width .65s cubic-bezier(.4,0,.2,1)'; requestAnimationFrame(()=>{ el.style.width=el.dataset.w+'%'; }); }); });
+  // Gráficas Chart.js
+  renderCharts(r, gr, horas, dias);
 
   // Últimas ventas
   const metodoBadge = m => `<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
@@ -1607,6 +1633,122 @@ async function loadDashboard(){
 }
 
 function startDashTimer(){ clearInterval(dashTimer); dashTimer = setInterval(loadDashboard, 15000); }
+
+// ─── GRÁFICAS DASHBOARD ─────────────────────────────────────
+let _chartH=null,_chartM=null,_chartD=null,_chartG=null;
+
+function renderCharts(r, gr, horas, dias){
+  const dark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const gc   = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const tc   = dark ? '#a0c8b0' : '#4a7060';
+  const bf   = {family:"'Segoe UI',sans-serif",size:11};
+
+  // 1. Ventas por hora
+  const horasAll = Array.from({length:24},(_,i)=>i);
+  const horasData = horasAll.map(h=>{ const row=(horas||[]).find(x=>+x.hora===h); return row?+row.total:0; });
+  if(_chartH){ _chartH.destroy(); _chartH=null; }
+  _chartH = new Chart($('chart-horas').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels: horasAll.map(h=>`${String(h).padStart(2,'0')}h`),
+      datasets:[{
+        data: horasData,
+        backgroundColor: horasData.map(v=>v>0?'rgba(11,132,87,0.78)':'rgba(11,132,87,0.12)'),
+        borderRadius:4, borderWidth:0,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}},
+      scales:{
+        x:{grid:{color:gc},ticks:{color:tc,font:bf,maxRotation:0,autoSkip:true,maxTicksLimit:12}},
+        y:{grid:{color:gc},ticks:{color:tc,font:bf,callback:v=>v===0?'':'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)}}
+      }
+    }
+  });
+
+  // 2. Métodos de pago (dona)
+  if(_chartM){ _chartM.destroy(); _chartM=null; }
+  const ef=r?+r.ventas.efectivo||0:0, ta=r?+r.ventas.tarjeta||0:0, ne=r?+r.ventas.nequi||0:0;
+  _chartM = new Chart($('chart-metodos').getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:['Efectivo','Tarjeta','Nequi/QR'],
+      datasets:[{
+        data:[ef,ta,ne],
+        backgroundColor:['rgba(16,185,129,0.85)','rgba(59,130,246,0.85)','rgba(168,85,247,0.85)'],
+        borderColor: dark?'#1a2e1e':'#fff',
+        borderWidth:2,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:tc,font:bf,boxWidth:10,padding:8}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.raw)}`}}
+      }
+    }
+  });
+
+  // 3. Últimos 7 días (línea)
+  if(_chartD){ _chartD.destroy(); _chartD=null; }
+  const last7 = Array.from({length:7},(_,i)=>{
+    const d=new Date(Date.now()-5*60*60*1000); d.setUTCDate(d.getUTCDate()-(6-i));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+  });
+  const diasData = last7.map(f=>{ const row=(dias||[]).find(d=>d.fecha?.slice(0,10)===f); return row?+row.total:0; });
+  const diasLabels = last7.map(f=>{ const [,m,d]=f.split('-'); return `${d}/${m}`; });
+  const ctxD = $('chart-dias').getContext('2d');
+  const grad = ctxD.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0,'rgba(11,132,87,0.28)'); grad.addColorStop(1,'rgba(11,132,87,0.02)');
+  _chartD = new Chart(ctxD,{
+    type:'line',
+    data:{
+      labels:diasLabels,
+      datasets:[{
+        data:diasData, borderColor:'#0B8457', backgroundColor:grad,
+        borderWidth:2, pointBackgroundColor:'#0B8457',
+        pointRadius:4, pointHoverRadius:6, tension:0.35, fill:true,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}},
+      scales:{
+        x:{grid:{color:gc},ticks:{color:tc,font:bf}},
+        y:{grid:{color:gc},ticks:{color:tc,font:bf,callback:v=>'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)}}
+      }
+    }
+  });
+
+  // 4. Gastos por categoría (barras horizontales)
+  if(_chartG){ _chartG.destroy(); _chartG=null; }
+  const ge = $('dash-gastos-empty');
+  if(gr && gr.length){
+    ge.style.display='none';
+    _chartG = new Chart($('chart-gastos').getContext('2d'),{
+      type:'bar',
+      data:{
+        labels: gr.map(g=>g.categoria||'Sin categoría'),
+        datasets:[{
+          data: gr.map(g=>+g.total),
+          backgroundColor: gr.map(g=>g.color||'rgba(11,132,87,0.78)'),
+          borderRadius:4, borderWidth:0,
+        }]
+      },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}},
+        scales:{
+          x:{grid:{color:gc},ticks:{color:tc,font:bf,callback:v=>'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)}},
+          y:{grid:{display:false},ticks:{color:tc,font:bf}}
+        }
+      }
+    });
+  } else {
+    ge.style.display='flex';
+  }
+}
 function stopDashTimer(){ clearInterval(dashTimer); dashTimer = null; }
 
 // ─── CAJA ────────────────────────────────────────────────────
