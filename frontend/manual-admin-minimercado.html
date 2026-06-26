@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manual Admin Minimercado — DJPOS</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#0B8457;--green-d:#086644;--green-l:#e0f7ec;
+  --bg:#f8fffe;--bg2:#fff;--text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(11,132,87,0.15);--radius:10px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0f1a14;--bg2:#172012;--text:#e0ede5;--text2:#a0c8b0;--text3:#5a8870;
+  --border:rgba(11,132,87,0.25);--green-l:#0d2a1f;
+}}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+.sidebar{width:270px;min-width:270px;background:var(--bg2);border-right:1px solid var(--border);height:100vh;position:sticky;top:0;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:24px}
+.toc-logo{padding:22px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.toc-nav{padding:12px 10px;flex:1}
+.toc-section{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);padding:12px 10px 4px}
+.toc-link{display:block;padding:7px 10px;border-radius:7px;color:var(--text2);text-decoration:none;font-size:13px;line-height:1.4;transition:.12s}
+.toc-link:hover{background:var(--green-l);color:var(--green)}
+.toc-link.active{background:var(--green-l);color:var(--green);font-weight:600}
+.content{flex:1;padding:40px 48px;max-width:860px}
+h1{font-size:28px;font-weight:700;margin-bottom:8px}
+.subtitle{font-size:15px;color:var(--text2);margin-bottom:36px;line-height:1.5}
+h2{font-size:20px;font-weight:700;color:var(--green);margin:40px 0 12px;scroll-margin-top:24px}
+h3{font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px}
+p{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:10px}
+ul,ol{padding-left:20px;margin-bottom:12px}
+li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
+.tip{background:var(--green-l);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:13px;color:var(--text2)}
+.warn{background:#fff8e1;border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:13px;color:#7a5a00}
+@media(prefers-color-scheme:dark){.warn{background:#2a1a00;color:#f0c060}}
+.steps{counter-reset:step;padding-left:0;list-style:none;margin-bottom:12px}
+.steps li{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;font-size:14px;color:var(--text2);line-height:1.6}
+.steps li::before{counter-increment:step;content:counter(step);min-width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;margin-right:4px}
+.b-green{background:#dcfce7;color:#15803d}.b-blue{background:#dbeafe;color:#1d4ed8}
+.b-amber{background:#fef3c7;color:#92400e}.b-purple{background:#ede9fe;color:#7c3aed}
+.b-gray{background:#f1f5f9;color:#475569}.b-red{background:#fee2e2;color:#dc2626}
+@media(prefers-color-scheme:dark){
+  .b-green{background:#14532d;color:#86efac}.b-blue{background:#1e3a5f;color:#93c5fd}
+  .b-amber{background:#451a03;color:#fcd34d}.b-purple{background:#2e1065;color:#c4b5fd}
+  .b-gray{background:#1e293b;color:#94a3b8}.b-red{background:#3f0a0a;color:#fca5a5}
+}
+@media(max-width:768px){body{flex-direction:column}.sidebar{width:100%;min-width:0;height:auto;position:relative;border-right:none;border-bottom:1px solid var(--border)}.toc-nav{display:none}.content{padding:24px 16px}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="toc-logo">
+    <img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+    <div>
+      <h2 style="font-size:13px;font-weight:700;color:var(--green)">DJPOS</h2>
+      <p style="font-size:11px;color:var(--text3);margin-top:1px">Manual Admin Minimercado</p>
+    </div>
+  </div>
+  <nav class="toc-nav">
+    <div class="toc-section">General</div>
+    <a class="toc-link" href="#acceso">Acceso</a>
+    <a class="toc-link" href="#navegacion">Navegación</a>
+    <a class="toc-link" href="#dashboard">Dashboard</a>
+    <div class="toc-section">Operación</div>
+    <a class="toc-link" href="#caja">Caja diaria</a>
+    <a class="toc-link" href="#gastos">Gastos</a>
+    <a class="toc-link" href="#reportes">Reportes</a>
+    <a class="toc-link" href="#clientes">Clientes</a>
+    <a class="toc-link" href="#facturas">Facturas</a>
+    <div class="toc-section">Inventario</div>
+    <a class="toc-link" href="#inventario">Inventario</a>
+    <a class="toc-link" href="#productos">Productos</a>
+    <a class="toc-link" href="#proveedores">Proveedores</a>
+    <a class="toc-link" href="#pedidos-prov">Pedidos a proveedores</a>
+    <div class="toc-section">Usuarios</div>
+    <a class="toc-link" href="#personal">Usuarios</a>
+    <a class="toc-link" href="#roles">Roles y permisos</a>
+    <a class="toc-link" href="#horarios">Horarios</a>
+    <a class="toc-link" href="#asistencia">Asistencia</a>
+    <div class="toc-section">Configuración</div>
+    <a class="toc-link" href="#cfg-factura">Datos de factura</a>
+    <a class="toc-link" href="#cfg-impresora">Impresora</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <h1>Admin Minimercado</h1>
+  <p class="subtitle">Manual completo para administradores del módulo Minimercado — gestión de inventario, ventas, personal y configuración.</p>
+
+  <h2 id="acceso">Acceso</h2>
+  <p>Ingresa desde el portal del negocio haciendo clic en la tarjeta <strong>Admin</strong>, o directamente desde el enlace de administración.</p>
+  <ol class="steps">
+    <li>Escribe tu usuario y contraseña.</li>
+    <li>Haz clic en <strong>Ingresar</strong>.</li>
+    <li>El sistema carga el panel de administración con tu rol y permisos.</li>
+  </ol>
+
+  <h2 id="navegacion">Navegación</h2>
+  <p>La interfaz tiene una barra lateral izquierda con cuatro grupos:</p>
+  <ul>
+    <li><strong>General</strong> — Dashboard, Caja diaria, Gastos, Reportes, Clientes, Facturas.</li>
+    <li><strong>Operación</strong> — Inventario, Productos, Proveedores, Pedidos a proveedores.</li>
+    <li><strong>Usuarios</strong> — Personal, Roles, Horarios, Asistencia.</li>
+    <li><strong>Configuración</strong> — Factura, Impresora.</li>
+  </ul>
+  <p>Puedes colapsar la barra lateral con el botón ≡ para ganar espacio en pantalla. En la parte inferior aparece el botón de Salir.</p>
+  <div class="tip">Solo verás los paneles para los que tienes permiso según tu rol.</div>
+
+  <h2 id="dashboard">Dashboard</h2>
+  <p>Vista general del negocio con indicadores clave del día:</p>
+  <ul>
+    <li>Ventas del día y del mes.</li>
+    <li>Número de transacciones.</li>
+    <li>Productos con stock bajo (alerta de inventario).</li>
+    <li>Últimas ventas registradas.</li>
+  </ul>
+
+  <h2 id="caja">Caja diaria</h2>
+  <p>Consulta el detalle de todas las ventas del día o de una fecha seleccionada.</p>
+  <ul>
+    <li><strong>Resumen estadístico</strong> — total por método de pago (efectivo, tarjeta, Nequi, transferencia).</li>
+    <li><strong>Tabla de ventas</strong> — hora, productos, total y método de pago de cada transacción.</li>
+    <li><strong>Filtro por fecha</strong> — cambia el campo de fecha para consultar días anteriores.</li>
+  </ul>
+  <div class="tip">El cajero abre y cierra la caja desde el POS Minimercado. Aquí solo se consulta el historial.</div>
+
+  <h2 id="gastos">Gastos</h2>
+  <p>Registra los egresos del negocio (servicios, insumos, otros).</p>
+  <ol class="steps">
+    <li>Haz clic en <strong>Nuevo gasto</strong>.</li>
+    <li>Ingresa descripción, monto y categoría.</li>
+    <li>Guarda — el gasto aparece en el historial y se descuenta del flujo de caja en reportes.</li>
+  </ol>
+
+  <h2 id="reportes">Reportes</h2>
+  <p>Análisis de ventas con filtros por período:</p>
+  <ul>
+    <li><strong>Ventas por día / semana / mes</strong> — gráfica de barras y tabla comparativa.</li>
+    <li><strong>Productos más vendidos</strong> — ranking con cantidad e ingresos.</li>
+    <li><strong>Métodos de pago</strong> — distribución por tipo de pago.</li>
+  </ul>
+
+  <h2 id="clientes">Clientes</h2>
+  <p>Base de datos de clientes registrados en el sistema.</p>
+  <ul>
+    <li>Consulta historial de compras por cliente.</li>
+    <li>Agrega, edita o elimina registros de clientes.</li>
+    <li>Busca por nombre o documento.</li>
+  </ul>
+
+  <h2 id="facturas">Facturas</h2>
+  <p>Historial de todas las facturas generadas. Puedes:</p>
+  <ul>
+    <li>Buscar por número, fecha o cliente.</li>
+    <li>Ver el detalle de cada factura.</li>
+    <li>Reimprimir o exportar.</li>
+  </ul>
+
+  <h2 id="inventario">Inventario</h2>
+  <p>Control de stock de todos los productos. El inventario muestra:</p>
+  <ul>
+    <li>Nombre del producto, categoría, stock actual y stock mínimo.</li>
+    <li><span class="badge b-amber">⚠ Stock bajo</span> cuando el stock es menor al mínimo configurado.</li>
+    <li><span class="badge b-red">Sin stock</span> cuando el producto está en 0 unidades.</li>
+  </ul>
+  <h3>Ajustar stock manualmente</h3>
+  <ol class="steps">
+    <li>Haz clic en el botón de ajuste del producto.</li>
+    <li>Ingresa la cantidad a sumar o restar y el motivo.</li>
+    <li>Guarda — el movimiento queda registrado en el historial de inventario.</li>
+  </ol>
+
+  <h2 id="productos">Productos</h2>
+  <p>Catálogo completo de productos disponibles en el POS.</p>
+  <h3>Crear producto</h3>
+  <ol class="steps">
+    <li>Haz clic en <strong>Nuevo producto</strong>.</li>
+    <li>Llena nombre, categoría, precio de venta, precio de costo y stock inicial.</li>
+    <li>Opcionalmente define el stock mínimo para alertas.</li>
+    <li>Guarda — el producto aparece de inmediato en el POS.</li>
+  </ol>
+  <h3>Editar / desactivar producto</h3>
+  <p>Usa los botones de editar (lápiz) o desactivar en cada fila del catálogo. Los productos desactivados no aparecen en el POS pero se conserva su historial.</p>
+  <div class="tip">Define bien el stock mínimo para que el sistema te avise cuando necesites reabastecer.</div>
+
+  <h2 id="proveedores">Proveedores</h2>
+  <p>Directorio de proveedores con contacto y condiciones comerciales.</p>
+  <ul>
+    <li>Agrega, edita o elimina proveedores.</li>
+    <li>Cada proveedor muestra sus productos asociados.</li>
+  </ul>
+
+  <h2 id="pedidos-prov">Pedidos a proveedores</h2>
+  <p>Registra y hace seguimiento de los pedidos realizados a cada proveedor.</p>
+  <ol class="steps">
+    <li>Haz clic en <strong>Nuevo pedido</strong>.</li>
+    <li>Selecciona el proveedor.</li>
+    <li>Agrega los productos y cantidades solicitadas.</li>
+    <li>Guarda el pedido — queda en estado <span class="badge b-amber">Pendiente</span>.</li>
+  </ol>
+  <p>Cuando llega la mercancía, marca el pedido como <span class="badge b-green">Recibido</span> para actualizar automáticamente el inventario.</p>
+
+  <h2 id="personal">Usuarios</h2>
+  <p>Gestión de los empleados que tienen acceso al sistema.</p>
+  <ol class="steps">
+    <li>Haz clic en <strong>Nuevo usuario</strong>.</li>
+    <li>Llena nombre, usuario, contraseña y rol.</li>
+    <li>Guarda — el usuario puede iniciar sesión de inmediato.</li>
+  </ol>
+  <p>Para cambiar la contraseña o el rol de un usuario, edita su ficha desde la lista.</p>
+
+  <h2 id="roles">Roles y permisos</h2>
+  <p>Define qué puede hacer cada tipo de usuario en el sistema.</p>
+  <ul>
+    <li>Crea roles personalizados (Cajero, Supervisor, etc.).</li>
+    <li>Activa o desactiva permisos individuales por módulo.</li>
+    <li>Asigna el rol al crear o editar un usuario.</li>
+  </ul>
+  <div class="warn">Un usuario sin el permiso de un módulo no verá ese panel en la barra lateral.</div>
+
+  <h2 id="horarios">Horarios</h2>
+  <p>Define el horario de trabajo de cada empleado por día de la semana: hora de entrada y hora de salida.</p>
+
+  <h2 id="asistencia">Asistencia</h2>
+  <p>Registro de entradas y salidas del personal. Permite:</p>
+  <ul>
+    <li>Ver el historial de asistencia por empleado y por fecha.</li>
+    <li>Identificar ausencias o llegadas tarde.</li>
+  </ul>
+
+  <h2 id="cfg-factura">Datos de factura</h2>
+  <p>Configura la información que aparece en los recibos impresos:</p>
+  <ul>
+    <li>Nombre del negocio, NIT / cédula.</li>
+    <li>Dirección y teléfono.</li>
+    <li>Mensaje de pie de página (ej: "¡Gracias por su compra!").</li>
+  </ul>
+
+  <h2 id="cfg-impresora">Impresora</h2>
+  <p>Configura la impresora de tickets térmica:</p>
+  <ul>
+    <li>Dirección IP o nombre de la impresora en red.</li>
+    <li>Ancho de papel (58mm / 80mm).</li>
+    <li>Prueba de impresión para verificar la conexión.</li>
+  </ul>
+  <div class="tip">Si la impresora no responde, verifica que esté en la misma red local que el servidor.</div>
+</main>
+
+<script>
+const links = document.querySelectorAll('.toc-link');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector(`.toc-link[href="#${e.target.id}"]`);
+      if (a) a.classList.add('active');
+    }
+  });
+}, {rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('h2[id]').forEach(h => observer.observe(h));
+</script>
+</body>
+</html>

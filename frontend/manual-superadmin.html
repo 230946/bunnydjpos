@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Superadmin — BUNNYDJPOS</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.08);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.08);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);line-height:1.6}
+
+/* LAYOUT */
+.layout{display:flex;min-height:100vh}
+.toc{width:250px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.toc-logo{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.toc-logo h2{font-size:15px;font-weight:700;color:var(--green)}
+.toc-logo p{font-size:11px;color:var(--text3);margin-top:2px}
+.toc a{display:block;padding:7px 20px;font-size:13px;color:var(--text2);text-decoration:none;border-left:3px solid transparent;transition:all .15s}
+.toc a:hover{background:var(--bg2);color:var(--text);border-left-color:var(--green)}
+.toc a.active{background:var(--green-l);color:var(--green-d);border-left-color:var(--green);font-weight:600}
+.toc-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:12px 20px 4px}
+.content{flex:1;padding:40px;max-width:860px}
+
+/* HEADER */
+.manual-header{background:var(--green);color:#fff;border-radius:var(--rl);padding:32px 36px;margin-bottom:32px}
+.manual-header h1{font-size:24px;font-weight:700;margin-bottom:6px}
+.manual-header p{font-size:14px;opacity:.85}
+.manual-header .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:11px;margin-top:10px}
+
+/* SECTIONS */
+.section{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:28px;margin-bottom:24px;scroll-margin-top:24px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.section-icon{font-size:24px;width:44px;height:44px;background:var(--green-l);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-header h2{font-size:17px;font-weight:700;color:var(--text)}
+.section-header p{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* STEPS */
+.steps{counter-reset:step}
+.step{display:flex;gap:14px;margin-bottom:14px;align-items:flex-start}
+.step-num{counter-increment:step;background:var(--green);color:#fff;font-size:11px;font-weight:700;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-num::before{content:counter(step)}
+.step-body{flex:1}
+.step-body strong{font-weight:600;color:var(--text)}
+.step-body p{font-size:13px;color:var(--text2);margin-top:2px}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.card-icon{font-size:20px;margin-bottom:6px}
+.card h4{font-size:13px;font-weight:600;margin-bottom:4px}
+.card p{font-size:12px;color:var(--text2)}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+th{background:var(--bg2);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:1px solid var(--border)}
+td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+
+/* ALERTS */
+.alert{border-radius:var(--r);padding:12px 16px;margin:12px 0;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.alert-tip{background:var(--green-l);border-left:3px solid var(--green);color:var(--green-d)}
+.alert-warn{background:var(--amber-l);border-left:3px solid var(--amber);color:#92400e}
+.alert-info{background:var(--blue-l);border-left:3px solid var(--blue);color:#1e40af}
+
+/* BADGE */
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-green{background:var(--green-l);color:var(--green-d)}
+.tag-red{background:var(--red-l);color:var(--red)}
+.tag-amber{background:var(--amber-l);color:var(--amber)}
+
+/* BTN */
+.btn-demo{display:inline-block;background:var(--green);color:#fff;border-radius:var(--r);padding:6px 14px;font-size:12px;font-weight:500;margin:2px}
+.btn-demo.outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-demo.red{background:var(--red)}
+
+/* SHORTCUT */
+.kbd{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;font-family:monospace}
+
+@media(max-width:700px){
+  .layout{flex-direction:column}
+  .toc{width:100%;height:auto;position:static;overflow:visible}
+  .content{padding:20px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ÍNDICE -->
+  <nav class="toc">
+    <div class="toc-logo" style="display:flex;align-items:center;gap:10px">
+      <img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+      <div>
+        <h2 style="font-size:13px;font-weight:700;color:var(--green)">DJPOS</h2>
+        <p style="font-size:11px;color:var(--text3);margin-top:1px">Manual Superadmin</p>
+      </div>
+    </div>
+    <div class="toc-section">Introducción</div>
+    <a href="#inicio" onclick="setActive(this)">Acceso al sistema</a>
+    <a href="#dashboard" onclick="setActive(this)">Dashboard</a>
+    <div class="toc-section">Gestión</div>
+    <a href="#negocios" onclick="setActive(this)">Negocios</a>
+    <a href="#usuarios" onclick="setActive(this)">Usuarios</a>
+    <a href="#establecimientos" onclick="setActive(this)">Por establecimiento</a>
+    <div class="toc-section">Comercial</div>
+    <a href="#facturacion" onclick="setActive(this)">Facturación</a>
+    <a href="#planes" onclick="setActive(this)">Planes</a>
+    <a href="#contratos" onclick="setActive(this)">Contratos</a>
+    <div class="toc-section">Seguimiento</div>
+    <a href="#actividad" onclick="setActive(this)">Registro de actividad</a>
+    <div class="toc-section">Referencia</div>
+    <a href="#roles" onclick="setActive(this)">Roles y permisos</a>
+  </nav>
+
+  <!-- CONTENIDO -->
+  <div class="content">
+
+    <div class="manual-header">
+      <h1>Manual del Superadministrador</h1>
+      <p>Guía completa para gestionar negocios, usuarios, contratos y configuración del sistema BUNNYDJPOS.</p>
+      <span class="badge">Versión 1.0 — Junio 2026</span>
+    </div>
+
+    <!-- ACCESO -->
+    <div class="section" id="inicio">
+      <div class="section-header">
+        <div class="section-icon">🔐</div>
+        <div>
+          <h2>Acceso al sistema</h2>
+          <p>Cómo ingresar al panel de superadministrador</p>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Abrir el navegador</strong><p>Ingresa a la URL del sistema: <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">http://tu-dominio/superadmin</code></p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresar credenciales</strong><p>Escribe tu correo de superadmin y contraseña. Las credenciales iniciales se configuran en el servidor.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresar</strong><p>Haz clic en <span class="btn-demo">Ingresar</span>. Si las credenciales son correctas, serás redirigido al Dashboard.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>El panel de superadmin es exclusivo para el administrador del sistema. No compartas estas credenciales con administradores de negocios.</span></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="section" id="dashboard">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div>
+          <h2>Dashboard</h2>
+          <p>Vista general del estado del sistema</p>
+        </div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">El Dashboard es la primera pantalla que ves al ingresar. Muestra un resumen ejecutivo de todo el sistema.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🏪</div><h4>Total negocios</h4><p>Cantidad de negocios registrados en el sistema</p></div>
+        <div class="card"><div class="card-icon">✅</div><h4>Negocios activos</h4><p>Negocios con contrato vigente y acceso habilitado</p></div>
+        <div class="card"><div class="card-icon">💰</div><h4>Ingresos del mes</h4><p>Suma de ventas de todos los negocios en el mes actual</p></div>
+        <div class="card"><div class="card-icon">📄</div><h4>Contratos próximos</h4><p>Contratos que vencen en los próximos 30 días</p></div>
+      </div>
+      <div class="alert alert-tip" style="margin-top:16px">💡 <span>Los contratos por vencer aparecen en la parte inferior del dashboard. Haz clic en <strong>Ver todos</strong> para ir al módulo de Contratos.</span></div>
+    </div>
+
+    <!-- NEGOCIOS -->
+    <div class="section" id="negocios">
+      <div class="section-header">
+        <div class="section-icon">🏪</div>
+        <div>
+          <h2>Negocios</h2>
+          <p>Registro y administración de establecimientos</p>
+        </div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:16px">Desde aquí puedes crear, editar, activar o desactivar los negocios que usan el sistema.</p>
+
+      <h3 style="font-size:14px;margin-bottom:10px">Crear un nuevo negocio</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "＋ Nuevo negocio"</strong><p>Botón ubicado en la parte superior derecha del panel.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Completa los datos</strong><p>Nombre del negocio, tipo (restaurante, peluquería, minimercado), dirección y teléfono.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el tipo</strong><p>El tipo determina qué módulos POS tendrá disponibles el negocio.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Guardar</strong><p>El negocio queda creado con estado <span class="tag tag-amber">pendiente</span> hasta que se le asigne un contrato.</p></div></div>
+      </div>
+
+      <h3 style="font-size:14px;margin:16px 0 10px">Acciones disponibles por negocio</h3>
+      <table>
+        <thead><tr><th>Botón</th><th>Función</th></tr></thead>
+        <tbody>
+          <tr><td><span class="btn-demo">✏️ Editar</span></td><td>Modifica nombre, tipo o datos de contacto del negocio</td></tr>
+          <tr><td><span class="btn-demo">🔲 QR</span></td><td>Genera código QR con la URL del portal de reservas o empleados</td></tr>
+          <tr><td><span class="btn-demo">✅ Activar</span></td><td>Habilita el acceso al sistema para ese negocio</td></tr>
+          <tr><td><span class="btn-demo red">🚫 Desactivar</span></td><td>Bloquea el acceso sin eliminar los datos</td></tr>
+          <tr><td><span class="btn-demo red">🗑 Eliminar</span></td><td>Elimina el negocio permanentemente (no se puede deshacer)</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="font-size:14px;margin:16px 0 10px">Estados de un negocio</h3>
+      <table>
+        <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-green">activo</span></td><td>El negocio puede iniciar sesión y usar el sistema</td></tr>
+          <tr><td><span class="tag tag-amber">pendiente</span></td><td>Registrado pero aún sin contrato o en proceso</td></tr>
+          <tr><td><span class="tag tag-red">inactivo</span></td><td>Acceso bloqueado temporalmente</td></tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-tip" style="margin-top:14px">💡 <span>El <strong>código QR</strong> es útil para pegar en el local del cliente — así sus clientes pueden escanear y hacer reservas o ver el menú directamente.</span></div>
+    </div>
+
+    <!-- USUARIOS -->
+    <div class="section" id="usuarios">
+      <div class="section-header">
+        <div class="section-icon">👥</div>
+        <div>
+          <h2>Usuarios</h2>
+          <p>Gestión de cuentas de superadministradores</p>
+        </div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">Este módulo gestiona los usuarios con acceso al panel de superadmin. No confundir con los usuarios de cada negocio (esos se gestionan desde el Admin de cada negocio).</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">➕</div><h4>Crear usuario</h4><p>Agrega un nuevo superadmin con nombre, correo y contraseña</p></div>
+        <div class="card"><div class="card-icon">✏️</div><h4>Editar</h4><p>Cambia nombre, correo o contraseña de un superadmin existente</p></div>
+        <div class="card"><div class="card-icon">🗑</div><h4>Eliminar</h4><p>Borra la cuenta del superadmin (no se puede deshacer)</p></div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:14px">⚠️ <span>No elimines el único superadmin del sistema — perderías el acceso completo al panel.</span></div>
+    </div>
+
+    <!-- POR ESTABLECIMIENTO -->
+    <div class="section" id="establecimientos">
+      <div class="section-header">
+        <div class="section-icon">🏪</div>
+        <div>
+          <h2>Por establecimiento</h2>
+          <p>Vista de ventas y estadísticas por negocio</p>
+        </div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">Permite ver el rendimiento de cada negocio individualmente: ventas del mes, promedio por venta, número de transacciones y más.</p>
+      <table>
+        <thead><tr><th>Columna</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Negocio</strong></td><td>Nombre del establecimiento</td></tr>
+          <tr><td><strong>Tipo</strong></td><td>Restaurante, peluquería o minimercado</td></tr>
+          <tr><td><strong>Ventas</strong></td><td>Número de transacciones en el período</td></tr>
+          <tr><td><strong>Ingresos</strong></td><td>Total en pesos cobrado</td></tr>
+          <tr><td><strong>Promedio</strong></td><td>Valor promedio por venta</td></tr>
+          <tr><td><strong>Estado</strong></td><td>Estado actual del contrato del negocio</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:14px">💡 <span>Usa el selector de fechas para filtrar por rango. Por defecto muestra el mes actual.</span></div>
+    </div>
+
+    <!-- FACTURACIÓN -->
+    <div class="section" id="facturacion">
+      <div class="section-header">
+        <div class="section-icon">💰</div>
+        <div>
+          <h2>Facturación</h2>
+          <p>Resumen de ingresos por cobro de planes</p>
+        </div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">Vista global de cuánto factura el sistema por la venta de sus planes a los negocios clientes.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">📅</div><h4>Ingresos del mes</h4><p>Total cobrado a los negocios en el mes actual</p></div>
+        <div class="card"><div class="card-icon">📈</div><h4>Histórico</h4><p>Evolución de ingresos mes a mes</p></div>
+        <div class="card"><div class="card-icon">🏪</div><h4>Por negocio</h4><p>Cuánto paga cada negocio y en qué plan está</p></div>
+      </div>
+    </div>
+
+    <!-- PLANES -->
+    <div class="section" id="planes">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div>
+          <h2>Planes</h2>
+          <p>Configuración de planes de suscripción</p>
+        </div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">Define los planes que ofreces a tus clientes (negocios). Cada plan tiene un precio y características.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Crear plan</strong><p>Define nombre, precio mensual, descripción y límites del plan.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar a contrato</strong><p>Al crear un contrato, selecciona el plan correspondiente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Actualizar precio</strong><p>Puedes editar el precio del plan — los contratos existentes no se modifican automáticamente.</p></div></div>
+      </div>
+    </div>
+
+    <!-- CONTRATOS -->
+    <div class="section" id="contratos">
+      <div class="section-header">
+        <div class="section-icon">📄</div>
+        <div>
+          <h2>Contratos</h2>
+          <p>Gestión de acuerdos de servicio con los negocios</p>
+        </div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">Un contrato vincula un negocio con un plan y un período de vigencia. El sistema activa automáticamente el negocio cuando llega la fecha de inicio.</p>
+
+      <h3 style="font-size:14px;margin-bottom:10px">Crear un contrato</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el negocio</strong><p>El negocio al que vas a vincular el contrato.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elige el plan</strong><p>Selecciona el plan de suscripción contratado.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Define las fechas</strong><p>Fecha de inicio y fecha de fin del contrato.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Valor y notas</strong><p>Precio acordado y cualquier observación relevante.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Guardar</strong><p>El número de contrato se genera automáticamente (ej: CONT-2026-001).</p></div></div>
+      </div>
+
+      <h3 style="font-size:14px;margin:16px 0 10px">Estados de contratos</h3>
+      <table>
+        <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-amber">pendiente</span></td><td>Contrato creado pero la fecha de inicio no ha llegado</td></tr>
+          <tr><td><span class="tag tag-green">activo</span></td><td>Contrato vigente, negocio con acceso completo</td></tr>
+          <tr><td><span class="tag tag-red">vencido</span></td><td>Fecha de fin superada, el negocio puede quedar bloqueado</td></tr>
+          <tr><td><span class="tag" style="background:var(--bg2);color:var(--text2)">cancelado</span></td><td>Contrato anulado manualmente</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:14px">💡 <span>El sistema activa automáticamente el negocio cuando la fecha de inicio del contrato llega. No necesitas hacerlo manualmente.</span></div>
+      <div class="alert alert-warn">⚠️ <span>Cuando un contrato vence, el negocio NO pierde sus datos — solo se bloquea el acceso hasta que se renueve.</span></div>
+    </div>
+
+    <!-- ACTIVIDAD -->
+    <div class="section" id="actividad">
+      <div class="section-header">
+        <div class="section-icon">📜</div>
+        <div>
+          <h2>Registro de actividad</h2>
+          <p>Historial de acciones realizadas en el sistema</p>
+        </div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">Registro cronológico de todas las acciones importantes: logins, creación de negocios, cambios de contratos, etc.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🔍</div><h4>Filtrar por negocio</h4><p>Ver solo las acciones relacionadas con un negocio específico</p></div>
+        <div class="card"><div class="card-icon">📅</div><h4>Filtrar por fecha</h4><p>Ver actividad en un rango de fechas</p></div>
+        <div class="card"><div class="card-icon">👤</div><h4>Filtrar por usuario</h4><p>Ver qué hizo un usuario específico</p></div>
+      </div>
+      <div class="alert alert-info" style="margin-top:14px">ℹ️ <span>El registro de actividad es de <strong>solo lectura</strong> — no se puede modificar ni eliminar para garantizar la trazabilidad.</span></div>
+    </div>
+
+
+    <!-- ROLES -->
+    <div class="section" id="roles">
+      <div class="section-header">
+        <div class="section-icon">🔑</div>
+        <div>
+          <h2>Roles y permisos</h2>
+          <p>Diferencia entre Superadmin y Admin de negocio</p>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Acción</th><th>Superadmin</th><th>Admin negocio</th></tr></thead>
+        <tbody>
+          <tr><td>Ver todos los negocios</td><td>✅</td><td>❌</td></tr>
+          <tr><td>Crear / eliminar negocios</td><td>✅</td><td>❌</td></tr>
+          <tr><td>Gestionar contratos</td><td>✅</td><td>❌</td></tr>
+          <tr><td>Ver actividad global</td><td>✅</td><td>❌</td></tr>
+          <tr><td>Configurar módulos</td><td>✅</td><td>❌</td></tr>
+          <tr><td>Gestionar menú / productos</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Ver ventas de su negocio</td><td>✅ (todos)</td><td>✅ (solo el suyo)</td></tr>
+          <tr><td>Gestionar empleados</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Abrir / cerrar caja</td><td>❌</td><td>✅</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-info" style="margin-top:14px">ℹ️ <span>El Superadmin <strong>no</strong> gestiona las operaciones diarias de cada negocio — eso es responsabilidad del Admin de cada establecimiento.</span></div>
+    </div>
+
+    <div style="text-align:center;padding:32px 0;color:var(--text3);font-size:12px">
+      BUNNYDJPOS — Manual Superadministrador v1.0 · Junio 2026
+    </div>
+  </div>
+</div>
+
+<script>
+function setActive(el){
+  document.querySelectorAll('.toc a').forEach(a=>a.classList.remove('active'));
+  el.classList.add('active');
+}
+// Marcar activo según scroll
+const sections = document.querySelectorAll('.section');
+const tocLinks = document.querySelectorAll('.toc a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if(window.scrollY >= s.offsetTop - 80) current = s.id; });
+  tocLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+}, {passive:true});
+</script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Admin Peluquería — DJPOS</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.08);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.08);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);line-height:1.6}
+.layout{display:flex;min-height:100vh}
+.toc{width:230px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.toc-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.toc a{display:block;padding:6px 18px;font-size:12.5px;color:var(--text2);text-decoration:none;border-left:3px solid transparent;transition:all .15s}
+.toc a:hover{background:var(--bg2);color:var(--text);border-left-color:var(--green)}
+.toc a.active{background:var(--green-l);color:var(--green-d);border-left-color:var(--green);font-weight:600}
+.toc-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:10px 18px 3px}
+.content{flex:1;padding:36px;max-width:860px}
+.manual-header{background:var(--green);color:#fff;border-radius:var(--rl);padding:28px 32px;margin-bottom:28px}
+.manual-header h1{font-size:22px;font-weight:700;margin-bottom:5px}
+.manual-header p{font-size:13px;opacity:.85}
+.manual-header .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:11px;margin-top:8px}
+.section{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px;scroll-margin-top:20px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.section-icon{font-size:22px;width:40px;height:40px;background:var(--green-l);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-header h2{font-size:16px;font-weight:700}
+.section-header p{font-size:12px;color:var(--text3);margin-top:2px}
+.steps{counter-reset:step}
+.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-num{counter-increment:step;background:var(--green);color:#fff;font-size:11px;font-weight:700;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-num::before{content:counter(step)}
+.step-body{flex:1}
+.step-body strong{font-weight:600}
+.step-body p{font-size:13px;color:var(--text2);margin-top:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.card-icon{font-size:18px;margin-bottom:5px}
+.card h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.card p{font-size:12px;color:var(--text2)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th{background:var(--bg2);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:1px solid var(--border)}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.alert{border-radius:var(--r);padding:10px 14px;margin:10px 0;font-size:13px;display:flex;gap:9px;align-items:flex-start}
+.alert-tip{background:var(--green-l);border-left:3px solid var(--green);color:var(--green-d)}
+.alert-warn{background:var(--amber-l);border-left:3px solid var(--amber);color:#92400e}
+.alert-info{background:var(--blue-l);border-left:3px solid var(--blue);color:#1e40af}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-green{background:var(--green-l);color:var(--green-d)}
+.tag-red{background:var(--red-l);color:var(--red)}
+.tag-amber{background:var(--amber-l);color:var(--amber)}
+.btn-demo{display:inline-block;background:var(--green);color:#fff;border-radius:var(--r);padding:4px 12px;font-size:11px;font-weight:500;margin:2px}
+.btn-demo.outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
+@media(max-width:700px){.layout{flex-direction:column}.toc{width:100%;height:auto;position:static}.content{padding:18px}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="toc-logo">
+      <img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--green)">DJPOS</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">Manual Admin Peluquería</div>
+      </div>
+    </div>
+    <div class="toc-section">General</div>
+    <a href="#dashboard" onclick="setActive(this)">📊 Dashboard</a>
+    <a href="#agenda" onclick="setActive(this)">📅 Agenda</a>
+    <a href="#reportes" onclick="setActive(this)">📈 Reportes</a>
+    <a href="#caja" onclick="setActive(this)">💰 Caja del día</a>
+    <a href="#gastos" onclick="setActive(this)">📋 Gastos</a>
+    <a href="#facturas" onclick="setActive(this)">🧾 Facturas</a>
+    <div class="toc-section">Catálogo</div>
+    <a href="#servicios" onclick="setActive(this)">📂 Servicios</a>
+    <a href="#paquetes" onclick="setActive(this)">🎁 Paquetes</a>
+    <a href="#inventario" onclick="setActive(this)">📦 Inventario</a>
+    <div class="toc-section">Comercial</div>
+    <a href="#comisiones" onclick="setActive(this)">📋 Comisiones</a>
+    <a href="#proveedores" onclick="setActive(this)">🚚 Proveedores</a>
+    <div class="toc-section">Personal</div>
+    <a href="#clientes" onclick="setActive(this)">👤 Clientes</a>
+    <a href="#empleados" onclick="setActive(this)">👥 Empleados</a>
+    <a href="#usuarios" onclick="setActive(this)">🔑 Usuarios y roles</a>
+    <a href="#horarios" onclick="setActive(this)">🕐 Horarios</a>
+    <div class="toc-section">Configuración</div>
+    <a href="#cfg-factura" onclick="setActive(this)">🧾 Factura</a>
+    <a href="#cfg-impresora" onclick="setActive(this)">🖨️ Impresora</a>
+  </nav>
+
+  <div class="content">
+    <div class="manual-header">
+      <h1>Manual del Administrador</h1>
+      <p>Peluquería — Agenda, servicios, empleados, comisiones y reportes.</p>
+      <span class="badge">Versión 1.0 — Junio 2026</span>
+    </div>
+
+    <div class="section" id="dashboard">
+      <div class="section-header"><div class="section-icon">📊</div><div><h2>Dashboard</h2><p>Resumen del negocio en tiempo real</p></div></div>
+      <div class="cards">
+        <div class="card"><div class="card-icon">📅</div><h4>Citas hoy</h4><p>Total de citas programadas para el día</p></div>
+        <div class="card"><div class="card-icon">✅</div><h4>Completadas</h4><p>Citas ya atendidas y cobradas</p></div>
+        <div class="card"><div class="card-icon">💰</div><h4>Ingresos del día</h4><p>Total facturado hoy</p></div>
+        <div class="card"><div class="card-icon">⏳</div><h4>Pendientes</h4><p>Citas que aún faltan por atender</p></div>
+        <div class="card"><div class="card-icon">📦</div><h4>Stock bajo</h4><p>Productos que necesitan reposición</p></div>
+      </div>
+    </div>
+
+    <div class="section" id="agenda">
+      <div class="section-header"><div class="section-icon">📅</div><div><h2>Agenda</h2><p>Vista completa de citas por día y empleado</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">La agenda muestra todas las citas del local organizadas por hora y empleado.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Navega por fechas</strong><p>Usa las flechas o el selector de fecha para cambiar de día.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Filtra por empleado</strong><p>Selecciona un empleado específico para ver solo sus citas.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Toca una cita</strong><p>Abre el detalle: cliente, servicio, hora, estado y opciones de gestión.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Crea o edita citas</strong><p>Haz clic en <span class="btn-demo">+ Nueva cita</span> o toca una existente para editarla.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Los clientes también pueden reservar desde la <strong>página de reservas online</strong>. Esas citas aparecen automáticamente en la agenda.</span></div>
+    </div>
+
+    <div class="section" id="reportes">
+      <div class="section-header"><div class="section-icon">📈</div><div><h2>Reportes</h2><p>Análisis de rendimiento del negocio</p></div></div>
+      <div class="cards">
+        <div class="card"><div class="card-icon">📅</div><h4>Por período</h4><p>Ventas e ingresos en cualquier rango de fechas</p></div>
+        <div class="card"><div class="card-icon">💇</div><h4>Servicios más vendidos</h4><p>Qué servicios tienen más demanda</p></div>
+        <div class="card"><div class="card-icon">👥</div><h4>Por empleado</h4><p>Cuántas citas y cuánto facturó cada uno</p></div>
+        <div class="card"><div class="card-icon">💳</div><h4>Por método de pago</h4><p>Desglose en efectivo, tarjeta y Nequi</p></div>
+        <div class="card"><div class="card-icon">⬇️</div><h4>Exportar Excel</h4><p>Descarga el reporte para análisis externo</p></div>
+      </div>
+    </div>
+
+    <div class="section" id="caja">
+      <div class="section-header"><div class="section-icon">💰</div><div><h2>Caja del día</h2><p>Control de apertura y cierre de caja</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Consulta el estado de caja de cada empleado y revisa el historial de días anteriores.</p>
+      <table>
+        <thead><tr><th>Columna</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Cajero</strong></td><td>Empleado que abrió la caja</td></tr>
+          <tr><td><strong>Apertura</strong></td><td>Monto con que inició el turno</td></tr>
+          <tr><td><strong>Ventas</strong></td><td>Total cobrado durante el turno</td></tr>
+          <tr><td><strong>Cierre</strong></td><td>Efectivo contado al cerrar</td></tr>
+          <tr><td><strong>Estado</strong></td><td><span class="tag tag-green">abierta</span> o <span class="tag" style="background:var(--bg2);color:var(--text2)">cerrada</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section" id="gastos">
+      <div class="section-header"><div class="section-icon">📋</div><div><h2>Gastos</h2><p>Registro de egresos del negocio</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Registra gastos operativos: insumos, servicios públicos, arriendo, etc. Aparecen en los reportes para calcular la utilidad neta.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Agregar gasto</strong><p>Descripción, monto, categoría y fecha.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ver historial</strong><p>Filtra por fecha para revisar gastos pasados.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="facturas">
+      <div class="section-header"><div class="section-icon">🧾</div><div><h2>Facturas</h2><p>Historial de comprobantes de venta</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Consulta, reenvía o imprime cualquier factura generada en el sistema.</p>
+      <table>
+        <thead><tr><th>Acción</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><span class="btn-demo outline">🔍 Ver</span></td><td>Detalle de servicios y totales de esa venta</td></tr>
+          <tr><td><span class="btn-demo outline">📧 Reenviar</span></td><td>Envía la factura al correo del cliente</td></tr>
+          <tr><td><span class="btn-demo outline">🖨️ Imprimir</span></td><td>Imprime el recibo en la impresora térmica</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section" id="servicios">
+      <div class="section-header"><div class="section-icon">📂</div><div><h2>Servicios</h2><p>Catálogo de servicios que ofrece la peluquería</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo servicio</strong><p>Nombre, descripción, precio, duración en minutos y categoría.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Categorías</strong><p>Organiza los servicios en categorías: Corte, Color, Tratamiento, Manicure, etc.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Activar / desactivar</strong><p>Desactiva un servicio temporalmente sin eliminarlo — no aparecerá al crear citas.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>La duración del servicio controla la disponibilidad en el calendario de reservas online — evita que se programen dos citas al mismo tiempo.</span></div>
+    </div>
+
+    <div class="section" id="paquetes">
+      <div class="section-header"><div class="section-icon">🎁</div><div><h2>Paquetes</h2><p>Combos de servicios con precio especial</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Crea paquetes de múltiples servicios a un precio especial — ideal para promociones.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo paquete</strong><p>Nombre, precio total del paquete y vigencia en días.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Agregar servicios</strong><p>Selecciona qué servicios incluye el paquete y cuántas sesiones de cada uno.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Vender el paquete</strong><p>Al cobrar, el empleado puede seleccionar "Paquete" y el cliente va descontando sesiones.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="inventario">
+      <div class="section-header"><div class="section-icon">📦</div><div><h2>Inventario</h2><p>Control de productos e insumos</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Controla el stock de tintes, champús, herramientas y demás insumos del local.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Agregar producto</strong><p>Nombre, unidad (ml, unidad, kg), stock actual y stock mínimo de alerta.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ajustar stock</strong><p>Registra entradas (compras) o salidas (uso, merma) manualmente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Alertas de stock bajo</strong><p>El dashboard te avisa cuando un producto baja del stock mínimo configurado.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="comisiones">
+      <div class="section-header"><div class="section-icon">📋</div><div><h2>Comisiones</h2><p>Control de comisiones por empleado</p></div></div>
+      <p style="color:var(--text2);margin-bottom:14px">El sistema calcula automáticamente las comisiones de cada empleado según los servicios que atendió.</p>
+      <h3 class="sub">Configuración de comisiones</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a Comisiones → ⚙️ Configuración</strong><p>Define el porcentaje de comisión por empleado o por servicio.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Porcentaje por empleado</strong><p>Asigna un % general a cada empleado (ej: 30% sobre todas sus ventas).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Porcentaje por servicio</strong><p>Define porcentajes diferentes según el tipo de servicio.</p></div></div>
+      </div>
+      <h3 class="sub">Ver comisiones del período</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a Comisiones → 📋 Ver comisiones</strong><p>Selecciona el período y el empleado para ver el resumen de comisiones.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Exportar</strong><p>Descarga el reporte de comisiones para liquidar quincena o mes.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="proveedores">
+      <div class="section-header"><div class="section-icon">🚚</div><div><h2>Proveedores y pedidos</h2><p>Gestión de compras de insumos</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Registra tus proveedores de tintes, herramientas e insumos, y crea órdenes de compra para controlar el inventario.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🚚</div><h4>Proveedores</h4><p>Directorio con nombre, NIT, teléfono y correo de cada proveedor</p></div>
+        <div class="card"><div class="card-icon">🛒</div><h4>Pedidos</h4><p>Crea órdenes de compra y controla su estado hasta que llegan al local</p></div>
+      </div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Al marcar un pedido como <strong>recibido</strong>, las cantidades se suman automáticamente al inventario.</span></div>
+    </div>
+
+    <div class="section" id="clientes">
+      <div class="section-header"><div class="section-icon">👤</div><div><h2>Clientes</h2><p>Base de datos de clientes</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Registra clientes frecuentes para asociarlos a sus citas, ver su historial y generar facturas con sus datos.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">📋</div><h4>Historial de citas</h4><p>Todas las visitas del cliente con servicios y montos</p></div>
+        <div class="card"><div class="card-icon">📦</div><h4>Paquetes activos</h4><p>Sesiones restantes de los paquetes que tiene el cliente</p></div>
+        <div class="card"><div class="card-icon">📧</div><h4>Datos de contacto</h4><p>Teléfono y correo para comunicaciones y recordatorios</p></div>
+      </div>
+    </div>
+
+    <div class="section" id="empleados">
+      <div class="section-header"><div class="section-icon">👥</div><div><h2>Empleados</h2><p>Perfil de cada peluquero / estilista</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Registra los datos de cada empleado y qué servicios puede realizar — esto controla su disponibilidad en la agenda y reservas online.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo empleado</strong><p>Nombre, teléfono, especialidad y foto.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Servicios que realiza</strong><p>Marca qué servicios del catálogo puede atender este empleado.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Vincular con usuario del sistema</strong><p>Asocia el empleado con su cuenta de usuario para que sus citas aparezcan en el POS.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="usuarios">
+      <div class="section-header"><div class="section-icon">🔑</div><div><h2>Usuarios y roles</h2><p>Acceso al sistema por perfil</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Crea los usuarios que pueden ingresar al POS o al panel admin y asígnales roles con los permisos correctos.</p>
+      <table>
+        <thead><tr><th>Rol sugerido</th><th>Permisos típicos</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Administrador</strong></td><td>Acceso completo a todos los módulos</td></tr>
+          <tr><td><strong>Estilista</strong></td><td>Solo POS — ver citas propias y cobrar</td></tr>
+          <tr><td><strong>Recepcionista</strong></td><td>POS + agenda (todas las citas) + clientes</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section" id="horarios">
+      <div class="section-header"><div class="section-icon">🕐</div><div><h2>Horarios</h2><p>Turnos laborales del personal</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Define los días y horas en que cada empleado trabaja. Esto controla su disponibilidad en el calendario de reservas online.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar horario</strong><p>Empleado, día de la semana, hora de entrada y salida.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Días libres</strong><p>Si un empleado no trabaja un día específico, no aparecerá disponible para reservas ese día.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Es importante mantener los horarios actualizados — si un empleado está de vacaciones, desactiva sus días para que los clientes no puedan reservarle citas.</span></div>
+    </div>
+
+    <div class="section" id="cfg-factura">
+      <div class="section-header"><div class="section-icon">🧾</div><div><h2>Configurar factura</h2><p>Datos del negocio en los recibos</p></div></div>
+      <table>
+        <thead><tr><th>Campo</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Nombre del negocio</strong></td><td>Peluquería Estilo DJ</td></tr>
+          <tr><td><strong>NIT / Cédula</strong></td><td>900.123.456-7</td></tr>
+          <tr><td><strong>Dirección</strong></td><td>Carrera 8 # 12-34, Bogotá</td></tr>
+          <tr><td><strong>Teléfono</strong></td><td>+57 310 123 4567</td></tr>
+          <tr><td><strong>Mensaje de pie</strong></td><td>¡Gracias por visitarnos!</td></tr>
+          <tr><td><strong>Prefijo y número inicial</strong></td><td>PEL-0001</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section" id="cfg-impresora">
+      <div class="section-header"><div class="section-icon">🖨️</div><div><h2>Impresora</h2><p>Configuración de impresora térmica</p></div></div>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🔗</div><h4>IP de impresora</h4><p>Dirección IP en la red local del local</p></div>
+        <div class="card"><div class="card-icon">📄</div><h4>Ancho del papel</h4><p>58mm o 80mm según el modelo</p></div>
+        <div class="card"><div class="card-icon">🧪</div><h4>Prueba de impresión</h4><p>Imprime un recibo de prueba para verificar</p></div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>La impresora debe estar en la misma red WiFi que el dispositivo con el POS.</span></div>
+    </div>
+
+    <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">DJPOS — Manual Admin Peluquería v1.0 · Junio 2026</div>
+  </div>
+</div>
+<script>
+function setActive(el){ document.querySelectorAll('.toc a').forEach(a=>a.classList.remove('active')); el.classList.add('active'); }
+window.addEventListener('scroll', () => {
+  let current = '';
+  document.querySelectorAll('.section').forEach(s => { if(window.scrollY >= s.offsetTop - 80) current = s.id; });
+  document.querySelectorAll('.toc a').forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#'+current); });
+}, {passive:true});
+</script>
+</body>
+</html>

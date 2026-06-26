@@ -172,7 +172,6 @@ tr:hover td{background:var(--bg2)}
     <button class="nav-btn" onclick="showPanel('actividad',this)">📜 Actividad</button>
     <button class="nav-btn" onclick="showPanel('contratos',this)">📄 Contratos</button>
     <div style="margin-top:auto;padding-top:16px;border-top:0.5px solid var(--border)">
-      <button class="nav-btn" onclick="window.open('modules.html','_blank')" title="Portal de módulos">🗂️ Portal módulos</button>
       <button class="nav-btn" onclick="doLogout()">🚪 Cerrar sesión</button>
     </div>
   </div>
@@ -184,7 +183,10 @@ tr:hover td{background:var(--bg2)}
         <button id="sb-hamburger" class="show-mobile" onclick="openMobileSidebar()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 6px;border-radius:var(--r);color:var(--text);display:none">☰</button>
         <span class="topbar-title" id="topbar-title">Dashboard</span>
       </div>
-      <span id="topbar-user" style="font-size:12px;color:var(--text2)"></span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="topbar-user" style="font-size:12px;color:var(--text2)"></span>
+        <button onclick="window.open('/manual-superadmin.html','_blank')" title="Ayuda" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text2)">?</button>
+      </div>
     </div>
     <div class="content">
 

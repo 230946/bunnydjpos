@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual POS Peluquería — DJPOS</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.08);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.08);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);line-height:1.6}
+.layout{display:flex;min-height:100vh}
+.toc{width:230px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.toc-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.toc a{display:block;padding:6px 18px;font-size:12.5px;color:var(--text2);text-decoration:none;border-left:3px solid transparent;transition:all .15s}
+.toc a:hover{background:var(--bg2);color:var(--text);border-left-color:var(--green)}
+.toc a.active{background:var(--green-l);color:var(--green-d);border-left-color:var(--green);font-weight:600}
+.toc-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:10px 18px 3px}
+.content{flex:1;padding:36px;max-width:860px}
+.manual-header{background:var(--green);color:#fff;border-radius:var(--rl);padding:28px 32px;margin-bottom:28px}
+.manual-header h1{font-size:22px;font-weight:700;margin-bottom:5px}
+.manual-header p{font-size:13px;opacity:.85}
+.manual-header .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:11px;margin-top:8px}
+.section{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px;scroll-margin-top:20px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.section-icon{font-size:22px;width:40px;height:40px;background:var(--green-l);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-header h2{font-size:16px;font-weight:700}
+.section-header p{font-size:12px;color:var(--text3);margin-top:2px}
+.steps{counter-reset:step}
+.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-num{counter-increment:step;background:var(--green);color:#fff;font-size:11px;font-weight:700;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-num::before{content:counter(step)}
+.step-body{flex:1}
+.step-body strong{font-weight:600}
+.step-body p{font-size:13px;color:var(--text2);margin-top:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.card-icon{font-size:18px;margin-bottom:5px}
+.card h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.card p{font-size:12px;color:var(--text2)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th{background:var(--bg2);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:1px solid var(--border)}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.alert{border-radius:var(--r);padding:10px 14px;margin:10px 0;font-size:13px;display:flex;gap:9px;align-items:flex-start}
+.alert-tip{background:var(--green-l);border-left:3px solid var(--green);color:var(--green-d)}
+.alert-warn{background:var(--amber-l);border-left:3px solid var(--amber);color:#92400e}
+.alert-info{background:var(--blue-l);border-left:3px solid var(--blue);color:#1e40af}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-green{background:var(--green-l);color:var(--green-d)}
+.tag-red{background:var(--red-l);color:var(--red)}
+.tag-amber{background:var(--amber-l);color:var(--amber)}
+.tag-blue{background:var(--blue-l);color:var(--blue)}
+.tag-gray{background:var(--bg2);color:var(--text3)}
+.btn-demo{display:inline-block;background:var(--green);color:#fff;border-radius:var(--r);padding:4px 12px;font-size:11px;font-weight:500;margin:2px}
+.btn-demo.outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-demo.red{background:var(--red)}
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0}
+.flow-step{background:var(--green-l);color:var(--green-d);border-radius:var(--r);padding:8px 14px;font-size:12px;font-weight:600;text-align:center}
+.flow-arrow{color:var(--text3);font-size:16px}
+h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
+@media(max-width:700px){.layout{flex-direction:column}.toc{width:100%;height:auto;position:static}.content{padding:18px}.flow{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="toc-logo">
+      <img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--green)">DJPOS</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">Manual POS Peluquería</div>
+      </div>
+    </div>
+    <div class="toc-section">Inicio</div>
+    <a href="#acceso" onclick="setActive(this)">🔐 Acceso</a>
+    <a href="#pantalla" onclick="setActive(this)">🖥️ Pantalla principal</a>
+    <div class="toc-section">Operación diaria</div>
+    <a href="#caja" onclick="setActive(this)">💰 Abrir caja</a>
+    <a href="#citas" onclick="setActive(this)">📋 Ver citas del día</a>
+    <a href="#estados" onclick="setActive(this)">🔄 Cambiar estado de cita</a>
+    <a href="#cobro" onclick="setActive(this)">💳 Cobrar cita</a>
+    <a href="#nueva-cita" onclick="setActive(this)">➕ Crear nueva cita</a>
+    <a href="#extras" onclick="setActive(this)">➕ Agregar servicios extra</a>
+    <div class="toc-section">Pagos</div>
+    <a href="#pago-efectivo" onclick="setActive(this)">💵 Efectivo</a>
+    <a href="#pago-otros" onclick="setActive(this)">💳 Tarjeta / Nequi</a>
+    <a href="#pago-mixto" onclick="setActive(this)">🔀 Pago mixto</a>
+    <div class="toc-section">Cierre</div>
+    <a href="#cerrar-caja" onclick="setActive(this)">🔒 Cerrar caja</a>
+    <a href="#alertas" onclick="setActive(this)">⚠️ Alertas comunes</a>
+  </nav>
+
+  <div class="content">
+    <div class="manual-header">
+      <h1>Manual del Empleado</h1>
+      <p>POS Peluquería — Gestión de citas, cobros y caja del turno.</p>
+      <span class="badge">Versión 1.0 — Junio 2026</span>
+    </div>
+
+    <div class="section" id="acceso">
+      <div class="section-header"><div class="section-icon">🔐</div><div><h2>Acceso al sistema</h2><p>Cómo ingresar al POS de peluquería</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Abre el navegador</strong><p>En el dispositivo del local, ingresa a la URL del POS que te dio el administrador.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Escribe tu usuario y contraseña</strong><p>Credenciales asignadas por el administrador.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresar</strong><p>Verás directamente las citas del día asignadas a ti.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span><strong>Sin caja abierta no puedes cobrar citas.</strong> Abre la caja al iniciar tu turno.</span></div>
+    </div>
+
+    <div class="section" id="pantalla">
+      <div class="section-header"><div class="section-icon">🖥️</div><div><h2>Pantalla principal</h2><p>Descripción de la interfaz</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">La pantalla está dividida en dos partes:</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">📋</div><h4>Panel de citas (izquierda)</h4><p>Lista de todas las citas del día con su estado. Filtros por estado: pendiente, en curso, completada.</p></div>
+        <div class="card"><div class="card-icon">💳</div><h4>Panel de cobro (derecha)</h4><p>Al seleccionar una cita, aquí aparecen los servicios, totales y métodos de pago.</p></div>
+      </div>
+      <p style="color:var(--text2);font-size:13px;margin-top:12px">En la parte superior hay dos pestañas: <strong>📋 Citas</strong> y <strong>💰 Caja</strong>.</p>
+    </div>
+
+    <div class="section" id="caja">
+      <div class="section-header"><div class="section-icon">💰</div><div><h2>Abrir caja</h2><p>Primer paso al iniciar el turno</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a la pestaña 💰 Caja</strong><p>En la barra superior del POS.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Abrir caja"</strong><p>Ingresa el monto de apertura (dinero con que inicias). Si no tienes efectivo inicial, escribe 0.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar</strong><p>La caja queda abierta y ya puedes cobrar citas.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="citas">
+      <div class="section-header"><div class="section-icon">📋</div><div><h2>Ver citas del día</h2><p>Lista de citas programadas</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">En la pestaña <strong>📋 Citas</strong> verás todas las citas del día con su hora, cliente, servicio y estado.</p>
+      <table>
+        <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-amber">pendiente</span></td><td>Cita programada, el cliente aún no ha llegado</td></tr>
+          <tr><td><span class="tag tag-blue">confirmada</span></td><td>Cliente confirmó su asistencia</td></tr>
+          <tr><td><span class="tag" style="background:#ede9fe;color:#5b21b6">en curso</span></td><td>El servicio está siendo atendido en este momento</td></tr>
+          <tr><td><span class="tag tag-green">completada</span></td><td>Servicio terminado y cobrado</td></tr>
+          <tr><td><span class="tag tag-red">cancelada</span></td><td>La cita fue cancelada</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Usa los filtros de la barra superior para ver solo las citas <strong>pendientes</strong> o <strong>en curso</strong> y no distraerte con las ya completadas.</span></div>
+    </div>
+
+    <div class="section" id="estados">
+      <div class="section-header"><div class="section-icon">🔄</div><div><h2>Cambiar estado de cita</h2><p>Marcar el progreso de cada cita</p></div></div>
+      <div class="flow">
+        <div class="flow-step">pendiente</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">confirmada</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">en curso</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">completada ✓</div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Toca la tarjeta de la cita</strong><p>Se selecciona y aparece el detalle en el panel de cobro de la derecha.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cambia el estado</strong><p>Usa los botones de estado en la tarjeta: <span class="btn-demo" style="background:#5b21b6">En curso</span> cuando el cliente se siente, luego cobra al terminar.</p></div></div>
+      </div>
+      <div class="alert alert-info">ℹ️ <span>El estado <strong>completada</strong> se asigna automáticamente al confirmar el cobro — no necesitas cambiarlo manualmente.</span></div>
+    </div>
+
+    <div class="section" id="cobro">
+      <div class="section-header"><div class="section-icon">💳</div><div><h2>Cobrar cita</h2><p>Procesar el pago al terminar el servicio</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona la cita en la lista</strong><p>Toca la tarjeta de la cita que terminaste de atender.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Revisa el panel de cobro (derecha)</strong><p>Verás los servicios, el subtotal, descuento si aplica y el total a cobrar.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Cobrar"</strong><p>Se abre el modal de pago con el desglose.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el método de pago</strong><p>Efectivo, Tarjeta, Nequi o Transferencia.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro</strong><p>La cita queda marcada como <span class="tag tag-green">completada</span> y la venta se registra en la caja.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>Si no tienes caja abierta, el botón de cobrar estará bloqueado. Ve a 💰 Caja y ábrela primero.</span></div>
+    </div>
+
+    <div class="section" id="nueva-cita">
+      <div class="section-header"><div class="section-icon">➕</div><div><h2>Crear nueva cita</h2><p>Agendar una cita desde el POS</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "+ Nueva cita"</strong><p>Botón en la parte superior del panel de citas.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Datos del cliente</strong><p>Nombre y teléfono del cliente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona los servicios</strong><p>Agrega uno o varios servicios de la lista.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Fecha y hora</strong><p>Selecciona cuándo se atenderá la cita.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Empleado asignado</strong><p>Selecciona qué empleado atenderá (por defecto eres tú).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Guardar</strong><p>La cita aparece en la agenda del día correspondiente.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="extras">
+      <div class="section-header"><div class="section-icon">➕</div><div><h2>Agregar servicios extra</h2><p>Añadir servicios adicionales al cobro</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Si durante la atención el cliente solicita un servicio adicional no incluido en la cita original, puedes agregarlo antes de cobrar.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona la cita</strong><p>En el panel de cobro verás los servicios originales.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "+ Agregar servicio"</strong><p>Se abre un selector con todos los servicios disponibles.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el servicio extra</strong><p>Se suma al total automáticamente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cobrar con el total actualizado</strong><p>El total ya incluye los servicios extra.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>También puedes cambiar el empleado asignado a un ítem extra si lo hizo un compañero diferente.</span></div>
+    </div>
+
+    <div class="section" id="pago-efectivo">
+      <div class="section-header"><div class="section-icon">💵</div><div><h2>Pago en efectivo</h2><p>Calcular vuelto automáticamente</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona "Efectivo"</strong><p>En el modal de cobro, toca el botón Efectivo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el billete recibido</strong><p>Usa los botones rápidos ($10.000, $20.000, $50.000…) o escribe el monto manualmente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>El vuelto aparece automáticamente</strong><p>El sistema calcula cuánto debes devolver.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro</strong><p>Haz clic en <span class="btn-demo">✅ Confirmar</span>.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="pago-otros">
+      <div class="section-header"><div class="section-icon">💳</div><div><h2>Tarjeta / Nequi / Transferencia</h2><p>Pagos electrónicos</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el método</strong><p>Tarjeta, Nequi o Transferencia en el modal de cobro.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cobra en el medio externo</strong><p>Procesa el pago en el datáfono o pide la transferencia al cliente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar en el sistema</strong><p>Una vez recibido el pago, haz clic en <span class="btn-demo">✅ Confirmar</span>.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>El sistema solo <strong>registra</strong> el método de pago — no procesa el pago electrónico. Verifica que el pago fue recibido antes de confirmar.</span></div>
+    </div>
+
+    <div class="section" id="pago-mixto">
+      <div class="section-header"><div class="section-icon">🔀</div><div><h2>Pago mixto</h2><p>Cobrar con más de un método</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona "Mixto"</strong><p>En el modal de cobro aparecen campos para cada método.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Distribuye el monto</strong><p>Ingresa cuánto paga por cada método. La suma debe igualar el total.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar</strong><p>El sistema valida que los montos cuadren antes de confirmar.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="cerrar-caja">
+      <div class="section-header"><div class="section-icon">🔒</div><div><h2>Cerrar caja</h2><p>Al finalizar el turno</p></div></div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a la pestaña 💰 Caja</strong><p>Verás el resumen del día: citas cobradas, total por método de pago.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cuenta el efectivo físico</strong><p>Suma todo el dinero en caja al terminar el turno.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Cerrar caja"</strong><p>Ingresa el monto contado y confirma. El resumen queda guardado para el administrador.</p></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="alertas">
+      <div class="section-header"><div class="section-icon">⚠️</div><div><h2>Alertas comunes</h2><p>Mensajes del sistema y cómo resolverlos</p></div></div>
+      <table>
+        <thead><tr><th>Mensaje</th><th>Solución</th></tr></thead>
+        <tbody>
+          <tr><td>⚠️ Debes abrir la caja primero</td><td>Ve a 💰 Caja y ábrela antes de cobrar</td></tr>
+          <tr><td>⚠️ Error al cambiar estado</td><td>Verifica tu conexión a internet y vuelve a intentarlo</td></tr>
+          <tr><td>⚠️ Monto insuficiente</td><td>El efectivo ingresado es menor al total — verifica el billete</td></tr>
+          <tr><td>⚠️ No hay citas para hoy</td><td>Normal si aún no hay reservas — puedes crear una nueva cita</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">DJPOS — Manual POS Peluquería v1.0 · Junio 2026</div>
+  </div>
+</div>
+<script>
+function setActive(el){ document.querySelectorAll('.toc a').forEach(a=>a.classList.remove('active')); el.classList.add('active'); }
+window.addEventListener('scroll', () => {
+  let current = '';
+  document.querySelectorAll('.section').forEach(s => { if(window.scrollY >= s.offsetTop - 80) current = s.id; });
+  document.querySelectorAll('.toc a').forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#'+current); });
+}, {passive:true});
+</script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual POS Restaurante — DJPOS</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.08);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.08);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);line-height:1.6}
+.layout{display:flex;min-height:100vh}
+.toc{width:230px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.toc-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.toc a{display:block;padding:6px 18px;font-size:12.5px;color:var(--text2);text-decoration:none;border-left:3px solid transparent;transition:all .15s}
+.toc a:hover{background:var(--bg2);color:var(--text);border-left-color:var(--green)}
+.toc a.active{background:var(--green-l);color:var(--green-d);border-left-color:var(--green);font-weight:600}
+.toc-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:10px 18px 3px}
+.content{flex:1;padding:36px;max-width:860px}
+.manual-header{background:var(--green);color:#fff;border-radius:var(--rl);padding:28px 32px;margin-bottom:28px}
+.manual-header h1{font-size:22px;font-weight:700;margin-bottom:5px}
+.manual-header p{font-size:13px;opacity:.85}
+.manual-header .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:11px;margin-top:8px}
+.section{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px;scroll-margin-top:20px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.section-icon{font-size:22px;width:40px;height:40px;background:var(--green-l);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-header h2{font-size:16px;font-weight:700}
+.section-header p{font-size:12px;color:var(--text3);margin-top:2px}
+.steps{counter-reset:step}
+.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-num{counter-increment:step;background:var(--green);color:#fff;font-size:11px;font-weight:700;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-num::before{content:counter(step)}
+.step-body{flex:1}
+.step-body strong{font-weight:600}
+.step-body p{font-size:13px;color:var(--text2);margin-top:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.card-icon{font-size:18px;margin-bottom:5px}
+.card h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.card p{font-size:12px;color:var(--text2)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th{background:var(--bg2);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:1px solid var(--border)}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.alert{border-radius:var(--r);padding:10px 14px;margin:10px 0;font-size:13px;display:flex;gap:9px;align-items:flex-start}
+.alert-tip{background:var(--green-l);border-left:3px solid var(--green);color:var(--green-d)}
+.alert-warn{background:var(--amber-l);border-left:3px solid var(--amber);color:#92400e}
+.alert-info{background:var(--blue-l);border-left:3px solid var(--blue);color:#1e40af}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-green{background:var(--green-l);color:var(--green-d)}
+.tag-red{background:var(--red-l);color:var(--red)}
+.tag-amber{background:var(--amber-l);color:var(--amber)}
+.tag-blue{background:var(--blue-l);color:var(--blue)}
+.btn-demo{display:inline-block;background:var(--green);color:#fff;border-radius:var(--r);padding:4px 12px;font-size:11px;font-weight:500;margin:2px}
+.btn-demo.outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-demo.red{background:var(--red)}
+.btn-demo.amber{background:#d97706}
+h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
+/* Flujo visual */
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0}
+.flow-step{background:var(--green-l);color:var(--green-d);border-radius:var(--r);padding:8px 14px;font-size:12px;font-weight:600;text-align:center}
+.flow-arrow{color:var(--text3);font-size:16px;font-weight:300}
+@media(max-width:700px){.layout{flex-direction:column}.toc{width:100%;height:auto;position:static}.content{padding:18px}.flow{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ÍNDICE -->
+  <nav class="toc">
+    <div class="toc-logo">
+      <img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--green)">DJPOS</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">Manual POS Restaurante</div>
+      </div>
+    </div>
+    <div class="toc-section">Inicio</div>
+    <a href="#acceso" onclick="setActive(this)">🔐 Acceso al sistema</a>
+    <a href="#pantalla" onclick="setActive(this)">🖥️ Pantalla principal</a>
+    <div class="toc-section">Operación diaria</div>
+    <a href="#caja" onclick="setActive(this)">💰 Abrir caja</a>
+    <a href="#mesas" onclick="setActive(this)">🪑 Mesas</a>
+    <a href="#pedido" onclick="setActive(this)">📋 Tomar pedido</a>
+    <a href="#cocina" onclick="setActive(this)">👨‍🍳 Cocina</a>
+    <a href="#cobro" onclick="setActive(this)">💳 Cobro</a>
+    <a href="#cerrar-caja" onclick="setActive(this)">🔒 Cerrar caja</a>
+    <div class="toc-section">Pagos</div>
+    <a href="#pago-efectivo" onclick="setActive(this)">💵 Pago en efectivo</a>
+    <a href="#pago-tarjeta" onclick="setActive(this)">💳 Pago con tarjeta/Nequi</a>
+    <a href="#pago-mixto" onclick="setActive(this)">🔀 Pago mixto</a>
+    <div class="toc-section">Extras</div>
+    <a href="#cliente" onclick="setActive(this)">👤 Asociar cliente</a>
+    <a href="#recibo" onclick="setActive(this)">🧾 Recibo y factura</a>
+    <a href="#alertas" onclick="setActive(this)">⚠️ Mensajes de alerta</a>
+  </nav>
+
+  <!-- CONTENIDO -->
+  <div class="content">
+
+    <div class="manual-header">
+      <h1>Manual del Mesero / Cajero</h1>
+      <p>POS Restaurante — Toma de pedidos, envío a cocina y procesamiento de pagos.</p>
+      <span class="badge">Versión 1.0 — Junio 2026</span>
+    </div>
+
+    <!-- ACCESO -->
+    <div class="section" id="acceso">
+      <div class="section-header">
+        <div class="section-icon">🔐</div>
+        <div><h2>Acceso al sistema</h2><p>Cómo ingresar al POS</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Abre el navegador en el dispositivo del restaurante</strong><p>Tablet, computador o celular conectado a la red del local.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa a la URL del POS</strong><p>El administrador te dará la dirección del sistema. Ejemplo: <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">http://tu-dominio/?n=ID</code></p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Escribe tu usuario y contraseña</strong><p>Credenciales asignadas por el administrador del restaurante.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresar</strong><p>Si no tienes caja abierta, el sistema te llevará automáticamente al panel de Caja para que la abras antes de empezar.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span><strong>Sin caja abierta no puedes tomar pedidos ni cobrar.</strong> Siempre abre la caja al iniciar tu turno.</span></div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div class="section" id="pantalla">
+      <div class="section-header">
+        <div class="section-icon">🖥️</div>
+        <div><h2>Pantalla principal</h2><p>Descripción de la interfaz del POS</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">El POS tiene una barra de navegación lateral (o inferior en celular) con 5 secciones:</p>
+      <table>
+        <thead><tr><th>Ícono</th><th>Sección</th><th>Para qué sirve</th></tr></thead>
+        <tbody>
+          <tr><td style="font-size:18px">🪑</td><td><strong>Mesas</strong></td><td>Ver el estado de todas las mesas — libres y ocupadas</td></tr>
+          <tr><td style="font-size:18px">📋</td><td><strong>Menú</strong></td><td>Agregar platos al pedido de la mesa seleccionada</td></tr>
+          <tr><td style="font-size:18px">👨‍🍳</td><td><strong>Cocina</strong></td><td>Ver el estado de las comandas enviadas a cocina</td></tr>
+          <tr><td style="font-size:18px">💳</td><td><strong>Cobro</strong></td><td>Seleccionar mesa y procesar el pago</td></tr>
+          <tr><td style="font-size:18px">💰</td><td><strong>Caja</strong></td><td>Abrir, cerrar y consultar el historial de caja</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:12px">💡 <span>El número en rojo sobre el ícono de Cocina indica cuántas comandas están pendientes.</span></div>
+    </div>
+
+    <!-- CAJA -->
+    <div class="section" id="caja">
+      <div class="section-header">
+        <div class="section-icon">💰</div>
+        <div><h2>Abrir caja</h2><p>Primer paso obligatorio al iniciar el turno</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a 💰 Caja</strong><p>El sistema te lleva aquí automáticamente si no tienes caja abierta al entrar.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de apertura</strong><p>El dinero en efectivo con el que inicias la caja (fondo de cambio). Si no tienes efectivo inicial, escribe 0.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Abrir caja"</strong><p>La caja queda abierta y ya puedes tomar pedidos y cobrar.</p></div></div>
+      </div>
+      <div class="alert alert-info">ℹ️ <span>Solo puede haber <strong>una caja abierta por usuario</strong>. Si ya tienes una abierta de un turno anterior, el sistema te lo indicará con la opción de reabrirla.</span></div>
+    </div>
+
+    <!-- MESAS -->
+    <div class="section" id="mesas">
+      <div class="section-header">
+        <div class="section-icon">🪑</div>
+        <div><h2>Mesas</h2><p>Vista del salón y estado de cada mesa</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">En esta pantalla ves todas las mesas del restaurante con su estado actual.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon" style="color:var(--green)">🟢</div><h4>Mesa libre</h4><p>Disponible para recibir clientes — fondo verde claro</p></div>
+        <div class="card"><div class="card-icon" style="color:var(--amber)">🟡</div><h4>Mesa ocupada</h4><p>Tiene un pedido en curso — fondo ámbar/naranja</p></div>
+      </div>
+      <h3 class="sub">Seleccionar una mesa</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Toca la mesa</strong><p>Se selecciona (borde resaltado) y puedes pasar al Menú para agregar platos.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a 📋 Menú</strong><p>Con la mesa seleccionada, navega al Menú para agregar los platos del pedido.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>La mesa seleccionada se mantiene activa mientras navegas entre Menú, Cocina y Cobro. Se indica en la parte superior del pedido.</span></div>
+    </div>
+
+    <!-- PEDIDO -->
+    <div class="section" id="pedido">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div><h2>Tomar pedido</h2><p>Agregar platos al pedido de la mesa</p></div>
+      </div>
+
+      <h3 class="sub">Flujo completo de un pedido</h3>
+      <div class="flow">
+        <div class="flow-step">1. Seleccionar mesa</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">2. Agregar platos</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">3. Enviar a cocina</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">4. Cobrar</div>
+      </div>
+
+      <h3 class="sub">Agregar platos</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona la categoría</strong><p>En la parte superior del menú aparecen las categorías (Entradas, Platos fuertes, Bebidas, etc.). Toca una para filtrar.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Toca el plato</strong><p>Se agrega automáticamente al pedido del lado derecho. Tócalo de nuevo para agregar más unidades.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ajusta cantidades</strong><p>En el pedido usa los botones <strong>+</strong> y <strong>−</strong> para cambiar la cantidad, o la <strong>✕</strong> para quitar el plato.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Enviar a cocina</strong><p>Haz clic en <span class="btn-demo">🍳 Enviar a cocina</span>. La comanda llega al panel de Cocina.</p></div></div>
+      </div>
+
+      <div class="alert alert-warn">⚠️ <span>Si un plato aparece en gris con la etiqueta <strong>Agotado</strong>, no tiene stock disponible y no se puede agregar al pedido.</span></div>
+      <div class="alert alert-tip">💡 <span>El pedido se guarda automáticamente en la mesa. Si cierras el POS y vuelves, el pedido sigue ahí.</span></div>
+    </div>
+
+    <!-- COCINA -->
+    <div class="section" id="cocina">
+      <div class="section-header">
+        <div class="section-icon">👨‍🍳</div>
+        <div><h2>Cocina</h2><p>Seguimiento de comandas en tiempo real</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Cada comanda enviada aparece como una tarjeta con el número de mesa, los platos y el tiempo transcurrido.</p>
+      <table>
+        <thead><tr><th>Estado</th><th>Qué significa</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-green">nuevo</span></td><td>Comanda recibida en cocina, aún no iniciada</td><td>Botón <span class="btn-demo amber">👨‍🍳 Preparando</span></td></tr>
+          <tr><td><span class="tag tag-amber">cocinando</span></td><td>El cocinero la está preparando</td><td>Botón <span class="btn-demo" style="background:var(--green)">✓ Listo</span></td></tr>
+          <tr><td><span class="tag tag-blue">listo</span></td><td>Platos listos para llevar a la mesa</td><td>Botón <span class="btn-demo">🛎️ Entregado</span></td></tr>
+        </tbody>
+      </table>
+      <h3 class="sub">Limpiar cocina</h3>
+      <p style="color:var(--text2);font-size:13px;margin-top:6px">Si hay comandas antiguas acumuladas que ya fueron atendidas, usa el botón <span class="btn-demo red">🗑 Limpiar todo</span> en la barra superior para marcarlas todas como entregadas y limpiar la pantalla.</p>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>La cocina se actualiza en tiempo real. No necesitas recargar la página — las nuevas comandas aparecen automáticamente.</span></div>
+    </div>
+
+    <!-- COBRO -->
+    <div class="section" id="cobro">
+      <div class="section-header">
+        <div class="section-icon">💳</div>
+        <div><h2>Cobro</h2><p>Procesar el pago de una mesa</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a 💳 Cobro</strong><p>Verás las mesas que tienen pedido pendiente de pago.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona la mesa a cobrar</strong><p>Toca la mesa — aparece el resumen del pedido con todos los platos y el total.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el método de pago</strong><p><strong>Efectivo</strong>, <strong>Tarjeta</strong>, <strong>Nequi</strong> o <strong>Mixto</strong> (ver secciones siguientes).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Procesar pago</strong><p>Haz clic en <span class="btn-demo">💳 Procesar pago</span>. Se abre la ventana de confirmación con el detalle.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar</strong><p>Haz clic en <span class="btn-demo">✅ Confirmar pago</span>. La mesa queda libre y la venta se registra en la caja.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>Si la caja está cerrada, el sistema no te dejará confirmar el pago. Debes abrir la caja primero.</span></div>
+    </div>
+
+    <!-- CERRAR CAJA -->
+    <div class="section" id="cerrar-caja">
+      <div class="section-header">
+        <div class="section-icon">🔒</div>
+        <div><h2>Cerrar caja</h2><p>Al finalizar el turno</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a 💰 Caja</strong><p>Panel de caja con el resumen del turno: ventas totales, efectivo, tarjeta y Nequi.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cuenta el efectivo físico</strong><p>Suma todo el efectivo que hay en la caja al terminar el turno.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de cierre</strong><p>Escribe el total de efectivo contado físicamente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Cerrar caja"</strong><p>El sistema guarda el resumen completo del turno. El administrador puede consultarlo en el historial.</p></div></div>
+      </div>
+      <div class="alert alert-info">ℹ️ <span>Si hay una diferencia entre el efectivo esperado y el contado, el sistema la mostrará en el resumen de cierre para que el administrador la revise.</span></div>
+    </div>
+
+    <!-- PAGO EFECTIVO -->
+    <div class="section" id="pago-efectivo">
+      <div class="section-header">
+        <div class="section-icon">💵</div>
+        <div><h2>Pago en efectivo</h2><p>Cómo calcular el vuelto</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona "Efectivo" como método de pago</strong><p>En el panel de cobro, toca el botón Efectivo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Usa los botones de billetes rápidos</strong><p>El sistema muestra botones con los billetes más comunes ($5.000, $10.000, $20.000, $50.000, $100.000). Toca el billete que entregó el cliente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>O escribe el monto recibido</strong><p>Ingresa manualmente el valor que entregó el cliente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>El vuelto se calcula automáticamente</strong><p>El sistema muestra cuánto debes devolver al cliente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar pago</strong><p>Haz clic en <span class="btn-demo">✅ Confirmar</span>.</p></div></div>
+      </div>
+    </div>
+
+    <!-- PAGO TARJETA/NEQUI -->
+    <div class="section" id="pago-tarjeta">
+      <div class="section-header">
+        <div class="section-icon">💳</div>
+        <div><h2>Pago con tarjeta o Nequi</h2><p>Pagos electrónicos</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona "Tarjeta" o "Nequi"</strong><p>En el panel de cobro, toca el método correspondiente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Procesa el pago en el datáfono o app</strong><p>Cobra el monto total al cliente por el medio seleccionado (datáfono físico o transferencia Nequi).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar en el sistema</strong><p>Una vez que el pago electrónico se apruebe, haz clic en <span class="btn-demo">✅ Confirmar</span> en el POS.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>El sistema <strong>no</strong> procesa el pago electrónico directamente — solo registra que se cobró por ese medio. Asegúrate de que el pago en el datáfono o Nequi sea exitoso antes de confirmar.</span></div>
+    </div>
+
+    <!-- PAGO MIXTO -->
+    <div class="section" id="pago-mixto">
+      <div class="section-header">
+        <div class="section-icon">🔀</div>
+        <div><h2>Pago mixto</h2><p>Dividir el cobro entre varios métodos</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Cuando el cliente quiere pagar una parte en efectivo y otra con tarjeta (u otro método).</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona "Mixto"</strong><p>Aparece un formulario para distribuir el monto entre los métodos.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa cuánto paga por cada método</strong><p>Por ejemplo: $15.000 en efectivo + $8.000 en Nequi. La suma debe igualar el total.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar</strong><p>El sistema valida que la suma de los montos cubra el total antes de confirmar.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Si el cliente paga en efectivo una parte y el vuelto es en efectivo, ingresa el monto recibido en efectivo y el sistema calcula el cambio.</span></div>
+    </div>
+
+    <!-- CLIENTE -->
+    <div class="section" id="cliente">
+      <div class="section-header">
+        <div class="section-icon">👤</div>
+        <div><h2>Asociar cliente</h2><p>Vincular un cliente a la venta para factura</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Si el cliente necesita factura con sus datos, búscalo en el sistema antes de confirmar el pago.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>En el panel de cobro, busca el cliente</strong><p>Escribe el nombre o cédula en el campo de búsqueda de cliente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciónalo de la lista</strong><p>Sus datos quedan vinculados a la venta.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Si es cliente nuevo</strong><p>Haz clic en <span class="btn-demo outline">+ Nuevo cliente</span> para registrarlo con nombre, cédula y correo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar el pago</strong><p>La factura se genera con los datos del cliente.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Asociar un cliente es opcional. Si no lo haces, la venta se registra como "consumidor final".</span></div>
+    </div>
+
+    <!-- RECIBO -->
+    <div class="section" id="recibo">
+      <div class="section-header">
+        <div class="section-icon">🧾</div>
+        <div><h2>Recibo y factura</h2><p>Después de confirmar el pago</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Al confirmar el pago el sistema muestra el recibo de la venta con opciones para enviarlo o imprimirlo.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🖨️</div><h4>Imprimir recibo</h4><p>Envía el recibo a la impresora térmica del restaurante</p></div>
+        <div class="card"><div class="card-icon">📧</div><h4>Enviar por correo</h4><p>Digita el correo del cliente para enviarle la factura electrónica</p></div>
+        <div class="card"><div class="card-icon">❌</div><h4>Cerrar sin enviar</h4><p>Cierra el recibo y la mesa queda libre para nuevos clientes</p></div>
+      </div>
+    </div>
+
+    <!-- ALERTAS -->
+    <div class="section" id="alertas">
+      <div class="section-header">
+        <div class="section-icon">⚠️</div>
+        <div><h2>Mensajes de alerta</h2><p>Qué hacer cuando aparece un aviso</p></div>
+      </div>
+      <table>
+        <thead><tr><th>Mensaje</th><th>Causa</th><th>Solución</th></tr></thead>
+        <tbody>
+          <tr><td>⚠️ La caja está cerrada</td><td>No hay caja abierta en tu turno</td><td>Ve a 💰 Caja y abre la caja</td></tr>
+          <tr><td>⚠️ Primero selecciona una mesa</td><td>Intentaste agregar un plato sin mesa activa</td><td>Ve a 🪑 Mesas y selecciona una</td></tr>
+          <tr><td>⚠️ Plato agotado</td><td>El ingrediente principal no tiene stock</td><td>Avisa al administrador para reponer inventario</td></tr>
+          <tr><td>⚠️ El efectivo es menor al total</td><td>El monto ingresado no cubre el total</td><td>Verifica el billete recibido e ingresa el valor correcto</td></tr>
+          <tr><td>⚠️ Error de conexión</td><td>Sin acceso a internet o servidor caído</td><td>Verifica la red WiFi y recarga la página</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">
+      DJPOS — Manual POS Restaurante v1.0 · Junio 2026
+    </div>
+  </div>
+</div>
+
+<script>
+function setActive(el){
+  document.querySelectorAll('.toc a').forEach(a=>a.classList.remove('active'));
+  el.classList.add('active');
+}
+window.addEventListener('scroll', () => {
+  let current = '';
+  document.querySelectorAll('.section').forEach(s => { if(window.scrollY >= s.offsetTop - 80) current = s.id; });
+  document.querySelectorAll('.toc a').forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+}, {passive:true});
+</script>
+</body>
+</html>

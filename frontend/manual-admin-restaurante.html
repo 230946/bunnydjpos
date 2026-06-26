@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Admin Restaurante — BUNNYDJPOS</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.08);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.08);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);line-height:1.6}
+.layout{display:flex;min-height:100vh}
+.toc{width:240px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.toc-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.toc-logo h2{font-size:14px;font-weight:700;color:var(--green)}
+.toc-logo p{font-size:11px;color:var(--text3);margin-top:2px}
+.toc a{display:block;padding:6px 18px;font-size:12.5px;color:var(--text2);text-decoration:none;border-left:3px solid transparent;transition:all .15s}
+.toc a:hover{background:var(--bg2);color:var(--text);border-left-color:var(--green)}
+.toc a.active{background:var(--green-l);color:var(--green-d);border-left-color:var(--green);font-weight:600}
+.toc-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:10px 18px 3px}
+.content{flex:1;padding:36px;max-width:860px}
+.manual-header{background:var(--green);color:#fff;border-radius:var(--rl);padding:28px 32px;margin-bottom:28px}
+.manual-header h1{font-size:22px;font-weight:700;margin-bottom:5px}
+.manual-header p{font-size:13px;opacity:.85}
+.manual-header .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:11px;margin-top:8px}
+.section{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px;scroll-margin-top:20px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.section-icon{font-size:22px;width:40px;height:40px;background:var(--green-l);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-header h2{font-size:16px;font-weight:700}
+.section-header p{font-size:12px;color:var(--text3);margin-top:2px}
+.steps{counter-reset:step}
+.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-num{counter-increment:step;background:var(--green);color:#fff;font-size:11px;font-weight:700;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-num::before{content:counter(step)}
+.step-body{flex:1}
+.step-body strong{font-weight:600}
+.step-body p{font-size:13px;color:var(--text2);margin-top:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:10px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.card-icon{font-size:18px;margin-bottom:5px}
+.card h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.card p{font-size:12px;color:var(--text2)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th{background:var(--bg2);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:1px solid var(--border)}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.alert{border-radius:var(--r);padding:10px 14px;margin:10px 0;font-size:13px;display:flex;gap:9px;align-items:flex-start}
+.alert-tip{background:var(--green-l);border-left:3px solid var(--green);color:var(--green-d)}
+.alert-warn{background:var(--amber-l);border-left:3px solid var(--amber);color:#92400e}
+.alert-info{background:var(--blue-l);border-left:3px solid var(--blue);color:#1e40af}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-green{background:var(--green-l);color:var(--green-d)}
+.tag-red{background:var(--red-l);color:var(--red)}
+.tag-amber{background:var(--amber-l);color:var(--amber)}
+.btn-demo{display:inline-block;background:var(--green);color:#fff;border-radius:var(--r);padding:4px 12px;font-size:11px;font-weight:500;margin:2px}
+.btn-demo.outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-demo.red{background:var(--red)}
+.btn-demo.amber{background:#d97706}
+h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
+@media(max-width:700px){.layout{flex-direction:column}.toc{width:100%;height:auto;position:static}.content{padding:18px}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ÍNDICE -->
+  <nav class="toc">
+    <div class="toc-logo" style="display:flex;align-items:center;gap:10px">
+      <img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+      <div>
+        <h2 style="font-size:13px;font-weight:700;color:var(--green)">DJPOS</h2>
+        <p style="font-size:11px;color:var(--text3);margin-top:1px">Manual Admin Restaurante</p>
+      </div>
+    </div>
+    <div class="toc-section">Inicio</div>
+    <a href="#acceso" onclick="setActive(this)">Acceso al sistema</a>
+    <div class="toc-section">General</div>
+    <a href="#dashboard" onclick="setActive(this)">📊 Dashboard</a>
+    <a href="#caja" onclick="setActive(this)">💰 Caja diaria</a>
+    <a href="#gastos" onclick="setActive(this)">📋 Gastos</a>
+    <a href="#reportes" onclick="setActive(this)">📈 Reportes</a>
+    <a href="#clientes" onclick="setActive(this)">👤 Clientes</a>
+    <a href="#facturas" onclick="setActive(this)">🧾 Facturas</a>
+    <div class="toc-section">Operación</div>
+    <a href="#inventario" onclick="setActive(this)">📦 Inventario</a>
+    <a href="#mesas" onclick="setActive(this)">🪑 Mesas</a>
+    <a href="#menu" onclick="setActive(this)">✏️ Editar menú</a>
+    <a href="#proveedores" onclick="setActive(this)">🚚 Proveedores</a>
+    <a href="#pedidos-prov" onclick="setActive(this)">🛒 Pedidos proveedores</a>
+    <div class="toc-section">Usuarios</div>
+    <a href="#personal" onclick="setActive(this)">👥 Personal</a>
+    <a href="#roles" onclick="setActive(this)">🔐 Roles</a>
+    <a href="#horarios" onclick="setActive(this)">🕐 Horarios</a>
+    <a href="#asistencia" onclick="setActive(this)">📅 Asistencia</a>
+    <div class="toc-section">Configuración</div>
+    <a href="#cfg-factura" onclick="setActive(this)">🧾 Configurar factura</a>
+    <a href="#cfg-impresora" onclick="setActive(this)">🖨️ Impresora</a>
+  </nav>
+
+  <!-- CONTENIDO -->
+  <div class="content">
+
+    <div class="manual-header">
+      <h1>Manual del Administrador</h1>
+      <p>Restaurante — Gestión completa de operaciones, personal, inventario y reportes.</p>
+      <span class="badge">Versión 1.0 — Junio 2026</span>
+    </div>
+
+    <!-- ACCESO -->
+    <div class="section" id="acceso">
+      <div class="section-header">
+        <div class="section-icon">🔐</div>
+        <div><h2>Acceso al sistema</h2><p>Cómo ingresar al panel administrativo</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Abre el navegador</strong><p>Ve a la URL del negocio seguida de <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">/admin</code> — ejemplo: <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">http://tu-dominio/admin?n=ID_NEGOCIO</code></p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa tus credenciales</strong><p>Correo y contraseña asignados por el superadmin o creados al registrar el negocio.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona tu rol</strong><p>Si tienes permisos de administrador, verás todos los módulos. Los roles restringidos solo ven lo que tienen autorizado.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>El panel Admin es diferente al POS (punto de venta). El Admin es para gestión; el POS es para los meseros y cajeros.</span></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="section" id="dashboard">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div><h2>Dashboard</h2><p>Resumen del negocio en tiempo real</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Primera pantalla al ingresar. Muestra los indicadores más importantes del día.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">💰</div><h4>Ventas del día</h4><p>Total facturado hoy en el restaurante</p></div>
+        <div class="card"><div class="card-icon">🧾</div><h4>Número de ventas</h4><p>Cantidad de transacciones procesadas</p></div>
+        <div class="card"><div class="card-icon">💳</div><h4>Por método de pago</h4><p>Desglose en efectivo, tarjeta y Nequi</p></div>
+        <div class="card"><div class="card-icon">📦</div><h4>Estado inventario</h4><p>Productos con stock bajo o agotados</p></div>
+        <div class="card"><div class="card-icon">💰</div><h4>Estado de caja</h4><p>Si la caja está abierta, monto de apertura y ventas acumuladas</p></div>
+        <div class="card"><div class="card-icon">📈</div><h4>Ventas semana</h4><p>Gráfica de ventas de los últimos 7 días</p></div>
+      </div>
+    </div>
+
+    <!-- CAJA -->
+    <div class="section" id="caja">
+      <div class="section-header">
+        <div class="section-icon">💰</div>
+        <div><h2>Caja diaria</h2><p>Control de apertura, cierre e historial de caja</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">La caja debe abrirse al inicio de cada turno. Sin caja abierta, el POS no permite procesar ventas.</p>
+
+      <h3 class="sub">Abrir caja</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a Caja diaria</strong><p>Menú lateral → 💰 Caja diaria.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de apertura</strong><p>Escribe el dinero en efectivo con el que inicias la caja (fondo de cambio).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar apertura</strong><p>Haz clic en <span class="btn-demo">Abrir caja</span>. A partir de este momento el POS puede procesar ventas.</p></div></div>
+      </div>
+
+      <h3 class="sub">Cerrar caja</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de cierre</strong><p>Cuánto dinero en efectivo hay físicamente al terminar el turno.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cierre</strong><p>El sistema calcula automáticamente el total de ventas, métodos de pago y diferencia con el efectivo.</p></div></div>
+      </div>
+
+      <h3 class="sub">Historial de cajas</h3>
+      <table>
+        <thead><tr><th>Columna</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Fecha</strong></td><td>Día de apertura de la caja</td></tr>
+          <tr><td><strong>Apertura</strong></td><td>Monto con el que se abrió la caja</td></tr>
+          <tr><td><strong>Ventas</strong></td><td>Total vendido durante ese turno</td></tr>
+          <tr><td><strong>Cierre</strong></td><td>Monto en caja al cerrar</td></tr>
+          <tr><td><strong>Estado</strong></td><td><span class="tag tag-green">abierta</span> o <span class="tag" style="background:var(--bg2);color:var(--text2)">cerrada</span></td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-warn" style="margin-top:12px">⚠️ <span>Solo puede haber <strong>una caja abierta por cajero</strong> por día. Si cerraste la caja y necesitas reabrir, usa el botón <strong>Reabrir caja</strong>.</span></div>
+    </div>
+
+    <!-- GASTOS -->
+    <div class="section" id="gastos">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div><h2>Gastos</h2><p>Registro de egresos del negocio</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Registra todos los gastos operativos del restaurante: compras de insumos, servicios, mantenimiento, etc.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo gasto</strong><p>Haz clic en <span class="btn-demo">+ Agregar gasto</span>.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Completa el formulario</strong><p>Descripción, monto, categoría y fecha del gasto.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Guardar</strong><p>El gasto queda registrado y se descuenta del balance en los reportes.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Los gastos aparecen en el cierre de caja del día para calcular la utilidad neta del turno.</span></div>
+    </div>
+
+    <!-- REPORTES -->
+    <div class="section" id="reportes">
+      <div class="section-header">
+        <div class="section-icon">📈</div>
+        <div><h2>Reportes</h2><p>Análisis de ventas por período</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Genera reportes detallados de ventas, productos más vendidos y rendimiento del negocio.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">📅</div><h4>Por fecha</h4><p>Selecciona rango de fechas para ver ventas en ese período</p></div>
+        <div class="card"><div class="card-icon">🍽️</div><h4>Productos más vendidos</h4><p>Ranking de platos o artículos con mayor demanda</p></div>
+        <div class="card"><div class="card-icon">💳</div><h4>Por método de pago</h4><p>Cuánto se recibió en efectivo, tarjeta y Nequi</p></div>
+        <div class="card"><div class="card-icon">📊</div><h4>Gráfica de ventas</h4><p>Evolución visual del volumen de ventas diario</p></div>
+        <div class="card"><div class="card-icon">⬇️</div><h4>Exportar</h4><p>Descarga el reporte en Excel para análisis externo</p></div>
+      </div>
+      <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>Los reportes usan la <strong>hora Colombia (UTC-5)</strong>. Las ventas del día se calculan de medianoche a medianoche hora local.</span></div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="section" id="clientes">
+      <div class="section-header">
+        <div class="section-icon">👤</div>
+        <div><h2>Clientes</h2><p>Base de datos de clientes del restaurante</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Registro de clientes frecuentes para asociarlos a sus compras y generar facturas electrónicas.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo cliente</strong><p>Nombre, cédula o NIT, teléfono, correo y dirección.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asociar en ventas</strong><p>Al procesar un pago en el POS, el mesero puede buscar y asociar el cliente para emitir factura con sus datos.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Historial</strong><p>Consulta todas las compras de un cliente desde su perfil.</p></div></div>
+      </div>
+    </div>
+
+    <!-- FACTURAS -->
+    <div class="section" id="facturas">
+      <div class="section-header">
+        <div class="section-icon">🧾</div>
+        <div><h2>Facturas</h2><p>Listado y consulta de comprobantes de venta</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Consulta todas las facturas generadas, reenvía por correo o descarga en PDF.</p>
+      <table>
+        <thead><tr><th>Acción</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><span class="btn-demo outline">🔍 Ver detalle</span></td><td>Muestra los ítems, totales y datos del cliente de esa factura</td></tr>
+          <tr><td><span class="btn-demo outline">📧 Reenviar</span></td><td>Envía la factura al correo del cliente</td></tr>
+          <tr><td><span class="btn-demo outline">🖨️ Imprimir</span></td><td>Abre la vista de impresión del recibo</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>El número de factura se genera automáticamente según la configuración en <strong>⚙️ Configurar factura</strong>.</span></div>
+    </div>
+
+    <!-- INVENTARIO -->
+    <div class="section" id="inventario">
+      <div class="section-header">
+        <div class="section-icon">📦</div>
+        <div><h2>Inventario</h2><p>Control de stock de ingredientes y productos</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Gestiona el stock de ingredientes. Cuando el inventario está vinculado a las recetas del menú, el sistema descuenta automáticamente al procesar cada venta.</p>
+
+      <h3 class="sub">Agregar producto al inventario</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo ítem</strong><p>Nombre del ingrediente o producto, unidad de medida (kg, litros, unidades) y stock inicial.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Stock mínimo</strong><p>Define el umbral de alerta — el dashboard te avisará cuando el stock baje de este nivel.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Vincular a recetas</strong><p>En Editar menú, cada plato puede tener ingredientes con cantidades; al venderse, el inventario se descuenta automáticamente.</p></div></div>
+      </div>
+
+      <h3 class="sub">Ajustar stock manualmente</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Entrada de mercancía</strong><p>Cuando llega un pedido de proveedor, registra la cantidad recibida para sumar al stock.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ajuste por pérdida</strong><p>Descuenta stock por merma, vencimiento o pérdida indicando la razón.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>Si un ítem del menú tiene ingredientes configurados y el stock llega a 0, el plato aparece como <strong>agotado</strong> en el POS y no se puede agregar al pedido.</span></div>
+    </div>
+
+    <!-- MESAS -->
+    <div class="section" id="mesas">
+      <div class="section-header">
+        <div class="section-icon">🪑</div>
+        <div><h2>Mesas</h2><p>Configuración de las mesas del restaurante</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Define las mesas que aparecerán en el POS para que los meseros puedan tomar pedidos.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nueva mesa</strong><p>Asigna número, nombre (ej: "Terraza 1"), capacidad y zona.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Organizar zonas</strong><p>Puedes agrupar mesas por zona: salón, terraza, privado, barra, etc.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Editar o eliminar</strong><p>Solo puedes eliminar mesas que no tengan pedidos activos.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Los cambios en mesas se reflejan inmediatamente en el POS — no necesitas reiniciar nada.</span></div>
+    </div>
+
+    <!-- MENÚ -->
+    <div class="section" id="menu">
+      <div class="section-header">
+        <div class="section-icon">✏️</div>
+        <div><h2>Editar menú</h2><p>Gestión de categorías, platos y precios</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Configura todo lo que el mesero verá en el POS: categorías, platos con foto, precio e IVA.</p>
+
+      <h3 class="sub">Crear categoría</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nueva categoría</strong><p>Nombre y emoji (ej: 🍔 Hamburguesas, 🥤 Bebidas).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Orden</strong><p>Define el orden en que aparece en el menú del POS.</p></div></div>
+      </div>
+
+      <h3 class="sub">Agregar plato al menú</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo ítem</strong><p>Nombre, categoría, precio base (sin IVA) y descripción.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>IVA</strong><p>Selecciona si aplica IVA (19%, 5% o exento). El POS calculará el total automáticamente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Foto</strong><p>Sube una imagen del plato para que aparezca en el menú visual del POS.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Receta / ingredientes</strong><p>Opcional: vincula ingredientes del inventario con sus cantidades para descuento automático de stock.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Disponibilidad</strong><p>Activa o desactiva un plato sin eliminarlo (útil para platos del día).</p></div></div>
+      </div>
+      <div class="alert alert-info">ℹ️ <span>Los precios en el menú se ingresan <strong>sin IVA</strong>. El sistema agrega el IVA al momento del cobro según la configuración de cada ítem.</span></div>
+    </div>
+
+    <!-- PROVEEDORES -->
+    <div class="section" id="proveedores">
+      <div class="section-header">
+        <div class="section-icon">🚚</div>
+        <div><h2>Proveedores</h2><p>Directorio de proveedores del restaurante</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Registra los proveedores de insumos para asociarlos a los pedidos de compra.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo proveedor</strong><p>Nombre de la empresa, NIT, contacto, teléfono y correo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Editar o eliminar</strong><p>Actualiza los datos de contacto cuando cambien.</p></div></div>
+      </div>
+    </div>
+
+    <!-- PEDIDOS PROVEEDORES -->
+    <div class="section" id="pedidos-prov">
+      <div class="section-header">
+        <div class="section-icon">🛒</div>
+        <div><h2>Pedidos a proveedores</h2><p>Órdenes de compra de insumos</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Crea pedidos de compra a tus proveedores y controla su estado hasta que llegan al restaurante.</p>
+      <table>
+        <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-amber">pendiente</span></td><td>Pedido creado, esperando respuesta del proveedor</td></tr>
+          <tr><td><span class="tag" style="background:var(--blue-l);color:var(--blue)">enviado</span></td><td>Proveedor confirmó y está en camino</td></tr>
+          <tr><td><span class="tag tag-green">recibido</span></td><td>Mercancía llegó — el stock se actualiza automáticamente</td></tr>
+          <tr><td><span class="tag tag-red">cancelado</span></td><td>Pedido anulado</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Al marcar un pedido como <strong>recibido</strong>, las cantidades se suman automáticamente al inventario de cada ítem.</span></div>
+    </div>
+
+    <!-- PERSONAL -->
+    <div class="section" id="personal">
+      <div class="section-header">
+        <div class="section-icon">👥</div>
+        <div><h2>Personal / Usuarios</h2><p>Gestión de empleados con acceso al sistema</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Crea los usuarios que pueden ingresar al POS o al panel admin con sus respectivos roles y permisos.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo usuario</strong><p>Nombre, correo (o usuario), contraseña y rol asignado.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar rol</strong><p>El rol determina qué puede ver y hacer cada persona. Ver sección <strong>Roles</strong>.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Activar / desactivar</strong><p>Desactiva un usuario para quitarle acceso sin eliminarlo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Portal empleado</strong><p>Cada empleado puede consultar su historial de servicios y ventas desde el portal de empleados con su usuario.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ROLES -->
+    <div class="section" id="roles">
+      <div class="section-header">
+        <div class="section-icon">🔐</div>
+        <div><h2>Roles</h2><p>Definición de permisos por perfil de usuario</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Los roles controlan qué módulos y acciones puede realizar cada usuario del sistema.</p>
+      <table>
+        <thead><tr><th>Permiso</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>pos_cobro</strong></td><td>Acceso al POS para tomar pedidos y cobrar</td></tr>
+          <tr><td><strong>reportes</strong></td><td>Ver reportes de ventas</td></tr>
+          <tr><td><strong>inventario</strong></td><td>Ver y ajustar stock de productos</td></tr>
+          <tr><td><strong>gastos</strong></td><td>Registrar gastos del negocio</td></tr>
+          <tr><td><strong>personal</strong></td><td>Gestionar usuarios, roles, mesas y menú</td></tr>
+          <tr><td><strong>proveedores</strong></td><td>Gestionar proveedores y pedidos de compra</td></tr>
+          <tr><td><strong>horarios</strong></td><td>Ver y gestionar horarios y asistencia</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Crea roles como "Mesero" (solo pos_cobro), "Supervisor" (pos_cobro + reportes) o "Admin completo" (todos los permisos).</span></div>
+    </div>
+
+    <!-- HORARIOS -->
+    <div class="section" id="horarios">
+      <div class="section-header">
+        <div class="section-icon">🕐</div>
+        <div><h2>Horarios</h2><p>Turnos y jornadas laborales del personal</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Define los horarios de trabajo de cada empleado por día de la semana.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar horario</strong><p>Selecciona el empleado, día de la semana, hora de entrada y hora de salida.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Repetir semanal</strong><p>El horario se aplica cada semana automáticamente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Horario especial</strong><p>Para días específicos, asigna una fecha concreta en lugar de día de la semana.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ASISTENCIA -->
+    <div class="section" id="asistencia">
+      <div class="section-header">
+        <div class="section-icon">📅</div>
+        <div><h2>Asistencia</h2><p>Registro de entradas y salidas del personal</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Consulta quién llegó, a qué hora y si cumplió con el horario asignado.</p>
+      <table>
+        <thead><tr><th>Columna</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Empleado</strong></td><td>Nombre del trabajador</td></tr>
+          <tr><td><strong>Fecha</strong></td><td>Día del registro</td></tr>
+          <tr><td><strong>Entrada</strong></td><td>Hora en que marcó entrada</td></tr>
+          <tr><td><strong>Salida</strong></td><td>Hora en que marcó salida</td></tr>
+          <tr><td><strong>Estado</strong></td><td><span class="tag tag-green">a tiempo</span> <span class="tag tag-amber">tardanza</span> <span class="tag tag-red">falta</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CONFIG FACTURA -->
+    <div class="section" id="cfg-factura">
+      <div class="section-header">
+        <div class="section-icon">🧾</div>
+        <div><h2>Configurar factura</h2><p>Datos que aparecen en los recibos y facturas</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Define la información legal y comercial que se imprime en cada recibo de venta.</p>
+      <table>
+        <thead><tr><th>Campo</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Nombre del negocio</strong></td><td>BUNNY BURGER DJ</td></tr>
+          <tr><td><strong>NIT / Cédula</strong></td><td>900.123.456-7</td></tr>
+          <tr><td><strong>Dirección</strong></td><td>Calle 10 # 5-23, Medellín</td></tr>
+          <tr><td><strong>Teléfono</strong></td><td>+57 300 123 4567</td></tr>
+          <tr><td><strong>Mensaje de pie</strong></td><td>¡Gracias por tu visita!</td></tr>
+          <tr><td><strong>Prefijo de factura</strong></td><td>FAC, VTA, etc.</td></tr>
+          <tr><td><strong>Número inicial</strong></td><td>El número desde donde empieza la numeración</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CONFIG IMPRESORA -->
+    <div class="section" id="cfg-impresora">
+      <div class="section-header">
+        <div class="section-icon">🖨️</div>
+        <div><h2>Impresora</h2><p>Configuración de impresora térmica de recibos</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Configura la impresora térmica para imprimir recibos y comandas de cocina directamente desde el POS.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🔗</div><h4>IP de impresora</h4><p>Dirección IP de la impresora en la red local del restaurante</p></div>
+        <div class="card"><div class="card-icon">📄</div><h4>Ancho del papel</h4><p>58mm o 80mm según el modelo de impresora</p></div>
+        <div class="card"><div class="card-icon">🧪</div><h4>Prueba de impresión</h4><p>Imprime un recibo de prueba para verificar la configuración</p></div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:12px">⚠️ <span>La impresora debe estar en la <strong>misma red WiFi</strong> que el dispositivo que usa el POS.</span></div>
+    </div>
+
+    <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">
+      BUNNYDJPOS — Manual Admin Restaurante v1.0 · Junio 2026
+    </div>
+  </div>
+</div>
+
+<script>
+function setActive(el){
+  document.querySelectorAll('.toc a').forEach(a=>a.classList.remove('active'));
+  el.classList.add('active');
+}
+window.addEventListener('scroll', () => {
+  let current = '';
+  document.querySelectorAll('.section').forEach(s => { if(window.scrollY >= s.offsetTop - 80) current = s.id; });
+  document.querySelectorAll('.toc a').forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+}, {passive:true});
+</script>
+</body>
+</html>
