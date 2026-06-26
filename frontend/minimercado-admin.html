@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <title>Minimercado — Admin | DJPOS</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
 <style>
@@ -190,6 +191,13 @@ tr:hover td{background:var(--bg2)}
 
 /* REPORTES FILTROS RAPIDOS */
 .rep-q.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* DASHBOARD CHARTS */
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+@media(max-width:700px){.chart-row{grid-template-columns:1fr}}
+.stat-trend{font-size:11px;font-weight:600;margin-top:5px;min-height:14px;transition:color .2s}
+.stat-trend.up{color:#15803d}.stat-trend.down{color:var(--red)}.stat-trend.neutral{color:var(--text3)}
+.stat-trend.up-inv{color:var(--red)}.stat-trend.down-inv{color:#15803d}
+.dash-q.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 
 /* LOGO UPLOAD */
 .logo-upload-area{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:20px;text-align:center;cursor:pointer;transition:.12s;position:relative}
@@ -322,34 +330,34 @@ tr:hover td{background:var(--bg2)}
       <!-- DASHBOARD -->
       <div class="panel active" id="panel-dashboard">
 
-        <!-- Cabecera en vivo -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <span class="live-badge"><span class="live-dot"></span>En vivo</span>
+        <!-- Filtro de período + en vivo -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <div class="live-badge"><span class="live-dot"></span><span id="dash-live-lbl">En vivo</span></div>
           <span class="live-update" id="dash-updated"></span>
+          <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('hoy',event)">Hoy</button>
+            <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('ayer',event)">Ayer</button>
+            <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('semana',event)">Esta semana</button>
+            <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('mes',event)">Este mes</button>
+            <label style="font-size:12px;color:var(--text2)">Desde</label>
+            <input type="date" id="dash-desde" class="btn btn-outline btn-sm" style="cursor:pointer">
+            <label style="font-size:12px;color:var(--text2)">Hasta</label>
+            <input type="date" id="dash-hasta" class="btn btn-outline btn-sm" style="cursor:pointer">
+            <button class="btn btn-primary btn-sm" onclick="loadDashboard()">Consultar</button>
+          </div>
         </div>
 
         <!-- Resumen totales -->
         <div class="stats-row" id="dash-stats">
-          <div class="stat-card"><div class="stat-label">Ventas hoy</div><div class="stat-val" id="d-ventas">—</div></div>
-          <div class="stat-card"><div class="stat-label">Gastos hoy</div><div class="stat-val" id="d-gastos">—</div></div>
-          <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="d-utilidad">—</div></div>
-          <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="d-pedidos">—</div></div>
+          <div class="stat-card"><div class="stat-label" id="dash-lbl-ventas">Ventas hoy</div><div class="stat-val" id="d-ventas">—</div><div class="stat-trend neutral" id="d-ventas-trend"></div></div>
+          <div class="stat-card"><div class="stat-label">Gastos</div><div class="stat-val" id="d-gastos">—</div><div class="stat-trend neutral" id="d-gastos-trend"></div></div>
+          <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="d-utilidad">—</div><div class="stat-trend neutral" id="d-utilidad-trend"></div></div>
+          <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="d-pedidos">—</div><div class="stat-trend neutral" id="d-pedidos-trend"></div></div>
         </div>
 
-        <!-- Desglose por método de pago -->
-        <div class="stats-row" style="margin-top:10px;grid-template-columns:repeat(3,1fr)">
-          <div class="stat-card">
-            <div class="stat-label">💵 Efectivo</div>
-            <div class="stat-val" id="d-efectivo" style="font-size:20px">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">💳 Tarjeta</div>
-            <div class="stat-val" id="d-tarjeta" style="font-size:20px">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">📱 Nequi / QR</div>
-            <div class="stat-val" id="d-nequi" style="font-size:20px">—</div>
-          </div>
+        <!-- Métodos de pago (ocultos, usados en gráfica) -->
+        <div style="display:none">
+          <span id="d-efectivo"></span><span id="d-tarjeta"></span><span id="d-nequi"></span>
         </div>
 
         <div class="two-col" style="margin-top:14px">
@@ -376,6 +384,22 @@ tr:hover td{background:var(--bg2)}
               <thead><tr><th>Hora</th><th>Mesa</th><th>Método</th><th>Total</th><th>Cajero</th></tr></thead>
               <tbody id="dash-ventas-tbody"><tr><td colspan="5" style="color:var(--text2);text-align:center">Cargando...</td></tr></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Charts Chart.js -->
+        <div class="chart-row" style="margin-top:14px">
+          <div class="card"><div class="card-header"><h3>📊 Ventas por hora</h3></div><div class="card-body" style="padding:12px;height:180px"><canvas id="chart-horas"></canvas></div></div>
+          <div class="card"><div class="card-header"><h3>💳 Métodos de pago</h3></div><div class="card-body" style="padding:12px;height:180px"><canvas id="chart-metodos"></canvas></div></div>
+        </div>
+        <div class="chart-row" style="margin-top:14px">
+          <div class="card"><div class="card-header"><h3 id="chart-dias-title">📅 Ventas del día</h3></div><div class="card-body" style="padding:12px;height:180px"><canvas id="chart-dias"></canvas></div></div>
+          <div class="card">
+            <div class="card-header"><h3>💸 Gastos por categoría</h3></div>
+            <div class="card-body" style="padding:12px;height:180px;overflow-y:auto" id="dash-gastos-chart">
+              <p style="color:var(--text2);font-size:13px;text-align:center;padding-top:40px" id="dash-gastos-empty">Sin gastos en este período</p>
+              <canvas id="chart-gastos" style="display:none"></canvas>
+            </div>
           </div>
         </div>
 
@@ -466,21 +490,38 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
 
-        <!-- Stats -->
+        <!-- Stats + métodos planos -->
         <div class="stats-row" id="rep-stats">
           <div class="stat-card"><div class="stat-label">Ventas</div><div class="stat-val" id="r-ventas">—</div></div>
           <div class="stat-card"><div class="stat-label">Gastos</div><div class="stat-val" id="r-gastos">—</div></div>
           <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="r-utilidad">—</div></div>
           <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="r-pedidos">—</div></div>
         </div>
+        <div style="display:flex;gap:12px;margin:10px 0;flex-wrap:wrap">
+          <span style="font-size:13px;color:var(--text2)">💵 Efectivo: <b id="rm-efectivo">—</b></span>
+          <span style="font-size:13px;color:var(--text2)">💳 Tarjeta: <b id="rm-tarjeta">—</b></span>
+          <span style="font-size:13px;color:var(--text2)">📱 Nequi/QR: <b id="rm-nequi">—</b></span>
+        </div>
 
-        <!-- Métodos + Cajas -->
-        <div class="two-col" style="margin-top:14px">
-          <div class="card"><div class="card-header"><h3>Por método de pago</h3></div>
-            <div class="card-body" id="r-metodos"></div></div>
-          <div class="card"><div class="card-header"><h3>Cajas del período</h3></div>
-            <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cajero</th><th>Ventas</th><th>Gastos</th><th>Estado</th></tr></thead>
-            <tbody id="r-cajas"></tbody></table></div></div>
+        <!-- Tabla ventas del período -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header">
+            <h3>Ventas del período</h3>
+            <button class="btn btn-sm btn-outline" onclick="exportarExcel()">⬇ Exportar Excel</button>
+          </div>
+          <div class="table-wrap" style="max-height:340px;overflow-y:auto">
+            <table style="font-size:12px">
+              <thead><tr><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Método</th><th>Total</th><th>Cliente</th><th>Cajero</th><th>Factura</th></tr></thead>
+              <tbody id="tbl-rep-ventas"><tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">Consulta un período para ver ventas</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Cajas del período -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><h3>Cajas del período</h3></div>
+          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cajero</th><th>Ventas</th><th>Gastos</th><th>Estado</th></tr></thead>
+          <tbody id="r-cajas"></tbody></table></div>
         </div>
 
         <!-- Top productos + Horas pico -->
@@ -1522,12 +1563,32 @@ function animateVal(id, target, isMoney){
 }
 
 async function loadDashboard(){
-  const [r, cajas_hoy, gr, ventas, inv] = await Promise.all([
-    api(`/admin/reportes/resumen?desde=${today()}&hasta=${today()}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
-    api(`/admin/caja/resumen?fecha=${today()}`).catch(()=>[]),
-    api(`/admin/gastos/resumen?desde=${today()}&hasta=${today()}`).catch(()=>[]),
-    api('/admin/ventas/recientes').catch(()=>[]),
+  const desde = $('dash-desde')?.value || today();
+  const hasta  = $('dash-hasta')?.value || today();
+  const esHoy  = desde === today() && hasta === today();
+  const ll = $('dash-live-lbl');
+  if(ll) ll.textContent = esHoy ? 'En vivo' : desde===hasta ? fmtDate(desde) : `${fmtDate(desde)} – ${fmtDate(hasta)}`;
+  const lv = $('dash-lbl-ventas');
+  if(lv) lv.textContent = esHoy ? 'Ventas hoy' : 'Ventas período';
+
+  // Período anterior para tendencias
+  const msD   = new Date(desde+'T12:00:00Z').getTime();
+  const msH   = new Date(hasta+'T12:00:00Z').getTime();
+  const durMs = msH - msD + 86400000;
+  const prevHasta = new Date(msD - 86400000);
+  const prevDesde = new Date(msD - durMs);
+  const fmtUTC = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+  const prevD = fmtUTC(prevDesde), prevH = fmtUTC(prevHasta);
+
+  const [r, cajas_hoy, gr, ventas, inv, horas, dias, rPrev] = await Promise.all([
+    api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
+    api(`/admin/caja/resumen?fecha=${desde}`).catch(()=>[]),
+    api(`/admin/gastos/resumen?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+    api(`/admin/ventas/recientes?desde=${desde}`).catch(()=>[]),
     api('/inventario/').catch(()=>[]),
+    api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+    api(`/admin/reportes/ventas-por-dia?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+    api(`/admin/reportes/resumen?desde=${prevD}&hasta=${prevH}`).catch(()=>null),
   ]);
 
   // Totales con animación de contador
@@ -1543,11 +1604,15 @@ async function loadDashboard(){
     du.style.color = util>=0?'var(--green-d)':'var(--red)';
     du.dataset.raw = du.dataset.raw || 0;
     animateVal('d-utilidad', util, true);
-    // Pulso en cards al actualizar
     document.querySelectorAll('#dash-stats .stat-card').forEach(c=>{ c.classList.add('anim-flash'); setTimeout(()=>c.classList.remove('anim-flash'),400); });
+    const lbl = esHoy ? 'vs ayer' : 'vs período ant.';
+    renderTrend('d-ventas',   r.ventas.total_ventas,  rPrev?.ventas?.total_ventas,  false, lbl);
+    renderTrend('d-gastos',   r.gastos.total_gastos,  rPrev?.gastos?.total_gastos,  true,  lbl);
+    renderTrend('d-utilidad', r.utilidad,              rPrev?.utilidad,              false, lbl);
+    renderTrend('d-pedidos',  r.ventas.pedidos,        rPrev?.ventas?.pedidos,       false, lbl);
   }
 
-  // Mini caja — agrega todas las cajas del día
+  // Mini caja
   const dc = $('dash-caja');
   if(cajas_hoy && cajas_hoy.length){
     const abiertas = cajas_hoy.filter(c=>c.estado==='abierta').length;
@@ -1556,12 +1621,8 @@ async function loadDashboard(){
     dc.innerHTML=`<div style="font-size:12px;color:var(--text2);margin-bottom:6px">${abiertas>0?`🟢 ${abiertas} caja${abiertas>1?'s':''} abierta${abiertas>1?'s':''}`:'🔴 Sin cajas abiertas'} · ${cajas_hoy.length} usuario${cajas_hoy.length>1?'s':''}</div><div class="caja-row"><span>Ventas totales</span><span>${fmt(tot_v)}</span></div><div class="caja-row"><span>Gastos totales</span><span>${fmt(tot_g)}</span></div>`;
   } else { dc.innerHTML='<div style="color:var(--text2);font-size:13px">Sin cajas abiertas hoy</div>'; }
 
-  // Gastos chart con animación de barras
-  const maxG = Math.max(...gr.map(g=>+g.total),1);
-  $('dash-gastos-chart').innerHTML = gr.length
-    ? gr.map(g=>`<div class="gasto-bar-item"><span class="gasto-bar-label">${g.categoria||'Sin categoría'}</span><div class="gasto-bar-track"><div class="gasto-bar-fill" data-w="${Math.round(+g.total/maxG*100)}" style="width:0%;background:${g.color||'var(--blue)'}"></div></div><span class="gasto-bar-val">${fmt(g.total)}</span></div>`).join('')
-    : '<div style="color:var(--text2);font-size:13px">Sin gastos hoy</div>';
-  requestAnimationFrame(()=>{ document.querySelectorAll('.gasto-bar-fill[data-w]').forEach(el=>{ el.style.transition='width .65s cubic-bezier(.4,0,.2,1)'; requestAnimationFrame(()=>{ el.style.width=el.dataset.w+'%'; }); }); });
+  // Gráficas Chart.js
+  renderCharts(r, gr, horas, dias, desde, hasta);
 
   // Últimas ventas
   const metodoBadge = m => `<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
@@ -1574,6 +1635,10 @@ async function loadDashboard(){
         <td style="color:var(--text2)">${v.usuario_nombre||'—'}</td>
       </tr>`).join('')
     : '<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sin ventas registradas hoy</td></tr>';
+
+  // Timestamp
+  const t = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  $('dash-updated').textContent = `Actualizado ${t}`;
 
   // Inventario: resumen + alertas
   if(inv && inv.length){
@@ -1606,8 +1671,90 @@ async function loadDashboard(){
   $('dash-updated').textContent = `Actualizado ${t}`;
 }
 
-function startDashTimer(){ clearInterval(dashTimer); dashTimer = setInterval(loadDashboard, 15000); }
+function startDashTimer(){
+  clearInterval(dashTimer);
+  dashTimer = setInterval(()=>{
+    const desde = $('dash-desde')?.value;
+    if(!desde || desde === today()) loadDashboard();
+  }, 15000);
+}
 function stopDashTimer(){ clearInterval(dashTimer); dashTimer = null; }
+
+function dashFiltro(tipo, e){
+  const d = new Date();
+  const ls = dt => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  let desde, hasta = ls(d);
+  if(tipo==='hoy'){ desde = hasta; }
+  else if(tipo==='ayer'){ const y=new Date(d-864e5); desde=ls(y); hasta=ls(y); }
+  else if(tipo==='semana'){ const s=new Date(d); s.setDate(d.getDate()-d.getDay()||7); desde=ls(s); }
+  else if(tipo==='mes'){ desde=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
+  document.querySelectorAll('.dash-q').forEach(b=>b.classList.remove('active'));
+  if(e?.currentTarget) e.currentTarget.classList.add('active');
+  $('dash-desde').value = desde;
+  $('dash-hasta').value = hasta;
+  loadDashboard();
+}
+
+function renderTrend(id, current, previous, invertido, lbl){
+  const el = $(`${id}-trend`);
+  if(!el) return;
+  const cur = +current || 0, pre = +previous;
+  if(previous == null || isNaN(pre)){ el.textContent=''; el.className='stat-trend neutral'; return; }
+  if(pre===0){ el.textContent=cur>0?`↑ Nuevo ${lbl}`:'—'; el.className=`stat-trend ${cur>0?(invertido?'up-inv':'up'):'neutral'}`; return; }
+  const pct=((cur-pre)/Math.abs(pre))*100;
+  if(Math.abs(pct)<0.1){ el.textContent=`→ Sin cambio ${lbl}`; el.className='stat-trend neutral'; return; }
+  const up=pct>0;
+  el.textContent=`${up?'↑':'↓'} ${Math.abs(pct).toFixed(1)}% ${lbl}`;
+  el.className=`stat-trend ${up?(invertido?'up-inv':'up'):(invertido?'down-inv':'down')}`;
+}
+
+let _chartH=null,_chartM=null,_chartD=null,_chartG=null;
+function renderCharts(r, gr, horas, dias, desde, hasta){
+  const dark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const gc=dark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.06)';
+  const tc=dark?'#a0c8b0':'#4a7060';
+  const bf={family:"'Segoe UI',sans-serif",size:11};
+
+  // 1. Ventas por hora
+  const horasAll=Array.from({length:24},(_,i)=>i);
+  const horasData=horasAll.map(h=>{ const row=(horas||[]).find(x=>+x.hora===h); return row?+row.total:0; });
+  if(_chartH){_chartH.destroy();_chartH=null;}
+  _chartH=new Chart($('chart-horas').getContext('2d'),{type:'bar',data:{labels:horasAll.map(h=>`${String(h).padStart(2,'0')}h`),datasets:[{data:horasData,backgroundColor:horasData.map(v=>v>0?'rgba(11,132,87,0.78)':'rgba(11,132,87,0.12)'),borderRadius:4,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:bf,maxRotation:0,autoSkip:true,maxTicksLimit:12}},y:{grid:{color:gc},ticks:{color:tc,font:bf,callback:v=>v===0?'':'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)}}}}});
+
+  // 2. Métodos de pago (dona)
+  if(_chartM){_chartM.destroy();_chartM=null;}
+  const ef=r?+r.ventas.efectivo||0:0,ta=r?+r.ventas.tarjeta||0:0,ne=r?+r.ventas.nequi||0:0;
+  _chartM=new Chart($('chart-metodos').getContext('2d'),{type:'doughnut',data:{labels:['Efectivo','Tarjeta','Nequi/QR'],datasets:[{data:[ef,ta,ne],backgroundColor:['rgba(16,185,129,0.85)','rgba(59,130,246,0.85)','rgba(168,85,247,0.85)'],borderColor:dark?'#1a2e1e':'#fff',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:tc,font:bf,boxWidth:10,padding:8}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.raw)}`}}}}});
+
+  // 3. Ventas por período (línea)
+  if(_chartD){_chartD.destroy();_chartD=null;}
+  const rangeStart=new Date((desde||today())+'T12:00:00Z');
+  const rangeEnd=new Date((hasta||today())+'T12:00:00Z');
+  const rangeDays=[];
+  for(let d=new Date(rangeStart);d<=rangeEnd;d.setUTCDate(d.getUTCDate()+1)){
+    rangeDays.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`);
+  }
+  const diasData=rangeDays.map(f=>{const row=(dias||[]).find(x=>String(x.fecha||'').slice(0,10)===f);return row?+row.total:0;});
+  const diasLabels=rangeDays.map(f=>{const [,m,d]=f.split('-');return `${d}/${m}`;});
+  const diasTitle=$('chart-dias-title');
+  if(diasTitle){const n=rangeDays.length;diasTitle.textContent=n===1?'📅 Ventas del día':n<=7?`📅 Últimos ${n} días`:`📅 ${fmtDate(desde)} — ${fmtDate(hasta)}`;}
+  const ctxD=$('chart-dias').getContext('2d');
+  const grad=ctxD.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0,'rgba(11,132,87,0.28)');grad.addColorStop(1,'rgba(11,132,87,0.02)');
+  _chartD=new Chart(ctxD,{type:'line',data:{labels:diasLabels,datasets:[{data:diasData,borderColor:'#0B8457',backgroundColor:grad,borderWidth:2,pointBackgroundColor:'#0B8457',pointRadius:4,pointHoverRadius:6,tension:0.35,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:bf}},y:{grid:{color:gc},ticks:{color:tc,font:bf,callback:v=>'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)}}}}});
+
+  // 4. Gastos por categoría (barras horizontales)
+  if(_chartG){_chartG.destroy();_chartG=null;}
+  const ge=$('dash-gastos-empty');
+  if(gr && gr.length){
+    if(ge) ge.style.display='none';
+    $('chart-gastos').style.display='';
+    _chartG=new Chart($('chart-gastos').getContext('2d'),{type:'bar',data:{labels:gr.map(g=>g.categoria||'Otros'),datasets:[{data:gr.map(g=>+g.total),backgroundColor:gr.map(g=>g.color||'rgba(234,88,12,0.75)'),borderRadius:4,borderWidth:0}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:bf,callback:v=>'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)}},y:{grid:{display:false},ticks:{color:tc,font:bf}}}}});
+  } else {
+    if(ge) ge.style.display='';
+    $('chart-gastos').style.display='none';
+  }
+}
 
 // ─── CAJA ────────────────────────────────────────────────────
 async function loadCaja(){
@@ -1789,12 +1936,14 @@ async function loadReportes(){
     const metodo=$('rep-metodo').value;
     const mq = metodo ? `&metodo_pago=${metodo}` : '';
 
-    const [r, platos, horas, inv] = await Promise.all([
+    const [r, platos, horas, inv, ventas] = await Promise.all([
       api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`),
       api(`/pos/ventas/top-platos?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
       api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
       api('/inventario/').catch(()=>[]),
+      api(`/admin/ventas?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
     ]);
+    window._repData = { r, inv, ventas, desde, hasta };
 
     // Stats
     $('r-ventas').textContent=fmt(r.ventas.total_ventas);
@@ -1803,11 +1952,21 @@ async function loadReportes(){
     const util=r.utilidad; const ru=$('r-utilidad');
     ru.textContent=fmt(util); ru.style.color=util>=0?'var(--green-d)':'var(--red)';
 
-    // Métodos
-    $('r-metodos').innerHTML=`
-      <div class="caja-row"><span>Efectivo</span><span><b>${fmt(r.ventas.efectivo)}</b></span></div>
-      <div class="caja-row"><span>Tarjeta</span><span><b>${fmt(r.ventas.tarjeta)}</b></span></div>
-      <div class="caja-row"><span>Nequi/QR</span><span><b>${fmt(r.ventas.nequi)}</b></span></div>`;
+    // Métodos planos
+    $('rm-efectivo').textContent=fmt(r.ventas.efectivo);
+    $('rm-tarjeta').textContent=fmt(r.ventas.tarjeta);
+    $('rm-nequi').textContent=fmt(r.ventas.nequi);
+
+    // Tabla ventas
+    $('tbl-rep-ventas').innerHTML = ventas.length
+      ? ventas.map(v=>`<tr>
+          <td>${v.fecha||''}</td><td>${v.hora||''}</td><td>${v.lugar||'—'}</td>
+          <td><span class="badge metodo-badge-${v.metodo_pago||'efectivo'}">${v.metodo_pago||'—'}</span></td>
+          <td><b>${fmt(v.total)}</b></td><td>${v.cliente||'—'}</td>
+          <td style="color:var(--text2)">${v.cajero||'—'}</td>
+          <td style="color:var(--text2);font-size:11px">${v.numero_factura||'—'}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">Sin ventas en este período</td></tr>';
 
     // Cajas
     $('r-cajas').innerHTML=r.cajas.length
@@ -1884,6 +2043,38 @@ async function loadReportes(){
     }
 
   } catch(e){ showToast('Error: '+e.message); }
+}
+
+function exportarExcel(){
+  const d = window._repData;
+  if(!d){ showToast('Primero consulta un período en Reportes'); return; }
+  const { r, inv, ventas, desde, hasta } = d;
+  const rows = [
+    ['﻿BunnyDJPOS — Reporte Minimercado'],
+    [`Período: ${desde} al ${hasta}`],
+    [],
+    ['RESUMEN'],
+    ['Ventas',fmt(r?.ventas?.total_ventas)],
+    ['Gastos',fmt(r?.gastos?.total_gastos)],
+    ['Utilidad',fmt(r?.utilidad)],
+    ['Pedidos',r?.ventas?.pedidos],
+    ['Efectivo',fmt(r?.ventas?.efectivo)],
+    ['Tarjeta',fmt(r?.ventas?.tarjeta)],
+    ['Nequi/QR',fmt(r?.ventas?.nequi)],
+    [],
+    ['VENTAS DETALLADAS'],
+    ['Fecha','Hora','Lugar','Método','Total','Cliente','Cajero','Factura'],
+    ...(ventas||[]).map(v=>[v.fecha,v.hora,v.lugar,v.metodo_pago,v.total,v.cliente,v.cajero,v.numero_factura]),
+    [],
+    ['INVENTARIO'],
+    ['Artículo','Categoría','Stock','Mínimo','Estado'],
+    ...(inv||[]).map(i=>[i.nombre,i.categoria,i.stock,i.stock_min,(+i.stock<=0?'Agotado':+i.stock<+i.stock_min?'Bajo stock':'OK')]),
+  ];
+  const csv = rows.map(r=>r.map(c=>'"'+(String(c||'').replace(/"/g,'""'))+'"').join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`reporte-minimercado-${desde}-${hasta}.csv`;
+  a.click(); URL.revokeObjectURL(url);
 }
 
 // ─── COLOMBIA DEPARTAMENTOS / CIUDADES ───────────────────────

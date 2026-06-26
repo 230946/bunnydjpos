@@ -183,7 +183,14 @@
 #contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
 #contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
 #contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
-#contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}</style>
+#contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:700px){.chart-row{grid-template-columns:1fr}}
+.stat-trend{font-size:11px;font-weight:600;margin-top:5px;min-height:14px;transition:color .2s}
+.stat-trend.up{color:#15803d}.stat-trend.down{color:var(--red)}.stat-trend.neutral{color:var(--text3)}
+.stat-trend.up-inv{color:var(--red)}.stat-trend.down-inv{color:#15803d}
+.fin-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">Tu contrato ha vencido o fue cancelado.<br>Contacta al administrador del sistema.</p></div>
@@ -851,10 +858,20 @@ function toggleGrupo(id){
 function cerrarModal(id){document.getElementById(id).style.display='none';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')['modalCita','modalDetCita','svc-modal','emp-modal','inv-modal','inv-ajuste-modal','gasto-modal','cat-modal','personal-modal','prov-modal','pedido-prov-modal','rol-modal','role-assign-modal','horario-modal','cfg-imp-modal','paq-modal'].forEach(id=>cerrarModal(id));});
 
+let _pelChartH=null,_pelChartM=null,_pelChartD=null;
 async function renderDashboard(){
   document.getElementById('content').innerHTML='<div style="color:var(--text2)">Cargando...</div>';
-  try{const d=await apiFetch(`${API}/peluqueria/dashboard`);if(!d)return;
-  document.getElementById('content').innerHTML=`
+  try{
+    const hoy=today();
+    const [d, r, horas, dias] = await Promise.all([
+      apiFetch(`${API}/peluqueria/dashboard`),
+      apiFetch(`${API}/admin/reportes/resumen?desde=${hoy}&hasta=${hoy}`).catch(()=>null),
+      apiFetch(`${API}/admin/reportes/ventas-por-hora?desde=${hoy}&hasta=${hoy}`).catch(()=>[]),
+      apiFetch(`${API}/admin/reportes/ventas-por-dia?desde=${hoy}&hasta=${hoy}`).catch(()=>[]),
+    ]);
+    if(!d)return;
+    const fmtV=n=>'$'+(Math.round(n)||0).toLocaleString('es-CO');
+    document.getElementById('content').innerHTML=`
     <div class="stat-grid">
       <div class="stat-card"><div class="label">Citas hoy</div><div class="value" style="color:var(--acc)">${d.citasHoy||0}</div></div>
       <div class="stat-card"><div class="label">Completadas</div><div class="value" style="color:var(--green)">${d.completadasHoy||0}</div></div>
@@ -880,7 +897,7 @@ async function renderDashboard(){
       </div>`).join('')}
     </div>`:''}
     ${(d.invAlertas||[]).length>0?`
-    <div style="background:var(--bg2);border:1px solid #e3b34133;border-radius:var(--r);padding:16px">
+    <div style="background:var(--bg2);border:1px solid #e3b34133;border-radius:var(--r);padding:16px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div style="font-size:12px;text-transform:uppercase;color:var(--yellow);font-weight:700">Alerta de inventario (${d.invAlertas.length})</div>
         <button class="btn btn-sm" onclick="nav('inventario')" style="font-size:11px">Ver inventario</button>
@@ -896,7 +913,31 @@ async function renderDashboard(){
           </span>
         </div>`).join('')}
     </div>`:''}
-    `;}
+    <!-- Resumen financiero del día -->
+    <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
+      <div style="font-size:12px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;font-weight:700">💰 Resumen financiero hoy</div>
+      <div class="fin-stat-grid">
+        <div class="stat-card"><div class="label">Ventas</div><div class="value" style="font-size:18px">${fmtV(r?.ventas?.total_ventas)}</div></div>
+        <div class="stat-card"><div class="label">Gastos</div><div class="value" style="font-size:18px;color:var(--red)">${fmtV(r?.gastos?.total_gastos)}</div></div>
+        <div class="stat-card"><div class="label">Utilidad</div><div class="value" style="font-size:18px;color:${(r?.utilidad||0)>=0?'var(--green)':'var(--red)'}">${fmtV(r?.utilidad)}</div></div>
+        <div class="stat-card"><div class="label">Citas cobradas</div><div class="value" style="font-size:18px">${r?.ventas?.pedidos||0}</div></div>
+      </div>
+      <div class="chart-row">
+        <div class="stat-card" style="padding:12px"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">📊 VENTAS POR HORA</div><div style="height:150px"><canvas id="pel-chart-horas"></canvas></div></div>
+        <div class="stat-card" style="padding:12px"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">💳 MÉTODOS DE PAGO</div><div style="height:150px"><canvas id="pel-chart-metodos"></canvas></div></div>
+      </div>
+    </div>
+    `;
+    // Init charts después de que el DOM esté listo
+    const gc='rgba(0,0,0,0.06)',tc='#4a7060',bf={family:"'Segoe UI',sans-serif",size:11};
+    const horasAll=Array.from({length:24},(_,i)=>i);
+    const horasData=horasAll.map(h=>{const row=(horas||[]).find(x=>+x.hora===h);return row?+row.total:0;});
+    if(_pelChartH){_pelChartH.destroy();_pelChartH=null;}
+    _pelChartH=new Chart(document.getElementById('pel-chart-horas').getContext('2d'),{type:'bar',data:{labels:horasAll.map(h=>`${String(h).padStart(2,'0')}h`),datasets:[{data:horasData,backgroundColor:horasData.map(v=>v>0?'rgba(11,132,87,0.78)':'rgba(11,132,87,0.12)'),borderRadius:3,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` $${(+ctx.raw).toLocaleString('es-CO')}`}}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:bf,maxRotation:0,autoSkip:true,maxTicksLimit:8}},y:{grid:{color:gc},ticks:{color:tc,font:bf,callback:v=>v===0?'':'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)}}}}});
+    if(_pelChartM){_pelChartM.destroy();_pelChartM=null;}
+    const ef=r?+r.ventas.efectivo||0:0,ta=r?+r.ventas.tarjeta||0:0,ne=r?+r.ventas.nequi||0:0;
+    _pelChartM=new Chart(document.getElementById('pel-chart-metodos').getContext('2d'),{type:'doughnut',data:{labels:['Efectivo','Tarjeta','Nequi/QR'],datasets:[{data:[ef,ta,ne],backgroundColor:['rgba(16,185,129,0.85)','rgba(59,130,246,0.85)','rgba(168,85,247,0.85)'],borderColor:'#fff',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:tc,font:bf,boxWidth:10,padding:6}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: $${(+ctx.raw).toLocaleString('es-CO')}`}}}}});
+  }
   catch(e){document.getElementById('content').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
 }
 
@@ -1990,11 +2031,20 @@ function renderReportes(){
       <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="r-utilidad">—</div></div>
       <div class="stat-card"><div class="stat-label">Pedidos/Citas</div><div class="stat-val" id="r-pedidos">—</div></div>
     </div>
-    <div class="two-col" style="margin-bottom:14px">
-      <div class="card"><div class="card-header"><h3>Por método de pago</h3></div><div class="card-body" id="r-metodos"></div></div>
-      <div class="card"><div class="card-header"><h3>Cajas del período</h3></div>
-        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cajero</th><th>Ventas</th><th>Gastos</th><th>Estado</th></tr></thead><tbody id="r-cajas"></tbody></table></div></div>
+    <div style="display:flex;gap:12px;margin:10px 0;flex-wrap:wrap">
+      <span style="font-size:13px;color:var(--text2)">💵 Efectivo: <b id="r-metodos-ef">—</b></span>
+      <span style="font-size:13px;color:var(--text2)">💳 Tarjeta: <b id="r-metodos-tar">—</b></span>
+      <span style="font-size:13px;color:var(--text2)">📱 Nequi/QR: <b id="r-metodos-neq">—</b></span>
     </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><h3>Ventas del período</h3><button class="btn btn-sm btn-outline" onclick="exportarExcelPel()">⬇ Exportar Excel</button></div>
+      <div class="table-wrap" style="max-height:320px;overflow-y:auto">
+        <table style="font-size:12px"><thead><tr><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Método</th><th>Total</th><th>Cliente</th><th>Cajero</th><th>Factura</th></tr></thead>
+        <tbody id="r-ventas-tbody"><tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">Consulta un período</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px"><div class="card-header"><h3>Cajas del período</h3></div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cajero</th><th>Ventas</th><th>Gastos</th><th>Estado</th></tr></thead><tbody id="r-cajas"></tbody></table></div></div>
     <div class="two-col">
       <div class="card"><div class="card-header"><h3>Más vendidos</h3></div><div class="card-body" id="r-top" style="padding:4px 16px 16px"><p style="color:var(--text2);font-size:13px">Consulta un período para ver resultados</p></div></div>
       <div class="card"><div class="card-header"><h3>Horas pico</h3></div><div class="card-body" id="r-horas" style="padding:4px 16px 16px"><p style="color:var(--text2);font-size:13px">Consulta un período para ver resultados</p></div></div>
@@ -2022,17 +2072,25 @@ function repFiltro(ev,tipo){
 async function cargarReportes(){
   try{
     const desde=_gel('rep-desde').value,hasta=_gel('rep-hasta').value;
-    const [r,topItems,horas,empSvcs]=await Promise.all([
+    const [r,topItems,horas,empSvcs,ventas]=await Promise.all([
       apiFetch(`${API}/peluqueria/reportes/resumen?desde=${desde}&hasta=${hasta}`),
       apiFetch(`${API}/peluqueria/reportes/top-servicios?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
       apiFetch(`${API}/peluqueria/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
       apiFetch(`${API}/peluqueria/reportes/servicios-por-empleado?desde=${desde}&hasta=${hasta}`).catch(e=>{console.error('[rep-empleados]',e);return[];}),
+      apiFetch(`${API}/admin/ventas?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
     ]);
+    window._pelRepData = { r, ventas, desde, hasta };
     if(_gel('r-ventas'))_gel('r-ventas').textContent=fmt(r.ventas.total_ventas);
     if(_gel('r-gastos'))_gel('r-gastos').textContent=fmt(r.gastos.total_gastos);
     if(_gel('r-pedidos'))_gel('r-pedidos').textContent=(r.ventas.citas||r.ventas.pedidos||0);
     const ru=_gel('r-utilidad');if(ru){const util=r.utilidad;ru.textContent=fmt(util);ru.style.color=util>=0?'var(--green)':'var(--red)';}
-    const rm=_gel('r-metodos');if(rm)rm.innerHTML=`<div class="caja-row"><span>Efectivo</span><b>${fmt(r.ventas.efectivo)}</b></div><div class="caja-row"><span>Tarjeta</span><b>${fmt(r.ventas.tarjeta)}</b></div><div class="caja-row"><span>Nequi/QR</span><b>${fmt(r.ventas.nequi)}</b></div>`;
+    // Métodos planos
+    if(_gel('r-metodos-ef'))_gel('r-metodos-ef').textContent=fmt(r.ventas.efectivo);
+    if(_gel('r-metodos-tar'))_gel('r-metodos-tar').textContent=fmt(r.ventas.tarjeta);
+    if(_gel('r-metodos-neq'))_gel('r-metodos-neq').textContent=fmt(r.ventas.nequi);
+    // Tabla ventas
+    const tb=_gel('r-ventas-tbody');
+    if(tb)tb.innerHTML=ventas&&ventas.length?ventas.map(v=>`<tr><td>${v.fecha||''}</td><td>${v.hora||''}</td><td>${v.lugar||'—'}</td><td>${v.metodo_pago||'—'}</td><td><b>${fmt(v.total)}</b></td><td>${v.cliente||'—'}</td><td style="color:var(--text2)">${v.cajero||'—'}</td><td style="color:var(--text2);font-size:11px">${v.numero_factura||'—'}</td></tr>`).join(''):'<tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">Sin ventas en este período</td></tr>';
     const rc=_gel('r-cajas');if(rc)rc.innerHTML=(r.cajas||[]).length?r.cajas.map(c=>`<tr><td>${fmtDate(c.fecha)}</td><td>${c.usuario_nombre||'—'}</td><td>${fmt(c.total_ventas)}</td><td>${fmt(c.total_gastos)}</td><td><span class="badge ${c.estado==='abierta'?'badge-green':'badge-gray'}">${c.estado}</span></td></tr>`).join(''):'<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sin cajas</td></tr>';
     const rt=_gel('r-top');if(rt){if(topItems&&topItems.length){const mv=Math.max(...topItems.map(p=>+p.vendidos),1);rt.innerHTML=topItems.map((p,i)=>`<div class="gasto-bar-item"><span class="gasto-bar-label"><span style="color:var(--text2);font-size:11px;margin-right:4px">${i+1}.</span>${esc(p.nombre)}</span><div class="gasto-bar-track"><div class="gasto-bar-fill" style="width:${Math.round(+p.vendidos/mv*100)}%;background:var(--acc)"></div></div><span class="gasto-bar-val">${p.vendidos} × ${fmt(p.total)}</span></div>`).join('');} else {rt.innerHTML='<p style="color:var(--text2);text-align:center;padding:16px;font-size:13px">Sin datos en el período</p>';}}
     const rh=_gel('r-horas');if(rh){if(horas&&horas.length){const mh=Math.max(...horas.map(h=>+h.total),1);rh.innerHTML=horas.map(h=>`<div class="gasto-bar-item"><span class="gasto-bar-label" style="min-width:48px">${String(h.hora).padStart(2,'0')}:00</span><div class="gasto-bar-track"><div class="gasto-bar-fill" style="width:${Math.round(+h.total/mh*100)}%;background:#8b5cf6"></div></div><span class="gasto-bar-val">${h.pedidos}ped·${fmt(h.total)}</span></div>`).join('');} else {rh.innerHTML='<p style="color:var(--text2);text-align:center;padding:16px;font-size:13px">Sin datos en el período</p>';}}
@@ -2044,6 +2102,27 @@ async function cargarReportes(){
       <td style="font-size:12px;color:var(--text2);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(e.detalle_servicios||'')}">${esc(e.detalle_servicios||'—')}</td>
     </tr>`).join(''):'<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sin datos en el período</td></tr>';}
   }catch(e){showToast(e.message,'err');}
+}
+
+function exportarExcelPel(){
+  const d=window._pelRepData;
+  if(!d){showToast('Primero consulta un período en Reportes');return;}
+  const {r,ventas,desde,hasta}=d;
+  const rows=[
+    ['BunnyDJPOS — Reporte Peluquería'],
+    [`Período: ${desde} al ${hasta}`],[],
+    ['RESUMEN'],
+    ['Ventas',r?.ventas?.total_ventas],['Gastos',r?.gastos?.total_gastos],['Utilidad',r?.utilidad],
+    ['Citas cobradas',r?.ventas?.pedidos],['Efectivo',r?.ventas?.efectivo],['Tarjeta',r?.ventas?.tarjeta],['Nequi/QR',r?.ventas?.nequi],[],
+    ['VENTAS DETALLADAS'],
+    ['Fecha','Hora','Lugar','Método','Total','Cliente','Cajero','Factura'],
+    ...(ventas||[]).map(v=>[v.fecha,v.hora,v.lugar,v.metodo_pago,v.total,v.cliente,v.cajero,v.numero_factura]),
+  ];
+  const csv=rows.map(r=>r.map(c=>'"'+(String(c||'').replace(/"/g,'""'))+'"').join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`reporte-peluqueria-${desde}-${hasta}.csv`;
+  a.click();URL.revokeObjectURL(url);
 }
 
 // ─── FACTURAS ───────────────────────────────────────────────────
