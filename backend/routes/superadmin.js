@@ -274,9 +274,9 @@ router.get('/reportes', async (req, res) => {
     const hasta = req.query.hasta || today;
     const { rows } = await pool.query(`
       SELECT n.id AS negocio_id, n.nombre, n.tipo,
-        COUNT(CASE WHEN v.estado='pagado' THEN 1 END) AS total_ventas,
-        COALESCE(SUM(CASE WHEN v.estado='pagado' THEN v.total ELSE 0 END),0) AS ingresos,
-        COALESCE(AVG(CASE WHEN v.estado='pagado' THEN v.total END),0) AS promedio,
+        COUNT(v.id) AS total_ventas,
+        COALESCE(SUM(v.total),0) AS ingresos,
+        COALESCE(AVG(v.total),0) AS promedio,
         MAX(v.creado) AS ultima_venta
       FROM negocios n
       LEFT JOIN ventas v ON v.negocio_id = n.id AND DATE(v.creado) BETWEEN ? AND ?
