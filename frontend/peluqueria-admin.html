@@ -2202,7 +2202,20 @@ async function abrirFactura(id){
 function cerrarFactModal(){_gel('fact-modal').style.display='none';_factActual=null;}
 function imprimirFactura(){
   const html=_gel('fact-recibo-wrap').innerHTML;const w=window.open('','_blank','width=400,height=700');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:monospace;font-size:12px;padding:10px;color:#000;background:#fff}.recibo{max-width:300px;margin:0 auto}.recibo-center{text-align:center;margin:2px 0}.recibo-row{display:flex;justify-content:space-between;padding:2px 0}.recibo-total{font-weight:700}.recibo-hr{border:none;border-top:1px dashed #000;margin:6px 0}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:monospace;font-size:12px;padding:10px;color:#000;background:#fff}.recibo{max-width:300px;margin:0 auto}.recibo-center{text-align:center;margin:2px 0}.recibo-row{display:flex;justify-content:space-between;padding:2px 0}.recibo-total{font-weight:700}.recibo-hr{border:none;border-top:1px dashed #000;margin:6px 0}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script><script>
+/* Indicador auto-refresh */
+(function(){
+  var s=document.createElement('span');
+  s.id='ar-badge';
+  s.style.cssText='position:fixed;bottom:8px;left:8px;z-index:9000;font-size:10px;font-weight:500;color:var(--text3,#888);background:var(--bg,#fff);border:0.5px solid var(--border,#ddd);border-radius:12px;padding:3px 10px;pointer-events:none;transition:background .4s,color .4s,border-color .4s;display:none;font-family:inherit';
+  document.body.appendChild(s);
+  function vis(){var a=document.querySelector('#app,#app-screen');return a&&(a.style.display==='flex'||a.style.display==='block'||a.classList.contains('visible'));}
+  var sec=30;
+  setInterval(function(){s.style.display=vis()?'inline':'none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
+  window._arReset=function(){sec=30;s.style.background='var(--green-l,#d1fae5)';s.style.color='var(--green-d,#065f46)';s.style.borderColor='var(--green,#0B8457)';s.textContent='↺ actualizado';setTimeout(function(){s.style.background='';s.style.color='';s.style.borderColor='';s.textContent='↺ 30s';},900);};
+})();
+</script>
+</body></html>`);
   w.document.close();
 }
 
@@ -2688,7 +2701,7 @@ setInterval(function(){
     inventario:renderInventario,gastos:renderGastos,facturas:renderFacturas,proveedores:renderProveedores,
     'pedidos-prov':renderPedidosProv,personal:renderPersonal,roles:renderRoles,
     horarios:renderHorarios,asistencia:renderAsistencia};
-  if(typeof renders[_pg]==='function') renders[_pg]();
+  if(typeof renders[_pg]==='function'){ renders[_pg](); window._arReset?.(); }
 }, 30000);
 </script>
 
@@ -2717,6 +2730,20 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 });
 </script>
+<script>
+/* Indicador auto-refresh */
+(function(){
+  var s=document.createElement('span');
+  s.id='ar-badge';
+  s.style.cssText='position:fixed;bottom:8px;left:8px;z-index:9000;font-size:10px;font-weight:500;color:var(--text3,#888);background:var(--bg,#fff);border:0.5px solid var(--border,#ddd);border-radius:12px;padding:3px 10px;pointer-events:none;transition:background .4s,color .4s,border-color .4s;display:none;font-family:inherit';
+  document.body.appendChild(s);
+  function vis(){var a=document.querySelector('#app,#app-screen');return a&&(a.style.display==='flex'||a.style.display==='block'||a.classList.contains('visible'));}
+  var sec=30;
+  setInterval(function(){s.style.display=vis()?'inline':'none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
+  window._arReset=function(){sec=30;s.style.background='var(--green-l,#d1fae5)';s.style.color='var(--green-d,#065f46)';s.style.borderColor='var(--green,#0B8457)';s.textContent='↺ actualizado';setTimeout(function(){s.style.background='';s.style.color='';s.style.borderColor='';s.textContent='↺ 30s';},900);};
+})();
+</script>
 </body>
 </html>
+
 
