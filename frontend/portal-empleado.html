@@ -394,23 +394,10 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
   const hoy = new Date().getDay();
   const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fmtFechaDia = f => { const d=new Date(f+'T12:00:00'); return `${d.getDate()} ${MESES[d.getMonth()]} (${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()]})`; };
-  const recurrentes = (horarios||[]).filter(h => !h.fecha);
   const especificas = (horarios||[]).filter(h => h.fecha);
   const todayStr = new Date().toISOString().slice(0,10);
   let horHtml = '';
-  if (recurrentes.length) {
-    horHtml += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Horario semanal</div>`;
-    horHtml += `<div class="horario-grid">${recurrentes.map(h => {
-      const esHoy = Number(h.dia_semana) === hoy;
-      return `<div class="horario-dia${esHoy?' hoy':''}">
-        <div class="dia-nombre">${h.dia_nombre||DIAS[h.dia_semana]}${esHoy?' ★':''}</div>
-        <div class="dia-horas">${h.hora_entrada||'—'} – ${h.hora_salida||'—'}</div>
-      </div>`;
-    }).join('')}</div>`;
-  }
   if (especificas.length) {
-    if (recurrentes.length) horHtml += '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">';
-    horHtml += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Fechas registradas</div>`;
     horHtml += especificas.map(h => {
       const esHoy2 = h.fecha === todayStr;
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;margin-bottom:6px;background:${esHoy2?'var(--acc-l)':'var(--bg)'};border:1px solid ${esHoy2?'var(--acc)':'var(--border)'}">
