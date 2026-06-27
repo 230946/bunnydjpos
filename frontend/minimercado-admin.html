@@ -1701,9 +1701,15 @@ function startDashTimer(){
   dashTimer = setInterval(()=>{
     const desde = $('dash-desde')?.value;
     if(!desde || desde === today()) loadDashboard();
-  }, 15000);
+  }, 30000);
 }
 function stopDashTimer(){ clearInterval(dashTimer); dashTimer = null; }
+// Auto-refresh panel activo cada 30s
+setInterval(function(){
+  if([...document.querySelectorAll('.modal-bg')].some(m=>m.style.display==='flex')) return;
+  if(currentPage==='dashboard') return; // maneja su propio timer
+  if(typeof navLoaders!=='undefined' && navLoaders[currentPage]) navLoaders[currentPage]();
+}, 30000);
 
 function dashFiltro(tipo, e){
   const d = new Date();

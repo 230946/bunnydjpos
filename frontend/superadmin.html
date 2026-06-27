@@ -1243,6 +1243,15 @@ async function eliminarContrato(){
     await loadContratos();
   }catch(e){showToast('Error: '+e.message);}
 }
+
+// Auto-refresh panel activo cada 30s
+setInterval(function(){
+  if([...document.querySelectorAll('.modal-bg,.mb')].some(m=>m.style.display==='flex')) return;
+  const pid = document.querySelector('.panel.active')?.id?.replace('panel-','');
+  if(!pid||pid==='dashboard') return;
+  ({negocios:loadNegocios,usuarios:loadUsuarios,establecimientos:loadEstablecimientos,
+    facturacion:loadReportes,planes:loadPlanes,contratos:loadContratos})[pid]?.();
+}, 30000);
 </script>
 
 <script>

@@ -2678,6 +2678,18 @@ function imprimirPrueba(){
 }
 
 if(TOKEN)iniciar();
+
+// Auto-refresh panel activo cada 30s
+setInterval(function(){
+  if(document.querySelector('.modal-bg')?.style.display==='flex') return;
+  if(!_pg||_pg==='dashboard') return;
+  const renders={agenda:renderAgenda,caja:renderCaja,reportes:renderReportes,clientes:renderClientes,
+    servicios:renderServicios,empleados:renderEmpleados,comisiones:renderComisiones,paquetes:renderPaquetes,
+    inventario:renderInventario,gastos:renderGastos,facturas:renderFacturas,proveedores:renderProveedores,
+    'pedidos-prov':renderPedidosProv,personal:renderPersonal,roles:renderRoles,
+    horarios:renderHorarios,asistencia:renderAsistencia};
+  if(typeof renders[_pg]==='function') renders[_pg]();
+}, 30000);
 </script>
 
 <script>

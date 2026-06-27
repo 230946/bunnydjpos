@@ -700,6 +700,13 @@ async function renderCaja(){
 function closeModal(id){ $(id).style.display='none'; }
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal('co-modal'); closeModal('recibo-modal'); closeCartMob(); } });
+// Auto-refresh cada 30s
+setInterval(function(){
+  if($('co-modal').style.display==='flex') return;
+  const pid = document.querySelector('.panel.active')?.id;
+  if(pid==='panel-venta') renderProducts();
+  else if(pid==='panel-caja') renderCaja();
+}, 30000);
 
 // ── Carrito móvil (drawer) ────────────────────────────────────
 function toggleCartMob(){

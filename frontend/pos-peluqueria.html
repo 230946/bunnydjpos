@@ -1165,6 +1165,12 @@ function closeMobCobro(){
   const ov=$('mob-cobro-overlay');if(ov)ov.style.display='none';
 }
 
+// Auto-refresh caja cada 30s (las citas ya se refrescan con su propio intervalo)
+setInterval(function(){
+  if(document.querySelector('.modal-bg')?.style.display==='flex') return;
+  if($('vistaCaja')?.style.display!=='none') renderCaja();
+}, 30000);
+
 // Auto-login
 if (TOKEN) iniciar();
 </script>

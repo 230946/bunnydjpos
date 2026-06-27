@@ -1645,6 +1645,14 @@ if(token){
 }
 // Actualizar cocina cada 30s
 setInterval(updateCocinaBadge, 30000);
+// Auto-refresh datos del panel activo cada 30s (complementa WebSocket)
+setInterval(function(){
+  if(document.querySelector('.modal-bg')?.style.display==='flex') return;
+  if(document.querySelector('.mb')?.style.display==='flex') return;
+  const pid = document.querySelector('.panel.active')?.id;
+  if(pid==='panel-mesas') loadMesas();
+  else if(pid==='panel-cocina') loadCocina();
+}, 30000);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <div id="pos-tip" style="display:none;position:fixed;z-index:9999;pointer-events:none;background:var(--bg);border:1px solid var(--border2);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:10px 14px;max-width:240px;font-size:12px;line-height:1.5;color:var(--text)"></div>
