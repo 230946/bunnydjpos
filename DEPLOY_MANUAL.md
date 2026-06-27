@@ -143,7 +143,7 @@ Para editar: `nano ~/bunnydjpos/backend/.env`
 | Admin minimercado | `http://34.63.16.136/minimercado-admin.html?n=ID` |
 | POS minimercado | `http://34.63.16.136/pos-minimercado.html?n=ID` |
 | Reservas peluquería | `http://34.63.16.136/peluqueria-reservar.html?n=ID` |
-| Portal empleado | `http://34.63.16.136/empleado-portal.html?n=ID` |
+| Portal empleado | `http://34.63.16.136/portal-empleado.html?n=ID` |
 | Health check | `http://34.63.16.136/api/health` |
 
 ---

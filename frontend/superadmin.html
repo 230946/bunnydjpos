@@ -639,21 +639,21 @@ function showQR(negocioId, nombre, tipo){
   const urls = {
     restaurante: [
       { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
-      { label:'Portal Empleados', url:`${base}/empleado-portal.html?n=${negocioId}` },
+      { label:'Portal Empleados', url:`${base}/portal-empleado.html?n=${negocioId}` },
     ],
     minimercado: [
       { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
-      { label:'Portal Empleados', url:`${base}/empleado-portal.html?n=${negocioId}` },
+      { label:'Portal Empleados', url:`${base}/portal-empleado.html?n=${negocioId}` },
     ],
     peluqueria: [
       { label:'Reservar cita', url:`${base}/peluqueria-reservar.html?n=${negocioId}` },
-      { label:'Portal Empleados', url:`${base}/empleado-portal.html?n=${negocioId}` },
+      { label:'Portal Empleados', url:`${base}/portal-empleado.html?n=${negocioId}` },
       { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
     ],
   };
   const items = urls[tipo] || [
     { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
-    { label:'Portal Empleados', url:`${base}/empleado-portal.html?n=${negocioId}` },
+    { label:'Portal Empleados', url:`${base}/portal-empleado.html?n=${negocioId}` },
   ];
   document.getElementById('qr-modal-title').textContent = `QR — ${nombre}`;
   document.getElementById('qr-grid').innerHTML = items.map(item=>{
@@ -741,7 +741,7 @@ async function loadNegocios(){
         esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/peluqueria-admin.html?n=${n.id}')" title="${base}/peluqueria-admin.html?n=${n.id}">📋 Admin</button>` : '',
         esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/pos-peluqueria.html?n=${n.id}')" title="${base}/pos-peluqueria.html?n=${n.id}">📋 POS</button>` : '',
         esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/peluqueria-reservar.html?n=${n.id}')" title="${base}/peluqueria-reservar.html?n=${n.id}">📋 Reservas</button>` : '',
-        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/empleado-portal.html?n=${n.id}')" title="${base}/empleado-portal.html?n=${n.id}">📋 Portal Empleados</button>` : '',
+        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/portal-empleado.html?n=${n.id}')" title="${base}/portal-empleado.html?n=${n.id}">📋 Portal Empleados</button>` : '',
         esBar  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/bar-admin.html?n=${n.id}')" title="${base}/bar-admin.html?n=${n.id}">📋 Admin</button>` : '',
         esVet  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/vet-admin.html?n=${n.id}')" title="${base}/vet-admin.html?n=${n.id}">📋 Admin</button>` : '',
         esTall ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/taller-admin.html?n=${n.id}')" title="${base}/taller-admin.html?n=${n.id}">📋 Admin</button>` : '',
@@ -765,7 +765,7 @@ async function loadNegocios(){
           <button class="btn btn-outline btn-sm" onclick="showQR('${n.id}','${n.nombre}','${n.tipo}')" title="Ver códigos QR">🔲 QR</button>
           ${esRest ? `<a class="btn btn-outline btn-sm" href="${base}/admin?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos?n=${n.id}" target="_blank" style="text-decoration:none">POS</a>` : ''}
           ${esMini ? `<a class="btn btn-outline btn-sm" href="${base}/minimercado-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-minimercado.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a>` : ''}
-          ${esPel  ? `<a class="btn btn-outline btn-sm" href="${base}/peluqueria-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-peluqueria.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a><a class="btn btn-primary btn-sm" href="${base}/peluqueria-reservar.html?n=${n.id}" target="_blank" style="text-decoration:none">Reservas</a><a class="btn btn-outline btn-sm" href="${base}/empleado-portal.html?n=${n.id}" target="_blank" style="text-decoration:none">Portal Emp.</a>` : ''}
+          ${esPel  ? `<a class="btn btn-outline btn-sm" href="${base}/peluqueria-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-peluqueria.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a><a class="btn btn-primary btn-sm" href="${base}/peluqueria-reservar.html?n=${n.id}" target="_blank" style="text-decoration:none">Reservas</a><a class="btn btn-outline btn-sm" href="${base}/portal-empleado.html?n=${n.id}" target="_blank" style="text-decoration:none">Portal Emp.</a>` : ''}
           ${esBar  ? `<a class="btn btn-outline btn-sm" href="${base}/bar-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
           ${esVet  ? `<a class="btn btn-outline btn-sm" href="${base}/vet-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
           ${esTall ? `<a class="btn btn-outline btn-sm" href="${base}/taller-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
