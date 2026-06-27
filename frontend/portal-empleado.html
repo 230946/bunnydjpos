@@ -212,7 +212,20 @@
     <div id="pTurno"></div>
     <div class="section-title" id="sColaTit">🎯 Cola — Citas sin asignar</div>
     <div id="pCola"></div>
-    <div class="section-title">Horario semanal</div>
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Mis turnos</span>
+      <button class="btn-tomar" style="font-size:12px;padding:6px 12px" onclick="toggleFormAgregarDia()">➕ Agregar día</button>
+    </div>
+    <div id="pFormAgregarDia" style="display:none;background:var(--bg2);border:1.5px solid var(--acc);border-radius:var(--radius);padding:16px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Registrar nuevo día de trabajo</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <label style="font-size:12px;font-weight:600;color:var(--text2);display:flex;flex-direction:column;gap:4px">Fecha<input type="date" id="aDiaFecha" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
+        <label style="font-size:12px;font-weight:600;color:var(--text2);display:flex;flex-direction:column;gap:4px">Entrada<input type="time" id="aDiaEntrada" value="08:00" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
+        <label style="font-size:12px;font-weight:600;color:var(--text2);display:flex;flex-direction:column;gap:4px">Salida<input type="time" id="aDiaSalida" value="17:00" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
+        <button class="btn-tomar" onclick="agregarDiaTurno()">Guardar</button>
+        <button class="btn-tomar" style="background:var(--bg);color:var(--text2);border:1px solid var(--border)" onclick="toggleFormAgregarDia()">Cancelar</button>
+      </div>
+    </div>
     <div class="card" id="pHorario"></div>
     <div class="section-title">Citas de hoy</div>
     <div class="card" id="pCitasHoy"></div>
@@ -372,17 +385,39 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
     colaEl.innerHTML = '<div class="empty" style="color:var(--text3)">No hay citas sin asignar en este momento</div>';
   }
 
-  // Horario semanal
+  // Turnos — recurrentes vs fechas específicas
   const hoy = new Date().getDay();
-  document.getElementById('pHorario').innerHTML = horarios.length
-    ? `<div class="horario-grid">${horarios.map(h => {
-        const esHoy = Number(h.dia_semana) === hoy;
-        return `<div class="horario-dia${esHoy?' hoy':''}">
-          <div class="dia-nombre">${h.dia_nombre||DIAS[h.dia_semana]}${esHoy?' ★':''}</div>
-          <div class="dia-horas">${h.hora_entrada||'—'} – ${h.hora_salida||'—'}</div>
-        </div>`;
-      }).join('')}</div>`
-    : '<div class="empty">Sin horario asignado</div>';
+  const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const fmtFechaDia = f => { const d=new Date(f+'T12:00:00'); return `${d.getDate()} ${MESES[d.getMonth()]} (${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()]})`; };
+  const recurrentes = (horarios||[]).filter(h => !h.fecha);
+  const especificas = (horarios||[]).filter(h => h.fecha);
+  const todayStr = new Date().toISOString().slice(0,10);
+  let horHtml = '';
+  if (recurrentes.length) {
+    horHtml += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Horario semanal</div>`;
+    horHtml += `<div class="horario-grid">${recurrentes.map(h => {
+      const esHoy = Number(h.dia_semana) === hoy;
+      return `<div class="horario-dia${esHoy?' hoy':''}">
+        <div class="dia-nombre">${h.dia_nombre||DIAS[h.dia_semana]}${esHoy?' ★':''}</div>
+        <div class="dia-horas">${h.hora_entrada||'—'} – ${h.hora_salida||'—'}</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+  if (especificas.length) {
+    if (recurrentes.length) horHtml += '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">';
+    horHtml += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Fechas registradas</div>`;
+    horHtml += especificas.map(h => {
+      const esHoy2 = h.fecha === todayStr;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;margin-bottom:6px;background:${esHoy2?'var(--acc-l)':'var(--bg)'};border:1px solid ${esHoy2?'var(--acc)':'var(--border)'}">
+        <div style="flex:1">
+          <span style="font-weight:600;font-size:13px;color:${esHoy2?'var(--acc-d)':'var(--text)'}">${fmtFechaDia(h.fecha)}${esHoy2?' ★':''}</span>
+          <span style="font-size:12px;color:var(--text2);margin-left:10px">${h.hora_entrada||'—'} – ${h.hora_salida||'—'}</span>
+        </div>
+        <button onclick="eliminarDiaTurno('${h.id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px" title="Eliminar">🗑</button>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('pHorario').innerHTML = horHtml || '<div class="empty">Sin turnos registrados</div>';
 
   // Citas de hoy
   document.getElementById('pCitasHoy').innerHTML = citasHoy.length
@@ -445,29 +480,52 @@ async function tomarCita(citaId, btn) {
   }
 }
 
+function _turnoUrl() {
+  return empId
+    ? `${API}/peluqueria/portal-empleado/${empId}/turno`
+    : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/turno`;
+}
+async function _postTurno(body) {
+  const r = await fetch(_turnoUrl(), {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ cedula: _cedulaActiva, ...body })
+  });
+  if (!r.ok) { const d=await r.json().catch(()=>({})); alert(d.error||'Error'); return false; }
+  return true;
+}
 async function confirmarTurno(accion) {
   const horaEntrada = document.getElementById('tEntrada')?.value || null;
   const horaSalida  = document.getElementById('tSalida')?.value  || null;
-  await accionTurno(accion, horaEntrada, horaSalida);
+  if (await _postTurno({ accion, horaEntrada, horaSalida })) cargarDatos(_cedulaActiva);
 }
 async function accionTurno(accion, horaEntrada, horaSalida) {
   if (!_cedulaActiva) return;
-  const url = empId
-    ? `${API}/peluqueria/portal-empleado/${empId}/turno`
-    : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/turno`;
-  try {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ cedula: _cedulaActiva, accion, horaEntrada, horaSalida })
-    });
-    if (r.ok) {
-      cargarDatos(_cedulaActiva);
-    } else {
-      const d = await r.json().catch(()=>({}));
-      alert(d.error || 'Error al gestionar turno');
-    }
-  } catch { alert('Error de conexión'); }
+  if (await _postTurno({ accion, horaEntrada, horaSalida })) cargarDatos(_cedulaActiva);
+}
+function toggleFormAgregarDia() {
+  const f = document.getElementById('pFormAgregarDia');
+  const vis = f.style.display === 'none';
+  f.style.display = vis ? 'block' : 'none';
+  if (vis) {
+    const hoy = new Date().toISOString().slice(0,10);
+    document.getElementById('aDiaFecha').value = hoy;
+    document.getElementById('aDiaFecha').min = hoy;
+  }
+}
+async function agregarDiaTurno() {
+  if (!_cedulaActiva) return;
+  const fecha    = document.getElementById('aDiaFecha').value;
+  const entrada  = document.getElementById('aDiaEntrada').value;
+  const salida   = document.getElementById('aDiaSalida').value;
+  if (!fecha) { alert('Selecciona una fecha'); return; }
+  if (await _postTurno({ accion:'agregar', fecha, horaEntrada:entrada, horaSalida:salida })) {
+    toggleFormAgregarDia();
+    cargarDatos(_cedulaActiva);
+  }
+}
+async function eliminarDiaTurno(horarioId) {
+  if (!_cedulaActiva || !confirm('¿Eliminar este día de turno?')) return;
+  if (await _postTurno({ accion:'eliminar', horarioId })) cargarDatos(_cedulaActiva);
 }
 
 async function iniciarSesion(){

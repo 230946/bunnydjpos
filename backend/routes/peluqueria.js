@@ -30,10 +30,10 @@ router.get('/portal-empleado/:id', async (req, res) => {
 
     const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const { rows: horarios } = await pool.query(
-      `SELECT dia_semana, hora_entrada, hora_salida FROM horarios
+      `SELECT id, dia_semana, hora_entrada, hora_salida, fecha FROM horarios
        WHERE BINARY empleado_pel_id=? AND activo=1
          AND (fecha IS NULL OR fecha >= CURDATE())
-       ORDER BY dia_semana`, [e.id]
+       ORDER BY COALESCE(fecha, '9999-12-31'), dia_semana`, [e.id]
     );
 
     const { rows: citasHoy } = await pool.query(
@@ -92,7 +92,7 @@ router.get('/portal-empleado/:id', async (req, res) => {
 
     res.json({
       empleado: { ...e, dias: DIAS },
-      horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana })),
+      horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana, fecha: h.fecha ? toISO(h.fecha).slice(0,10) : null })),
       citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       proximas: proximas.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       cola: cola.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
@@ -120,10 +120,10 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
 
     const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const { rows: horarios } = await pool.query(
-      `SELECT dia_semana, hora_entrada, hora_salida FROM horarios
+      `SELECT id, dia_semana, hora_entrada, hora_salida, fecha FROM horarios
        WHERE BINARY empleado_pel_id=? AND activo=1
          AND (fecha IS NULL OR fecha >= CURDATE())
-       ORDER BY dia_semana`, [e.id]
+       ORDER BY COALESCE(fecha, '9999-12-31'), dia_semana`, [e.id]
     );
     const { rows: citasHoy } = await pool.query(
       `SELECT c.id, c.fecha_hora, c.duracion_min, c.estado, c.notas,
@@ -179,7 +179,7 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
 
     res.json({
       empleado: { ...e, dias: DIAS },
-      horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana })),
+      horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana, fecha: h.fecha ? toISO(h.fecha).slice(0,10) : null })),
       citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       proximas: proximas.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       cola: cola.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
@@ -225,25 +225,31 @@ router.post('/portal-empleado/:empId/tomar-cita', async (req, res) => {
 });
 
 // ── Ruta pública: gestión de turno propio del empleado ───────────
-async function _gestionarTurno(empId, negocioId, accion, horaEntrada, horaSalida) {
+async function _gestionarTurno(empId, negocioId, accion, horaEntrada, horaSalida, fecha, horarioId) {
   const now = new Date();
   const ahora = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:00`;
-  const diaSemana = now.getDay();
+  const fechaTarget = fecha || now.toISOString().slice(0,10); // YYYY-MM-DD
+  const diaSemana = new Date(fechaTarget + 'T12:00:00').getDay();
+
+  if (accion === 'eliminar') {
+    if (!horarioId) return;
+    await pool.query(`UPDATE horarios SET activo=0 WHERE id=? AND BINARY empleado_pel_id=?`, [horarioId, empId]);
+    return;
+  }
   const { rows: ex } = await pool.query(
-    `SELECT id FROM horarios WHERE BINARY empleado_pel_id=? AND fecha=CURDATE() AND activo=1 LIMIT 1`,
-    [empId]
+    `SELECT id FROM horarios WHERE BINARY empleado_pel_id=? AND fecha=? AND activo=1 LIMIT 1`,
+    [empId, fechaTarget]
   );
-  if (accion === 'iniciar') {
+  if (accion === 'iniciar' || accion === 'agregar') {
     const entrada = horaEntrada || ahora;
-    const salida  = horaSalida  || '23:59:00';
+    const salida  = horaSalida  || '17:00:00';
     if (ex[0]) {
-      await pool.query(`UPDATE horarios SET hora_entrada=?,hora_salida=? WHERE id=?`,
-        [entrada, salida, ex[0].id]);
+      await pool.query(`UPDATE horarios SET hora_entrada=?,hora_salida=? WHERE id=?`, [entrada, salida, ex[0].id]);
     } else {
       await pool.query(
         `INSERT INTO horarios (id,empleado_pel_id,negocio_id,dia_semana,hora_entrada,hora_salida,fecha,activo)
-         VALUES (?,?,?,?,?,?,CURDATE(),1)`,
-        [require('uuid').v4(), empId, negocioId, diaSemana, entrada, salida]
+         VALUES (?,?,?,?,?,?,?,1)`,
+        [require('uuid').v4(), empId, negocioId, diaSemana, entrada, salida, fechaTarget]
       );
     }
   } else if (accion === 'finalizar') {
@@ -253,28 +259,28 @@ async function _gestionarTurno(empId, negocioId, accion, horaEntrada, horaSalida
 
 router.post('/portal-negocio/:negocioId/turno', async (req, res) => {
   try {
-    const { cedula, accion, horaEntrada, horaSalida } = req.body;
+    const { cedula, accion, horaEntrada, horaSalida, fecha, horarioId } = req.body;
     if (!cedula || !accion) return res.status(400).json({ error: 'cedula y accion requeridos' });
     const { rows: empR } = await pool.query(
       `SELECT id FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
       [req.params.negocioId, cedula]
     );
     if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
-    await _gestionarTurno(empR[0].id, req.params.negocioId, accion, horaEntrada, horaSalida);
+    await _gestionarTurno(empR[0].id, req.params.negocioId, accion, horaEntrada, horaSalida, fecha, horarioId);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.post('/portal-empleado/:empId/turno', async (req, res) => {
   try {
-    const { cedula, accion, horaEntrada, horaSalida } = req.body;
+    const { cedula, accion, horaEntrada, horaSalida, fecha, horarioId } = req.body;
     if (!cedula || !accion) return res.status(400).json({ error: 'cedula y accion requeridos' });
     const { rows: empR } = await pool.query(
       `SELECT id, negocio_id FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
       [req.params.empId, cedula]
     );
     if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
-    await _gestionarTurno(empR[0].id, empR[0].negocio_id, accion, horaEntrada, horaSalida);
+    await _gestionarTurno(empR[0].id, empR[0].negocio_id, accion, horaEntrada, horaSalida, fecha, horarioId);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
