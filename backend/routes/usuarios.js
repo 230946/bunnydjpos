@@ -215,23 +215,20 @@ router.put('/usuarios/:id/password', async (req, res) => {
 
 // Migración: liberar usuario_id de FK+NOT NULL y agregar empleado_pel_id
 ;(async () => {
+  // Cada paso en su propio try-catch para que un fallo no detenga los siguientes
   try {
-    // 1. Buscar nombre del FK constraint sobre usuario_id
     const { rows: fks } = await pool.query(`
       SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
       WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='horarios'
       AND COLUMN_NAME='usuario_id' AND REFERENCED_TABLE_NAME='usuarios' LIMIT 1
     `);
     if (fks[0]) {
-      await pool.query(`ALTER TABLE horarios DROP FOREIGN KEY \`${fks[0].CONSTRAINT_NAME}\``, [], { silent: true });
+      try { await pool.query(`ALTER TABLE horarios DROP FOREIGN KEY \`${fks[0].CONSTRAINT_NAME}\``); } catch {}
     }
-    // 2. Hacer usuario_id nullable
-    await pool.query(`ALTER TABLE horarios MODIFY COLUMN usuario_id VARCHAR(36) NULL`, [], { silent: true });
-    // 3. Agregar columna empleado_pel_id si no existe
-    await pool.query(`ALTER TABLE horarios ADD COLUMN empleado_pel_id VARCHAR(36) NULL`, [], { silent: true });
-    // 4. Agregar columna fecha para turnos por fecha específica
-    await pool.query(`ALTER TABLE horarios ADD COLUMN fecha DATE NULL`, [], { silent: true });
-  } catch (e) { console.error('[migración horarios]', e.message); }
+  } catch {}
+  try { await pool.query(`ALTER TABLE horarios MODIFY COLUMN usuario_id VARCHAR(36) NULL`); } catch {}
+  try { await pool.query(`ALTER TABLE horarios ADD COLUMN empleado_pel_id VARCHAR(36) NULL`); } catch {}
+  try { await pool.query(`ALTER TABLE horarios ADD COLUMN fecha DATE NULL`); } catch {}
 })();
 
 router.get('/horarios', async (req, res) => {

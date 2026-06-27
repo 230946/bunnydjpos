@@ -31,7 +31,9 @@ router.get('/portal-empleado/:id', async (req, res) => {
     const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const { rows: horarios } = await pool.query(
       `SELECT dia_semana, hora_entrada, hora_salida FROM horarios
-       WHERE BINARY empleado_pel_id=? AND activo=1 ORDER BY dia_semana`, [e.id]
+       WHERE BINARY empleado_pel_id=? AND activo=1
+         AND (fecha IS NULL OR fecha >= CURDATE())
+       ORDER BY dia_semana`, [e.id]
     );
 
     const { rows: citasHoy } = await pool.query(
@@ -101,7 +103,9 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
     const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const { rows: horarios } = await pool.query(
       `SELECT dia_semana, hora_entrada, hora_salida FROM horarios
-       WHERE BINARY empleado_pel_id=? AND activo=1 ORDER BY dia_semana`, [e.id]
+       WHERE BINARY empleado_pel_id=? AND activo=1
+         AND (fecha IS NULL OR fecha >= CURDATE())
+       ORDER BY dia_semana`, [e.id]
     );
     const { rows: citasHoy } = await pool.query(
       `SELECT c.id, c.fecha_hora, c.duracion_min, c.estado, c.notas,

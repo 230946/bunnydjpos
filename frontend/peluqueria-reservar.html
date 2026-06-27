@@ -483,6 +483,14 @@ function selEmp(id) {
 async function loadSlots() {
   const fecha = document.getElementById('fechaInp').value;
   if (!fecha) return;
+
+  // Rechazar fechas pasadas aunque el usuario escriba manualmente
+  const hoyStr = (() => { const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; })();
+  if (fecha < hoyStr) {
+    document.getElementById('fechaInp').value = hoyStr;
+    return;
+  }
+
   _selFecha = fecha;
   _selHora  = '';
 
@@ -594,6 +602,7 @@ function goStep(n) {
     if (sub) sub.textContent = _selEmpId
       ? 'Elige la fecha y el horario disponible del especialista'
       : 'Elige la fecha y el horario — tu cita quedará en cola para el especialista adecuado';
+    setDateRange();
   }
   if (n === 4) fillResumen();
   showStep(n);
