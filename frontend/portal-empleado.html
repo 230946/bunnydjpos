@@ -555,6 +555,10 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
           acciones.push(`<button class="btn-cita btn-cita-conf" onclick="accionCita('${c.id}','Confirmada',this)">✓ Confirmar</button>`);
         if (c.estado === 'Pendiente' || c.estado === 'PorConfirmar' || c.estado === 'Confirmada')
           acciones.push(`<button class="btn-cita btn-cita-ini" onclick="accionCita('${c.id}','EnProceso',this)">▶ Iniciar servicio</button>`);
+        if (c.estado === 'EnProceso')
+          acciones.push(`<button class="btn-cita" style="background:#16a34a;color:#fff" onclick="if(confirm('¿Marcar esta cita como completada?'))accionCita('${c.id}','Completada',this)">✓ Completar y cobrar</button>`);
+        if (!['Completada','Cancelada','NoAsistio'].includes(c.estado))
+          acciones.push(`<button class="btn-cita" style="background:transparent;color:#dc2626;border:1px solid #dc2626" onclick="if(confirm('¿Cancelar esta cita?'))accionCita('${c.id}','Cancelada',this)">Cancelar</button>`);
 
         // Detalles del combo con checkmarks
         const detallesHTML = detalles.length > 0 ? `
@@ -578,7 +582,7 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
             ${c.notas?`<div style="font-size:12px;color:#6b7280;margin-top:3px;font-style:italic">📝 ${_esc(c.notas)}</div>`:''}
             ${estadoBadge(c.estado)}
             ${detallesHTML}
-            ${acciones.length&&misDetalles.length===0?`<div class="cita-actions">${acciones.join('')}</div>`:''}
+            ${acciones.length?`<div class="cita-actions">${acciones.join('')}</div>`:''}
           </div>
         </div>`;
       }).join('')

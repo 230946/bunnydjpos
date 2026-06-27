@@ -297,7 +297,7 @@ router.post('/portal-empleado/:empId/completar-servicio', async (req, res) => {
 });
 
 // ── Ruta pública: cambiar estado de cita desde portal empleado ───
-const ESTADOS_PERMITIDOS_PORTAL = ['PorConfirmar', 'Confirmada', 'EnProceso'];
+const ESTADOS_PERMITIDOS_PORTAL = ['PorConfirmar', 'Confirmada', 'EnProceso', 'Cancelada', 'Completada'];
 
 router.post('/portal-negocio/:negocioId/cita-estado', async (req, res) => {
   try {
@@ -310,9 +310,12 @@ router.post('/portal-negocio/:negocioId/cita-estado', async (req, res) => {
       [negocioId, cedula]
     );
     if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    // Permitir si el empleado es el asignado principal o tiene algún servicio en la cita
     await pool.query(
-      `UPDATE pel_citas SET estado=? WHERE id=? AND negocio_id=? AND empleado_id=?`,
-      [estado, citaId, negocioId, empR[0].id]
+      `UPDATE pel_citas SET estado=?
+       WHERE id=? AND negocio_id=?
+         AND (empleado_id=? OR id IN (SELECT cita_id FROM pel_cita_detalle WHERE BINARY empleado_id=?))`,
+      [estado, citaId, negocioId, empR[0].id, empR[0].id]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -328,9 +331,12 @@ router.post('/portal-empleado/:empId/cita-estado', async (req, res) => {
       [req.params.empId, cedula]
     );
     if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    // Permitir si el empleado es el asignado principal o tiene algún servicio en la cita
     await pool.query(
-      `UPDATE pel_citas SET estado=? WHERE id=? AND negocio_id=? AND empleado_id=?`,
-      [estado, citaId, empR[0].negocio_id, empR[0].id]
+      `UPDATE pel_citas SET estado=?
+       WHERE id=? AND negocio_id=?
+         AND (empleado_id=? OR id IN (SELECT cita_id FROM pel_cita_detalle WHERE BINARY empleado_id=?))`,
+      [estado, citaId, empR[0].negocio_id, empR[0].id, empR[0].id]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
