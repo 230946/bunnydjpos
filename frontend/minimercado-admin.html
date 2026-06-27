@@ -1694,9 +1694,6 @@ async function loadDashboard(){
       : '<tr><td colspan="4" style="color:var(--green-d);text-align:center;padding:12px">✓ Todo el inventario en niveles correctos</td></tr>';
   }
 
-  // Timestamp
-  const t = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  $('dash-updated').textContent = `Actualizado ${t}`;
 }
 
 function startDashTimer(){
