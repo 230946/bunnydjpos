@@ -398,6 +398,7 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
   const todayStr = new Date().toISOString().slice(0,10);
   let horHtml = '';
   if (especificas.length) {
+    horHtml += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Fechas registradas</div>`;
     horHtml += especificas.map(h => {
       const esHoy2 = h.fecha === todayStr;
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;margin-bottom:6px;background:${esHoy2?'var(--acc-l)':'var(--bg)'};border:1px solid ${esHoy2?'var(--acc)':'var(--border)'}">
