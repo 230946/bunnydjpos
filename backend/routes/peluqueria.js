@@ -2146,7 +2146,7 @@ router.get('/reportes/servicios-por-empleado', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT
          v.empleado_id,
-         COALESCE(ANY_VALUE(e.nombre), 'Sin asignar') AS empleado_nombre,
+         COALESCE(MIN(e.nombre), 'Sin asignar') AS empleado_nombre,
          COUNT(DISTINCT v.id)            AS ventas,
          COUNT(det.id)                   AS servicios,
          COALESCE(SUM(v.total), 0)       AS total,
