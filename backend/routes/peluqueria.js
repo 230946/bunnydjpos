@@ -811,6 +811,44 @@ router.patch('/empleados/:id/toggle', async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════════
+// HORARIOS DE EMPLEADOS (desde POS peluquería)
+// ════════════════════════════════════════════════════════════════
+
+router.get('/horarios-empleado/:empleadoId', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, dia_semana, hora_entrada, hora_salida FROM horarios
+       WHERE empleado_pel_id=? AND negocio_id=? AND activo=1
+       ORDER BY dia_semana`,
+      [req.params.empleadoId, nid(req)]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/horarios-empleado', async (req, res) => {
+  try {
+    const { empleadoId, diaSemana, horaEntrada, horaSalida } = req.body;
+    if (!empleadoId) return res.status(400).json({ error: 'empleadoId requerido' });
+    // Desactivar el existente para ese día/empleado
+    await pool.query(
+      `UPDATE horarios SET activo=0 WHERE empleado_pel_id=? AND negocio_id=? AND dia_semana=? AND activo=1`,
+      [empleadoId, nid(req), diaSemana]
+    );
+    if (horaEntrada && horaSalida) {
+      const id = uuid();
+      await pool.query(
+        `INSERT INTO horarios (id,empleado_pel_id,negocio_id,dia_semana,hora_entrada,hora_salida)
+         VALUES (?,?,?,?,?,?)`,
+        [id, empleadoId, nid(req), diaSemana, horaEntrada, horaSalida]
+      );
+      return res.status(201).json({ id });
+    }
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════
 // COMISIONES CONFIG
 // ════════════════════════════════════════════════════════════════
 

@@ -194,6 +194,14 @@
   .sidebar{width:180px;min-width:180px}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
 }
+/* ── CHECKBOXES DÍAS HORARIO ── */
+.dias-chk-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.dia-chk{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:8px;border:1px solid var(--border);cursor:pointer;min-width:38px;transition:.12s;user-select:none}
+.dia-chk:hover{border-color:var(--acc)}
+.dia-chk input[type=checkbox]{width:16px;height:16px;accent-color:var(--acc);cursor:pointer;margin:0}
+.dia-chk span{font-size:11px;color:var(--text2);font-weight:500}
+.dia-chk:has(input:checked){background:var(--acc-ll);border-color:var(--acc)}
+.dia-chk:has(input:checked) span{color:var(--acc);font-weight:700}
 /* ── MOBILE ── */
 @media(max-width:767px){
   /* Sidebar oculto; btn-menu lo abre */
@@ -595,8 +603,16 @@
     <div class="modal-body">
       <input type="hidden" id="h-turno-id">
       <div class="field"><label>Empleado</label><select id="h-empleado"></select></div>
-      <div class="field"><label>Día de la semana</label>
-        <select id="h-dia"><option value="0">Domingo</option><option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option></select>
+      <div class="field"><label>Días de la semana</label>
+        <div class="dias-chk-row" id="h-dias-wrap">
+          <label class="dia-chk"><input type="checkbox" name="h-dias" value="0"><span>Dom</span></label>
+          <label class="dia-chk"><input type="checkbox" name="h-dias" value="1"><span>Lun</span></label>
+          <label class="dia-chk"><input type="checkbox" name="h-dias" value="2"><span>Mar</span></label>
+          <label class="dia-chk"><input type="checkbox" name="h-dias" value="3"><span>Mié</span></label>
+          <label class="dia-chk"><input type="checkbox" name="h-dias" value="4"><span>Jue</span></label>
+          <label class="dia-chk"><input type="checkbox" name="h-dias" value="5"><span>Vie</span></label>
+          <label class="dia-chk"><input type="checkbox" name="h-dias" value="6"><span>Sáb</span></label>
+        </div>
       </div>
       <div class="frow">
         <div class="fg"><label>Hora entrada</label><input id="h-entrada" type="time" value="08:00"></div>
@@ -2427,25 +2443,35 @@ async function _cargarPersonalHorario(){
   const sel=_gel('h-empleado');if(sel)sel.innerHTML=personal.map(u=>`<option value="${u.id}">${esc(u.nombre+(u.apellido?' '+u.apellido:''))}</option>`).join('');
   return personal;
 }
+function _setDiasChk(diasArr, disabled){
+  document.querySelectorAll('input[name="h-dias"]').forEach(cb=>{
+    cb.checked=diasArr.includes(+cb.value);
+    cb.disabled=!!disabled;
+    cb.closest('.dia-chk').style.opacity=disabled?'.6':'1';
+    cb.closest('.dia-chk').style.cursor=disabled?'default':'pointer';
+  });
+}
 async function abrirHorarioModal(){
   try{
     await _cargarPersonalHorario();
     _gel('h-turno-id').value='';
     _gel('h-modal-title').textContent='Agregar turno';
     _gel('h-entrada').value='08:00';_gel('h-salida').value='17:00';
-    _gel('h-empleado').disabled=false;_gel('h-dia').disabled=false;
+    _gel('h-empleado').disabled=false;
+    _setDiasChk([],false);
     _gel('h-btn-eliminar').style.display='none';
     _gel('horario-modal').style.display='flex';
   }catch(e){showToast(e.message,'err');}
 }
 async function abrirHorarioSlot(uid,dia){
   try{
-    const personal=await _cargarPersonalHorario();
+    await _cargarPersonalHorario();
     _gel('h-turno-id').value='';
     _gel('h-modal-title').textContent='Agregar turno';
-    _gel('h-empleado').value=uid;_gel('h-dia').value=dia;
+    _gel('h-empleado').value=uid;
     _gel('h-entrada').value='08:00';_gel('h-salida').value='17:00';
-    _gel('h-empleado').disabled=true;_gel('h-dia').disabled=true;
+    _gel('h-empleado').disabled=true;
+    _setDiasChk([+dia],true);
     _gel('h-btn-eliminar').style.display='none';
     _gel('horario-modal').style.display='flex';
   }catch(e){showToast(e.message,'err');}
@@ -2455,9 +2481,10 @@ async function editarHorarioSlot(id,uid,dia,entrada,salida){
     await _cargarPersonalHorario();
     _gel('h-turno-id').value=id;
     _gel('h-modal-title').textContent='Editar turno';
-    _gel('h-empleado').value=uid;_gel('h-dia').value=dia;
+    _gel('h-empleado').value=uid;
     _gel('h-entrada').value=entrada;_gel('h-salida').value=salida;
-    _gel('h-empleado').disabled=true;_gel('h-dia').disabled=true;
+    _gel('h-empleado').disabled=true;
+    _setDiasChk([+dia],true);
     _gel('h-btn-eliminar').style.display='';
     _gel('horario-modal').style.display='flex';
   }catch(e){showToast(e.message,'err');}
@@ -2465,16 +2492,20 @@ async function editarHorarioSlot(id,uid,dia,entrada,salida){
 async function guardarHorario(){
   try{
     const tid=_gel('h-turno-id').value;
-    const diaSemana=+_gel('h-dia').value;
-    const fecha=_fechaParaDia(diaSemana);
+    const diasChecked=[...document.querySelectorAll('input[name="h-dias"]:checked')].map(cb=>+cb.value);
+    if(!diasChecked.length){showToast('Selecciona al menos un día','err');return;}
     if(tid)await apiFetch(`${API}/admin/horarios/${tid}`,{method:'DELETE'});
-    await apiFetch(`${API}/admin/horarios`,{method:'POST',body:JSON.stringify({usuario_id:_gel('h-empleado').value,dia_semana:diaSemana,hora_entrada:_gel('h-entrada').value,hora_salida:_gel('h-salida').value,fecha})});
-    cerrarModal('horario-modal');showToast('Turno guardado ✓');cargarHorarios();
+    for(const diaSemana of diasChecked){
+      const fecha=_fechaParaDia(diaSemana);
+      await apiFetch(`${API}/admin/horarios`,{method:'POST',body:JSON.stringify({usuario_id:_gel('h-empleado').value,dia_semana:diaSemana,hora_entrada:_gel('h-entrada').value,hora_salida:_gel('h-salida').value,fecha})});
+    }
+    cerrarModal('horario-modal');showToast('Turno(s) guardado(s) ✓');cargarHorarios();
   }catch(e){showToast(e.message,'err');}
 }
 async function eliminarHorarioActual(){
   try{
     const tid=_gel('h-turno-id').value;if(!tid)return;
+    if(!confirm('¿Eliminar este turno?'))return;
     await apiFetch(`${API}/admin/horarios/${tid}`,{method:'DELETE'});
     cerrarModal('horario-modal');showToast('Turno eliminado');cargarHorarios();
   }catch(e){showToast(e.message,'err');}

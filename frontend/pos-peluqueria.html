@@ -294,6 +294,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pool-svc{font-size:11px;color:var(--text3);margin-top:2px}
 .pool-precio{font-size:12px;font-weight:700;color:var(--acc);margin-top:3px}
 .pool-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
+/* ── MIS HORARIOS (dentro del tab Cola) ─────────── */
+.mh-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px;margin-top:12px}
+.mh-titulo{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.mh-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border)}
+.mh-row:last-of-type{border-bottom:none}
+.mh-chk{width:16px;height:16px;accent-color:var(--acc);flex-shrink:0;cursor:pointer}
+.mh-dia{font-size:13px;font-weight:500;color:var(--text);width:38px;flex-shrink:0}
+.mh-times{display:flex;gap:6px;align-items:center;flex:1;transition:opacity .15s}
+.mh-time{padding:4px 7px;border:0.5px solid var(--border2);border-radius:6px;font-size:12px;background:var(--bg2);color:var(--text);outline:none;width:90px}
+.mh-time:focus{border-color:var(--acc)}
+.mh-sep{font-size:10px;color:var(--text3);flex-shrink:0}
 @media print{.no-print{display:none!important}body{background:#fff;color:#000}.recibo{border:none;background:transparent}}
 img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
 img[src="/img/logo.png"]:hover{transform:scale(1.15)}
@@ -403,13 +414,14 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <div class="pool-view">
       <div class="pool-header">
         <span class="pool-yo-lbl">👤 Estoy trabajando como:</span>
-        <select class="pool-yo" id="poolYo">
+        <select class="pool-yo" id="poolYo" onchange="renderPool();cargarMisHorarios()">
           <option value="">— Selecciona tu nombre —</option>
         </select>
         <button class="btn btn-outline btn-sm" onclick="cargarPool()">↻ Actualizar</button>
       </div>
       <div id="poolAlerta" class="pool-alerta" style="display:none">⚠️ Selecciona tu nombre para poder tomar citas.</div>
       <div id="poolLista"><div class="pool-empty">Cargando citas disponibles...</div></div>
+      <div id="misHorariosContent"></div>
     </div>
   </div>
 
@@ -1184,6 +1196,68 @@ async function confirmarCerrarCaja() {
     }
     checkCaja(); renderCaja();
   } catch(e) { alert(e.message); }
+}
+
+/* ──────── MIS HORARIOS ──────── */
+const _DIAS_NOMBRES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+let _misHorarios = [];
+
+async function cargarMisHorarios() {
+  const yoId = $('poolYo')?.value;
+  const el = $('misHorariosContent');
+  if (!el) return;
+  if (!yoId) { el.innerHTML = ''; return; }
+  try {
+    _misHorarios = await api('GET', `/horarios-empleado/${yoId}`);
+    renderMisHorarios();
+  } catch { el.innerHTML = ''; }
+}
+
+function renderMisHorarios() {
+  const el = $('misHorariosContent');
+  if (!el) return;
+  const mapa = {};
+  _misHorarios.forEach(h => { mapa[h.dia_semana] = h; });
+  el.innerHTML = `<div class="mh-card">
+    <div class="mh-titulo">⏰ Mi horario semanal</div>
+    ${_DIAS_NOMBRES.map((nombre, i) => {
+      const h = mapa[i];
+      const activo = !!h;
+      return `<div class="mh-row">
+        <input type="checkbox" class="mh-chk" id="mhd-${i}" ${activo?'checked':''} onchange="toggleMhDia(${i})">
+        <span class="mh-dia">${nombre}</span>
+        <div class="mh-times" id="mht-${i}" style="opacity:${activo?1:.3};pointer-events:${activo?'':'none'}">
+          <input type="time" class="mh-time" id="mhin-${i}" value="${h?.hora_entrada||'08:00'}">
+          <span class="mh-sep">→</span>
+          <input type="time" class="mh-time" id="mhout-${i}" value="${h?.hora_salida||'17:00'}">
+        </div>
+        <button class="btn btn-xs ${activo?'btn-acc':'btn-outline'}" onclick="guardarDiaHorario(${i})" style="flex-shrink:0">${activo?'✓ Guardar':'+ Agregar'}</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function toggleMhDia(dia) {
+  const checked = $('mhd-' + dia)?.checked;
+  const times = $('mht-' + dia);
+  if (times) { times.style.opacity = checked ? '1' : '.3'; times.style.pointerEvents = checked ? '' : 'none'; }
+  if (!checked) guardarDiaHorario(dia);
+}
+
+async function guardarDiaHorario(dia) {
+  const yoId = $('poolYo')?.value;
+  if (!yoId) return;
+  const activo = $('mhd-' + dia)?.checked;
+  try {
+    await api('POST', '/horarios-empleado', {
+      empleadoId: yoId,
+      diaSemana: dia,
+      horaEntrada: activo ? ($('mhin-' + dia)?.value || null) : null,
+      horaSalida:  activo ? ($('mhout-' + dia)?.value || null) : null,
+    });
+    showToast(`✅ ${_DIAS_NOMBRES[dia]} ${activo?'guardado':'eliminado'}`);
+    await cargarMisHorarios();
+  } catch (e) { showToast('❌ ' + e.message); }
 }
 
 /* ──────── COLA (citas sin asignar) ──────── */
