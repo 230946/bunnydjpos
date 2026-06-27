@@ -13,7 +13,7 @@ router.get('/portal-empleado/:id', async (req, res) => {
     const cedulaIngresada = req.query.cedula ? String(req.query.cedula).trim() : null;
 
     const { rows: empR } = await pool.query(
-      `SELECT id, negocio_id, nombre, apellido, cedula, cargo, especialidad, foto_url
+      `SELECT id, negocio_id, nombre, apellido, cedula, cargo, especialidad, foto_url, categoria_id
        FROM pel_empleados WHERE BINARY id=? AND activo=1 LIMIT 1`, [empId]
     );
     if (!empR[0]) return res.status(404).json({ error: 'Empleado no encontrado' });
@@ -75,6 +75,7 @@ router.get('/portal-empleado/:id', async (req, res) => {
 
     const { rows: cola } = await pool.query(
       `SELECT c.id, c.fecha_hora, c.duracion_min, c.precio,
+              s.categoria_id AS servicio_categoria_id,
               COALESCE(
                 (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
                  FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
@@ -111,7 +112,7 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
     }
 
     const { rows: empR } = await pool.query(
-      `SELECT id, negocio_id, nombre, apellido, cedula, cargo, especialidad, foto_url
+      `SELECT id, negocio_id, nombre, apellido, cedula, cargo, especialidad, foto_url, categoria_id
        FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
       [negocioId, cedulaIngresada]
     );
@@ -162,6 +163,7 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
     );
     const { rows: cola } = await pool.query(
       `SELECT c.id, c.fecha_hora, c.duracion_min, c.precio,
+              s.categoria_id AS servicio_categoria_id,
               COALESCE(
                 (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
                  FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
@@ -762,6 +764,7 @@ async function _ddl(sql) {
     `ALTER TABLE pel_empleados ADD COLUMN sueldo_base  DECIMAL(12,2) DEFAULT NULL`,
     `ALTER TABLE pel_empleados ADD COLUMN tarifa_hora  DECIMAL(10,2) DEFAULT NULL`,
     `ALTER TABLE pel_empleados ADD COLUMN foto_url VARCHAR(300) NULL`,
+    `ALTER TABLE pel_empleados ADD COLUMN categoria_id VARCHAR(36) NULL`,
     `ALTER TABLE pel_empleados ADD COLUMN cedula VARCHAR(30) NULL AFTER apellido`,
     `ALTER TABLE pel_servicios ADD COLUMN categoria_id VARCHAR(36) NULL AFTER negocio_id`,
     `ALTER TABLE pel_servicios ADD COLUMN duracion_min INT NOT NULL DEFAULT 30`,
@@ -900,14 +903,14 @@ router.get('/empleados', async (req, res) => {
 
 router.post('/empleados', async (req, res) => {
   try {
-    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision } = req.body;
+    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, categoriaId } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
     const id = uuid();
     await pool.query(
-      `INSERT INTO pel_empleados (id,negocio_id,nombre,apellido,cedula,cargo,especialidad,telefono,email,tipo_comision,pct_comision,monto_comision)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO pel_empleados (id,negocio_id,nombre,apellido,cedula,cargo,especialidad,telefono,email,tipo_comision,pct_comision,monto_comision,categoria_id)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [id, nid(req), nombre, apellido||null, cedula||null, cargo||null, especialidad||null, telefono||null, email||null,
-       tipoComision||'ninguna', pctComision||0, montoComision||0]
+       tipoComision||'ninguna', pctComision||0, montoComision||0, categoriaId||null]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -915,14 +918,14 @@ router.post('/empleados', async (req, res) => {
 
 router.put('/empleados/:id', async (req, res) => {
   try {
-    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, sueldoBase, tarifaHora } = req.body;
+    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, sueldoBase, tarifaHora, categoriaId } = req.body;
     await pool.query(
       `UPDATE pel_empleados SET nombre=?,apellido=?,cedula=?,cargo=?,especialidad=?,telefono=?,email=?,
-       tipo_comision=?,pct_comision=?,monto_comision=?,sueldo_base=?,tarifa_hora=?
+       tipo_comision=?,pct_comision=?,monto_comision=?,sueldo_base=?,tarifa_hora=?,categoria_id=?
        WHERE id=? AND negocio_id=?`,
       [nombre, apellido||null, cedula||null, cargo||null, especialidad||null, telefono||null, email||null,
        tipoComision||'ninguna', pctComision||0, montoComision||0,
-       sueldoBase||null, tarifaHora||null, req.params.id, nid(req)]
+       sueldoBase||null, tarifaHora||null, categoriaId||null, req.params.id, nid(req)]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

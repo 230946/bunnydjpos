@@ -402,7 +402,8 @@
       <div class="frow">
         <div class="fg" style="flex:0 0 180px"><label>N° Identificación (Cédula)</label><input id="emp-cedula" placeholder="Ej: 1234567890"></div>
         <div class="fg"><label>Cargo</label><input id="emp-cargo" placeholder="Estilista, Barbero..."></div>
-        <div class="fg"><label>Especialidad</label><input id="emp-especialidad" placeholder="Colorista, Manicure..."></div>
+        <div class="fg"><label>Especialidad (texto)</label><input id="emp-especialidad" placeholder="Colorista, Manicure..."></div>
+        <div class="fg"><label>Categoría de especialidad</label><select id="emp-categoria-id"><option value="">— Sin categoría —</option></select></div>
       </div>
       <div class="frow">
         <div class="fg"><label>Teléfono</label><input id="emp-tel" placeholder="Número de contacto"></div>
@@ -1302,6 +1303,7 @@ function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)re
   document.getElementById('emp-tarifa').value=e.tarifa_hora||'';
   _setEmpFoto(e.foto_url||null);
   document.getElementById('emp-foto-input').value='';
+  _cargarCatsEmpleado(e.categoria_id||'');
   document.getElementById('emp-modal').style.display='flex';
 }
 function abrirModalEmpleado(){
@@ -1310,7 +1312,16 @@ function abrirModalEmpleado(){
   ['emp-nombre','emp-apellido','emp-cedula','emp-cargo','emp-especialidad','emp-tel','emp-email','emp-sueldo','emp-tarifa'].forEach(id=>document.getElementById(id).value='');
   _setEmpFoto(null);
   document.getElementById('emp-foto-input').value='';
+  _cargarCatsEmpleado('');
   document.getElementById('emp-modal').style.display='flex';
+}
+async function _cargarCatsEmpleado(selVal){
+  try{
+    const cats=await apiFetch(`${API}/peluqueria/categorias-servicio`)||[];
+    const sel=document.getElementById('emp-categoria-id');
+    sel.innerHTML='<option value="">— Sin categoría —</option>'+cats.map(c=>`<option value="${esc(c.id)}">${esc(c.nombre)}</option>`).join('');
+    sel.value=selVal||'';
+  }catch{}
 }
 async function guardarEmpleado(){
   const nombre=document.getElementById('emp-nombre').value.trim();
@@ -1325,6 +1336,7 @@ async function guardarEmpleado(){
     email:document.getElementById('emp-email').value.trim()||null,
     sueldoBase:parseFloat(document.getElementById('emp-sueldo').value)||null,
     tarifaHora:parseFloat(document.getElementById('emp-tarifa').value)||null,
+    categoriaId:document.getElementById('emp-categoria-id').value||null,
   };
   try{
     let empId = _editEmpId;

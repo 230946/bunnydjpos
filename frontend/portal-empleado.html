@@ -360,8 +360,11 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
   const colaTit = document.getElementById('sColaTit');
   const items = cola || [];
   if (items.length) {
-    const miEsp = (_empleadoActual?.especialidad || '').toLowerCase().trim();
-    const conEsp = c => miEsp && (c.servicio_nombre||'').toLowerCase().includes(miEsp);
+    const miCatId = _empleadoActual?.categoria_id || null;
+    const miEsp   = (_empleadoActual?.especialidad || '').toLowerCase().trim();
+    const conEsp  = c => miCatId
+      ? c.servicio_categoria_id === miCatId
+      : miEsp && (c.servicio_nombre||'').toLowerCase().includes(miEsp);
     const sorted = [...items].sort((a,b) => (conEsp(b)?1:0) - (conEsp(a)?1:0));
     const miasN = sorted.filter(c => conEsp(c)).length;
     colaTit.style.display = '';
