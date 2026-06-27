@@ -768,10 +768,10 @@ async function _ddl(sql) {
     INDEX idx_cita (cita_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
   // Migraciones para tablas ya existentes
-  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN IF NOT EXISTS empleado_id VARCHAR(36) NULL`);
-  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN IF NOT EXISTS empleado_nombre VARCHAR(80) NULL`);
-  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN IF NOT EXISTS completado TINYINT(1) NOT NULL DEFAULT 0`);
-  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN IF NOT EXISTS completado_at DATETIME NULL`);
+  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN empleado_id VARCHAR(36) NULL`);
+  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN empleado_nombre VARCHAR(80) NULL`);
+  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN completado TINYINT(1) NOT NULL DEFAULT 0`);
+  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN completado_at DATETIME NULL`);
 
   // Cajas
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_cajas (
@@ -881,7 +881,7 @@ async function _ddl(sql) {
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
 
   // Productos
-  await _ddl(`ALTER TABLE pel_productos ADD COLUMN IF NOT EXISTS en_venta TINYINT(1) NOT NULL DEFAULT 0`);
+  await _ddl(`ALTER TABLE pel_productos ADD COLUMN en_venta TINYINT(1) NOT NULL DEFAULT 0`);
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_productos (
     id             VARCHAR(36)   PRIMARY KEY,
     negocio_id     VARCHAR(36)   NOT NULL,
