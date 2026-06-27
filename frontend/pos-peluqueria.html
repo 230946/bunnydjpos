@@ -277,6 +277,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   #mob-cobro-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190;display:none}
   .mob-close-cobro{display:block!important}
 }
+/* ── VISTA COLA (citas sin asignar) ─────────────── */
+.pool-view{flex:1;overflow-y:auto;padding:12px 14px}
+.pool-header{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pool-yo-lbl{font-size:12px;font-weight:600;color:var(--text2);flex-shrink:0}
+.pool-yo{flex:1;min-width:160px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;color:var(--text);background:var(--bg2);outline:none;cursor:pointer}
+.pool-yo:focus{border-color:var(--acc)}
+.pool-alerta{background:var(--amber-l);border:0.5px solid var(--amber);color:var(--amber-d);border-radius:var(--r);padding:10px 13px;font-size:12px;font-weight:600;margin-bottom:12px}
+.pool-grupo{margin-bottom:16px}
+.pool-grupo-titulo{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:5px 0;border-bottom:0.5px solid var(--border);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.pool-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.pool-hora{background:var(--acc);color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;font-weight:700;flex-shrink:0;min-width:54px;text-align:center;line-height:1.2}
+.pool-hora small{display:block;font-size:9px;font-weight:400;opacity:.85}
+.pool-info{flex:1;min-width:0}
+.pool-cli{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pool-svc{font-size:11px;color:var(--text3);margin-top:2px}
+.pool-precio{font-size:12px;font-weight:700;color:var(--acc);margin-top:3px}
+.pool-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
 @media print{.no-print{display:none!important}body{background:#fff;color:#000}.recibo{border:none;background:transparent}}
 img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
 img[src="/img/logo.png"]:hover{transform:scale(1.15)}
@@ -315,6 +332,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <img src="/img/logo.png" class="tb-logo" alt="Logo">
     <span class="tb-sep">|</span>
     <button class="tab-btn active" id="tabCitas" onclick="switchTab('citas')">📋 Citas</button>
+    <button class="tab-btn" id="tabPool" onclick="switchTab('pool')">🎯 Cola</button>
     <button class="tab-btn" id="tabCaja" onclick="switchTab('caja')">💰 Caja</button>
     <span id="cajaBadge" class="tb-caja caja-no no-print">Sin caja</span>
     <span class="tb-time tb-ml" id="topTime"></span>
@@ -379,6 +397,21 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
   <!-- FAB cobro (solo móvil) -->
   <button id="mob-cobro-fab" onclick="toggleMobCobro()" title="Ver cobro" style="display:none">💳</button>
   <div id="mob-cobro-overlay" onclick="closeMobCobro()"></div>
+
+  <!-- VISTA COLA (citas sin asignar, para que empleados las tomen) -->
+  <div id="vistaPool" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+    <div class="pool-view">
+      <div class="pool-header">
+        <span class="pool-yo-lbl">👤 Estoy trabajando como:</span>
+        <select class="pool-yo" id="poolYo">
+          <option value="">— Selecciona tu nombre —</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="cargarPool()">↻ Actualizar</button>
+      </div>
+      <div id="poolAlerta" class="pool-alerta" style="display:none">⚠️ Selecciona tu nombre para poder tomar citas.</div>
+      <div id="poolLista"><div class="pool-empty">Cargando citas disponibles...</div></div>
+    </div>
+  </div>
 
   <!-- VISTA CAJA -->
   <div id="vistaCaja" style="display:none" class="caja-view">
@@ -632,6 +665,9 @@ async function cargarEmpleados() {
     // Selector en modal nueva cita
     const ncEmp = $('nc-emp');
     ncEmp.innerHTML = '<option value="">— Sin asignar —</option>' + _empleados.map(e => `<option value="${e.id}">${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('');
+    // Selector en vista cola
+    const poolSel = $('poolYo');
+    if (poolSel) poolSel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' + _empleados.map(e => `<option value="${e.id}">${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('');
   } catch {}
 }
 
@@ -1150,13 +1186,98 @@ async function confirmarCerrarCaja() {
   } catch(e) { alert(e.message); }
 }
 
+/* ──────── COLA (citas sin asignar) ──────── */
+let _poolCitas = [];
+
+async function cargarPool() {
+  const el = $('poolLista');
+  if (el) el.innerHTML = '<div class="pool-empty">Cargando...</div>';
+  try {
+    const hoy = localDate();
+    const d = await api('GET', `/citas?desde=${encodeURIComponent(hoy+'T00:00:00')}&hasta=${encodeURIComponent(hoy+'T23:59:59')}&sinAsignar=true&tamPagina=100`);
+    _poolCitas = (d.items || []).filter(c => c.estado !== 'Cancelada' && c.estado !== 'NoAsistio' && c.estado !== 'Completada');
+    _poblarPoolYo();
+    renderPool();
+  } catch {
+    if (el) el.innerHTML = '<div class="pool-empty">Error al cargar la cola</div>';
+  }
+}
+
+function _poblarPoolYo() {
+  const sel = $('poolYo');
+  if (!sel || sel.options.length > 1) return;
+  sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' +
+    _empleados.map(e => `<option value="${e.id}">${e.nombre}${e.apellido ? ' ' + e.apellido : ''}</option>`).join('');
+}
+
+function renderPool() {
+  const el = $('poolLista');
+  if (!el) return;
+  const alerta = $('poolAlerta');
+  if (alerta) alerta.style.display = $('poolYo')?.value ? 'none' : 'block';
+
+  if (!_poolCitas.length) {
+    el.innerHTML = '<div class="pool-empty">✅ No hay citas pendientes sin asignar para hoy</div>';
+    return;
+  }
+
+  // Agrupar por nombre de servicio(s)
+  const grupos = {};
+  for (const c of _poolCitas) {
+    const clave = (c.servicios || []).map(s => s.nombre).join(' · ') || c.servicioNombre || c.servicio_nombre || 'Sin servicio asignado';
+    if (!grupos[clave]) grupos[clave] = [];
+    grupos[clave].push(c);
+  }
+
+  el.innerHTML = Object.entries(grupos)
+    .sort(([a],[b]) => a.localeCompare(b, 'es'))
+    .map(([svc, citas]) => `
+    <div class="pool-grupo">
+      <div class="pool-grupo-titulo">✂️ ${esc(svc)} <span style="font-size:11px;font-weight:400;color:var(--text3)">(${citas.length})</span></div>
+      ${citas.map(c => {
+        const hora = c.fechaHora || c.fecha_hora;
+        const d = new Date(String(hora).replace(' ','T'));
+        const diaSem = d.toLocaleDateString('es-CO',{weekday:'short'});
+        return `
+        <div class="pool-card">
+          <div class="pool-hora">${fmtHora(hora)}<small>${diaSem}</small></div>
+          <div class="pool-info">
+            <div class="pool-cli">${esc(c.clienteNombre || c.cliente_nombre || '—')}</div>
+            <div class="pool-svc">✂️ ${esc(svc)}${c.duracion_min ? ' · ' + c.duracion_min + ' min' : ''}</div>
+            ${c.precio ? `<div class="pool-precio">${fmtCOP(c.precio)}</div>` : ''}
+          </div>
+          <button class="btn btn-acc btn-sm" onclick="tomarCita('${c.id}')">Tomar</button>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+async function tomarCita(citaId) {
+  const yoId = $('poolYo')?.value;
+  if (!yoId) { showToast('⚠️ Selecciona tu nombre primero'); if ($('poolAlerta')) $('poolAlerta').style.display = 'block'; return; }
+  const yo = _empleados.find(e => e.id === yoId);
+  const cita = _poolCitas.find(c => c.id === citaId);
+  if (!cita) return;
+  const svc = (cita.servicios || []).map(s => s.nombre).join(' · ') || cita.servicio_nombre || '';
+  const hora = fmtHora(cita.fechaHora || cita.fecha_hora);
+  if (!confirm(`¿Tomar la cita de ${cita.clienteNombre || cita.cliente_nombre} (${svc}) a las ${hora}?\nSe asignará a: ${yo?.nombre || ''}`)) return;
+  try {
+    await api('PATCH', `/citas/${citaId}/empleado`, { empleadoId: yoId });
+    showToast(`✅ Cita tomada — ${yo?.nombre}`);
+    await Promise.all([cargarPool(), cargarCitas()]);
+  } catch (e) { alert(e.message); }
+}
+
 /* ──────── TABS ──────── */
 function switchTab(tab) {
   $('vistaCitas').style.display = tab==='citas' ? 'flex' : 'none';
+  $('vistaPool').style.display  = tab==='pool'  ? 'flex' : 'none';
   $('vistaCaja').style.display  = tab==='caja'  ? 'block' : 'none';
   $('tabCitas').classList.toggle('active', tab==='citas');
+  $('tabPool').classList.toggle('active',  tab==='pool');
   $('tabCaja').classList.toggle('active',  tab==='caja');
   if (tab === 'caja') renderCaja();
+  if (tab === 'pool') cargarPool();
 }
 
 function esc(s) {
@@ -1174,11 +1295,12 @@ function closeMobCobro(){
   const ov=$('mob-cobro-overlay');if(ov)ov.style.display='none';
 }
 
-// Auto-refresh caja cada 30s (las citas ya se refrescan con su propio intervalo)
+// Auto-refresh caja/cola cada 30s (las citas ya se refrescan con su propio intervalo)
 setInterval(function(){
   if(document.querySelector('.modal-bg')?.style.display==='flex') return;
   window._arReset?.();
   if($('vistaCaja')?.style.display!=='none') renderCaja();
+  if($('vistaPool')?.style.display!=='none') cargarPool();
 }, 30000);
 
 // Auto-login

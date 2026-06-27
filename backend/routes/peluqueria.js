@@ -956,7 +956,7 @@ router.get('/clientes/:id/historial', async (req, res) => {
 
 router.get('/citas', async (req, res) => {
   try {
-    const { desde, hasta, estado, pagina = 1, tamPagina = 30 } = req.query;
+    const { desde, hasta, estado, sinAsignar, pagina = 1, tamPagina = 30 } = req.query;
     const lim = Math.min(parseInt(tamPagina)||30, 100);
     const off = (Math.max(parseInt(pagina)||1,1)-1)*lim;
     let where = `WHERE c.negocio_id=?`;
@@ -964,6 +964,7 @@ router.get('/citas', async (req, res) => {
     if (desde) { params.push(desde.replace('T',' ').split('.')[0]); where += ` AND c.fecha_hora>=?`; }
     if (hasta) { params.push(hasta.replace('T',' ').split('.')[0]); where += ` AND c.fecha_hora<=?`; }
     if (estado) { params.push(estado); where += ` AND c.estado=?`; }
+    if (sinAsignar === 'true') { where += ` AND c.empleado_id IS NULL`; }
 
     const { rows: cnt } = await pool.query(
       `SELECT COUNT(*) AS total FROM pel_citas c ${where}`, params
