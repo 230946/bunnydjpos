@@ -670,7 +670,7 @@ function showQR(negocioId, nombre, tipo){
   document.getElementById('qr-modal').style.display='flex';
 }
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
-function copiarURL(url){ navigator.clipboard.writeText(url).then(()=>showToast('URL copiada ✓')).catch(()=>{ prompt('Copia esta URL de acceso:',url); }); }
+function copiarURL(url){ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>showToast('URL copiada ✓')).catch(()=>{ prompt('Copia esta URL de acceso:',url); }); } else { prompt('Copia esta URL de acceso:',url); } }
 
 // ── Dashboard ─────────────────────────────────────────────────
 async function loadDashboard(){
