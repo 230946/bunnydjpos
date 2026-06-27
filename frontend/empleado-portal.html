@@ -75,13 +75,16 @@
   /* ── COLA ── */
   .cola-header{background:#fef9c3;border:1.5px solid #fcd34d;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;font-weight:600}
   .cola-card{background:var(--bg2);border:1.5px solid #fcd34d;border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+  .cola-card.mi-esp{border-color:var(--acc);background:var(--acc-l)}
   .cola-card:last-child{margin-bottom:0}
   .cola-hora{font-size:20px;font-weight:700;color:var(--amber);min-width:52px;text-align:center;line-height:1.1}
+  .cola-card.mi-esp .cola-hora{color:var(--acc)}
   .cola-hora small{display:block;font-size:10px;font-weight:400;color:var(--text3)}
   .cola-info{flex:1;min-width:0}
   .cola-info .cola-svc{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cola-info .cola-cli{color:var(--text2);font-size:13px;margin-top:2px}
   .cola-info .cola-fecha{font-size:11px;color:var(--text3);margin-top:3px}
+  .cola-esp-badge{display:inline-block;background:var(--acc);color:#fff;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-top:4px}
   .btn-tomar{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.15s}
   .btn-tomar:hover{background:var(--acc-d)}
   .btn-tomar:disabled{opacity:.5;cursor:not-allowed}
@@ -280,23 +283,29 @@ async function refrescarManual() {
 }
 
 function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
-  // Cola sin asignar
+  // Cola sin asignar — ordenada por especialidad
   const colaEl = document.getElementById('pCola');
   const colaTit = document.getElementById('sColaTit');
   const items = cola || [];
   if (items.length) {
+    const miEsp = (_empleadoActual?.especialidad || '').toLowerCase().trim();
+    const conEsp = c => miEsp && (c.servicio_nombre||'').toLowerCase().includes(miEsp);
+    const sorted = [...items].sort((a,b) => (conEsp(b)?1:0) - (conEsp(a)?1:0));
+    const miasN = sorted.filter(c => conEsp(c)).length;
     colaTit.style.display = '';
-    colaEl.innerHTML = `<div class="cola-header">Hay ${items.length} cita${items.length>1?'s':''} sin asignar — ¡puedes tomarla${items.length>1?'s':''}!</div>`
-      + items.map(c => {
+    colaEl.innerHTML = `<div class="cola-header">Hay ${items.length} cita${items.length>1?'s':''} sin asignar${miasN?' — ⭐ '+miasN+' de tu especialidad':''}</div>`
+      + sorted.map(c => {
+          const esMia = conEsp(c);
           const d = new Date(c.fecha_hora);
           const esHoy = d.toDateString() === new Date().toDateString();
           const fechaStr = esHoy ? 'Hoy' : fmtFechaCorta(c.fecha_hora);
-          return `<div class="cola-card">
-            <div class="cola-hora">${fmtHora(c.fecha_hora)}<small>${c.duracion_min ? c.duracion_min+' min' : ''}</small></div>
+          return `<div class="cola-card${esMia?' mi-esp':''}">
+            <div class="cola-hora">${esMia?'⭐ ':''}${fmtHora(c.fecha_hora)}<small>${c.duracion_min ? c.duracion_min+' min' : ''}</small></div>
             <div class="cola-info">
               <div class="cola-svc">${c.servicio_nombre||'Sin servicio'}</div>
               <div class="cola-cli">👤 ${c.cliente_nombre||'—'}</div>
               <div class="cola-fecha">📅 ${fechaStr}</div>
+              ${esMia?'<span class="cola-esp-badge">Tu especialidad</span>':''}
             </div>
             <button class="btn-tomar" id="btn-tomar-${c.id}" onclick="tomarCita('${c.id}',this)">Tomar</button>
           </div>`;
