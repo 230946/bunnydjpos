@@ -142,6 +142,16 @@ app.post('/api/negocios/:id/logo', upload.single('logo'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Subir foto de empleado peluquería ─────────────────────────────
+app.post('/api/peluqueria/empleados/:id/foto', upload.single('foto'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+    const url = `/uploads/${req.file.filename}`;
+    await pool.query(`UPDATE pel_empleados SET foto_url=${ph(1)} WHERE id=${ph(2)}`, [url, req.params.id]);
+    res.json({ url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Configuración de factura por negocio ──────────────────────────
 app.get('/api/config-factura', async (req, res) => {
   try {

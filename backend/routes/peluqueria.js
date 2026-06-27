@@ -13,7 +13,7 @@ router.get('/portal-empleado/:id', async (req, res) => {
     const cedulaIngresada = req.query.cedula ? String(req.query.cedula).trim() : null;
 
     const { rows: empR } = await pool.query(
-      `SELECT id, negocio_id, nombre, apellido, cedula, cargo, especialidad
+      `SELECT id, negocio_id, nombre, apellido, cedula, cargo, especialidad, foto_url
        FROM pel_empleados WHERE BINARY id=? AND activo=1 LIMIT 1`, [empId]
     );
     if (!empR[0]) return res.status(404).json({ error: 'Empleado no encontrado' });
@@ -111,7 +111,7 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
     }
 
     const { rows: empR } = await pool.query(
-      `SELECT id, negocio_id, nombre, apellido, cedula, cargo, especialidad
+      `SELECT id, negocio_id, nombre, apellido, cedula, cargo, especialidad, foto_url
        FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
       [negocioId, cedulaIngresada]
     );
@@ -700,6 +700,7 @@ async function _ddl(sql) {
     `ALTER TABLE pel_empleados ADD COLUMN monto_comision DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER pct_comision`,
     `ALTER TABLE pel_empleados ADD COLUMN sueldo_base  DECIMAL(12,2) DEFAULT NULL`,
     `ALTER TABLE pel_empleados ADD COLUMN tarifa_hora  DECIMAL(10,2) DEFAULT NULL`,
+    `ALTER TABLE pel_empleados ADD COLUMN foto_url VARCHAR(300) NULL`,
     `ALTER TABLE pel_empleados ADD COLUMN cedula VARCHAR(30) NULL AFTER apellido`,
     `ALTER TABLE pel_servicios ADD COLUMN categoria_id VARCHAR(36) NULL AFTER negocio_id`,
     `ALTER TABLE pel_servicios ADD COLUMN duracion_min INT NOT NULL DEFAULT 30`,

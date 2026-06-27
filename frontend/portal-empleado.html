@@ -72,6 +72,15 @@
   .empty{text-align:center;padding:28px;color:var(--text3);font-size:13px}
   .prox-fecha{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:14px 0 4px;padding-left:2px}
 
+  /* ── TURNO ── */
+  .turno-card{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:var(--radius);margin-bottom:6px;border:1.5px solid}
+  .turno-en {background:var(--acc-l);border-color:var(--acc);color:var(--acc-d)}
+  .turno-tarde{background:#fef9c3;border-color:#fcd34d;color:#92400e}
+  .turno-fin {background:#f3f4f6;border-color:#d1d5db;color:#6b7280}
+  .turno-sin {background:var(--bg2);border-color:var(--border);color:var(--text3)}
+  .turno-icon{font-size:22px;line-height:1;flex-shrink:0}
+  .turno-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;opacity:.7;margin-bottom:2px}
+  .turno-horas{font-size:14px;font-weight:600}
   /* ── COLA ── */
   .cola-header{background:#fef9c3;border:1.5px solid #fcd34d;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;font-weight:600}
   .cola-card{background:var(--bg2);border:1.5px solid #fcd34d;border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
@@ -191,6 +200,7 @@
     </div>
   </div>
   <div class="container">
+    <div id="pTurno"></div>
     <div class="section-title" id="sColaTit">🎯 Cola — Citas sin asignar</div>
     <div id="pCola"></div>
     <div class="section-title">Horario semanal</div>
@@ -283,6 +293,29 @@ async function refrescarManual() {
 }
 
 function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
+  // Tarjeta de turno hoy
+  const turnoEl = document.getElementById('pTurno');
+  const hoyNum  = new Date().getDay();
+  const ahoraMin = new Date().getHours()*60 + new Date().getMinutes();
+  const parseMinT = t => { const [h,m]=(t||'00:00').split(':').map(Number); return h*60+m; };
+  const fmtT = t => {
+    const [h,m]=(t||'00:00').split(':'); const hh=parseInt(h);
+    return `${hh>12?hh-12:(hh||12)}:${m} ${hh>=12?'p.m.':'a.m.'}`;
+  };
+  const turnoHoy = (horarios||[]).find(h => Number(h.dia_semana) === hoyNum);
+  if (!turnoHoy) {
+    turnoEl.innerHTML = `<div class="turno-card turno-sin"><span class="turno-icon">😴</span><div><div class="turno-label">Turno hoy</div><div class="turno-horas">Sin turno asignado para hoy</div></div></div>`;
+  } else {
+    const ent = parseMinT(turnoHoy.hora_entrada), sal = parseMinT(turnoHoy.hora_salida);
+    const hrs = `${fmtT(turnoHoy.hora_entrada)} – ${fmtT(turnoHoy.hora_salida)}`;
+    if (ahoraMin >= ent && ahoraMin < sal)
+      turnoEl.innerHTML = `<div class="turno-card turno-en"><span class="turno-icon">🟢</span><div><div class="turno-label">En turno ahora</div><div class="turno-horas">${hrs}</div></div></div>`;
+    else if (ahoraMin < ent)
+      turnoEl.innerHTML = `<div class="turno-card turno-tarde"><span class="turno-icon">⏰</span><div><div class="turno-label">Turno más tarde</div><div class="turno-horas">${hrs}</div></div></div>`;
+    else
+      turnoEl.innerHTML = `<div class="turno-card turno-fin"><span class="turno-icon">✓</span><div><div class="turno-label">Turno terminado</div><div class="turno-horas">${hrs}</div></div></div>`;
+  }
+
   // Cola sin asignar — ordenada por especialidad
   const colaEl = document.getElementById('pCola');
   const colaTit = document.getElementById('sColaTit');
@@ -460,7 +493,12 @@ async function mostrarPortal({empleado:e, horarios, citasHoy, proximas, cola}){
   document.getElementById('portalWrap').style.display='block';
   document.title=`Portal — ${e.nombre}`;
   const iniciales=(e.nombre[0]+(e.apellido?.[0]||'')).toUpperCase();
-  document.getElementById('pAvatar').textContent=iniciales;
+  const avatarEl = document.getElementById('pAvatar');
+  if (e.foto_url) {
+    avatarEl.innerHTML = `<img src="${e.foto_url}" alt="${iniciales}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    avatarEl.textContent = iniciales;
+  }
   document.getElementById('pNombre').textContent=e.nombre+(e.apellido?' '+e.apellido:'');
   document.getElementById('pCargo').textContent=e.cargo||e.especialidad||'Empleado';
   document.getElementById('pCedula').textContent=e.cedula?'CC '+e.cedula:'';

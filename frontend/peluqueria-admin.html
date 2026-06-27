@@ -383,6 +383,18 @@
   <div class="modal" style="width:480px">
     <div class="modal-head"><h3 id="emp-modal-title">Nuevo empleado</h3><button class="modal-close" onclick="cerrarModal('emp-modal')">✕</button></div>
     <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+        <div id="emp-foto-preview" style="width:72px;height:72px;border-radius:50%;background:var(--bg);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="document.getElementById('emp-foto-input').click()" title="Cambiar foto">
+          <span id="emp-foto-initials">👤</span>
+          <img id="emp-foto-img" src="" style="display:none;width:100%;height:100%;object-fit:cover">
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">Foto del empleado</div>
+          <button type="button" class="btn-sm-outline" onclick="document.getElementById('emp-foto-input').click()">Subir foto</button>
+          <button type="button" id="emp-foto-quitar" class="btn-sm-outline" style="display:none;color:var(--red)" onclick="quitarFotoEmpleado()">Quitar</button>
+          <input type="file" id="emp-foto-input" accept="image/*" style="display:none" onchange="previsualizarFotoEmpleado(this)">
+        </div>
+      </div>
       <div class="frow">
         <div class="fg"><label>Nombre *</label><input id="emp-nombre" placeholder="Nombre"></div>
         <div class="fg"><label>Apellido</label><input id="emp-apellido" placeholder="Apellido"></div>
@@ -1255,6 +1267,27 @@ function toggleCamposComision(){
   if(_gel('emp-pct-wrap')) _gel('emp-pct-wrap').style.display=tipo==='porcentaje'?'flex':'none';
   if(_gel('emp-monto-wrap')) _gel('emp-monto-wrap').style.display=tipo==='fijo'?'flex':'none';
 }
+let _empFotoActual = null;
+function _setEmpFoto(url){
+  _empFotoActual = url || null;
+  const img = document.getElementById('emp-foto-img');
+  const ini = document.getElementById('emp-foto-initials');
+  const qBtn = document.getElementById('emp-foto-quitar');
+  if (url) {
+    img.src = url.startsWith('/') ? location.origin + url : url;
+    img.style.display = 'block'; ini.style.display = 'none'; qBtn.style.display = '';
+  } else {
+    img.style.display = 'none'; ini.style.display = ''; qBtn.style.display = 'none';
+  }
+}
+function previsualizarFotoEmpleado(input){
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => _setEmpFoto(e.target.result);
+  reader.readAsDataURL(file);
+}
+function quitarFotoEmpleado(){ _setEmpFoto(null); document.getElementById('emp-foto-input').value=''; }
+
 function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)return;
   _editEmpId=e.id;
   document.getElementById('emp-modal-title').textContent='Editar empleado';
@@ -1267,12 +1300,16 @@ function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)re
   document.getElementById('emp-email').value=e.email||'';
   document.getElementById('emp-sueldo').value=e.sueldo_base||'';
   document.getElementById('emp-tarifa').value=e.tarifa_hora||'';
+  _setEmpFoto(e.foto_url||null);
+  document.getElementById('emp-foto-input').value='';
   document.getElementById('emp-modal').style.display='flex';
 }
 function abrirModalEmpleado(){
   _editEmpId=null;
   document.getElementById('emp-modal-title').textContent='Nuevo empleado';
   ['emp-nombre','emp-apellido','emp-cedula','emp-cargo','emp-especialidad','emp-tel','emp-email','emp-sueldo','emp-tarifa'].forEach(id=>document.getElementById(id).value='');
+  _setEmpFoto(null);
+  document.getElementById('emp-foto-input').value='';
   document.getElementById('emp-modal').style.display='flex';
 }
 async function guardarEmpleado(){
@@ -1290,13 +1327,21 @@ async function guardarEmpleado(){
     tarifaHora:parseFloat(document.getElementById('emp-tarifa').value)||null,
   };
   try{
-    if(_editEmpId){
-      await apiFetch(`${API}/peluqueria/empleados/${_editEmpId}`,{method:'PUT',body:JSON.stringify(body)});
-      showToast('Empleado actualizado ✓');
+    let empId = _editEmpId;
+    if(empId){
+      await apiFetch(`${API}/peluqueria/empleados/${empId}`,{method:'PUT',body:JSON.stringify(body)});
     }else{
-      await apiFetch(`${API}/peluqueria/empleados`,{method:'POST',body:JSON.stringify(body)});
-      showToast('Empleado creado ✓');
+      const r = await apiFetch(`${API}/peluqueria/empleados`,{method:'POST',body:JSON.stringify(body)});
+      empId = r.id;
     }
+    // Subir foto si hay archivo nuevo seleccionado
+    const fotoInput = document.getElementById('emp-foto-input');
+    if (fotoInput.files[0] && empId) {
+      const fd = new FormData();
+      fd.append('foto', fotoInput.files[0]);
+      await fetch(`${API}/peluqueria/empleados/${empId}/foto`, { method:'POST', body:fd });
+    }
+    showToast(_editEmpId ? 'Empleado actualizado ✓' : 'Empleado creado ✓');
     cerrarModal('emp-modal');
     await recargarEmpleados();
     await cargarSvcs();
