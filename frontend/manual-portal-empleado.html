@@ -11,10 +11,14 @@
   --green:#0B8457;--green-d:#086644;--green-l:#e0f7ec;
   --bg:#f8fffe;--bg2:#fff;--text:#102A24;--text2:#2a5040;--text3:#4a7060;
   --border:rgba(11,132,87,0.15);
+  --amber:#d97706;--amber-l:#fef3c7;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --red:#e24b4a;--red-l:#fcebeb;
 }
 @media(prefers-color-scheme:dark){:root{
   --bg:#0f1a14;--bg2:#172012;--text:#e0ede5;--text2:#a0c8b0;--text3:#5a8870;
-  --border:rgba(11,132,87,0.25);--green-l:#0d2a1f;
+  --border:rgba(11,132,87,0.25);--green-l:#0d2a1f;--amber-l:#2a1a00;--purple-l:#1e1040;
 }}
 body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
 .sidebar{width:270px;min-width:270px;background:var(--bg2);border-right:1px solid var(--border);height:100vh;position:sticky;top:0;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:24px}
@@ -33,15 +37,23 @@ p{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:10px}
 ul,ol{padding-left:20px;margin-bottom:12px}
 li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
 .tip{background:var(--green-l);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:13px;color:var(--text2)}
-.warn{background:#fff8e1;border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:13px;color:#7a5a00}
-@media(prefers-color-scheme:dark){.warn{background:#2a1a00;color:#f0c060}}
+.warn{background:var(--amber-l);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:13px;color:#7a5a00}
+.info{background:var(--blue-l);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:13px;color:#1e40af}
+@media(prefers-color-scheme:dark){.warn{background:#2a1a00;color:#f0c060}.info{background:#0f1e40;color:#93c5fd}}
 .steps{counter-reset:step;padding-left:0;list-style:none;margin-bottom:12px}
 .steps li{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;font-size:14px;color:var(--text2);line-height:1.6}
 .steps li::before{counter-increment:step;content:counter(step);min-width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;margin-right:4px}
-.b-green{background:#dcfce7;color:#15803d}.b-amber{background:#fef3c7;color:#92400e}.b-gray{background:#f1f5f9;color:#475569}
-@media(prefers-color-scheme:dark){.b-green{background:#14532d;color:#86efac}.b-amber{background:#451a03;color:#fcd34d}.b-gray{background:#1e293b;color:#94a3b8}}
-@media(max-width:768px){body{flex-direction:column}.sidebar{width:100%;min-width:0;height:auto;position:relative;border-right:none;border-bottom:1px solid var(--border)}.toc-nav{display:none}.content{padding:24px 16px}}
+.b-green{background:#dcfce7;color:#15803d}
+.b-amber{background:#fef3c7;color:#92400e}
+.b-gray{background:#f1f5f9;color:#475569}
+.b-purple{background:var(--purple-l);color:var(--purple)}
+.b-blue{background:var(--blue-l);color:var(--blue)}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:14px 0}
+.flow-step{border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;text-align:center}
+.flow-arrow{color:var(--text3);font-size:16px}
+@media(prefers-color-scheme:dark){.b-green{background:#14532d;color:#86efac}.b-amber{background:#451a03;color:#fcd34d}.b-gray{background:#1e293b;color:#94a3b8}.b-purple{background:#2e1065;color:#c4b5fd}.b-blue{background:#0f1e40;color:#93c5fd}}
+@media(max-width:768px){body{flex-direction:column}.sidebar{width:100%;min-width:0;height:auto;position:relative;border-right:none;border-bottom:1px solid var(--border)}.toc-nav{display:none}.content{padding:24px 16px}.flow{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -57,10 +69,19 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   <nav class="toc-nav">
     <div class="toc-section">Acceso</div>
     <a class="toc-link" href="#acceso">Ingresar al portal</a>
-    <div class="toc-section">Información</div>
+    <div class="toc-section">Mi información</div>
     <a class="toc-link" href="#perfil">Mi perfil</a>
     <a class="toc-link" href="#horario">Mi horario</a>
-    <a class="toc-link" href="#citas">Mis citas del día</a>
+    <div class="toc-section">Turno de trabajo</div>
+    <a class="toc-link" href="#cola">Cola de servicios (COLA)</a>
+    <a class="toc-link" href="#tomar">Tomar un servicio</a>
+    <a class="toc-link" href="#estados">Estados de una cita</a>
+    <a class="toc-link" href="#confirmar">Confirmar cita (PorConfirmar)</a>
+    <a class="toc-link" href="#completar">Completar servicio</a>
+    <a class="toc-link" href="#combo">Servicios en combo</a>
+    <a class="toc-link" href="#pausa">Pausar y retomar</a>
+    <div class="toc-section">Mis citas</div>
+    <a class="toc-link" href="#citas-hoy">Citas del día</a>
     <a class="toc-link" href="#proximas">Próximas citas</a>
     <div class="toc-section">Ayuda</div>
     <a class="toc-link" href="#salir">Cerrar sesión</a>
@@ -69,7 +90,7 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
 
 <main class="content">
   <h1>Portal del Empleado</h1>
-  <p class="subtitle">Guía para empleados (estilistas, meseros, etc.) que consultan su agenda y horario personal mediante el Portal del Empleado DJPOS.</p>
+  <p class="subtitle">Guía para empleados — cómo ver tu agenda, tomar servicios de la cola, confirmar citas, completar servicios y gestionar pausas de turno.</p>
 
   <h2 id="acceso">Ingresar al portal</h2>
   <p>El Portal del Empleado está disponible desde el portal del negocio haciendo clic en la tarjeta <strong>Portal Empleado</strong>.</p>
@@ -99,23 +120,105 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   </ul>
   <div class="tip">Si tu horario tiene un error, comunícate con el administrador para corregirlo.</div>
 
-  <h2 id="citas">Mis citas del día</h2>
-  <p>La sección principal muestra todas las citas que tienes asignadas para hoy, ordenadas por hora:</p>
+  <h2 id="cola">Cola de servicios (COLA)</h2>
+  <p>La sección <strong>COLA</strong> muestra todos los servicios programados para hoy que aún no tienen empleado asignado. Cada tarjeta representa un servicio individual — si una cita tiene un combo de 2 servicios, aparece una tarjeta por cada uno.</p>
+  <ul>
+    <li><strong>Nombre del servicio</strong> — qué hay que realizar.</li>
+    <li><strong>Cliente</strong> — a quién se le presta.</li>
+    <li><strong>Hora de la cita</strong> — cuándo está programada.</li>
+    <li><strong>Botón "Tomar"</strong> — para asignarte ese servicio.</li>
+  </ul>
+  <div class="info">ℹ️ Si estás en pausa, la COLA se oculta y verás el motivo de la pausa. Para ver y tomar servicios debes <strong>Retomar</strong> primero.</div>
+
+  <h2 id="tomar">Tomar un servicio</h2>
+  <ol class="steps">
+    <li>En la sección <strong>COLA</strong> busca el servicio que vas a realizar.</li>
+    <li>Haz clic en el botón <strong>Tomar</strong>.</li>
+    <li>El servicio desaparece de la cola (ya está asignado a ti) y aparece en tu sección <strong>Citas del día</strong>.</li>
+    <li>La cita pasa automáticamente al estado <span class="badge b-purple">Por confirmar</span>.</li>
+  </ol>
+  <div class="tip">Solo puedes tomar un servicio de la cola si no está asignado a otro empleado. Si el botón no aparece, otro compañero ya lo tomó.</div>
+
+  <h2 id="estados">Estados de una cita</h2>
+  <p>Cada cita tiene un estado que indica en qué punto se encuentra:</p>
+  <div class="flow">
+    <div class="flow-step" style="background:#f3f4f6;color:#6b7280">Pendiente</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-l);color:var(--purple)">Por confirmar</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--blue-l);color:var(--blue)">Confirmada</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:#dcfce7;color:#15803d">Completada ✓</div>
+  </div>
+  <ul>
+    <li><span class="badge b-gray">Pendiente</span> — cita programada, sin empleado asignado todavía.</li>
+    <li><span class="badge b-purple">Por confirmar</span> — un empleado tomó el servicio pero aún no lo confirmó con el cliente.</li>
+    <li><span class="badge b-blue">Confirmada</span> — el empleado confirmó la cita con el cliente.</li>
+    <li><span class="badge b-green">Completada</span> — todos los servicios de la cita fueron marcados como listos y se puede facturar.</li>
+  </ul>
+
+  <h2 id="confirmar">Confirmar cita (Por confirmar)</h2>
+  <p>Cuando tomas un servicio de la cola, la cita queda en estado <span class="badge b-purple">Por confirmar</span>. Debes confirmarla manualmente una vez hayas contactado o verificado la asistencia del cliente.</p>
+  <ol class="steps">
+    <li>En la sección <strong>Citas del día</strong> busca la cita en estado <span class="badge b-purple">Por confirmar</span>.</li>
+    <li>Haz clic en el botón <strong>Confirmar</strong> que aparece en la tarjeta.</li>
+    <li>La cita pasa a estado <span class="badge b-blue">Confirmada</span>.</li>
+  </ol>
+  <div class="warn">⚠️ Mientras la cita esté en estado "Por confirmar", el POS la muestra resaltada para que el administrador sepa que está pendiente de confirmación.</div>
+
+  <h2 id="completar">Completar servicio</h2>
+  <p>Cuando terminas de realizar tu servicio, debes marcarlo como completado. Esto informa al sistema y al administrador que tu parte está lista.</p>
+  <ol class="steps">
+    <li>En <strong>Citas del día</strong> abre la tarjeta de la cita.</li>
+    <li>Verás el listado de servicios de la cita con casillas de verificación (⬜ / ✅).</li>
+    <li>Haz clic en el botón <strong>✓ Listo</strong> junto al servicio que terminaste.</li>
+    <li>El servicio queda marcado con ✅.</li>
+    <li>Cuando <strong>todos los servicios</strong> de la cita estén completados, la cita pasa automáticamente a <span class="badge b-green">Completada</span> y queda lista para facturar en el POS.</li>
+  </ol>
+  <div class="tip">Solo puedes marcar como listo el servicio que tú mismo tomaste. Los servicios de tus compañeros los marca cada uno por su cuenta.</div>
+
+  <h2 id="combo">Servicios en combo (paquetes)</h2>
+  <p>Cuando una cita incluye un paquete o combo de múltiples servicios (por ejemplo, "Corte + Manicure"), cada servicio se asigna de forma independiente:</p>
+  <ul>
+    <li>En la <strong>COLA</strong> aparece una tarjeta por cada servicio del combo.</li>
+    <li>Cada empleado puede tomar el servicio que le corresponde según su especialidad.</li>
+    <li>En la tarjeta de la cita verás todos los servicios con su estado (⬜ pendiente / ✅ completado) y el nombre del empleado asignado a cada uno.</li>
+    <li>La cita no se marca como <span class="badge b-green">Completada</span> hasta que <strong>todos</strong> los servicios del combo estén marcados como listos.</li>
+  </ul>
+  <div class="info">ℹ️ Si quedan servicios del combo sin asignar, siguen apareciendo en la COLA de otros empleados para que los tomen.</div>
+
+  <h2 id="pausa">Pausar y retomar el turno</h2>
+  <p>Puedes registrar pausas durante tu turno (almuerzo, descanso, etc.) para que el sistema sepa que no estás disponible.</p>
+  <h3>Cómo pausar</h3>
+  <ol class="steps">
+    <li>Haz clic en el botón <strong>⏸ Pausar</strong> en la pantalla principal.</li>
+    <li>Selecciona el motivo de la pausa: Almuerzo, Descanso, Diligencia personal u otro.</li>
+    <li>Confirma. La COLA se ocultará y aparecerá el mensaje "En pausa · [motivo]".</li>
+  </ol>
+  <h3>Cómo retomar</h3>
+  <ol class="steps">
+    <li>Haz clic en el botón <strong>▶ Retomar</strong>.</li>
+    <li>La COLA de servicios vuelve a aparecer y puedes seguir tomando citas.</li>
+  </ol>
+  <div class="warn">⚠️ Mientras estás en pausa no puedes ver ni tomar servicios de la cola. Debes retomar el turno primero.</div>
+
+  <h2 id="citas-hoy">Citas del día</h2>
+  <p>La sección <strong>Citas de hoy</strong> muestra todas las citas en las que participas hoy — tanto las que tomaste de la cola como las que te asignó el administrador.</p>
   <ul>
     <li><strong>Hora</strong> — hora de inicio de la cita.</li>
-    <li><strong>Servicio</strong> — nombre del servicio a realizar.</li>
     <li><strong>Cliente</strong> — nombre del cliente.</li>
-    <li><strong>Estado</strong> — <span class="badge b-green">Confirmada</span> o <span class="badge b-amber">Pendiente</span>.</li>
+    <li><strong>Estado</strong> — <span class="badge b-purple">Por confirmar</span>, <span class="badge b-blue">Confirmada</span> o <span class="badge b-green">Completada</span>.</li>
+    <li><strong>Servicios</strong> — lista de todos los servicios de la cita con indicador de completado (⬜ / ✅) y botón "✓ Listo" para los que son tuyos.</li>
   </ul>
-  <p>Si no tienes citas hoy, aparece el mensaje "Sin citas para hoy".</p>
+  <div class="tip">Si una cita tiene servicios de varios empleados, verás el nombre de cada compañero junto a su servicio.</div>
 
   <h2 id="proximas">Próximas citas</h2>
   <p>Debajo de las citas de hoy aparece una sección con las citas programadas para los próximos días, agrupadas por fecha.</p>
-  <div class="tip">Esta vista es solo de consulta — no puedes modificar ni cancelar citas desde el Portal del Empleado. Para cambios, comunícate con el administrador.</div>
+  <div class="tip">Esta vista es solo de consulta — para cambios comunícate con el administrador.</div>
 
   <h2 id="salir">Cerrar sesión</h2>
   <p>Haz clic en el botón <strong>Salir</strong> en la esquina superior derecha del encabezado para cerrar tu sesión. El sistema regresa a la pantalla de ingreso.</p>
-  <div class="tip">Siempre cierra sesión al terminar tu consulta, especialmente si usas un dispositivo compartido con otros empleados.</div>
+  <div class="tip">Siempre cierra sesión al terminar, especialmente si el dispositivo es compartido con otros empleados.</div>
 </main>
 
 <script>

@@ -159,10 +159,28 @@ tr:hover td{background:var(--bg2)}
   .stat-val{font-size:22px}
   /* ── Grids inline → columna única ── */
   [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
-  /* ── Tablas: scroll horizontal (mantiene encabezados) ── */
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table{min-width:420px}
-  th,td{padding:8px 12px;white-space:nowrap}
+  /* ── Tablas: cards en móvil ── */
+  .table-wrap{overflow-x:visible}
+  table{min-width:unset;width:100%}
+  th,td{padding:8px 10px;white-space:normal}
+  /* Dashboard: tabla negocios recientes → 2 cols por card */
+  #dash-negocios thead,#dash-contratos thead{display:none}
+  #dash-negocios tr,#dash-contratos tr{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:10px 12px;border-bottom:0.5px solid var(--border)}
+  #dash-negocios tr:last-child,#dash-contratos tr:last-child{border-bottom:none}
+  #dash-negocios td,#dash-contratos td{display:block;padding:0;border:none;font-size:12px}
+  #dash-negocios td:nth-child(1){grid-column:1;grid-row:1;font-weight:600;font-size:13px}
+  #dash-negocios td:nth-child(2){grid-column:1;grid-row:2}
+  #dash-negocios td:nth-child(3){grid-column:2;grid-row:2;justify-self:end}
+  #dash-negocios td:nth-child(4){grid-column:2;grid-row:1;justify-self:end}
+  #dash-contratos td:nth-child(1){grid-column:1;grid-row:1;font-weight:600;font-size:13px}
+  #dash-contratos td:nth-child(2){grid-column:1;grid-row:2;color:var(--text2)}
+  #dash-contratos td:nth-child(3){grid-column:2;grid-row:2;justify-self:end}
+  #dash-contratos td:nth-child(4){grid-column:2;grid-row:1;justify-self:end;font-weight:600}
+  /* Tabla negocios principal: scroll horizontal */
+  #negocios-tbody{display:table-row-group}
+  #negocios-tbody tr td,#negocios-tbody tr th{white-space:nowrap;padding:8px 10px}
+  .table-wrap:has(#negocios-tbody){overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table-wrap:has(#negocios-tbody) table{min-width:500px}
   /* ── Filtros apilados ── */
   .filter-row{flex-direction:column;align-items:stretch;gap:8px}
   .filter-row input,.filter-row select{width:100%}
