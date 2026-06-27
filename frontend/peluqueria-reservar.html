@@ -160,6 +160,21 @@ textarea.f-inp{resize:none;height:76px}
 #contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
 #contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
 #contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
+/* PAQUETES */
+.sec-label{font-size:11px;font-weight:800;color:var(--acc);text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px;padding:0}
+.sec-div{display:flex;align-items:center;gap:10px;margin:16px 0 14px;color:var(--text3);font-size:12px}
+.sec-div::before,.sec-div::after{content:'';flex:1;height:1px;background:var(--border)}
+.pkg-card{background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px;cursor:pointer;display:flex;align-items:flex-start;gap:11px;transition:.15s}
+.pkg-card:active{transform:scale(.98)}
+.pkg-card.sel{border-color:var(--acc);background:var(--acc-l)}
+.pkg-chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;transition:.15s}
+.pkg-card.sel .pkg-chk{background:var(--acc);border-color:var(--acc);color:#fff}
+.pkg-body{flex:1;min-width:0}
+.pkg-name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:7px}
+.pkg-badge{background:var(--acc);color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;letter-spacing:.4px;text-transform:uppercase;flex-shrink:0}
+.pkg-svcs{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.5}
+.pkg-price{font-size:14px;font-weight:700;color:var(--acc);margin-top:4px}
+.pkg-tipo{font-size:11px;color:var(--text3);margin-top:2px}
 </style>
 </head>
 <body>
@@ -307,8 +322,8 @@ const NID  = new URLSearchParams(location.search).get('n');
 const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
-let _svcs = [], _emps = [];
-let _selSvcs = [], _selEmpId = null;
+let _svcs = [], _emps = [], _paquetes = [];
+let _selSvcs = [], _selEmpId = null, _selPaquete = null;
 let _selFecha = '', _selHora = '';
 let _curStep = 0;
 
@@ -344,15 +359,17 @@ async function init() {
   }
   if(await checkContrato(NID)) return;
   try {
-    const [infoR, svcsR, empsR] = await Promise.all([
+    const [infoR, svcsR, empsR, pkgsR] = await Promise.all([
       fetch(`${BASE}/${NID}/info`),
       fetch(`${BASE}/${NID}/servicios`),
       fetch(`${BASE}/${NID}/empleados`),
+      fetch(`${BASE}/${NID}/paquetes`),
     ]);
     if (!infoR.ok) throw new Error('Negocio no encontrado');
     const info = await infoR.json();
     _svcs = await svcsR.json();
     _emps = await empsR.json();
+    _paquetes = pkgsR.ok ? await pkgsR.json() : [];
 
     document.getElementById('hNombre').textContent = info.nombre;
     document.title = info.nombre;
@@ -427,20 +444,60 @@ function setDateRange() {
 
 function renderSvcs() {
   const el = document.getElementById('svcList');
-  if (!_svcs.length) { el.innerHTML = '<div class="slots-empty">No hay servicios disponibles por el momento.</div>'; return; }
-  el.innerHTML = _svcs.map(s => `
-    <div class="svc-card" id="svc-${s.id}" onclick="toggleSvc('${s.id}')">
-      <div class="svc-chk">✓</div>
-      <div class="svc-body">
-        <div class="svc-name">${esc(s.nombre)}</div>
-        ${s.descripcion ? `<div class="svc-desc">${esc(s.descripcion)}</div>` : ''}
-        <div class="svc-meta">⏱ ${s.duracion_min} min</div>
-        <div class="svc-price">${fmtCOP(s.precio)}</div>
-      </div>
-    </div>`).join('');
+  let html = '';
+
+  if (_paquetes.length) {
+    html += '<p class="sec-label">📦 Paquetes y Membresías</p>';
+    html += _paquetes.map(p => {
+      const svcsDesc = p.servicios.map(s => `${esc(s.nombre)}${s.cantidad_incluida > 1 ? ' ×'+s.cantidad_incluida : ''}`).join(', ');
+      const dur = p.servicios.reduce((a,s) => a + parseInt(s.duracion_min||30)*parseInt(s.cantidad_incluida||1), 0);
+      const tipoLabel = p.tipo === 'tiempo_ilimitado' ? 'Tiempo ilimitado' : 'Sesiones';
+      return `
+        <div class="pkg-card" id="pkg-${p.id}" onclick="selPaquete('${p.id}')">
+          <div class="pkg-chk">✓</div>
+          <div class="pkg-body">
+            <div class="pkg-name">${esc(p.nombre)}<span class="pkg-badge">${tipoLabel}</span></div>
+            ${p.descripcion ? `<div class="pkg-svcs">${esc(p.descripcion)}</div>` : ''}
+            ${svcsDesc ? `<div class="pkg-svcs">Incluye: ${svcsDesc}</div>` : ''}
+            ${dur ? `<div class="pkg-tipo">⏱ ${dur} min total · Vigencia: ${p.vigencia_dias} días</div>` : ''}
+            <div class="pkg-price">${fmtCOP(p.precio)}</div>
+          </div>
+        </div>`;
+    }).join('');
+    if (_svcs.length) html += '<div class="sec-div">o elige servicios individuales</div>';
+  }
+
+  if (_svcs.length) {
+    if (_paquetes.length) html += '<p class="sec-label">Servicios</p>';
+    html += _svcs.map(s => `
+      <div class="svc-card" id="svc-${s.id}" onclick="toggleSvc('${s.id}')">
+        <div class="svc-chk">✓</div>
+        <div class="svc-body">
+          <div class="svc-name">${esc(s.nombre)}</div>
+          ${s.descripcion ? `<div class="svc-desc">${esc(s.descripcion)}</div>` : ''}
+          <div class="svc-meta">⏱ ${s.duracion_min} min</div>
+          <div class="svc-price">${fmtCOP(s.precio)}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  if (!html) { el.innerHTML = '<div class="slots-empty">No hay servicios disponibles por el momento.</div>'; return; }
+  el.innerHTML = html;
+}
+
+function selPaquete(id) {
+  const pkg = _paquetes.find(p => p.id === id);
+  if (!pkg) return;
+  _selPaquete = pkg;
+  _selSvcs = pkg.servicios.map(s => ({ ...s }));
+  document.querySelectorAll('.pkg-card').forEach(c => c.classList.remove('sel'));
+  document.querySelectorAll('.svc-card').forEach(c => c.classList.remove('sel'));
+  document.getElementById('pkg-' + id)?.classList.add('sel');
 }
 
 function toggleSvc(id) {
+  _selPaquete = null;
+  document.querySelectorAll('.pkg-card').forEach(c => c.classList.remove('sel'));
   const idx = _selSvcs.findIndex(s => s.id === id);
   const card = document.getElementById('svc-' + id);
   if (idx >= 0) { _selSvcs.splice(idx, 1); card.classList.remove('sel'); }
@@ -616,9 +673,10 @@ function showErr(id) {
 
 function fillResumen() {
   const emp = _selEmpId ? _emps.find(e => e.id === _selEmpId) : null;
-  const dur = _selSvcs.reduce((a,s) => a + parseInt(s.duracion_min||30), 0);
-  const total = _selSvcs.reduce((a,s) => a + parseFloat(s.precio||0), 0);
-  document.getElementById('rSvc').textContent   = _selSvcs.map(s => s.nombre).join(', ') || '—';
+  const dur = _selSvcs.reduce((a,s) => a + parseInt(s.duracion_min||30)*parseInt(s.cantidad_incluida||1), 0);
+  const total = _selPaquete ? parseFloat(_selPaquete.precio||0) : _selSvcs.reduce((a,s) => a + parseFloat(s.precio||0), 0);
+  const svcLabel = _selPaquete ? `📦 ${_selPaquete.nombre}` : (_selSvcs.map(s => s.nombre).join(', ') || '—');
+  document.getElementById('rSvc').textContent   = svcLabel;
   document.getElementById('rEmp').textContent   = emp ? `${emp.nombre}${emp.apellido?' '+emp.apellido:''}` : 'Cualquier disponible';
   document.getElementById('rFecha').textContent = _selFecha ? fmtFecha(_selFecha) : '—';
   document.getElementById('rHora').textContent  = _selHora  ? fmtHora(_selHora)  : '—';
@@ -645,6 +703,7 @@ async function confirmar() {
         empleadoId: _selEmpId,
         fechaHora: `${_selFecha}T${_selHora}:00`,
         notas: document.getElementById('fNotas').value.trim() || null,
+        ..._selPaquete ? { precioTotal: _selPaquete.precio, paqueteNombre: _selPaquete.nombre } : {},
       }),
     });
     const data = await r.json();
@@ -655,7 +714,7 @@ async function confirmar() {
       <div class="res-head">Detalles de tu cita</div>
       <div class="res-row"><span class="res-lbl">Nombre</span><span class="res-val">${esc(nombre)}</span></div>
       <div class="res-row"><span class="res-lbl">Teléfono</span><span class="res-val">${esc(tel)}</span></div>
-      <div class="res-row"><span class="res-lbl">Servicio</span><span class="res-val">${_selSvcs.map(s=>esc(s.nombre)).join(', ')}</span></div>
+      <div class="res-row"><span class="res-lbl">Servicio</span><span class="res-val">${_selPaquete ? '📦 '+esc(_selPaquete.nombre) : _selSvcs.map(s=>esc(s.nombre)).join(', ')}</span></div>
       ${emp?`<div class="res-row"><span class="res-lbl">Especialista</span><span class="res-val">${esc(emp.nombre+(emp.apellido?' '+emp.apellido:''))}</span></div>`:''}
       <div class="res-row"><span class="res-lbl">Fecha</span><span class="res-val">${fmtFecha(_selFecha)}</span></div>
       <div class="res-row"><span class="res-lbl">Hora</span><span class="res-val">${fmtHora(_selHora)}</span></div>`;

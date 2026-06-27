@@ -114,6 +114,12 @@
   .btn-tomar{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.15s}
   .btn-tomar:hover{background:var(--acc-d)}
   .btn-tomar:disabled{opacity:.5;cursor:not-allowed}
+  .cita-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .btn-cita{border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+  .btn-cita-conf{background:#e0f7ec;color:var(--acc);border:1.5px solid var(--acc)}
+  .btn-cita-conf:hover{background:var(--acc);color:#fff}
+  .btn-cita-ini{background:var(--acc);color:#fff}
+  .btn-cita-ini:hover{background:var(--acc-d)}
   @media(max-width:600px){
     .cola-card{gap:10px;padding:12px}
     .cola-hora{font-size:17px;min-width:44px}
@@ -160,10 +166,28 @@
   }
 #contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
 #contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
-#contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}</style>
+#contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
+/* ── ALERTA CITA ── */
+#alerta-cita{display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:9999;
+  background:#fff;border:2.5px solid #f59e0b;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.22);
+  padding:14px 18px 12px;min-width:280px;max-width:90vw;text-align:center;animation:alerta-in .3s ease}
+@keyframes alerta-in{from{opacity:0;transform:translateX(-50%) translateY(-16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+#alerta-cita .al-icon{font-size:28px;margin-bottom:4px}
+#alerta-cita .al-titulo{font-size:13px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+#alerta-cita .al-body{font-size:14px;font-weight:600;color:#1c1917;margin-bottom:10px;line-height:1.4}
+#alerta-cita .al-hora{font-size:18px;font-weight:800;color:#d97706;margin-bottom:8px}
+#alerta-cita button{background:#f59e0b;color:#fff;border:none;border-radius:8px;padding:7px 20px;font-size:13px;font-weight:700;cursor:pointer}
+#alerta-cita button:hover{background:#d97706}</style>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Portal no disponible</h2><p id="contrato-block-msg">El portal de empleados de este negocio no está disponible.<br>Contacta a tu empleador.</p></div>
+<div id="alerta-cita">
+  <div class="al-icon">⏰</div>
+  <div class="al-titulo">¡Cita en 5 minutos!</div>
+  <div class="al-hora" id="alerta-hora"></div>
+  <div class="al-body" id="alerta-body"></div>
+  <button onclick="cerrarAlertaCita()">Entendido</button>
+</div>
 
 <!-- LOGIN -->
 <div class="login-wrap" id="loginWrap">
@@ -281,6 +305,23 @@ const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábad
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
 const _pd=s=>{if(!s)return null;return new Date(String(s).replace(' ','T').replace('Z',''));};
+const _esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function resaltarServicios(str, catIds) {
+  const miEsp   = (_empleadoActual?.especialidad||'').toLowerCase().trim();
+  const miCatId = _empleadoActual?.categoria_id || null;
+  if (!str) return '<span style="color:var(--text3)">Sin servicio</span>';
+  const partes  = str.split(/\s*·\s*/);
+  const cats    = catIds ? String(catIds).split('|') : [];
+  if (partes.length <= 1 && !catIds) return _esc(str);
+  return partes.map((p, i) => {
+    const catMatch = miCatId && cats[i] && cats[i] === miCatId;
+    const txtMatch = !miCatId && miEsp && p.toLowerCase().includes(miEsp);
+    const match = catMatch || txtMatch;
+    return match
+      ? `<span style="color:var(--acc);font-weight:700">${_esc(p)}</span>`
+      : `<span style="color:var(--text2)">${_esc(p)}</span>`;
+  }).join('<span style="color:var(--text3);margin:0 3px">·</span>');
+}
 function fmtHora(iso){
   const d=_pd(iso);if(!d)return'—';
   return d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true});
@@ -296,12 +337,67 @@ function hoyNombre(){
 function estadoBadge(e){
   if(e==='Confirmada')return`<span class="badge badge-green">Confirmada</span>`;
   if(e==='Pendiente')return`<span class="badge badge-amber">Pendiente</span>`;
+  if(e==='PorConfirmar')return`<span class="badge" style="background:#ede9fe;color:#7c3aed">Por confirmar</span>`;
   return`<span class="badge">${e}</span>`;
 }
 
 let _refreshInterval = null;
+let _alertaInterval = null;
 let _cedulaActiva = null;
 let _empleadoActual = null;
+let _citasHoyActuales = [];
+const _citasAlertadas = new Set();
+
+let _audioCtx = null;
+document.addEventListener('click', () => {
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    else if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  } catch (_) {}
+}, { passive: true });
+
+function _playBeeps(ctx) {
+  const beep = (freq, start, dur) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.35, ctx.currentTime + start);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+    o.start(ctx.currentTime + start);
+    o.stop(ctx.currentTime + start + dur + 0.05);
+  };
+  beep(880, 0, 0.18); beep(1100, 0.22, 0.18); beep(880, 0.44, 0.18); beep(1100, 0.66, 0.3);
+}
+function _beepAlerta() {
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') { _audioCtx.resume().then(() => _playBeeps(_audioCtx)); }
+    else _playBeeps(_audioCtx);
+  } catch (_) {}
+}
+
+function cerrarAlertaCita() {
+  document.getElementById('alerta-cita').style.display = 'none';
+}
+
+function verificarAlertasCitas() {
+  if (!_citasHoyActuales.length) return;
+  const ahora = Date.now();
+  for (const c of _citasHoyActuales) {
+    if (_citasAlertadas.has(c.id)) continue;
+    const fecha = _pd(c.fecha_hora);
+    if (!fecha) continue;
+    const diffMin = (fecha.getTime() - ahora) / 60000;
+    if (diffMin >= 0 && diffMin <= 5) {
+      _citasAlertadas.add(c.id);
+      document.getElementById('alerta-hora').textContent = fmtHora(c.fecha_hora);
+      document.getElementById('alerta-body').textContent =
+        `${c.servicio_nombre||'Cita'}${c.cliente_nombre ? ' · ' + c.cliente_nombre : ''}`;
+      document.getElementById('alerta-cita').style.display = 'block';
+      _beepAlerta();
+    }
+  }
+}
 
 async function cargarDatos(cedula) {
   try {
@@ -323,6 +419,8 @@ async function refrescarManual() {
 }
 
 function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
+  _citasHoyActuales = citasHoy || [];
+  verificarAlertasCitas();
   // Tarjeta de turno hoy
   const turnoEl = document.getElementById('pTurno');
   const hoyNum  = new Date().getDay();
@@ -353,7 +451,8 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
   } else {
     const ent = parseMinT(turnoHoy.hora_entrada), sal = parseMinT(turnoHoy.hora_salida);
     const hrs = `${fmtT(turnoHoy.hora_entrada)} – ${fmtT(turnoHoy.hora_salida)}`;
-    const motivoSel = `<select class="motivo-sel" id="motivoPausa">
+    const motivoSel = `<select class="motivo-sel" id="motivoPausa" onchange="actualizarBtnPausa(this.value)">
+      <option value="">— Motivo —</option>
       <option value="Almuerzo">🍽 Almuerzo</option>
       <option value="Descanso">☕ Descanso</option>
       <option value="Diligencia">📋 Diligencia</option>
@@ -364,7 +463,7 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
         const desdeMins = Math.floor((Date.now() - new Date(pausa.inicio)) / 60000);
         turnoEl.innerHTML = `<div class="turno-card turno-pausa"><span class="turno-icon">⏸</span><div style="flex:1"><div class="turno-label">En pausa · ${pausa.motivo}</div><div class="turno-horas">${hrs} · hace ${desdeMins} min</div></div><button class="btn-turno btn-turno-ini" onclick="accionPausa('reanudar')">▶ Reanudar</button></div>`;
       } else {
-        turnoEl.innerHTML = `<div class="turno-card turno-en"><span class="turno-icon">🟢</span><div style="flex:1"><div class="turno-label">En turno ahora</div><div class="turno-horas">${hrs}</div><div id="pausaFormWrap" style="display:none" class="turno-form">${motivoSel}<button class="btn-turno btn-turno-pau" onclick="accionPausa('pausar')">Pausar</button><button class="btn-turno" style="background:var(--bg);color:var(--text2);border:1px solid var(--border)" onclick="document.getElementById('pausaFormWrap').style.display='none';document.getElementById('btnPausar').style.display=''">Cancelar</button></div></div><div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"><button class="btn-turno btn-turno-pau" id="btnPausar" onclick="this.style.display='none';document.getElementById('pausaFormWrap').style.display='flex'">⏸ Pausar</button><button class="btn-turno btn-turno-fin" onclick="accionTurno('finalizar')">■ Finalizar</button></div></div>`;
+        turnoEl.innerHTML = `<div class="turno-card turno-en"><span class="turno-icon">🟢</span><div style="flex:1"><div class="turno-label">En turno ahora</div><div class="turno-horas">${hrs}</div><div id="pausaFormWrap" style="display:none" class="turno-form">${motivoSel}<button id="btnConfPausa" class="btn-turno" style="background:#d1d5db;color:#6b7280;cursor:not-allowed" disabled onclick="accionPausa('pausar')">Pausar</button><button class="btn-turno" style="background:var(--bg);color:var(--text2);border:1px solid var(--border)" onclick="document.getElementById('pausaFormWrap').style.display='none';document.getElementById('btnPausar').style.display=''">Cancelar</button></div></div><div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"><button class="btn-turno btn-turno-pau" id="btnPausar" onclick="this.style.display='none';document.getElementById('pausaFormWrap').style.display='flex'">⏸ Pausar</button><button class="btn-turno btn-turno-fin" onclick="accionTurno('finalizar')">■ Finalizar</button></div></div>`;
       }
     } else if (ahoraMin < ent)
       turnoEl.innerHTML = `<div class="turno-card turno-tarde"><span class="turno-icon">⏰</span><div style="flex:1"><div class="turno-label">Turno más tarde</div><div class="turno-horas">${hrs}</div></div><button class="btn-turno btn-turno-ini" onclick="accionTurno('iniciar')">▶ Iniciar ahora</button></div>`;
@@ -375,37 +474,54 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
   // Cola sin asignar — ordenada por especialidad
   const colaEl = document.getElementById('pCola');
   const colaTit = document.getElementById('sColaTit');
+
+  // Si está en pausa: bloquear cola hasta que retome
+  if (pausa) {
+    colaTit.style.display = '';
+    colaEl.innerHTML = `<div class="cola-header" style="background:#fef3c7;border-color:#d97706;display:flex;align-items:center;gap:10px;color:#92400e">
+      <span style="font-size:22px;flex-shrink:0">⏸</span>
+      <span>En pausa · ${pausa.motivo}<br><span style="font-weight:400;font-size:12px">Toca <strong>Retomar</strong> para volver a ver y tomar citas</span></span>
+    </div>`;
+  } else {
+
   const items = cola || [];
   if (items.length) {
     const miCatId = _empleadoActual?.categoria_id || null;
     const miEsp   = (_empleadoActual?.especialidad || '').toLowerCase().trim();
-    const conEsp  = c => miCatId
-      ? c.servicio_categoria_id === miCatId
-      : miEsp && (c.servicio_nombre||'').toLowerCase().includes(miEsp);
+    const conEsp  = c => {
+      if (miCatId) {
+        const cats = (c.servicio_cat_ids||c.servicio_categoria_id||'').toString().split('|');
+        return cats.some(id => id === miCatId);
+      }
+      return miEsp && (c.servicio_nombre||'').toLowerCase().includes(miEsp);
+    };
     const sorted = [...items].sort((a,b) => (conEsp(b)?1:0) - (conEsp(a)?1:0));
     const miasN = sorted.filter(c => conEsp(c)).length;
     colaTit.style.display = '';
-    colaEl.innerHTML = `<div class="cola-header">Hay ${items.length} cita${items.length>1?'s':''} sin asignar${miasN?' — ⭐ '+miasN+' de tu especialidad':''}</div>`
+    colaEl.innerHTML = `<div class="cola-header">Hay ${items.length} servicio${items.length>1?'s':''} sin asignar${miasN?' — ⭐ '+miasN+' de tu especialidad':''}</div>`
       + sorted.map(c => {
           const esMia = conEsp(c);
           const d = new Date(c.fecha_hora);
           const esHoy = d.toDateString() === new Date().toDateString();
           const fechaStr = esHoy ? 'Hoy' : fmtFechaCorta(c.fecha_hora);
+          const did = c.detalle_id || c.id;
           return `<div class="cola-card${esMia?' mi-esp':''}">
             <div class="cola-hora">${esMia?'⭐ ':''}${fmtHora(c.fecha_hora)}<small>${c.duracion_min ? c.duracion_min+' min' : ''}</small></div>
             <div class="cola-info">
-              <div class="cola-svc">${c.servicio_nombre||'Sin servicio'}</div>
+              <div class="cola-svc">${resaltarServicios(c.servicio_nombre, c.servicio_cat_ids)}</div>
               <div class="cola-cli">👤 ${c.cliente_nombre||'—'}</div>
               <div class="cola-fecha">📅 ${fechaStr}</div>
               ${esMia?'<span class="cola-esp-badge">Tu especialidad</span>':''}
             </div>
-            <button class="btn-tomar" id="btn-tomar-${c.id}" onclick="tomarCita('${c.id}',this)">Tomar</button>
+            <button class="btn-tomar" id="btn-tomar-${did}" onclick="tomarCita('${did}',this)">Tomar</button>
           </div>`;
         }).join('');
   } else {
     colaTit.style.display = '';
     colaEl.innerHTML = '<div class="empty" style="color:var(--text3)">No hay citas sin asignar en este momento</div>';
   }
+
+  } // fin else (no está en pausa)
 
   // Turnos — recurrentes vs fechas específicas
   const hoy = new Date().getDay();
@@ -431,15 +547,41 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
 
   // Citas de hoy
   document.getElementById('pCitasHoy').innerHTML = citasHoy.length
-    ? citasHoy.map(c => `<div class="cita-item">
-        <div class="cita-hora">${fmtHora(c.fecha_hora)}<small>${c.duracion_min?c.duracion_min+' min':''}</small></div>
-        <div class="cita-info">
-          <div class="cita-servicio">${c.servicio_nombre||'Sin servicio'}</div>
-          <div class="cita-cliente">👤 ${c.cliente_nombre||'—'}${c.cliente_apellido?' '+c.cliente_apellido:''}</div>
-          ${c.notas?`<div style="font-size:12px;color:#6b7280;margin-top:3px;font-style:italic">📝 ${c.notas}</div>`:''}
-          ${estadoBadge(c.estado)}
-        </div>
-      </div>`).join('')
+    ? citasHoy.map(c => {
+        const detalles = c.detalles || [];
+        const misDetalles = detalles.filter(d => d.empleado_id === _empleadoActual?.id);
+        const acciones = [];
+        if (c.estado === 'Pendiente' || c.estado === 'PorConfirmar')
+          acciones.push(`<button class="btn-cita btn-cita-conf" onclick="accionCita('${c.id}','Confirmada',this)">✓ Confirmar</button>`);
+        if (c.estado === 'Pendiente' || c.estado === 'PorConfirmar' || c.estado === 'Confirmada')
+          acciones.push(`<button class="btn-cita btn-cita-ini" onclick="accionCita('${c.id}','EnProceso',this)">▶ Iniciar servicio</button>`);
+
+        // Detalles del combo con checkmarks
+        const detallesHTML = detalles.length > 0 ? `
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+            ${detalles.map(d => {
+              const esMio = d.empleado_id === _empleadoActual?.id;
+              const hecho = d.completado == 1;
+              return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:${hecho?'#f0fdf4':'var(--bg2)'};border:1px solid ${hecho?'#86efac':'var(--border)'};border-radius:8px;${!esMio&&!hecho?'opacity:.6':''}">
+                <span style="font-size:16px;flex-shrink:0">${hecho?'✅':'⬜'}</span>
+                <span style="font-size:12px;font-weight:600;flex:1">${_esc(d.nombre)}</span>
+                ${d.empleado_nombre&&!hecho?`<span style="font-size:10px;color:var(--text3)">${_esc(d.empleado_nombre)}</span>`:''}
+                ${esMio&&!hecho?`<button class="btn-cita" style="background:var(--acc);color:#fff;padding:4px 10px;font-size:11px" onclick="completarServicio('${d.id}',this)">✓ Listo</button>`:''}
+              </div>`;
+            }).join('')}
+          </div>` : '';
+
+        return `<div class="cita-item">
+          <div class="cita-hora">${fmtHora(c.fecha_hora)}<small>${c.duracion_min?c.duracion_min+' min':''}</small></div>
+          <div class="cita-info">
+            <div class="cita-cliente">👤 ${_esc(c.cliente_nombre||'—')}${c.cliente_apellido?' '+_esc(c.cliente_apellido):''}</div>
+            ${c.notas?`<div style="font-size:12px;color:#6b7280;margin-top:3px;font-style:italic">📝 ${_esc(c.notas)}</div>`:''}
+            ${estadoBadge(c.estado)}
+            ${detallesHTML}
+            ${acciones.length&&misDetalles.length===0?`<div class="cita-actions">${acciones.join('')}</div>`:''}
+          </div>
+        </div>`;
+      }).join('')
     : '<div class="card"><div class="empty">Sin citas programadas para hoy</div></div>';
 
   // Próximas citas
@@ -451,8 +593,8 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
     html += `<div class="cita-item">
       <div class="cita-hora">${fmtHora(c.fecha_hora)}<small>${c.duracion_min?c.duracion_min+' min':''}</small></div>
       <div class="cita-info">
-        <div class="cita-servicio">${c.servicio_nombre||'Sin servicio'}</div>
-        <div class="cita-cliente">👤 ${c.cliente_nombre||'—'}${c.cliente_apellido?' '+c.cliente_apellido:''}</div>
+        <div class="cita-servicio">${resaltarServicios(c.servicio_nombre, c.servicio_cat_ids)}</div>
+        <div class="cita-cliente">👤 ${_esc(c.cliente_nombre||'—')}${c.cliente_apellido?' '+_esc(c.cliente_apellido):''}</div>
         ${c.notas?`<div style="font-size:12px;color:#6b7280;margin-top:3px;font-style:italic">📝 ${c.notas}</div>`:''}
         ${estadoBadge(c.estado)}
       </div>
@@ -461,7 +603,7 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
   document.getElementById('pProximas').innerHTML = html;
 }
 
-async function tomarCita(citaId, btn) {
+async function tomarCita(detalleId, btn) {
   if (!_cedulaActiva) return;
   btn.disabled = true;
   btn.textContent = '...';
@@ -472,10 +614,10 @@ async function tomarCita(citaId, btn) {
     const r = await fetch(url, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ cedula: _cedulaActiva, citaId })
+      body: JSON.stringify({ cedula: _cedulaActiva, detalleId })
     });
     if (r.ok) {
-      btn.textContent = '✓ Tomada';
+      btn.textContent = '✓ Tomado';
       btn.style.background = '#16a34a';
       setTimeout(() => cargarDatos(_cedulaActiva), 800);
     } else {
@@ -483,6 +625,36 @@ async function tomarCita(citaId, btn) {
       btn.textContent = d.error || 'Error';
       btn.style.background = '#dc2626';
       setTimeout(() => { btn.textContent='Tomar'; btn.style.background=''; btn.disabled=false; }, 2000);
+    }
+  } catch {
+    btn.textContent = 'Error';
+    btn.disabled = false;
+  }
+}
+
+async function completarServicio(detalleId, btn) {
+  if (!_cedulaActiva) return;
+  if (!confirm('¿Confirmar que terminaste este servicio?')) return;
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    const url = empId
+      ? `${API}/peluqueria/portal-empleado/${empId}/completar-servicio`
+      : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/completar-servicio`;
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ cedula: _cedulaActiva, detalleId })
+    });
+    if (r.ok) {
+      btn.textContent = '✓ Completado';
+      btn.style.background = '#16a34a';
+      setTimeout(() => cargarDatos(_cedulaActiva), 800);
+    } else {
+      const d = await r.json();
+      btn.textContent = d.error || 'Error';
+      btn.style.background = '#dc2626';
+      setTimeout(() => { btn.textContent='✓ Completar'; btn.style.background=''; btn.disabled=false; }, 2000);
     }
   } catch {
     btn.textContent = 'Error';
@@ -507,6 +679,41 @@ function _pausaUrl() {
   return empId
     ? `${API}/peluqueria/portal-empleado/${empId}/pausa`
     : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/pausa`;
+}
+function _citaEstadoUrl() {
+  return empId
+    ? `${API}/peluqueria/portal-empleado/${empId}/cita-estado`
+    : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/cita-estado`;
+}
+async function accionCita(citaId, estado, btn) {
+  if (!_cedulaActiva) return;
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const r = await fetch(_citaEstadoUrl(), {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ cedula: _cedulaActiva, citaId, estado })
+    });
+    if (r.ok) { await cargarDatos(_cedulaActiva); }
+    else { const d = await r.json(); btn.textContent = d.error||'Error'; setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},2000); }
+  } catch { btn.textContent = 'Error'; setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},2000); }
+}
+function actualizarBtnPausa(val) {
+  const btn = document.getElementById('btnConfPausa');
+  if (!btn) return;
+  if (val) {
+    btn.disabled = false;
+    btn.style.background = 'var(--acc)';
+    btn.style.color = '#fff';
+    btn.style.cursor = 'pointer';
+    btn.textContent = '▶ Retomar';
+  } else {
+    btn.disabled = true;
+    btn.style.background = '#d1d5db';
+    btn.style.color = '#6b7280';
+    btn.style.cursor = 'not-allowed';
+    btn.textContent = 'Pausar';
+  }
 }
 async function accionPausa(accion) {
   if (!_cedulaActiva) return;
@@ -588,6 +795,8 @@ async function iniciarSesion(){
     if(ok !== false){
       if(_refreshInterval) clearInterval(_refreshInterval);
       _refreshInterval = setInterval(() => cargarDatos(cedula), 15000);
+      if(_alertaInterval) clearInterval(_alertaInterval);
+      _alertaInterval = setInterval(verificarAlertasCitas, 60000);
     }
   }catch(e){
     document.getElementById('loginErr').textContent='Error de conexión. Intenta de nuevo.';
@@ -599,6 +808,8 @@ async function iniciarSesion(){
 
 function cerrarSesion(){
   if(_refreshInterval){clearInterval(_refreshInterval);_refreshInterval=null;}
+  if(_alertaInterval){clearInterval(_alertaInterval);_alertaInterval=null;}
+  cerrarAlertaCita();
   const key=_getSesKey(); if(key) sessionStorage.removeItem(key);
   document.getElementById('portalWrap').style.display='none';
   document.getElementById('loginWrap').style.display='flex';
@@ -659,6 +870,8 @@ async function init(){
         if(ok !== false){
           if(_refreshInterval) clearInterval(_refreshInterval);
           _refreshInterval=setInterval(()=>cargarDatos(cedGuardada),15000);
+          if(_alertaInterval) clearInterval(_alertaInterval);
+          _alertaInterval=setInterval(verificarAlertasCitas,60000);
         }
         return;
       }

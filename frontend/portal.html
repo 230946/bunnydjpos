@@ -4,31 +4,50 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Portal de acceso</title>
-  <link rel="stylesheet" href="css/responsive.css">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,-apple-system,sans-serif;min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+    body{font-family:system-ui,-apple-system,sans-serif;min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:36px 16px 48px}
 
     /* ── Header negocio ── */
-    .portal-header{text-align:center;margin-bottom:40px}
-    .portal-logo{width:88px;height:88px;border-radius:20px;object-fit:cover;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
-    .portal-nombre{font-size:1.7rem;font-weight:800;color:#f1f5f9;letter-spacing:-.02em}
-    .portal-tipo{font-size:.88rem;color:#94a3b8;margin-top:5px;font-weight:500}
+    .portal-header{text-align:center;margin-bottom:28px}
+    .portal-logo{width:80px;height:80px;border-radius:18px;object-fit:cover;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+    .portal-nombre{font-size:1.6rem;font-weight:800;color:#f1f5f9;letter-spacing:-.02em}
+    .portal-tipo{font-size:.85rem;color:#94a3b8;margin-top:4px;font-weight:500}
 
     /* ── Tarjetas ── */
-    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;max-width:720px;width:100%}
-    .card{background:#fff;border-radius:18px;padding:30px 20px 24px;text-align:center;text-decoration:none;color:inherit;box-shadow:0 2px 8px rgba(0,0,0,.12);border:2.5px solid transparent;transition:transform .18s,box-shadow .18s,border-color .18s;display:flex;flex-direction:column;align-items:center;gap:10px}
-    .card:hover{transform:translateY(-5px);box-shadow:0 12px 32px rgba(0,0,0,.18);border-color:var(--cc)}
-    .card:active{transform:translateY(-2px)}
-    .card-icon{font-size:3rem;line-height:1}
-    .card-title{font-size:1rem;font-weight:700;color:#0f172a;margin-top:4px}
-    .card-desc{font-size:.78rem;color:#64748b;line-height:1.5;min-height:32px}
-    .card-badge{background:var(--cc);color:#fff;padding:4px 14px;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.04em;margin-top:6px}
-
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;max-width:680px;width:100%}
+    .card{background:#fff;border-radius:16px;padding:26px 16px 20px;text-align:center;text-decoration:none;color:inherit;box-shadow:0 2px 8px rgba(0,0,0,.12);border:2.5px solid transparent;transition:transform .18s,box-shadow .18s,border-color .18s;display:flex;flex-direction:column;align-items:center;gap:9px}
+    .card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(0,0,0,.18);border-color:var(--cc)}
+    .card-icon{font-size:2.5rem;line-height:1}
+    .card-title{font-size:.93rem;font-weight:700;color:#0f172a;margin-top:2px}
+    .card-desc{font-size:.74rem;color:#64748b;line-height:1.5;min-height:28px}
+    .card-badge{background:var(--cc);color:#fff;padding:3px 12px;border-radius:20px;font-size:.67rem;font-weight:700;letter-spacing:.04em;margin-top:4px}
     .card-admin  {--cc:#6366f1}
     .card-pos    {--cc:#10b981}
     .card-reservar{--cc:#f59e0b}
     .card-empleado{--cc:#3b82f6}
+
+    /* ── Login card ── */
+    .login-card{background:#fff;border-radius:18px;padding:28px 26px 22px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.2)}
+    .login-title{font-size:.98rem;font-weight:700;color:#0f172a;margin-bottom:16px;text-align:center}
+    .login-input{width:100%;padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.92rem;margin-bottom:10px;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;color:#0f172a;background:#fff}
+    .login-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+    .login-btn{width:100%;padding:11px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .15s;margin-top:2px;font-family:inherit}
+    .login-btn:hover{background:#4f46e5}
+    .login-btn:disabled{background:#a5b4fc;cursor:not-allowed}
+    .login-err{color:#ef4444;font-size:.8rem;text-align:center;margin-top:8px;min-height:16px}
+
+    /* ── Barra de usuario (post-login) ── */
+    .user-bar{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.28);border-radius:12px;padding:10px 16px;max-width:680px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+    .user-bar-name{color:#e2e8f0;font-weight:600;font-size:.88rem}
+    .user-bar-role{color:#94a3b8;font-size:.74rem;margin-top:2px}
+    .logout-btn{background:none;border:1px solid #475569;color:#94a3b8;border-radius:8px;padding:5px 12px;font-size:.75rem;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s}
+    .logout-btn:hover{border-color:#94a3b8;color:#f1f5f9}
+
+    /* ── Separadores / etiquetas ── */
+    .sec-divider{display:flex;align-items:center;gap:10px;max-width:680px;width:100%;color:#475569;font-size:.72rem;margin:26px 0 14px;letter-spacing:.05em;text-transform:uppercase}
+    .sec-divider::before,.sec-divider::after{content:'';flex:1;height:1px;background:#334155}
+    .sec-label{color:#64748b;font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;text-align:center;max-width:680px;width:100%}
 
     /* ── Estados ── */
     #loading{color:#94a3b8;font-size:1rem;text-align:center}
@@ -50,11 +69,10 @@
 
     @media(max-width:480px){
       .cards{grid-template-columns:1fr 1fr}
-      .card{padding:22px 14px 18px}
+      .card{padding:20px 12px 16px}
+      .login-card{padding:22px 18px 18px}
     }
-    @media(max-width:320px){
-      .cards{grid-template-columns:1fr}
-    }
+    @media(max-width:320px){.cards{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -67,10 +85,10 @@
   <p id="error-msg"></p>
 </div>
 
-<div id="portal" style="display:none;flex-direction:column;align-items:center;width:100%">
+<div id="portal" style="display:none;flex-direction:column;align-items:center;width:100%;gap:0">
+
   <div class="portal-header">
-    <img id="p-logo" src="/img/logo.png" class="portal-logo" alt="Logo"
-         onerror="this.src='/img/logo.png'">
+    <img id="p-logo" src="/img/logo.png" class="portal-logo" alt="Logo" onerror="this.src='/img/logo.png'">
     <div id="p-nombre" class="portal-nombre"></div>
     <div id="p-tipo" class="portal-tipo"></div>
   </div>
@@ -82,20 +100,51 @@
     <p id="blk-msg">El servicio de este negocio no está disponible.<br>Contacta al administrador del sistema.</p>
   </div>
 
-  <div class="cards" id="cards"></div>
+  <!-- ── Sección personal (admin / cajero) ── -->
+  <div id="admin-section" style="display:none;flex-direction:column;align-items:center;width:100%;gap:12px">
+
+    <div class="sec-label">Personal del negocio</div>
+
+    <!-- Barra de usuario (visible post-login) -->
+    <div id="user-bar" class="user-bar" style="display:none">
+      <div>
+        <div class="user-bar-name" id="user-bar-name"></div>
+        <div class="user-bar-role" id="user-bar-role"></div>
+      </div>
+      <button class="logout-btn" onclick="cerrarSesion()">↪ Cerrar sesión</button>
+    </div>
+
+    <!-- Tarjetas de acceso (post-login) -->
+    <div class="cards" id="admin-cards" style="display:none"></div>
+
+    <!-- Formulario de login (default) -->
+    <div id="login-card" class="login-card">
+      <div class="login-title">🔐 Acceso para personal</div>
+      <input class="login-input" id="inp-user" type="text" placeholder="Usuario o correo" autocomplete="username">
+      <input class="login-input" id="inp-pass" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="login-btn" id="btn-login" onclick="doLogin()">Ingresar</button>
+      <div class="login-err" id="login-err"></div>
+    </div>
+  </div>
+
+  <!-- ── Sección pública (sin contraseña, solo peluquería) ── -->
+  <div id="public-section" style="display:none;flex-direction:column;align-items:center;width:100%">
+    <div class="sec-divider">Acceso sin contraseña</div>
+    <div class="cards" id="public-cards"></div>
+  </div>
 
   <div class="portal-footer">Powered by BunnyDJPOS · <a href="/manual-portal.html" target="_blank" style="color:#64748b;text-decoration:none">❓ Ayuda</a></div>
 </div>
 
 <script>
 const nid = new URLSearchParams(location.search).get('n');
+let _tipo = 'restaurante';
 
 const TIPOS = {
   restaurante:'Restaurante', peluqueria:'Peluquería / Salón de Belleza',
   minimercado:'Minimercado', bar:'Bar', veterinaria:'Veterinaria',
   taller:'Taller', lavanderia:'Lavandería', gimnasio:'Gimnasio', farmacia:'Farmacia',
 };
-
 const ADMIN_URL = {
   restaurante:'admin-restaurante.html', peluqueria:'peluqueria-admin.html',
   minimercado:'minimercado-admin.html', bar:'admin-restaurante.html',
@@ -111,90 +160,231 @@ const POS_URL = {
   farmacia:'restaurante-pos.html',
 };
 
+// Claves de sessionStorage que usa cada portal
+const SS_KEYS = {
+  peluqueria:  { admin: 'pel_token',     pos: 'pos_pel_token' },
+  minimercado: { admin: 'bdj_adm_token', pos: 'mini_pos_tok'  },
+};
+function getKeys(t){ return SS_KEYS[t] || { admin:'bdj_adm_token', pos:'bdj_pos_token' }; }
+
+function $(id){ return document.getElementById(id); }
+
+function decodeJWT(t){
+  try{ return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); }
+  catch{ return null; }
+}
+
 function showError(titulo, msg){
-  document.getElementById('loading').style.display='none';
-  document.getElementById('error-titulo').textContent=titulo;
-  document.getElementById('error-msg').textContent=msg;
-  document.getElementById('error-wrap').style.display='block';
+  $('loading').style.display = 'none';
+  $('error-titulo').textContent = titulo;
+  $('error-msg').textContent = msg;
+  $('error-wrap').style.display = 'block';
+}
+
+// Determina si el usuario puede acceder al panel admin (no solo POS)
+function puedeAdmin(user){
+  if(user.es_superadmin) return true;
+  const rol = (user.rol_nombre||'').toLowerCase();
+  return !['cajero','caja','vendedor'].some(r => rol.includes(r));
+}
+
+// Guarda las claves de sessionStorage que cada portal espera encontrar
+function guardarSesion(token, user){
+  const t = _tipo;
+  if(t === 'peluqueria'){
+    sessionStorage.setItem('pel_token',       token);
+    sessionStorage.setItem('pel_nombre',      user.nombre||'');
+    sessionStorage.setItem('pel_rol',         user.rol_nombre||'');
+    sessionStorage.setItem('pel_permisos',    JSON.stringify(user.permisos||{}));
+    sessionStorage.setItem('pel_superadmin',  user.es_superadmin?'1':'0');
+    sessionStorage.setItem('pel_negocio_id',  user.negocio_id||nid||'');
+    sessionStorage.setItem('pos_pel_token',   token);
+    sessionStorage.setItem('pos_pel_user',    user.nombre||'');
+    sessionStorage.setItem('pos_pel_rol',     user.rol_nombre||'');
+  } else if(t === 'minimercado'){
+    sessionStorage.setItem('bdj_adm_token',   token);
+    sessionStorage.setItem('mini_pos_tok',    token);
+    sessionStorage.setItem('mini_pos_nombre', user.nombre||'');
+    sessionStorage.setItem('mini_pos_rol',    user.rol_nombre||'');
+  } else {
+    sessionStorage.setItem('bdj_adm_token',   token);
+    sessionStorage.setItem('bdj_pos_token',   token);
+  }
+}
+
+function limpiarSesion(){
+  const t = _tipo;
+  if(t === 'peluqueria'){
+    ['pel_token','pel_nombre','pel_rol','pel_permisos','pel_superadmin','pel_negocio_id',
+     'pos_pel_token','pos_pel_user','pos_pel_rol'].forEach(k => sessionStorage.removeItem(k));
+  } else if(t === 'minimercado'){
+    ['bdj_adm_token','mini_pos_tok','mini_pos_nombre','mini_pos_rol'].forEach(k => sessionStorage.removeItem(k));
+  } else {
+    ['bdj_adm_token','bdj_pos_token'].forEach(k => sessionStorage.removeItem(k));
+  }
+}
+
+function mostrarTarjetasAdmin(user){
+  $('login-card').style.display = 'none';
+  $('user-bar').style.display  = 'flex';
+  $('user-bar-name').textContent = user.nombre || 'Usuario';
+  $('user-bar-role').textContent = user.es_superadmin
+    ? 'Superadministrador'
+    : (user.rol_nombre || 'Personal');
+
+  const tipo = _tipo;
+  const accesos = [];
+
+  if(puedeAdmin(user)){
+    accesos.push({
+      url:   (ADMIN_URL[tipo]||'admin-restaurante.html')+'?n='+nid,
+      clase: 'admin', icon:'⚙️',
+      title: 'Panel Administrativo',
+      desc:  'Gestión, reportes e inventario',
+      badge: 'ADMIN',
+    });
+  }
+
+  accesos.push({
+    url:   (POS_URL[tipo]||'restaurante-pos.html')+'?n='+nid,
+    clase: 'pos', icon:'🛒',
+    title: 'Punto de Venta',
+    desc:  'Registrar ventas y cobros',
+    badge: 'POS',
+  });
+
+  $('admin-cards').innerHTML = accesos.map(a=>`
+    <a href="${a.url}" class="card card-${a.clase}">
+      <div class="card-icon">${a.icon}</div>
+      <div class="card-title">${a.title}</div>
+      <div class="card-desc">${a.desc}</div>
+      <div class="card-badge">${a.badge}</div>
+    </a>
+  `).join('');
+  $('admin-cards').style.display = 'grid';
+}
+
+function cerrarSesion(){
+  limpiarSesion();
+  $('admin-cards').style.display = 'none';
+  $('admin-cards').innerHTML = '';
+  $('user-bar').style.display = 'none';
+  $('login-card').style.display = 'block';
+  $('inp-user').value = '';
+  $('inp-pass').value = '';
+  $('login-err').textContent = '';
+}
+
+async function doLogin(){
+  const login = $('inp-user').value.trim();
+  const pass  = $('inp-pass').value;
+  if(!login||!pass){ $('login-err').textContent='Completa todos los campos'; return; }
+  const btn = $('btn-login');
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  $('login-err').textContent = '';
+  try{
+    const r = await fetch('/api/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ login, password:pass, negocio_id:nid })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Credenciales incorrectas');
+    guardarSesion(d.token, d.user);
+    mostrarTarjetasAdmin(d.user);
+  } catch(e){
+    $('login-err').textContent = e.message;
+    btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+// Comprueba si ya hay una sesión válida en sessionStorage (usuario viene del admin)
+function checkAutoSession(){
+  const keys  = getKeys(_tipo);
+  const token = sessionStorage.getItem(keys.admin);
+  if(!token) return false;
+  const u = decodeJWT(token);
+  if(!u) return false;
+  if(u.exp && Date.now()/1000 > u.exp){ limpiarSesion(); return false; }
+  if(!u.es_superadmin && u.negocio_id && u.negocio_id !== nid) return false;
+
+  let user = { nombre:u.nombre||'', rol_nombre:u.rol_nombre||'', es_superadmin:!!u.es_superadmin, permisos:u.permisos||{} };
+  if(_tipo==='peluqueria' && sessionStorage.getItem('pel_nombre')){
+    user.nombre       = sessionStorage.getItem('pel_nombre')||user.nombre;
+    user.rol_nombre   = sessionStorage.getItem('pel_rol')||user.rol_nombre;
+    user.es_superadmin = sessionStorage.getItem('pel_superadmin')==='1';
+    try{ user.permisos = JSON.parse(sessionStorage.getItem('pel_permisos')||'{}'); }catch{}
+  }
+  mostrarTarjetasAdmin(user);
+  return true;
 }
 
 async function init(){
-  if(!nid){ showError('URL inválida','Pide el enlace de acceso al administrador del negocio.'); return; }
-
+  if(!nid){ showError('URL inválida','Solicita el enlace de acceso al administrador del negocio.'); return; }
   try{
     const r = await fetch(`/api/negocio-pub/${nid}`);
     if(!r.ok) throw new Error('Negocio no encontrado');
     const d = await r.json();
 
-    // Datos básicos del negocio
-    document.getElementById('p-nombre').textContent = d.nombre;
+    $('p-nombre').textContent = d.nombre;
     document.title = d.nombre + ' — Acceso';
-    document.getElementById('p-tipo').textContent = TIPOS[d.tipo] || d.tipo || '';
-    if(d.logo_url) document.getElementById('p-logo').src = d.logo_url;
+    $('p-tipo').textContent = TIPOS[d.tipo]||d.tipo||'';
+    if(d.logo_url) $('p-logo').src = d.logo_url;
+    _tipo = d.tipo || 'restaurante';
 
-    document.getElementById('loading').style.display='none';
-    document.getElementById('portal').style.display='flex';
+    $('loading').style.display = 'none';
+    $('portal').style.display  = 'flex';
 
     // Verificar contrato
     if(d.contrato){
       const {estado, dias_para_vencer} = d.contrato;
       if(estado==='vencido'||estado==='cancelado'||estado==='pendiente'){
         const msgs = {
-          vencido:'El contrato de este negocio ha vencido. Contacta al administrador del sistema.',
-          cancelado:'El contrato de este negocio fue cancelado. Contacta al administrador del sistema.',
-          pendiente:'El contrato de este negocio aún no ha iniciado. Contacta al administrador del sistema.',
+          vencido:   'El contrato de este negocio ha vencido. Contacta al administrador del sistema.',
+          cancelado: 'El contrato de este negocio fue cancelado. Contacta al administrador del sistema.',
+          pendiente: 'El contrato de este negocio aún no ha iniciado. Contacta al administrador del sistema.',
         };
-        document.getElementById('blk-msg').textContent = msgs[estado];
-        document.getElementById('contrato-block').style.display='block';
+        $('blk-msg').textContent = msgs[estado];
+        $('contrato-block').style.display = 'block';
         return;
       }
       if(estado==='activo' && dias_para_vencer!==null && dias_para_vencer<=5){
         const dias = dias_para_vencer;
-        document.getElementById('contrato-alert').textContent = dias<=0
+        $('contrato-alert').textContent = dias<=0
           ? '⚠️ El contrato de este negocio venció hoy. Renuévalo para continuar.'
           : `⚠️ El contrato vence en ${dias} día${dias===1?'':'s'}. Contacta al administrador para renovarlo.`;
-        document.getElementById('contrato-alert').style.display='block';
+        $('contrato-alert').style.display = 'block';
       }
     } else {
-      // Sin contrato → bloquear
-      document.getElementById('blk-msg').textContent = 'Este negocio no tiene un contrato activo. Contacta al administrador del sistema.';
-      document.getElementById('contrato-block').style.display='block';
+      $('blk-msg').textContent = 'Este negocio no tiene un contrato activo. Contacta al administrador del sistema.';
+      $('contrato-block').style.display = 'block';
       return;
     }
 
-    // Construir tarjetas de acceso
-    const tipo = d.tipo || 'restaurante';
-    const accesos = [
-      {
-        url: (ADMIN_URL[tipo]||'admin-restaurante.html')+'?n='+nid,
-        clase:'admin', icon:'⚙️',
-        title:'Panel Administrativo',
-        desc:'Gestión, reportes e inventario',
-        badge:'ADMIN',
-      },
-      {
-        url: (POS_URL[tipo]||'restaurante-pos.html')+'?n='+nid,
-        clase:'pos', icon:'🛒',
-        title:'Punto de Venta',
-        desc:'Registrar ventas y cobros',
-        badge:'POS',
-      },
-    ];
-    if(tipo==='peluqueria'){
-      accesos.push(
-        {url:'peluqueria-reservar.html?n='+nid, clase:'reservar', icon:'📅', title:'Reservas en línea', desc:'Agenda de citas para clientes', badge:'CLIENTES'},
-        {url:'portal-empleado.html?n='+nid, clase:'empleado', icon:'👤', title:'Portal Empleado', desc:'Consulta tu horario y citas', badge:'EMPLEADOS'},
-      );
-    }
+    // Sección de personal (siempre visible)
+    $('admin-section').style.display = 'flex';
 
-    document.getElementById('cards').innerHTML = accesos.map(a=>`
-      <a href="${a.url}" class="card card-${a.clase}">
-        <div class="card-icon">${a.icon}</div>
-        <div class="card-title">${a.title}</div>
-        <div class="card-desc">${a.desc}</div>
-        <div class="card-badge">${a.badge}</div>
-      </a>
-    `).join('');
+    // Auto-login si ya hay sesión activa en este tab
+    checkAutoSession();
+
+    // Sección pública (solo peluquería por ahora)
+    if(_tipo === 'peluqueria'){
+      $('public-section').style.display = 'flex';
+      $('public-cards').innerHTML = `
+        <a href="peluqueria-reservar.html?n=${nid}" class="card card-reservar">
+          <div class="card-icon">📅</div>
+          <div class="card-title">Reservas en línea</div>
+          <div class="card-desc">Agenda de citas para clientes</div>
+          <div class="card-badge">CLIENTES</div>
+        </a>
+        <a href="portal-empleado.html?n=${nid}" class="card card-empleado">
+          <div class="card-icon">👤</div>
+          <div class="card-title">Portal Empleado</div>
+          <div class="card-desc">Consulta tu horario y citas</div>
+          <div class="card-badge">EMPLEADOS</div>
+        </a>
+      `;
+    }
 
   } catch(e){
     showError('Error al cargar', e.message);

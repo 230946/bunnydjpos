@@ -135,32 +135,50 @@ tr:hover td{background:var(--bg2)}
 }
 /* ── MOBILE ── */
 @media(max-width:767px){
-  /* Sidebar oculto; hamburger lo abre */
-  .sidebar{display:none}
+  body{overflow-x:hidden}
+  /* ── Sidebar: drawer animado desde la izquierda ── */
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;height:auto;
+    width:min(260px,82vw);
+    z-index:200;overflow-y:auto;overflow-x:hidden;
+    transform:translateX(-110%);
+    transition:transform .22s cubic-bezier(.4,0,.2,1);
+    padding:14px 8px;gap:3px;
+    border-right:0.5px solid var(--border);
+  }
+  .sidebar.sb-open{
+    transform:translateX(0);
+    box-shadow:6px 0 28px rgba(0,0,0,.24);
+  }
+  .nav-btn{padding:12px 14px;font-size:14px;min-height:44px}
+  .sidebar-logo{padding:6px 8px 14px;margin-bottom:4px}
+  /* ── Hamburger ── */
   #sb-hamburger{display:flex!important}
-  .show-mobile{display:flex!important}
-  /* Stats */
-  .stats-row{grid-template-columns:repeat(2,1fr)}
-  /* Grids inline → stack */
+  /* ── Stats: 2 columnas ── */
+  .stats-row{grid-template-columns:1fr 1fr}
+  .stat-val{font-size:22px}
+  /* ── Grids inline → columna única ── */
   [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
-  /* Tablas → tarjetas apiladas */
-  .table-wrap{overflow:visible}
-  .table-wrap table{display:block;overflow:hidden}
-  .table-wrap thead{display:none}
-  .table-wrap tbody{display:flex;flex-direction:column;gap:5px;padding:6px}
-  .table-wrap tr{display:block;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);padding:2px 0}
-  .table-wrap td{display:flex;justify-content:flex-end;align-items:center;padding:7px 12px;border-bottom:0.5px solid var(--border);font-size:13px}
-  .table-wrap td:last-child{border-bottom:none}
-  .table-wrap td[data-label]::before{content:attr(data-label);font-weight:500;color:var(--text2);font-size:11px;margin-right:auto;text-align:left;padding-right:8px;flex-shrink:0}
-  /* Botones táctiles */
-  .btn{min-height:40px;padding:9px 14px}
-  .btn-sm{min-height:34px;padding:6px 11px}
-  /* Layout */
-  .topbar{padding:9px 12px}
+  /* ── Tablas: scroll horizontal (mantiene encabezados) ── */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:420px}
+  th,td{padding:8px 12px;white-space:nowrap}
+  /* ── Filtros apilados ── */
+  .filter-row{flex-direction:column;align-items:stretch;gap:8px}
+  .filter-row input,.filter-row select{width:100%}
+  /* ── Topbar y contenido ── */
+  .topbar{padding:10px 14px}
+  .topbar-title{font-size:14px}
   .content{padding:12px}
-  /* Modal sheet inferior */
+  /* ── Botones táctiles ── */
+  .btn{min-height:44px;padding:10px 16px}
+  .btn-sm{min-height:36px;padding:7px 12px}
+  /* ── Modal → sheet inferior ── */
   .modal-bg,.mb{align-items:flex-end;padding:0}
-  .modal,.md{max-width:100%;border-radius:var(--rl) var(--rl) 0 0;max-height:90vh;margin:0}
+  .modal,.md{max-width:100%;width:100%;border-radius:var(--rl) var(--rl) 0 0;max-height:92vh;margin:0}
+  /* ── Est-grid ── */
+  .est-grid{gap:10px}
+  .mod-grid{grid-template-columns:1fr}
 }</style>
 </head>
 <body>
@@ -604,15 +622,16 @@ function showApp(){
 function openMobileSidebar(){
   const sb=document.querySelector('.sidebar'),ov=document.getElementById('sb-overlay');
   if(!sb||!ov)return;
-  sb.style.setProperty('display','flex','important');
-  sb.style.position='fixed';sb.style.left='0';sb.style.top='0';sb.style.bottom='0';
-  sb.style.width='220px';sb.style.zIndex='100';sb.style.boxShadow='4px 0 20px rgba(0,0,0,.3)';
+  sb.style.cssText='display:flex;flex-direction:column;position:fixed;left:0;top:0;'+
+    'bottom:0;height:auto;width:min(260px,82vw);z-index:200;overflow-y:auto;overflow-x:hidden;'+
+    'background:var(--bg);border-right:0.5px solid var(--border);'+
+    'padding:14px 8px;gap:3px;box-shadow:6px 0 28px rgba(0,0,0,.24)';
   ov.style.display='block';
 }
 function closeMobileSidebar(){
   const sb=document.querySelector('.sidebar'),ov=document.getElementById('sb-overlay');
   if(!sb||!ov)return;
-  if(window.innerWidth<=767){sb.style.removeProperty('display');sb.style.cssText='';}
+  sb.style.cssText='';
   ov.style.display='none';
 }
 function showPanel(p,btn){

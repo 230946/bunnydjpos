@@ -106,6 +106,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cc-precio{font-size:13px;font-weight:700;color:var(--acc)}
 .status-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
 .s-Pendiente{background:#f3f4f6;color:#6b7280}
+.s-PorConfirmar{background:#ede9fe;color:#7c3aed}
 .s-Confirmada{background:var(--blue-l);color:var(--blue)}
 .s-EnProceso{background:var(--amber-l);color:var(--amber)}
 .s-Completada{background:var(--acc-l);color:var(--acc)}
@@ -315,12 +316,41 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 #contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
 #contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
 #contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}
+/* ── Resumen de citas (panel Citas) ── */
+.resumen-wrap{padding:10px 14px 0;flex-shrink:0}
+.resumen-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+.resumen-scroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+.resumen-scroll::-webkit-scrollbar{height:3px}
+.resumen-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.resumen-card{background:var(--bg);border:0.5px solid var(--border);border-left:3px solid var(--border);border-radius:var(--rl);padding:10px 12px;min-width:175px;max-width:195px;flex-shrink:0;transition:transform .12s,box-shadow .12s}
+.resumen-card.completada{cursor:pointer}
+.resumen-card.completada:hover{transform:translateY(-2px);box-shadow:0 4px 14px #0002}
+.resumen-card.muted{opacity:.45;cursor:default}
+.resumen-card.sel-cobro{box-shadow:0 0 0 2px var(--acc);background:var(--bg2)}
+.resumen-top{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin-bottom:3px}
+.resumen-name{font-size:13px;font-weight:700;line-height:1.2}
+.resumen-badge{font-size:9px;color:#fff;padding:2px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.resumen-svc{font-size:11px;color:var(--acc);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resumen-foot{display:flex;justify-content:space-between;font-size:11px}
+.resumen-hora{color:var(--text2)}
+.resumen-precio{font-weight:700}
+/* ── Alertas de citas próximas ── */
+#alerts-container{position:fixed;top:52px;right:12px;z-index:9000;display:flex;flex-direction:column;gap:8px;width:300px;pointer-events:none}
+.cita-alert{background:#fffbeb;border:1px solid #d97706;border-left:4px solid #d97706;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;box-shadow:0 6px 24px #0002;pointer-events:all;animation:pos-alert-in .3s ease}
+.cita-alert.urgent{border-color:var(--red);border-left-color:var(--red);background:#fff5f5}
+.cita-alert .al-icon{font-size:20px;line-height:1;flex-shrink:0;margin-top:1px}
+.cita-alert .al-body{flex:1;font-size:12px;line-height:1.5}
+.cita-alert .al-body strong{display:block;font-size:13px;color:#d97706;margin-bottom:2px}
+.cita-alert.urgent .al-body strong{color:var(--red)}
+.cita-alert .al-close{background:none;border:none;color:#888;cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0}
+@keyframes pos-alert-in{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
 </style>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">No tienes un contrato activo.<br>Contacta al administrador del sistema.</p></div>
 <div id="contrato-alert"><span id="contrato-alert-msg"></span> <button onclick="document.getElementById('contrato-alert').style.display='none'">✕</button></div>
 <div id="posToast" class="pos-toast"></div>
+<div id="alerts-container"></div>
 
 <!-- LOGIN -->
 <div class="login-wrap" id="login-screen">
@@ -328,6 +358,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <div class="login-logo">
       <img id="login-logo-img" src="/img/logo.png" alt="Logo" class="show">
       <p id="login-neg-nombre" style="font-size:17px;font-weight:700;color:var(--acc);margin-top:6px;display:none"></p>
+      <span style="display:inline-block;margin-top:8px;background:var(--acc);color:#fff;padding:3px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.08em">POS</span>
     </div>
     <div class="err-box" id="login-error"></div>
     <div class="field"><label>Usuario o email</label><input id="l-login" type="text" placeholder="usuario@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -344,6 +375,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <span class="tb-sep">|</span>
     <button class="tab-btn active" id="tabCitas" onclick="switchTab('citas')">📋 Citas</button>
     <button class="tab-btn" id="tabPool" onclick="switchTab('pool')">🎯 Cola</button>
+    <button class="tab-btn" id="tabProductos" onclick="switchTab('productos')">🛍️ Productos</button>
     <button class="tab-btn" id="tabCaja" onclick="switchTab('caja')">💰 Caja</button>
     <span id="cajaBadge" class="tb-caja caja-no no-print">Sin caja</span>
     <span class="tb-time tb-ml" id="topTime"></span>
@@ -361,6 +393,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
         <div class="fil-btns" id="filBtns">
           <button class="fil-btn active" onclick="setFiltro(this,'')">Todas</button>
           <button class="fil-btn" onclick="setFiltro(this,'Pendiente')">Pendiente</button>
+          <button class="fil-btn" onclick="setFiltro(this,'PorConfirmar')">Por confirmar</button>
           <button class="fil-btn" onclick="setFiltro(this,'Confirmada')">Confirmada</button>
           <button class="fil-btn" onclick="setFiltro(this,'EnProceso')">En proceso</button>
           <button class="fil-btn" onclick="setFiltro(this,'Completada')">Completada</button>
@@ -370,6 +403,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
         </select>
         <button class="btn btn-acc btn-sm btn-nueva-cita" id="btnNuevaCita" onclick="abrirNuevaCita()">+ Nueva cita</button>
       </div>
+      <div id="citasResumen" class="resumen-wrap"></div>
       <div class="sin-caja-aviso" id="sinCajaAviso">
         <span>⚠️ Abre la caja para habilitar todas las acciones</span>
         <button onclick="switchTab('caja');abrirCerrarCaja()">Abrir caja</button>
@@ -392,9 +426,8 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
       </div>
       <div class="cobro-empty" id="cobroEmpty">
         <div class="cobro-empty-icon">✂️</div>
-        <div style="font-size:14px;font-weight:600;margin-bottom:6px">Sin cita seleccionada</div>
-        <div style="font-size:12px">Haz clic en una cita de la lista para ver el cobro, o crea una nueva cita de walk-in.</div>
-        <button class="cobro-cta" onclick="abrirNuevaCita()">+ Nueva cita / Walk-in</button>
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px" id="cobroEmptyTit">Sin cita seleccionada</div>
+        <div style="font-size:12px;color:var(--text2)" id="cobroEmptyMsg">Selecciona una cita <span style="color:var(--green);font-weight:700">Completada</span> para procesar el pago</div>
       </div>
       <div style="display:none;flex:1;flex-direction:column;overflow:hidden" id="cobroContent">
         <div class="cobro-body" id="cobroBody"></div>
@@ -422,6 +455,43 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
       <div id="poolAlerta" class="pool-alerta" style="display:none">⚠️ Selecciona tu nombre para poder tomar citas.</div>
       <div id="poolLista"><div class="pool-empty">Cargando citas disponibles...</div></div>
       <div id="misHorariosContent"></div>
+    </div>
+  </div>
+
+  <!-- VISTA PRODUCTOS EN VENTA -->
+  <div id="vistaProductos" style="display:none;flex:1;overflow:hidden;gap:0">
+    <!-- Catálogo -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px;border-right:0.5px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <input id="prod-busq" placeholder="Buscar producto..." oninput="filtrarProductosPOS()"
+          style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:6px;font-size:13px;background:var(--bg2);color:var(--text);flex:1;min-width:120px">
+        <span id="prod-count" style="font-size:12px;color:var(--text3);flex-shrink:0"></span>
+      </div>
+      <div id="prod-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;overflow-y:auto;flex:1"></div>
+    </div>
+    <!-- Carrito -->
+    <div style="width:300px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg2)">
+      <div style="padding:14px 14px 10px;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:14px;font-weight:700">🛒 Carrito</div>
+      </div>
+      <div id="prod-carrito" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+        <div style="text-align:center;padding:40px 10px;color:var(--text3);font-size:12px">Agrega productos para vender</div>
+      </div>
+      <div style="padding:12px 14px;border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600">
+          <span>Total</span><span id="prod-total" style="color:var(--acc)">$ 0</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <select id="prod-metodo" style="flex:1;padding:7px 8px;border:0.5px solid var(--border2);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text)">
+            <option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Nequi</option>
+          </select>
+          <button id="prod-cobrar-btn" onclick="cobrarProductos()" disabled
+            style="flex:1;background:var(--acc);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;padding:7px;opacity:.5">
+            Cobrar
+          </button>
+        </div>
+        <button onclick="limpiarCarrito()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;text-align:center">Limpiar carrito</button>
+      </div>
     </div>
   </div>
 
@@ -660,6 +730,7 @@ async function iniciar() {
   await Promise.all([cargarEmpleados(), cargarServicios(), checkCaja()]);
   cargarCitas();
   setInterval(cargarCitas, 30000);
+  iniciarAlertas();
   switchTab('citas');
 }
 
@@ -720,6 +791,8 @@ function renderCitas() {
   if (_filtroEstado) lista = lista.filter(c => c.estado === _filtroEstado);
   if (_filtroEmp) lista = lista.filter(c => c.empleado_id === _filtroEmp || c.empleadoId === _filtroEmp);
 
+  renderCitasResumen();
+
   if (!lista.length) {
     $('citasList').innerHTML = `<div class="cita-empty">No hay citas${_filtroEstado ? ' con estado "' + _filtroEstado + '"' : ''} para hoy</div>`;
     return;
@@ -746,6 +819,7 @@ function renderCitas() {
       ${c.estado !== 'Completada' && c.estado !== 'Cancelada' ? `
       <div class="cc-actions">
         ${c.estado === 'Pendiente' ? `<button class="btn btn-xs btn-amber" onclick="event.stopPropagation();cambiarEstado('${c.id}','Confirmada')">Confirmar</button>` : ''}
+        ${c.estado === 'PorConfirmar' ? `<button class="btn btn-xs" style="background:#7c3aed;color:#fff" onclick="event.stopPropagation();cambiarEstado('${c.id}','Confirmada')">✓ Confirmar</button>` : ''}
         ${c.estado === 'Confirmada' ? `<button class="btn btn-xs btn-amber" onclick="event.stopPropagation();cambiarEstado('${c.id}','EnProceso')">▶ Iniciar</button>` : ''}
         ${c.estado !== 'Completada' ? `<button class="btn btn-xs btn-acc" onclick="event.stopPropagation();selCita('${c.id}');setTimeout(abrirCobro,100)">💳 Cobrar</button>` : ''}
         <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();cambiarEstado('${c.id}','Cancelada')" style="color:var(--red);border-color:var(--red)">✕ Cancelar</button>
@@ -754,9 +828,53 @@ function renderCitas() {
   }).join('');
 }
 
+function renderCitasResumen() {
+  const cont = document.getElementById('citasResumen');
+  if (!cont) return;
+  const todas = (_citas || []).filter(c => c.estado !== 'Cancelada' && c.estado !== 'NoAsistio');
+  if (!todas.length) { cont.innerHTML = ''; return; }
+  const colMap = {Pendiente:'#d97706',PorConfirmar:'#7c3aed',Confirmada:'var(--blue)',EnProceso:'var(--acc)',Completada:'var(--green)'};
+  cont.innerHTML = `
+    <div class="resumen-label">Citas del día — toca una <span style="color:var(--green);font-weight:700">Completada</span> para facturar</div>
+    <div class="resumen-scroll">
+      ${todas.map(c => {
+        const esComp = c.estado === 'Completada';
+        const esSel  = _citaSel?.id === c.id;
+        const svcs   = (c.servicios||[]).length ? c.servicios.map(s=>esc(s.nombre)).join(' · ') : esc(c.servicioNombre||c.servicio_nombre||'Sin servicio');
+        const precio  = (c.servicios||[]).length ? c.servicios.reduce((a,s)=>a+parseFloat(s.precio||0),0) : parseFloat(c.precio||0);
+        const col    = colMap[c.estado] || 'var(--border)';
+        const clases = 'resumen-card' + (esComp?' completada':' muted') + (esSel?' sel-cobro':'');
+        const onclick= esComp ? `onclick="selCitaDesdeResumen('${c.id}')"` : `title="Completa la cita para poder facturarla"`;
+        const emp = c.empleadoNombre||c.empleado_nombre||'';
+        return `<div class="${clases}" ${onclick} style="border-left-color:${col}">
+          <div class="resumen-top">
+            <span class="resumen-name">${esc(c.clienteNombre||c.cliente_nombre||'—')}</span>
+            <span class="resumen-badge" style="background:${col}">${estadoLabel(c.estado)}</span>
+          </div>
+          <div class="resumen-svc">${svcs}</div>
+          <div class="resumen-foot">
+            <span class="resumen-hora">${fmtHora(c.fechaHora||c.fecha_hora)}</span>
+            ${precio>0?`<span class="resumen-precio">${fmtCOP(precio)}</span>`:''}
+          </div>
+          ${emp?`<div style="font-size:10px;color:var(--text3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">👤 ${esc(emp)}</div>`:'<div style="font-size:10px;color:var(--amber);margin-top:4px">⏳ Sin asignar</div>'}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function selCitaDesdeResumen(id) {
+  selCita(id);
+  // En móvil: abrir el panel cobro
+  if (window.innerWidth <= 767) {
+    const cp = document.querySelector('.cobro-panel');
+    const ov = document.getElementById('mob-cobro-overlay');
+    if (cp && ov) { cp.classList.add('mob-open'); ov.style.display = 'block'; }
+  }
+}
+
 function estadoLabel(e) {
-  return {Pendiente:'Pendiente',Confirmada:'Confirmada',EnProceso:'En proceso',
-    Completada:'Completada',Cancelada:'Cancelada',NoAsistio:'No asistió'}[e] || e;
+  return {Pendiente:'Pendiente',PorConfirmar:'Por confirmar',Confirmada:'Confirmada',
+    EnProceso:'En proceso',Completada:'Completada',Cancelada:'Cancelada',NoAsistio:'No asistió'}[e] || e;
 }
 
 /* ──────── TOAST ──────── */
@@ -789,6 +907,7 @@ function selCita(id) {
   _citaSel = cita;
   _extraItems = [];
   renderCobroPanel();
+  renderCitasResumen();
   // Highlight card
   document.querySelectorAll('.cita-card').forEach(c => c.classList.remove('selected'));
   const el = $('cc-' + id);
@@ -800,7 +919,17 @@ function renderCobroPanel() {
   if (!_citaSel) {
     $('cobroEmpty').style.display = 'flex';
     $('cobroContent').style.display = 'none';
+    $('cobroEmptyTit').textContent = 'Sin cita seleccionada';
+    $('cobroEmptyMsg').innerHTML = 'Selecciona una cita <span style="color:var(--green);font-weight:700">Completada</span> para procesar el pago';
     $('cobroSub').textContent = 'Selecciona una cita para procesar el pago';
+    return;
+  }
+  if (_citaSel.estado !== 'Completada') {
+    $('cobroEmpty').style.display = 'flex';
+    $('cobroContent').style.display = 'none';
+    $('cobroEmptyTit').textContent = _citaSel.clienteNombre || _citaSel.cliente_nombre || 'Cita seleccionada';
+    $('cobroEmptyMsg').innerHTML = `Estado: <span style="font-weight:700">${estadoLabel(_citaSel.estado)}</span><br><span style="color:var(--text3)">Marca la cita como <strong>Completada</strong> para habilitar el cobro</span>`;
+    $('cobroSub').textContent = '';
     return;
   }
   $('cobroEmpty').style.display = 'none';
@@ -833,18 +962,25 @@ function renderCobroPanel() {
         <span>Servicios</span>
         <span style="font-size:11px;color:var(--text3)">${todosItems.length} ítem(s)</span>
       </div>
-      ${todosItems.map((s,i) => `
-        <div class="cs-item">
+      ${todosItems.map((s,i) => {
+        const esDeCita = i < citaItems.length;
+        const completado = esDeCita && s.completado == 1;
+        const empNombre = s.empleado_nombre || s.empleadoNombre || '';
+        return `<div class="cs-item" style="${completado?'opacity:.7':''}">
+          <span style="font-size:15px;flex-shrink:0;margin-right:2px" title="${completado?'Servicio completado':'Pendiente de completar'}">${completado?'✅':'⬜'}</span>
           <div class="cs-info">
             <div class="cs-name">${esc(s.nombre)}</div>
-            <select class="cs-emp-sel" id="cemp-${i}" onchange="updateExtraItemEmp(${i}, this.value)">
-              <option value="">— Empleado —</option>
-              ${_empleados.map(e=>`<option value="${e.id}" ${(s.empleado_id===e.id)?'selected':''}>${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('')}
-            </select>
+            ${esDeCita
+              ? (empNombre ? `<div style="font-size:10px;color:var(--text3)">👤 ${esc(empNombre)}</div>` : `<div style="font-size:10px;color:var(--amber)">Sin empleado asignado</div>`)
+              : `<select class="cs-emp-sel" id="cemp-${i}" onchange="updateExtraItemEmp(${i}, this.value)">
+                  <option value="">— Empleado —</option>
+                  ${_empleados.map(e=>`<option value="${e.id}" ${(s.empleado_id===e.id)?'selected':''}>${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('')}
+                </select>`}
           </div>
           <span class="cs-price">${fmtCOP(s.precio)}</span>
-          ${i >= citaItems.length ? `<button class="cs-del" onclick="quitarExtra(${i - citaItems.length})">✕</button>` : ''}
-        </div>`).join('')}
+          ${!esDeCita ? `<button class="cs-del" onclick="quitarExtra(${i - citaItems.length})">✕</button>` : ''}
+        </div>`;
+      }).join('')}
       <button class="btn-add-svc" onclick="abrirPickSvcModal('cobro')">+ Agregar servicio</button>
     </div>
 
@@ -874,8 +1010,17 @@ function renderCobroPanel() {
       ${_metodoPago==='mixto' ? renderMixto(total) : ''}
     </div>`;
 
-  $('cobrarBtn').disabled = (todosItems.length === 0 || total <= 0);
-  $('cobrarBtn').textContent = `Cobrar ${fmtCOP(total)}`;
+  const todoCompletado = citaItems.length > 0
+    ? citaItems.every(s => s.completado == 1)
+    : _citaSel?.estado === 'Completada';
+  const puedeFacturar = _citaSel?.estado === 'Completada' && todoCompletado;
+  const pendientes = citaItems.filter(s => s.completado != 1).length;
+  $('cobrarBtn').disabled = (todosItems.length === 0 || total <= 0 || !puedeFacturar);
+  $('cobrarBtn').textContent = puedeFacturar
+    ? `Cobrar ${fmtCOP(total)}`
+    : pendientes > 0
+      ? `${pendientes} servicio${pendientes>1?'s':''} pendiente${pendientes>1?'s':''} de completar`
+      : 'Marcar como Completada para cobrar';
 }
 
 function renderMixto(total) {
@@ -991,6 +1136,7 @@ function getTotal() {
 function abrirCobro() {
   if (!requireCaja()) return;
   if (!_citaSel) return;
+  if (_citaSel.estado !== 'Completada') { alert('Solo se pueden facturar citas en estado "Completada".'); return; }
   const { subtotal, descuento, total } = getTotal();
   const citaItems = (_citaSel.servicios||[]).length ? _citaSel.servicios : (_citaSel.precio?[{nombre:'Servicio',precio:_citaSel.precio}]:[]);
   const todosItems = [...citaItems, ..._extraItems];
@@ -1118,6 +1264,7 @@ async function renderCaja() {
         <div class="stat-c"><div class="lbl">Total cobrado</div><div class="val" style="font-size:16px">${fmtCOP(totalDia)}</div></div>
         <div class="stat-c"><div class="lbl">Efectivo en caja</div><div class="val" style="font-size:16px;color:var(--green)">${fmtCOP(efectivoEnCaja)}</div></div>
       </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Ventas cobradas</div>
       <table class="caja-tbl">
         <thead><tr><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Total</th><th>Pago</th></tr></thead>
         <tbody>${items.length ? items.map(v => `
@@ -1362,14 +1509,138 @@ async function tomarCita(citaId) {
 
 /* ──────── TABS ──────── */
 function switchTab(tab) {
-  $('vistaCitas').style.display = tab==='citas' ? 'flex' : 'none';
-  $('vistaPool').style.display  = tab==='pool'  ? 'flex' : 'none';
-  $('vistaCaja').style.display  = tab==='caja'  ? 'block' : 'none';
-  $('tabCitas').classList.toggle('active', tab==='citas');
-  $('tabPool').classList.toggle('active',  tab==='pool');
-  $('tabCaja').classList.toggle('active',  tab==='caja');
-  if (tab === 'caja') renderCaja();
-  if (tab === 'pool') cargarPool();
+  $('vistaCitas').style.display    = tab==='citas'     ? 'flex'   : 'none';
+  $('vistaPool').style.display     = tab==='pool'      ? 'flex'   : 'none';
+  $('vistaProductos').style.display= tab==='productos' ? 'flex'   : 'none';
+  $('vistaCaja').style.display     = tab==='caja'      ? 'block'  : 'none';
+  $('tabCitas').classList.toggle('active',     tab==='citas');
+  $('tabPool').classList.toggle('active',      tab==='pool');
+  $('tabProductos').classList.toggle('active', tab==='productos');
+  $('tabCaja').classList.toggle('active',      tab==='caja');
+  if (tab === 'caja')      renderCaja();
+  if (tab === 'pool')      cargarPool();
+  if (tab === 'productos') cargarProductosPOS();
+}
+
+/* ──────── PRODUCTOS EN VENTA ──────── */
+let _productosVenta = [], _carrito = [], _prodSelId = null;
+
+async function cargarProductosPOS() {
+  try {
+    _productosVenta = await api('GET', '/productos?enVenta=true');
+    filtrarProductosPOS();
+  } catch (e) { $('prod-grid').innerHTML = `<div style="color:var(--red)">${esc(e.message)}</div>`; }
+}
+
+function filtrarProductosPOS() {
+  const q = ($('prod-busq')?.value || '').toLowerCase();
+  const lista = q ? _productosVenta.filter(p => p.nombre.toLowerCase().includes(q)) : _productosVenta;
+  const cnt = $('prod-count');
+  if (cnt) cnt.textContent = `${lista.length} producto${lista.length!==1?'s':''}`;
+  const grid = $('prod-grid');
+  if (!grid) return;
+  if (!lista.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--text3);font-size:13px">
+      Sin productos${q?' encontrados':''}.<br>
+      <span style="font-size:11px">Actívalos en Inventario del panel de admin.</span>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = lista.map(p => {
+    const stock = parseInt(p.stock_actual||0);
+    const agotado = stock <= 0;
+    const sel = _prodSelId === p.id;
+    const stockCol = agotado ? 'var(--red)' : stock <= parseInt(p.stock_minimo||0) ? 'var(--amber)' : 'var(--green)';
+    return `<div onclick="selProducto('${p.id}')"
+      style="background:var(--bg);border:0.5px solid ${sel?'var(--acc)':'var(--border)'};border-radius:var(--rl);padding:11px 13px;cursor:pointer;transition:.12s;${agotado?'opacity:.5':''}">
+      <div style="font-size:13px;font-weight:700">${esc(p.nombre)}</div>
+      <div id="prod-det-${p.id}" style="display:${sel?'block':'none'};margin-top:8px">
+        ${p.categoria_nombre?`<div style="font-size:10px;color:var(--text3);margin-bottom:4px">${esc(p.categoria_nombre)}</div>`:''}
+        <div style="font-size:17px;font-weight:700;color:var(--acc);margin-bottom:6px">${fmtCOP(parseFloat(p.precio_venta||0))}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:${stockCol};font-weight:600">Stock: ${stock} ${esc(p.unidad||'und')}</span>
+          ${!agotado
+            ? `<button class="btn btn-xs btn-acc" onclick="event.stopPropagation();agregarAlCarrito('${p.id}','${esc(p.nombre)}',${p.precio_venta},'${esc(p.unidad||'und')}')">+ Agregar</button>`
+            : `<span style="font-size:11px;color:var(--red);font-weight:600">Sin stock</span>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selProducto(id) {
+  const prev = _prodSelId;
+  _prodSelId = (prev === id) ? null : id;
+  // toggle detalles sin re-render completo
+  if (prev) { const d=$(`prod-det-${prev}`); if(d){d.style.display='none'; d.closest('div')?.style && (d.closest('[onclick]').style.borderColor='var(--border)');} }
+  if (_prodSelId) { const d=$(`prod-det-${_prodSelId}`); if(d){d.style.display='block'; d.closest('[onclick]').style.borderColor='var(--acc)';} }
+}
+
+function agregarAlCarrito(id, nombre, precio, unidad) {
+  precio = parseFloat(precio||0);
+  const ex = _carrito.find(c=>c.id===id);
+  if (ex) ex.cantidad++;
+  else _carrito.push({id, nombre, precio, unidad, cantidad:1});
+  renderCarrito();
+  showToast(`✅ ${nombre}`);
+}
+
+function renderCarrito() {
+  const el = $('prod-carrito');
+  const btnCobrar = $('prod-cobrar-btn');
+  const totEl = $('prod-total');
+  if (!el) return;
+  if (!_carrito.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px 10px;color:var(--text3);font-size:12px">Agrega productos para vender</div>';
+    if (btnCobrar) { btnCobrar.disabled=true; btnCobrar.style.opacity='.5'; }
+    if (totEl) totEl.textContent = fmtCOP(0);
+    return;
+  }
+  const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad, 0);
+  el.innerHTML = _carrito.map((c,i)=>`
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:8px 10px;display:flex;align-items:center;gap:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.nombre)}</div>
+        <div style="font-size:11px;color:var(--text2)">${fmtCOP(c.precio)} × ${c.cantidad}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <button onclick="cambiarCantidad(${i},-1)" style="width:22px;height:22px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg2);cursor:pointer;font-size:14px;line-height:1">−</button>
+        <span style="font-size:12px;font-weight:700;min-width:16px;text-align:center">${c.cantidad}</span>
+        <button onclick="cambiarCantidad(${i},1)" style="width:22px;height:22px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg2);cursor:pointer;font-size:14px;line-height:1">+</button>
+        <button onclick="quitarDelCarrito(${i})" style="width:22px;height:22px;border:none;border-radius:4px;background:var(--red-l);color:var(--red);cursor:pointer;font-size:12px;font-weight:700">✕</button>
+      </div>
+    </div>`).join('');
+  if (totEl) totEl.textContent = fmtCOP(total);
+  if (btnCobrar) { btnCobrar.disabled=false; btnCobrar.style.opacity='1'; btnCobrar.textContent=`Cobrar ${fmtCOP(total)}`; }
+}
+
+function cambiarCantidad(i, delta) {
+  _carrito[i].cantidad += delta;
+  if (_carrito[i].cantidad <= 0) _carrito.splice(i,1);
+  renderCarrito();
+}
+function quitarDelCarrito(i) { _carrito.splice(i,1); renderCarrito(); }
+function limpiarCarrito() { _carrito=[]; renderCarrito(); }
+
+async function cobrarProductos() {
+  if (!_carrito.length) return;
+  const btn = $('prod-cobrar-btn');
+  const metodo = $('prod-metodo')?.value || 'Efectivo';
+  const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad, 0);
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    if (!_cajaId) { alert('Debes abrir la caja primero'); switchTab('caja'); return; }
+    await api('POST', '/ventas', {
+      items: _carrito.map(c=>({ nombre:c.nombre, precio:c.precio, cantidad:c.cantidad, tipo:'producto', refId:c.id })),
+      pagos: [{ metodo, monto: total }]
+    });
+    showToast(`✅ Venta de ${fmtCOP(total)} registrada`);
+    limpiarCarrito();
+    cargarProductosPOS();
+  } catch(e) {
+    alert(e.message);
+    btn.disabled=false; btn.textContent=`Cobrar ${fmtCOP(total)}`;
+  }
 }
 
 function esc(s) {
@@ -1394,6 +1665,57 @@ setInterval(function(){
   if($('vistaCaja')?.style.display!=='none') renderCaja();
   if($('vistaPool')?.style.display!=='none') cargarPool();
 }, 30000);
+
+// ── Alertas de citas próximas ─────────────────────────────────
+const _alertedCitas = new Set();
+let _alertInterval = null;
+function _fmtLocalAlerta(d){
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+async function checkCitasProximas(){
+  try{
+    const ahora=new Date();
+    const en15=new Date(ahora.getTime()+16*60*1000);
+    const d=await api('GET',`/citas?desde=${encodeURIComponent(_fmtLocalAlerta(ahora))}&hasta=${encodeURIComponent(_fmtLocalAlerta(en15))}&tamPagina=50`);
+    for(const c of (d?.items||[])){
+      if(_alertedCitas.has(c.id))continue;
+      if(c.estado==='Cancelada'||c.estado==='Completada')continue;
+      _alertedCitas.add(c.id);
+      const diffMin=Math.round((new Date(c.fechaHora||c.fecha_hora)-ahora)/60000);
+      _mostrarAlertaCita(c,diffMin);
+    }
+  }catch{}
+}
+function _mostrarAlertaCita(c,diffMin){
+  const urgent=diffMin<=5;
+  const tiempo=diffMin<=0?'¡AHORA!':`En ${diffMin} min`;
+  const nombre=c.clienteNombre||c.cliente_nombre||'Cliente';
+  const servicio=c.servicioNombre||c.servicio_nombre||'';
+  const empleado=c.empleadoNombre||c.empleado_nombre||'';
+  const el=document.createElement('div');
+  el.className='cita-alert'+(urgent?' urgent':'');
+  el.innerHTML=`<span class="al-icon">${urgent?'🔴':'⏰'}</span>
+    <div class="al-body">
+      <strong>${tiempo} — ${esc(nombre)}</strong>
+      ${servicio?`<span>${esc(servicio)}</span>`:''}
+      ${empleado?`<span style="color:#888"> · ${esc(empleado)}</span>`:''}
+    </div>
+    <button class="al-close" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('alerts-container').appendChild(el);
+  setTimeout(()=>el.remove(),urgent?120000:90000);
+  if('Notification' in window&&Notification.permission==='granted'){
+    new Notification(`✂️ Cita ${tiempo}`,{
+      body:`${nombre}${servicio?' — '+servicio:''}${empleado?' con '+empleado:''}`,
+      icon:'/img/logo.png',tag:c.id,renotify:false
+    });
+  }
+}
+function iniciarAlertas(){
+  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+  checkCitasProximas();
+  _alertInterval=setInterval(checkCitasProximas,60000);
+}
 
 // Auto-login
 if (TOKEN) iniciar();

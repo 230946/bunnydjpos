@@ -122,6 +122,8 @@
     .nav-sep .sep-arrow{font-size:9px;transition:transform .2s;flex-shrink:0}
     .nav-group{overflow:hidden;transition:max-height .25s ease;max-height:400px}
     .nav-group.collapsed{max-height:0}
+    .nav-portal-link{text-decoration:none;display:flex;align-items:center;justify-content:space-between}
+    .nav-portal-link::after{content:'↗';font-size:10px;opacity:.5;margin-left:auto}
     .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
     .card-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
     .card-header h3{font-size:14px;font-weight:700;color:var(--acc)}
@@ -236,6 +238,7 @@
     <div class="login-logo">
       <img id="login-logo-img" src="/img/logo.png" alt="Logo" class="show">
       <p id="login-neg-nombre" style="font-size:17px;font-weight:700;color:var(--acc);margin-top:6px;display:none"></p>
+      <span style="display:inline-block;margin-top:8px;background:var(--acc);color:#fff;padding:3px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.08em">ADMIN</span>
     </div>
     <div class="error-msg" id="login-error"></div>
     <div class="field"><label>Usuario o email</label><input id="l-login" type="text" placeholder="usuario@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -259,19 +262,15 @@
       <div class="nav-item" data-nav="paquetes" onclick="nav('paquetes')">🎁 Paquetes</div>
       <div class="nav-item" data-nav="inventario" onclick="nav('inventario')">📦 Inventario</div>
       <div class="nav-item" data-nav="caja" onclick="nav('caja')">💰 Caja del día</div>
-      <div class="nav-item" id="nav-toggle-comisiones" onclick="toggleSubNav('subnav-comisiones')">💸 Comisiones <span id="subarr-comisiones" style="margin-left:auto;font-size:10px;transition:transform .2s">▾</span></div>
-      <div class="nav-subnav" id="subnav-comisiones">
-        <div class="nav-item nav-sub" data-nav="comisiones" onclick="nav('comisiones')">📋 Ver comisiones</div>
-        <div class="nav-item nav-sub" data-nav="cfg-comisiones" onclick="nav('cfg-comisiones')">⚙️ Configuración</div>
-      </div>
+      <div class="nav-item" id="nav-toggle-comisiones" data-nav="comisiones" onclick="nav('comisiones')">💸 Comisiones</div>
       <div class="nav-item" data-nav="gastos" onclick="nav('gastos')">📋 Gastos</div>
       <div class="nav-item" data-nav="facturas" onclick="nav('facturas')">🧾 Facturas</div>
+      <div class="nav-item" data-nav="clientes" onclick="nav('clientes')">👤 Clientes</div>
       <div class="nav-item" data-nav="proveedores" onclick="nav('proveedores')">🚚 Proveedores</div>
       <div class="nav-item" data-nav="pedidos-prov" onclick="nav('pedidos-prov')">🛒 Pedidos prov.</div>
     </div>
     <div class="nav-sep" onclick="toggleGrupo('grp-personal')">Personal <span class="sep-arrow" id="arr-personal">▼</span></div>
     <div class="nav-group" id="grp-personal">
-      <div class="nav-item" data-nav="clientes" onclick="nav('clientes')">👤 Clientes</div>
       <div class="nav-item" data-nav="empleados" onclick="nav('empleados')">👥 Empleados</div>
       <div class="nav-item" data-nav="personal" onclick="nav('personal')">🔑 Usuarios</div>
       <div class="nav-item" data-nav="roles" onclick="nav('roles')">🔐 Roles</div>
@@ -281,6 +280,12 @@
     <div class="nav-group" id="grp-cfg">
       <div class="nav-item" data-nav="cfg-factura" onclick="nav('cfg-factura')">🧾 Config factura</div>
       <div class="nav-item" data-nav="cfg-impresora" onclick="nav('cfg-impresora')">🖨️ Config impresora</div>
+    </div>
+    <div class="nav-sep" onclick="toggleGrupo('grp-portales')" style="margin-top:6px">Accesos directos <span class="sep-arrow" id="arr-portales">▼</span></div>
+    <div class="nav-group" id="grp-portales">
+      <a class="nav-item nav-portal-link" id="link-reservas" href="#" target="_blank" onclick="return _abrirPortal('reservar')">🌐 Portal reservas</a>
+      <a class="nav-item nav-portal-link" id="link-empleado" href="#" target="_blank" onclick="return _abrirPortal('empleado')">👤 Portal empleado</a>
+      <a class="nav-item nav-portal-link" id="link-pos"      href="#" target="_blank" onclick="return _abrirPortal('pos')">💻 POS peluquería</a>
     </div>
     <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
   </nav>
@@ -409,10 +414,38 @@
         <div class="fg"><label>Teléfono</label><input id="emp-tel" placeholder="Número de contacto"></div>
         <div class="fg"><label>Email</label><input id="emp-email" type="email" placeholder="email@ejemplo.com"></div>
       </div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin:10px 0 6px">Remuneración</div>
-      <div class="frow">
-        <div class="fg"><label>Sueldo básico</label><input id="emp-sueldo" type="number" min="0" step="1000" placeholder="0"></div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin:14px 0 8px">Configuración de comisiones por empleado</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;transition:.15s" id="lbl-rem-sueldo">
+          <input type="radio" name="emp-rem" value="sueldo" onchange="cambiarTipoRem(this.value)" style="accent-color:var(--acc)"> Sueldo básico
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;transition:.15s" id="lbl-rem-hora">
+          <input type="radio" name="emp-rem" value="hora" onchange="cambiarTipoRem(this.value)" style="accent-color:var(--acc)"> Tarifa por hora
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;transition:.15s" id="lbl-rem-comision">
+          <input type="radio" name="emp-rem" value="comision" onchange="cambiarTipoRem(this.value)" style="accent-color:var(--acc)"> Comisión
+        </label>
+      </div>
+      <div id="rem-sueldo-row" style="display:none">
+        <div class="fg"><label>Sueldo básico mensual</label><input id="emp-sueldo" type="number" min="0" step="1000" placeholder="0"></div>
+      </div>
+      <div id="rem-hora-row" style="display:none">
         <div class="fg"><label>Tarifa por hora</label><input id="emp-tarifa" type="number" min="0" step="500" placeholder="0"></div>
+      </div>
+      <div id="rem-comision-row" style="display:none">
+        <div class="frow">
+          <div class="fg">
+            <label>Tipo de comisión</label>
+            <select id="emp-tipo-comision" onchange="_actualizarLblComision()">
+              <option value="porcentaje">Porcentaje (%)</option>
+              <option value="fijo">Monto fijo ($)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label id="emp-comision-lbl">Valor (%)</label>
+            <input id="emp-comision-val" type="number" min="0" step="0.5" placeholder="0">
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -721,10 +754,22 @@ const NAV_PERMS={
   reportes:['reportes'],servicios:['personal'],paquetes:['personal'],
   inventario:['inventario'],caja:['pos_cobro'],gastos:['gastos'],
   facturas:['facturacion'],proveedores:['proveedores'],'pedidos-prov':['proveedores'],
+  clientes:['clientes'],
   empleados:['personal'],personal:['personal'],roles:['personal'],
   horarios:['horarios'],'cfg-factura':['personal'],'cfg-impresora':['personal'],
-  comisiones:['personal'],'cfg-comisiones':['personal'],
+  comisiones:['personal'],
 };
+// Claves de permiso que dan acceso al panel admin (no incluye permisos solo de POS)
+const ADMIN_ACCESS_KEYS=['personal','inventario','gastos','proveedores','reportes','clientes','facturacion','horarios'];
+function tieneAccesoAdmin(permisos, esSuperAdmin, rolNombre){
+  if(esSuperAdmin) return true;
+  const rol=(rolNombre||'').toLowerCase();
+  if(['cajero','caja'].some(r=>rol.includes(r))) return false;
+  const p=permisos||{};
+  // Sin permisos explícitos y sin rol de cajero → admin con rol sin configurar, permitir
+  if(Object.keys(p).length===0) return true;
+  return ADMIN_ACCESS_KEYS.some(k=>p[k]);
+}
 function perm(keys){return IS_SUPERADMIN||keys.some(k=>PERMISOS[k]);}
 
 function aplicarPermisos(){
@@ -734,12 +779,10 @@ function aplicarPermisos(){
     const req=NAV_PERMS[el.dataset.nav];
     if(req)el.style.display=perm(req)?'':'none';
   });
-  // Ocultar comisiones toggle si no tiene permiso
+  // Ocultar comisiones si no tiene permiso
   if(!perm(['personal'])){
     const t=document.getElementById('nav-toggle-comisiones');
-    const s=document.getElementById('subnav-comisiones');
     if(t)t.style.display='none';
-    if(s)s.style.display='none';
   }
   // Ocultar grupos vacíos y sus encabezados
   document.querySelectorAll('.nav-group').forEach(g=>{
@@ -783,16 +826,20 @@ async function doLogin(){
   if(!negocio_id){errEl.textContent='Debes acceder mediante la URL de tu negocio (ej: /peluqueria-admin.html?n=ID)';errEl.style.display='block';return;}
   try{
     const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login:document.getElementById('l-login').value.trim(),password:document.getElementById('l-pass').value,negocio_id})});
-    if(!r.ok)throw new Error();const d=await r.json();TOKEN=d.token;USER_NOMBRE=d.user?.nombre||'';
+    if(!r.ok)throw new Error();const d=await r.json();
+    const _perms=typeof d.user?.permisos==='string'?JSON.parse(d.user.permisos):(d.user?.permisos||{});
+    if(!tieneAccesoAdmin(_perms,d.user?.es_superadmin,d.user?.rol_nombre)){
+      errEl.textContent='No tienes permisos para acceder al panel administrativo.';errEl.style.display='block';return;
+    }
+    TOKEN=d.token;USER_NOMBRE=d.user?.nombre||'';
     USER_ROL=d.user?.rol_nombre||(d.user?.es_superadmin?'Super Admin':'');
-    PERMISOS=typeof d.user?.permisos==='string'?JSON.parse(d.user.permisos):(d.user?.permisos||{});
-    IS_SUPERADMIN=d.user?.es_superadmin||false;
+    PERMISOS=_perms;IS_SUPERADMIN=d.user?.es_superadmin||false;
     sessionStorage.setItem('pel_token',TOKEN);sessionStorage.setItem('pel_nombre',USER_NOMBRE);
     sessionStorage.setItem('pel_rol',USER_ROL);
     sessionStorage.setItem('pel_permisos',JSON.stringify(PERMISOS));
     sessionStorage.setItem('pel_superadmin',IS_SUPERADMIN?'1':'0');
     iniciar();
-  }catch{errEl.textContent='Credenciales inválidas';errEl.style.display='block';}
+  }catch(e){errEl.textContent=e.message||'Credenciales inválidas';errEl.style.display='block';}
 }
 function salir(){TOKEN='';sessionStorage.removeItem('pel_token');clearInterval(_alertInterval);_alertInterval=null;_alertedCitas.clear();document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';}
 async function checkContrato(negocioId){
@@ -852,7 +899,7 @@ async function cargarSvcs(){
 }
 
 let _pg='dashboard';
-const titles={dashboard:'Dashboard',agenda:'Agenda',clientes:'Clientes',servicios:'Catálogo de servicios',empleados:'Empleados',comisiones:'Comisiones','cfg-comisiones':'Configuración de comisiones',paquetes:'Paquetes / Membresías',inventario:'Inventario',caja:'Caja del día',gastos:'Gastos',reportes:'Reportes',facturas:'Facturas',proveedores:'Proveedores','pedidos-prov':'Pedidos a proveedores',personal:'Usuarios',roles:'Roles y permisos',horarios:'Horarios',asistencia:'Asistencia','cfg-factura':'Config. factura','cfg-impresora':'Config. impresora'};
+const titles={dashboard:'Dashboard',agenda:'Agenda',clientes:'Clientes',servicios:'Catálogo de servicios',empleados:'Empleados',comisiones:'Comisiones',paquetes:'Paquetes / Membresías',inventario:'Inventario',caja:'Caja del día',gastos:'Gastos',reportes:'Reportes',facturas:'Facturas',proveedores:'Proveedores','pedidos-prov':'Pedidos a proveedores',personal:'Usuarios',roles:'Roles y permisos',horarios:'Horarios',asistencia:'Asistencia','cfg-factura':'Config. factura','cfg-impresora':'Config. impresora'};
 function nav(p){
   if(window.innerWidth<=767)closeMobileSidebar();
   // Verificar permiso antes de navegar
@@ -861,13 +908,8 @@ function nav(p){
   _pg=p;
   document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
   document.querySelector(`.nav-item[data-nav="${p}"]`)?.classList.add('active');
-  // Si es sub-item de comisiones, abrir el submenú
-  if(p==='comisiones'||p==='cfg-comisiones'){
-    const sub=document.getElementById('subnav-comisiones');
-    if(sub&&!sub.classList.contains('open')){sub.classList.add('open');document.getElementById('subarr-comisiones').style.transform='';}
-  }
   document.getElementById('topbarTitle').textContent=titles[p]||'';
-  ({dashboard:renderDashboard,agenda:renderAgenda,clientes:renderClientes,servicios:renderServicios,empleados:renderEmpleados,comisiones:renderComisiones,'cfg-comisiones':renderCfgComisiones,paquetes:renderPaquetes,inventario:renderInventario,caja:renderCaja,gastos:renderGastos,reportes:renderReportes,facturas:renderFacturas,proveedores:renderProveedores,'pedidos-prov':renderPedidosProv,personal:renderPersonal,roles:renderRoles,horarios:renderHorarios,asistencia:renderAsistencia,'cfg-factura':renderCfgFactura,'cfg-impresora':renderCfgImpresora})[p]?.();
+  ({dashboard:renderDashboard,agenda:renderAgenda,clientes:renderClientes,servicios:renderServicios,empleados:renderEmpleados,comisiones:renderComisiones,paquetes:renderPaquetes,inventario:renderInventario,caja:renderCaja,gastos:renderGastos,reportes:renderReportes,facturas:renderFacturas,proveedores:renderProveedores,'pedidos-prov':renderPedidosProv,personal:renderPersonal,roles:renderRoles,horarios:renderHorarios,asistencia:renderAsistencia,'cfg-factura':renderCfgFactura,'cfg-impresora':renderCfgImpresora})[p]?.();
 }
 function toggleSubNav(id){
   const sub=document.getElementById(id);if(!sub)return;
@@ -896,13 +938,34 @@ function toggleSidebar(){
   sb.classList.toggle('collapsed');
   localStorage.setItem('pel_sb',sb.classList.contains('collapsed')?'0':'1');
 }
+function _abrirPortal(tipo) {
+  const nid = urlNegocio || (typeof _negocioActual !== 'undefined' ? _negocioActual : '');
+  if (!nid) { showToast('No se encontró el ID del negocio', 'err'); return false; }
+  const urls = {
+    reservar: `/peluqueria-reservar.html?n=${nid}`,
+    empleado: `/portal-empleado.html?n=${nid}`,
+    pos:      `/pos-peluqueria.html?n=${nid}`,
+  };
+  window.open(urls[tipo], '_blank');
+  return false;
+}
 function toggleGrupo(id){
   const grp=document.getElementById(id);if(!grp)return;
-  const key=id.replace('grp-','arr-');
-  const arr=document.getElementById(key);
-  const collapsed=grp.classList.toggle('collapsed');
-  if(arr)arr.style.transform=collapsed?'rotate(-90deg)':'';
-  localStorage.setItem('pel_'+id,collapsed?'0':'1');
+  const willCollapse=!grp.classList.contains('collapsed');
+  // cerrar todos los grupos abiertos (accordion)
+  document.querySelectorAll('.nav-group').forEach(g=>{
+    if(g.id===id||g.style.display==='none')return;
+    if(!g.classList.contains('collapsed')){
+      g.classList.add('collapsed');
+      const a=document.getElementById(g.id.replace('grp-','arr-'));
+      if(a)a.style.transform='rotate(-90deg)';
+      localStorage.setItem('pel_'+g.id,'0');
+    }
+  });
+  grp.classList.toggle('collapsed',willCollapse);
+  const arr=document.getElementById(id.replace('grp-','arr-'));
+  if(arr)arr.style.transform=willCollapse?'rotate(-90deg)':'';
+  localStorage.setItem('pel_'+id,willCollapse?'0':'1');
 }
 (function(){
   ['grp-principal','grp-finanzas','grp-personal','grp-cfg'].forEach(id=>{
@@ -1289,6 +1352,38 @@ function previsualizarFotoEmpleado(input){
 }
 function quitarFotoEmpleado(){ _setEmpFoto(null); document.getElementById('emp-foto-input').value=''; }
 
+function cambiarTipoRem(tipo) {
+  document.getElementById('rem-sueldo-row').style.display = tipo === 'sueldo' ? '' : 'none';
+  document.getElementById('rem-hora-row').style.display = tipo === 'hora' ? '' : 'none';
+  document.getElementById('rem-comision-row').style.display = tipo === 'comision' ? '' : 'none';
+  ['lbl-rem-sueldo','lbl-rem-hora','lbl-rem-comision'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const sel = id === 'lbl-rem-'+tipo;
+    el.style.borderColor = sel ? 'var(--acc)' : 'var(--border)';
+    el.style.background  = sel ? 'var(--acc-l)' : '';
+    el.style.fontWeight  = sel ? '700' : '';
+  });
+  if (tipo === 'comision') _actualizarLblComision();
+}
+function _actualizarLblComision() {
+  const t = document.getElementById('emp-tipo-comision')?.value;
+  const lbl = document.getElementById('emp-comision-lbl');
+  if (lbl) lbl.textContent = t === 'fijo' ? 'Valor ($)' : 'Valor (%)';
+}
+function _cargarTipoRem(e) {
+  let tipo = '';
+  if (e.sueldo_base) tipo = 'sueldo';
+  else if (e.tarifa_hora) tipo = 'hora';
+  else if (e.tipo_comision && e.tipo_comision !== 'ninguna') tipo = 'comision';
+  document.querySelectorAll('input[name="emp-rem"]').forEach(r => r.checked = r.value === tipo);
+  cambiarTipoRem(tipo);
+  if (tipo === 'comision') {
+    document.getElementById('emp-tipo-comision').value = e.tipo_comision || 'porcentaje';
+    document.getElementById('emp-comision-val').value = e.tipo_comision === 'fijo' ? (e.monto_comision||'') : (e.pct_comision||'');
+    _actualizarLblComision();
+  }
+}
 function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)return;
   _editEmpId=e.id;
   document.getElementById('emp-modal-title').textContent='Editar empleado';
@@ -1304,12 +1399,15 @@ function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)re
   _setEmpFoto(e.foto_url||null);
   document.getElementById('emp-foto-input').value='';
   _cargarCatsEmpleado(e.categoria_id||'');
+  _cargarTipoRem(e);
   document.getElementById('emp-modal').style.display='flex';
 }
 function abrirModalEmpleado(){
   _editEmpId=null;
   document.getElementById('emp-modal-title').textContent='Nuevo empleado';
-  ['emp-nombre','emp-apellido','emp-cedula','emp-cargo','emp-especialidad','emp-tel','emp-email','emp-sueldo','emp-tarifa'].forEach(id=>document.getElementById(id).value='');
+  ['emp-nombre','emp-apellido','emp-cedula','emp-cargo','emp-especialidad','emp-tel','emp-email','emp-sueldo','emp-tarifa','emp-comision-val'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.querySelectorAll('input[name="emp-rem"]').forEach(r=>r.checked=false);
+  cambiarTipoRem('');
   _setEmpFoto(null);
   document.getElementById('emp-foto-input').value='';
   _cargarCatsEmpleado('');
@@ -1326,6 +1424,17 @@ async function _cargarCatsEmpleado(selVal){
 async function guardarEmpleado(){
   const nombre=document.getElementById('emp-nombre').value.trim();
   if(!nombre){showToast('El nombre es obligatorio','err');return;}
+  const remRadio = document.querySelector('input[name="emp-rem"]:checked')?.value||'';
+  let sueldoBase=null, tarifaHora=null, tipoComision='ninguna', pctComision=0, montoComision=0;
+  if(remRadio==='sueldo'){
+    sueldoBase=parseFloat(document.getElementById('emp-sueldo').value)||null;
+  }else if(remRadio==='hora'){
+    tarifaHora=parseFloat(document.getElementById('emp-tarifa').value)||null;
+  }else if(remRadio==='comision'){
+    tipoComision=document.getElementById('emp-tipo-comision').value||'porcentaje';
+    const val=parseFloat(document.getElementById('emp-comision-val').value)||0;
+    if(tipoComision==='fijo') montoComision=val; else pctComision=val;
+  }
   const body={
     nombre,
     apellido:document.getElementById('emp-apellido').value.trim()||null,
@@ -1334,8 +1443,7 @@ async function guardarEmpleado(){
     especialidad:document.getElementById('emp-especialidad').value.trim()||null,
     telefono:document.getElementById('emp-tel').value.trim()||null,
     email:document.getElementById('emp-email').value.trim()||null,
-    sueldoBase:parseFloat(document.getElementById('emp-sueldo').value)||null,
-    tarifaHora:parseFloat(document.getElementById('emp-tarifa').value)||null,
+    sueldoBase, tarifaHora, tipoComision, pctComision, montoComision,
     categoriaId:document.getElementById('emp-categoria-id').value||null,
   };
   try{
@@ -1392,22 +1500,6 @@ async function renderComisiones(){
   await cargarComisiones();
 }
 
-async function renderCfgComisiones(){
-  document.getElementById('content').innerHTML=`
-    <div class="card">
-      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-        <h3>Configuración de comisiones por empleado</h3>
-        <button class="btn btn-outline btn-sm" onclick="cargarCfgComisiones()">↻ Actualizar</button>
-      </div>
-      <p style="font-size:12px;color:var(--text2);margin:0 0 12px">Define el tipo y valor de comisión para cada empleado. Los cambios aplican a ventas futuras; usa "Recalcular" en Ver comisiones para actualizar registros pasados.</p>
-      <div class="table-wrap">
-        <table><thead><tr><th>Empleado</th><th>Tipo</th><th>Valor</th><th></th></tr></thead>
-        <tbody id="com-cfg-tbody"></tbody></table>
-      </div>
-    </div>`;
-  await cargarCfgComisiones();
-}
-
 async function recalcularComisiones(){
   const empId=_gel('com-emp')?.value||'';
   if(!empId){showToast('Selecciona un empleado para recalcular','err');return;}
@@ -1418,50 +1510,6 @@ async function recalcularComisiones(){
     showToast(`${r.actualizadas} comisiones actualizadas ✓`);
     cargarComisiones();
   }catch(e){showToast(e.message,'err');}
-}
-async function cargarCfgComisiones(){
-  try{
-    const emps=await apiFetch(`${API}/peluqueria/empleados?soloActivos=true`)||[];
-    const tb=_gel('com-cfg-tbody');if(!tb)return;
-    tb.innerHTML=emps.map(e=>`
-      <tr id="com-cfg-row-${e.id}">
-        <td><b>${esc(e.nombre+(e.apellido?' '+e.apellido:''))}</b></td>
-        <td>
-          <select onchange="toggleComCfgRow('${e.id}',this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-            <option value="ninguna" ${(e.tipo_comision||'ninguna')==='ninguna'?'selected':''}>Sin comisión</option>
-            <option value="porcentaje" ${e.tipo_comision==='porcentaje'?'selected':''}>% de venta</option>
-            <option value="fijo" ${e.tipo_comision==='fijo'?'selected':''}>Monto fijo</option>
-          </select>
-        </td>
-        <td>
-          <div id="com-cfg-pct-${e.id}" style="display:${e.tipo_comision==='porcentaje'?'flex':'none'};align-items:center;gap:4px">
-            <input type="number" min="0" max="100" step="0.5" value="${e.pct_comision||0}" style="width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px"> %
-          </div>
-          <div id="com-cfg-fijo-${e.id}" style="display:${e.tipo_comision==='fijo'?'flex':'none'};align-items:center;gap:4px">
-            $ <input type="number" min="0" step="1000" value="${e.monto_comision||0}" style="width:100px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-          </div>
-          <span id="com-cfg-none-${e.id}" style="display:${(!e.tipo_comision||e.tipo_comision==='ninguna')?'inline':'none'};color:var(--text3);font-size:12px">—</span>
-        </td>
-        <td><button class="btn btn-acc btn-sm" onclick="guardarCfgComision('${e.id}',this)">Guardar</button></td>
-      </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text2)">Sin empleados activos</td></tr>';
-  }catch(e){showToast(e.message,'err');}
-}
-function toggleComCfgRow(empId, tipo){
-  _gel(`com-cfg-pct-${empId}`).style.display=tipo==='porcentaje'?'flex':'none';
-  _gel(`com-cfg-fijo-${empId}`).style.display=tipo==='fijo'?'flex':'none';
-  _gel(`com-cfg-none-${empId}`).style.display=tipo==='ninguna'?'inline':'none';
-}
-async function guardarCfgComision(empId, btn){
-  try{
-    const row=_gel(`com-cfg-row-${empId}`);
-    const tipo=row.querySelector('select').value;
-    const pct=parseFloat(row.querySelector(`#com-cfg-pct-${empId} input`)?.value)||0;
-    const monto=parseFloat(row.querySelector(`#com-cfg-fijo-${empId} input`)?.value)||0;
-    btn.textContent='...';btn.disabled=true;
-    await apiFetch(`${API}/peluqueria/empleados/${empId}/comision`,{method:'PATCH',body:JSON.stringify({tipoComision:tipo,pctComision:pct,montoComision:monto})});
-    showToast('Comisión guardada ✓');
-  }catch(e){showToast(e.message,'err');}
-  finally{btn.textContent='Guardar';btn.disabled=false;}
 }
 async function cargarComisiones(){
   const desde=_gel('com-desde')?.value||'';
@@ -1669,7 +1717,7 @@ function filtrarInv(){
   const cnt=document.getElementById('inv-count');if(cnt)cnt.textContent=`${items.length} producto${items.length!==1?'s':''}`;
   if(!items.length){el.innerHTML='<div style="color:var(--text3);text-align:center;padding:40px">No hay productos en inventario.</div>';return;}
   el.innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th></th></tr></thead>
+    <thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th style="text-align:center">En POS</th><th></th></tr></thead>
     <tbody>${items.map(i=>{
       const bajo=parseInt(i.stock_actual)>0&&parseInt(i.stock_actual)<parseInt(i.stock_minimo);
       const agotado=parseInt(i.stock_actual)<=0;
@@ -1678,6 +1726,7 @@ function filtrarInv(){
       const margen=costo>0?((pventa-costo)/costo*100):null;
       const margenTxt=margen===null?'—':`${margen>=0?'+':''}${margen.toFixed(1)}%`;
       const margenColor=margen===null?'var(--text3)':margen<0?'var(--red)':margen<20?'var(--yellow)':'var(--green)';
+      const enVenta=i.en_venta==1;
       return `<tr>
         <td style="font-weight:600">${esc(i.nombre)}</td>
         <td style="font-size:12px;color:var(--text2);font-family:monospace">${esc(i.sku||'—')}</td>
@@ -1688,6 +1737,13 @@ function filtrarInv(){
         <td style="font-size:12px">${fmt(costo)}</td>
         <td style="font-size:12px">${fmt(pventa)}</td>
         <td style="font-weight:700;font-size:13px;color:${margenColor}">${margenTxt}</td>
+        <td style="text-align:center">
+          <label style="display:inline-flex;align-items:center;cursor:pointer;gap:5px" title="${enVenta?'Visible en POS':'No visible en POS'}">
+            <input type="checkbox" ${enVenta?'checked':''} onchange="toggleEnVenta('${i.id}',this)"
+              style="width:16px;height:16px;accent-color:var(--acc);cursor:pointer">
+            <span style="font-size:10px;color:${enVenta?'var(--acc)':'var(--text3)'}">${enVenta?'Sí':'No'}</span>
+          </label>
+        </td>
         <td style="white-space:nowrap">
           <button class="btn btn-sm" onclick="abrirAjuste('${i.id}','${esc(i.nombre)}')">Ajustar</button>
           <button class="btn btn-sm" style="margin-left:4px" onclick="abrirModalInv('${i.id}')">✏️</button>
@@ -1697,6 +1753,16 @@ function filtrarInv(){
     ${_invData.some(i=>parseFloat(i.stock)>0&&parseFloat(i.stock)<parseFloat(i.stock_min))?
       '<div style="margin-top:10px;padding:8px 12px;background:#e3b34111;border:1px solid #e3b34144;border-radius:6px;font-size:12px;color:var(--yellow)">⚠️ Algunos productos están por debajo del stock mínimo</div>':''
     }`;
+}
+
+async function toggleEnVenta(id, chk) {
+  try {
+    await apiFetch(`${API}/peluqueria/productos/${id}/toggle-venta`, { method:'PATCH' });
+    const item = _invData.find(i=>i.id===id);
+    if (item) { item.en_venta = item.en_venta==1 ? 0 : 1; }
+    const lbl = chk.nextElementSibling;
+    if (lbl) { lbl.textContent = chk.checked ? 'Sí' : 'No'; lbl.style.color = chk.checked ? 'var(--acc)' : 'var(--text3)'; }
+  } catch(e) { chk.checked = !chk.checked; alert(e.message); }
 }
 
 function invRecalcPrecio(){
@@ -2778,7 +2844,10 @@ function imprimirPrueba(){
   const prev=_gel('imp-preview');if(prev){prev.textContent=ticket;prev.style.display='block';}showToast('Ticket de prueba generado ✓');
 }
 
-if(TOKEN)iniciar();
+if(TOKEN){
+  if(tieneAccesoAdmin(PERMISOS,IS_SUPERADMIN,USER_ROL))iniciar();
+  else{TOKEN='';sessionStorage.removeItem('pel_token');}
+}
 
 // Auto-refresh panel activo cada 30s
 setInterval(function(){

@@ -37,34 +37,33 @@ router.get('/portal-empleado/:id', async (req, res) => {
     );
 
     const { rows: citasHoy } = await pool.query(
-      `SELECT c.id, c.fecha_hora, c.duracion_min, c.estado, c.notas,
-              COALESCE(
-                (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
-                 FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
-                s.nombre
-              ) AS servicio_nombre,
-              COALESCE(cl.nombre, c.cliente_nombre)   AS cliente_nombre,
-              COALESCE(cl.apellido, '')                AS cliente_apellido
+      `SELECT DISTINCT c.id, c.fecha_hora, c.duracion_min, c.estado, c.notas,
+              COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre,
+              COALESCE(cl.apellido, '')              AS cliente_apellido
        FROM pel_citas c
-       LEFT JOIN pel_servicios s ON BINARY s.id = BINARY c.servicio_id
        LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
-       WHERE (BINARY c.empleado_id=? OR BINARY c.empleado_nombre=?)
+       WHERE (BINARY c.empleado_id=?
+              OR EXISTS (SELECT 1 FROM pel_cita_detalle xd WHERE xd.cita_id=c.id AND BINARY xd.empleado_id=?))
          AND DATE(c.fecha_hora)=CURDATE()
          AND c.estado NOT IN ('Cancelada','NoAsistio')
-       ORDER BY c.fecha_hora`, [e.id, e.nombre]
+       ORDER BY c.fecha_hora`, [e.id, e.id]
     );
+    const citaIdsHoy = citasHoy.map(r => r.id);
+    let detallesHoy = [];
+    if (citaIdsHoy.length) {
+      const ph = citaIdsHoy.map(() => '?').join(',');
+      const { rows: dh } = await pool.query(
+        `SELECT cd.id, cd.cita_id, cd.nombre, cd.precio, cd.completado, cd.empleado_id, cd.empleado_nombre
+         FROM pel_cita_detalle cd WHERE cd.cita_id IN (${ph}) ORDER BY cd.id`, citaIdsHoy
+      );
+      detallesHoy = dh;
+    }
 
     const { rows: proximas } = await pool.query(
       `SELECT c.id, c.fecha_hora, c.duracion_min, c.estado, c.notas,
-              COALESCE(
-                (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
-                 FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
-                s.nombre
-              ) AS servicio_nombre,
-              COALESCE(cl.nombre, c.cliente_nombre)   AS cliente_nombre,
-              COALESCE(cl.apellido, '')                AS cliente_apellido
+              COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre,
+              COALESCE(cl.apellido, '')              AS cliente_apellido
        FROM pel_citas c
-       LEFT JOIN pel_servicios s ON BINARY s.id = BINARY c.servicio_id
        LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
        WHERE (BINARY c.empleado_id=? OR BINARY c.empleado_nombre=?)
          AND DATE(c.fecha_hora)>CURDATE()
@@ -74,21 +73,19 @@ router.get('/portal-empleado/:id', async (req, res) => {
     );
 
     const { rows: cola } = await pool.query(
-      `SELECT c.id, c.fecha_hora, c.duracion_min, c.precio,
-              s.categoria_id AS servicio_categoria_id,
-              COALESCE(
-                (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
-                 FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
-                s.nombre
-              ) AS servicio_nombre,
+      `SELECT cd.id AS detalle_id, cd.cita_id, cd.nombre AS servicio_nombre,
+              cd.precio, cd.servicio_id,
+              sv.categoria_id AS servicio_categoria_id,
+              c.fecha_hora, c.duracion_min, c.estado AS cita_estado,
               COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre
-       FROM pel_citas c
-       LEFT JOIN pel_servicios s ON BINARY s.id = BINARY c.servicio_id
+       FROM pel_cita_detalle cd
+       JOIN pel_citas c ON BINARY c.id = BINARY cd.cita_id
+       LEFT JOIN pel_servicios sv ON BINARY sv.id = BINARY cd.servicio_id
        LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
-       WHERE c.negocio_id=? AND c.empleado_id IS NULL
+       WHERE c.negocio_id=? AND cd.empleado_id IS NULL AND cd.completado=0
          AND c.estado NOT IN ('Cancelada','NoAsistio','Completada')
          AND DATE(c.fecha_hora) >= CURDATE()
-       ORDER BY c.fecha_hora LIMIT 20`, [e.negocio_id]
+       ORDER BY c.fecha_hora LIMIT 30`, [e.negocio_id]
     );
 
     const { rows: pausaR } = await pool.query(
@@ -101,7 +98,8 @@ router.get('/portal-empleado/:id', async (req, res) => {
     res.json({
       empleado: { ...e, dias: DIAS },
       horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana, fecha: h.fecha ? toISO(h.fecha).slice(0,10) : null })),
-      citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
+      citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora),
+        detalles: detallesHoy.filter(d => d.cita_id === c.id) })),
       proximas: proximas.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       cola: cola.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       pausa,
@@ -135,33 +133,33 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
        ORDER BY COALESCE(fecha, '9999-12-31'), dia_semana`, [e.id]
     );
     const { rows: citasHoy } = await pool.query(
-      `SELECT c.id, c.fecha_hora, c.duracion_min, c.estado, c.notas,
-              COALESCE(
-                (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
-                 FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
-                s.nombre
-              ) AS servicio_nombre,
-              COALESCE(cl.nombre, c.cliente_nombre)   AS cliente_nombre,
-              COALESCE(cl.apellido, '')                AS cliente_apellido
+      `SELECT DISTINCT c.id, c.fecha_hora, c.duracion_min, c.estado, c.notas,
+              COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre,
+              COALESCE(cl.apellido, '')              AS cliente_apellido
        FROM pel_citas c
-       LEFT JOIN pel_servicios s ON BINARY s.id = BINARY c.servicio_id
        LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
-       WHERE (BINARY c.empleado_id=? OR BINARY c.empleado_nombre=?)
+       WHERE (BINARY c.empleado_id=?
+              OR EXISTS (SELECT 1 FROM pel_cita_detalle xd WHERE xd.cita_id=c.id AND BINARY xd.empleado_id=?))
          AND DATE(c.fecha_hora)=CURDATE()
          AND c.estado NOT IN ('Cancelada','NoAsistio')
-       ORDER BY c.fecha_hora`, [e.id, e.nombre]
+       ORDER BY c.fecha_hora`, [e.id, e.id]
     );
+    const citaIdsHoy = citasHoy.map(r => r.id);
+    let detallesHoy = [];
+    if (citaIdsHoy.length) {
+      const ph = citaIdsHoy.map(() => '?').join(',');
+      const { rows: dh } = await pool.query(
+        `SELECT cd.id, cd.cita_id, cd.nombre, cd.precio, cd.completado, cd.empleado_id, cd.empleado_nombre
+         FROM pel_cita_detalle cd WHERE cd.cita_id IN (${ph}) ORDER BY cd.id`, citaIdsHoy
+      );
+      detallesHoy = dh;
+    }
+
     const { rows: proximas } = await pool.query(
       `SELECT c.id, c.fecha_hora, c.duracion_min, c.estado, c.notas,
-              COALESCE(
-                (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
-                 FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
-                s.nombre
-              ) AS servicio_nombre,
-              COALESCE(cl.nombre, c.cliente_nombre)   AS cliente_nombre,
-              COALESCE(cl.apellido, '')                AS cliente_apellido
+              COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre,
+              COALESCE(cl.apellido, '')              AS cliente_apellido
        FROM pel_citas c
-       LEFT JOIN pel_servicios s ON BINARY s.id = BINARY c.servicio_id
        LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
        WHERE (BINARY c.empleado_id=? OR BINARY c.empleado_nombre=?)
          AND DATE(c.fecha_hora)>CURDATE()
@@ -170,67 +168,171 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
        ORDER BY c.fecha_hora LIMIT 30`, [e.id, e.nombre]
     );
     const { rows: cola } = await pool.query(
-      `SELECT c.id, c.fecha_hora, c.duracion_min, c.precio,
-              s.categoria_id AS servicio_categoria_id,
-              COALESCE(
-                (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
-                 FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
-                s.nombre
-              ) AS servicio_nombre,
+      `SELECT cd.id AS detalle_id, cd.cita_id, cd.nombre AS servicio_nombre,
+              cd.precio, cd.servicio_id,
+              sv.categoria_id AS servicio_categoria_id,
+              c.fecha_hora, c.duracion_min, c.estado AS cita_estado,
               COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre
-       FROM pel_citas c
-       LEFT JOIN pel_servicios s ON BINARY s.id = BINARY c.servicio_id
+       FROM pel_cita_detalle cd
+       JOIN pel_citas c ON BINARY c.id = BINARY cd.cita_id
+       LEFT JOIN pel_servicios sv ON BINARY sv.id = BINARY cd.servicio_id
        LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
-       WHERE c.negocio_id=? AND c.empleado_id IS NULL
+       WHERE c.negocio_id=? AND cd.empleado_id IS NULL AND cd.completado=0
          AND c.estado NOT IN ('Cancelada','NoAsistio','Completada')
          AND DATE(c.fecha_hora) >= CURDATE()
-       ORDER BY c.fecha_hora LIMIT 20`, [negocioId]
+       ORDER BY c.fecha_hora LIMIT 30`, [negocioId]
     );
 
     res.json({
       empleado: { ...e, dias: DIAS },
       horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana, fecha: h.fecha ? toISO(h.fecha).slice(0,10) : null })),
-      citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
+      citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora),
+        detalles: detallesHoy.filter(d => d.cita_id === c.id) })),
       proximas: proximas.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       cola: cola.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── Ruta pública: tomar cita desde portal del empleado ────────────
+// ── Ruta pública: tomar servicio (detalle) desde portal del empleado ──
+async function _tomarDetalle(emp, detalleId, negocioId) {
+  // Asignar empleado al detalle específico
+  const { affectedRows } = await pool.query(
+    `UPDATE pel_cita_detalle SET empleado_id=?, empleado_nombre=?
+     WHERE id=? AND empleado_id IS NULL AND completado=0`,
+    [emp.id, emp.nombre, detalleId]
+  );
+  if (!affectedRows) return false;
+  // Obtener cita_id del detalle
+  const { rows: detR } = await pool.query(`SELECT cita_id FROM pel_cita_detalle WHERE id=?`, [detalleId]);
+  if (!detR[0]) return false;
+  const citaId = detR[0].cita_id;
+  // Actualizar cita: estado PorConfirmar si estaba Pendiente, y guardar primer empleado si vacío
+  await pool.query(
+    `UPDATE pel_citas SET
+       empleado_id     = COALESCE(empleado_id, ?),
+       empleado_nombre = COALESCE(empleado_nombre, ?),
+       estado          = IF(estado='Pendiente','PorConfirmar',estado)
+     WHERE id=? AND negocio_id=?`,
+    [emp.id, emp.nombre, citaId, negocioId]
+  );
+  return true;
+}
+
 router.post('/portal-negocio/:negocioId/tomar-cita', async (req, res) => {
   try {
-    const { cedula, citaId } = req.body;
+    const { cedula, detalleId } = req.body;
     const negocioId = req.params.negocioId;
-    if (!cedula || !citaId) return res.status(400).json({ error: 'cedula y citaId requeridos' });
+    if (!cedula || !detalleId) return res.status(400).json({ error: 'cedula y detalleId requeridos' });
     const { rows: empR } = await pool.query(
       `SELECT id, nombre FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
       [negocioId, cedula]
     );
     if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
-    const emp = empR[0];
-    await pool.query(
-      `UPDATE pel_citas SET empleado_id=?, empleado_nombre=? WHERE id=? AND negocio_id=? AND empleado_id IS NULL`,
-      [emp.id, emp.nombre, citaId, negocioId]
-    );
-    res.json({ ok: true, empleadoNombre: emp.nombre });
+    const ok = await _tomarDetalle(empR[0], detalleId, negocioId);
+    if (!ok) return res.status(409).json({ error: 'Servicio ya tomado' });
+    res.json({ ok: true, empleadoNombre: empR[0].nombre });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.post('/portal-empleado/:empId/tomar-cita', async (req, res) => {
   try {
-    const { cedula, citaId } = req.body;
+    const { cedula, detalleId } = req.body;
     const { rows: empR } = await pool.query(
       `SELECT id, negocio_id, nombre FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
       [req.params.empId, cedula]
     );
     if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
-    const emp = empR[0];
-    await pool.query(
-      `UPDATE pel_citas SET empleado_id=?, empleado_nombre=? WHERE id=? AND negocio_id=? AND empleado_id IS NULL`,
-      [emp.id, emp.nombre, citaId, emp.negocio_id]
+    const ok = await _tomarDetalle(empR[0], detalleId, empR[0].negocio_id);
+    if (!ok) return res.status(409).json({ error: 'Servicio ya tomado' });
+    res.json({ ok: true, empleadoNombre: empR[0].nombre });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Completar servicio individual (empleado marca su parte como hecha) ──
+async function _completarDetalle(emp, detalleId, negocioId) {
+  await pool.query(
+    `UPDATE pel_cita_detalle SET completado=1, completado_at=NOW()
+     WHERE id=? AND BINARY empleado_id=?`,
+    [detalleId, emp.id]
+  );
+  const { rows: detR } = await pool.query(`SELECT cita_id FROM pel_cita_detalle WHERE id=?`, [detalleId]);
+  if (!detR[0]) return;
+  const citaId = detR[0].cita_id;
+  // Si todos los detalles de la cita están completados → Completada
+  const { rows: pendR } = await pool.query(
+    `SELECT COUNT(*) AS n FROM pel_cita_detalle WHERE cita_id=? AND completado=0`, [citaId]
+  );
+  if (parseInt(pendR[0]?.n || 1) === 0) {
+    await pool.query(`UPDATE pel_citas SET estado='Completada' WHERE id=? AND negocio_id=?`, [citaId, negocioId]);
+  }
+}
+
+router.post('/portal-negocio/:negocioId/completar-servicio', async (req, res) => {
+  try {
+    const { cedula, detalleId } = req.body;
+    const negocioId = req.params.negocioId;
+    if (!cedula || !detalleId) return res.status(400).json({ error: 'cedula y detalleId requeridos' });
+    const { rows: empR } = await pool.query(
+      `SELECT id, nombre FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [negocioId, cedula]
     );
-    res.json({ ok: true, empleadoNombre: emp.nombre });
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    await _completarDetalle(empR[0], detalleId, negocioId);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/portal-empleado/:empId/completar-servicio', async (req, res) => {
+  try {
+    const { cedula, detalleId } = req.body;
+    const { rows: empR } = await pool.query(
+      `SELECT id, negocio_id, nombre FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [req.params.empId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    await _completarDetalle(empR[0], detalleId, empR[0].negocio_id);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Ruta pública: cambiar estado de cita desde portal empleado ───
+const ESTADOS_PERMITIDOS_PORTAL = ['PorConfirmar', 'Confirmada', 'EnProceso'];
+
+router.post('/portal-negocio/:negocioId/cita-estado', async (req, res) => {
+  try {
+    const { cedula, citaId, estado } = req.body;
+    const negocioId = req.params.negocioId;
+    if (!ESTADOS_PERMITIDOS_PORTAL.includes(estado))
+      return res.status(400).json({ error: 'Estado no permitido' });
+    const { rows: empR } = await pool.query(
+      `SELECT id FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [negocioId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    await pool.query(
+      `UPDATE pel_citas SET estado=? WHERE id=? AND negocio_id=? AND empleado_id=?`,
+      [estado, citaId, negocioId, empR[0].id]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/portal-empleado/:empId/cita-estado', async (req, res) => {
+  try {
+    const { cedula, citaId, estado } = req.body;
+    if (!ESTADOS_PERMITIDOS_PORTAL.includes(estado))
+      return res.status(400).json({ error: 'Estado no permitido' });
+    const { rows: empR } = await pool.query(
+      `SELECT id, negocio_id FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [req.params.empId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    await pool.query(
+      `UPDATE pel_citas SET estado=? WHERE id=? AND negocio_id=? AND empleado_id=?`,
+      [estado, citaId, empR[0].negocio_id, empR[0].id]
+    );
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -503,6 +605,27 @@ router.post('/booking/:negocioId/reservar', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.get('/booking/:negocioId/paquetes', async (req, res) => {
+  try {
+    const { rows: paquetes } = await pool.query(
+      `SELECT id, nombre, descripcion, precio, tipo, vigencia_dias
+       FROM pel_paquetes WHERE negocio_id=? AND activo=1 ORDER BY nombre`,
+      [req.params.negocioId]
+    );
+    for (const p of paquetes) {
+      const { rows: svcs } = await pool.query(
+        `SELECT ps.cantidad_incluida, s.id AS id, s.nombre, s.duracion_min, s.precio
+         FROM pel_paquete_servicios ps
+         JOIN pel_servicios s ON s.id=ps.servicio_id
+         WHERE ps.paquete_id=?`,
+        [p.id]
+      );
+      p.servicios = svcs;
+    }
+    res.json(paquetes);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
 
@@ -633,13 +756,22 @@ async function _ddl(sql) {
 
   // Detalle de cita (multi-servicio)
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_cita_detalle (
-    id          VARCHAR(36)   PRIMARY KEY,
-    cita_id     VARCHAR(36)   NOT NULL,
-    servicio_id VARCHAR(36)   NOT NULL,
-    nombre      VARCHAR(120)  NOT NULL,
-    precio      DECIMAL(12,2) NOT NULL DEFAULT 0,
+    id              VARCHAR(36)   PRIMARY KEY,
+    cita_id         VARCHAR(36)   NOT NULL,
+    servicio_id     VARCHAR(36)   NOT NULL,
+    nombre          VARCHAR(120)  NOT NULL,
+    precio          DECIMAL(12,2) NOT NULL DEFAULT 0,
+    empleado_id     VARCHAR(36)   NULL,
+    empleado_nombre VARCHAR(80)   NULL,
+    completado      TINYINT(1)    NOT NULL DEFAULT 0,
+    completado_at   DATETIME      NULL,
     INDEX idx_cita (cita_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  // Migraciones para tablas ya existentes
+  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN IF NOT EXISTS empleado_id VARCHAR(36) NULL`);
+  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN IF NOT EXISTS empleado_nombre VARCHAR(80) NULL`);
+  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN IF NOT EXISTS completado TINYINT(1) NOT NULL DEFAULT 0`);
+  await _ddl(`ALTER TABLE pel_cita_detalle ADD COLUMN IF NOT EXISTS completado_at DATETIME NULL`);
 
   // Cajas
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_cajas (
@@ -749,6 +881,7 @@ async function _ddl(sql) {
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
 
   // Productos
+  await _ddl(`ALTER TABLE pel_productos ADD COLUMN IF NOT EXISTS en_venta TINYINT(1) NOT NULL DEFAULT 0`);
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_productos (
     id             VARCHAR(36)   PRIMARY KEY,
     negocio_id     VARCHAR(36)   NOT NULL,
@@ -978,14 +1111,14 @@ router.get('/empleados', async (req, res) => {
 
 router.post('/empleados', async (req, res) => {
   try {
-    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, categoriaId } = req.body;
+    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, sueldoBase, tarifaHora, categoriaId } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
     const id = uuid();
     await pool.query(
-      `INSERT INTO pel_empleados (id,negocio_id,nombre,apellido,cedula,cargo,especialidad,telefono,email,tipo_comision,pct_comision,monto_comision,categoria_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO pel_empleados (id,negocio_id,nombre,apellido,cedula,cargo,especialidad,telefono,email,tipo_comision,pct_comision,monto_comision,sueldo_base,tarifa_hora,categoria_id)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [id, nid(req), nombre, apellido||null, cedula||null, cargo||null, especialidad||null, telefono||null, email||null,
-       tipoComision||'ninguna', pctComision||0, montoComision||0, categoriaId||null]
+       tipoComision||'ninguna', pctComision||0, montoComision||0, sueldoBase||null, tarifaHora||null, categoriaId||null]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1942,7 +2075,7 @@ router.delete('/categorias-producto/:id', async (req, res) => {
 
 router.get('/productos', async (req, res) => {
   try {
-    const { soloActivos, alertaStock } = req.query;
+    const { soloActivos, alertaStock, enVenta } = req.query;
     let sql = `SELECT p.*, c.nombre AS categoria_nombre, pr.nombre AS proveedor_nombre
                FROM pel_productos p
                LEFT JOIN pel_categorias_producto c ON c.id=p.categoria_id
@@ -1951,9 +2084,20 @@ router.get('/productos', async (req, res) => {
     const params = [nid(req)];
     if (soloActivos === 'true') sql += ` AND p.activo=1`;
     if (alertaStock === 'true') sql += ` AND p.stock_actual <= p.stock_minimo`;
+    if (enVenta === 'true') sql += ` AND p.en_venta=1 AND p.activo=1 AND p.stock_actual > 0`;
     sql += ' ORDER BY p.nombre';
     const { rows } = await pool.query(sql, params);
     res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.patch('/productos/:id/toggle-venta', async (req, res) => {
+  try {
+    await pool.query(
+      `UPDATE pel_productos SET en_venta = NOT en_venta WHERE id=? AND negocio_id=?`,
+      [req.params.id, nid(req)]
+    );
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
