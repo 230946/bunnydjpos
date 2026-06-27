@@ -620,6 +620,11 @@ async function tomarCita(detalleId, btn) {
       btn.textContent = '✓ Tomado';
       btn.style.background = '#16a34a';
       setTimeout(() => cargarDatos(_cedulaActiva), 800);
+    } else if (r.status === 409) {
+      // Otro empleado ya tomó este servicio — refrescar cola
+      btn.closest('.cola-card')?.remove();
+      mostrarToast('⚠️ Ese servicio ya fue tomado por otro empleado');
+      cargarDatos(_cedulaActiva);
     } else {
       const d = await r.json();
       btn.textContent = d.error || 'Error';
@@ -881,6 +886,20 @@ async function init(){
 }
 
 init();
+
+function mostrarToast(msg) {
+  let t = document.getElementById('_pe_toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_pe_toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:9999;pointer-events:none;opacity:0;transition:opacity .2s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => { t.style.opacity = '0'; }, 2800);
+}
 </script>
 </body>
 </html>
