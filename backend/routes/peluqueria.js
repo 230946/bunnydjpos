@@ -224,6 +224,61 @@ router.post('/portal-empleado/:empId/tomar-cita', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Ruta pública: gestión de turno propio del empleado ───────────
+async function _gestionarTurno(empId, negocioId, accion, horaEntrada, horaSalida) {
+  const now = new Date();
+  const ahora = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:00`;
+  const diaSemana = now.getDay();
+  const { rows: ex } = await pool.query(
+    `SELECT id FROM horarios WHERE BINARY empleado_pel_id=? AND fecha=CURDATE() AND activo=1 LIMIT 1`,
+    [empId]
+  );
+  if (accion === 'iniciar') {
+    const entrada = horaEntrada || ahora;
+    const salida  = horaSalida  || '23:59:00';
+    if (ex[0]) {
+      await pool.query(`UPDATE horarios SET hora_entrada=?,hora_salida=? WHERE id=?`,
+        [entrada, salida, ex[0].id]);
+    } else {
+      await pool.query(
+        `INSERT INTO horarios (id,empleado_pel_id,negocio_id,dia_semana,hora_entrada,hora_salida,fecha,activo)
+         VALUES (?,?,?,?,?,?,CURDATE(),1)`,
+        [require('uuid').v4(), empId, negocioId, diaSemana, entrada, salida]
+      );
+    }
+  } else if (accion === 'finalizar') {
+    if (ex[0]) await pool.query(`UPDATE horarios SET hora_salida=? WHERE id=?`, [ahora, ex[0].id]);
+  }
+}
+
+router.post('/portal-negocio/:negocioId/turno', async (req, res) => {
+  try {
+    const { cedula, accion, horaEntrada, horaSalida } = req.body;
+    if (!cedula || !accion) return res.status(400).json({ error: 'cedula y accion requeridos' });
+    const { rows: empR } = await pool.query(
+      `SELECT id FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [req.params.negocioId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    await _gestionarTurno(empR[0].id, req.params.negocioId, accion, horaEntrada, horaSalida);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/portal-empleado/:empId/turno', async (req, res) => {
+  try {
+    const { cedula, accion, horaEntrada, horaSalida } = req.body;
+    if (!cedula || !accion) return res.status(400).json({ error: 'cedula y accion requeridos' });
+    const { rows: empR } = await pool.query(
+      `SELECT id, negocio_id FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [req.params.empId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    await _gestionarTurno(empR[0].id, empR[0].negocio_id, accion, horaEntrada, horaSalida);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── RUTAS PÚBLICAS: PORTAL DE RESERVAS ───────────────────────────
 
 function calcSlots(horario, citas, dur) {

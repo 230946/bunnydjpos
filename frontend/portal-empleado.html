@@ -81,6 +81,15 @@
   .turno-icon{font-size:22px;line-height:1;flex-shrink:0}
   .turno-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;opacity:.7;margin-bottom:2px}
   .turno-horas{font-size:14px;font-weight:600}
+  .btn-turno{border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.15s}
+  .btn-turno-ini{background:var(--acc);color:#fff}
+  .btn-turno-ini:hover{background:var(--acc-d)}
+  .btn-turno-fin{background:#ef4444;color:#fff}
+  .btn-turno-fin:hover{background:#dc2626}
+  .turno-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .turno-form label{font-size:11px;font-weight:600;color:var(--text2)}
+  .turno-form input[type=time]{border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;background:var(--bg2)}
+  @media(max-width:600px){.btn-turno{font-size:11px;padding:7px 10px}}
   /* ── COLA ── */
   .cola-header{background:#fef9c3;border:1.5px solid #fcd34d;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;font-weight:600}
   .cola-card{background:var(--bg2);border:1.5px solid #fcd34d;border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
@@ -303,15 +312,30 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
     return `${hh>12?hh-12:(hh||12)}:${m} ${hh>=12?'p.m.':'a.m.'}`;
   };
   const turnoHoy = (horarios||[]).find(h => Number(h.dia_semana) === hoyNum);
+  const nowH = String(new Date().getHours()).padStart(2,'0');
+  const nowM = String(new Date().getMinutes()).padStart(2,'0');
+  const nowStr = `${nowH}:${nowM}`;
   if (!turnoHoy) {
-    turnoEl.innerHTML = `<div class="turno-card turno-sin"><span class="turno-icon">😴</span><div><div class="turno-label">Turno hoy</div><div class="turno-horas">Sin turno asignado para hoy</div></div></div>`;
+    turnoEl.innerHTML = `
+      <div class="turno-card turno-sin">
+        <span class="turno-icon">😴</span>
+        <div style="flex:1"><div class="turno-label">Turno hoy</div><div class="turno-horas">Sin turno asignado</div>
+          <div class="turno-form" id="turnoFormIni" style="display:none">
+            <label>Entrada <input type="time" id="tEntrada" value="${nowStr}"></label>
+            <label>Salida <input type="time" id="tSalida" value="17:00"></label>
+            <button class="btn-turno btn-turno-ini" onclick="confirmarTurno('iniciar')">Confirmar</button>
+            <button class="btn-turno" style="background:var(--bg);color:var(--text2);border:1px solid var(--border)" onclick="document.getElementById('turnoFormIni').style.display='none';document.getElementById('btnIniciarTurno').style.display=''">Cancelar</button>
+          </div>
+        </div>
+        <button class="btn-turno btn-turno-ini" id="btnIniciarTurno" onclick="this.style.display='none';document.getElementById('turnoFormIni').style.display='flex'">▶ Iniciar turno</button>
+      </div>`;
   } else {
     const ent = parseMinT(turnoHoy.hora_entrada), sal = parseMinT(turnoHoy.hora_salida);
     const hrs = `${fmtT(turnoHoy.hora_entrada)} – ${fmtT(turnoHoy.hora_salida)}`;
     if (ahoraMin >= ent && ahoraMin < sal)
-      turnoEl.innerHTML = `<div class="turno-card turno-en"><span class="turno-icon">🟢</span><div><div class="turno-label">En turno ahora</div><div class="turno-horas">${hrs}</div></div></div>`;
+      turnoEl.innerHTML = `<div class="turno-card turno-en"><span class="turno-icon">🟢</span><div style="flex:1"><div class="turno-label">En turno ahora</div><div class="turno-horas">${hrs}</div></div><button class="btn-turno btn-turno-fin" onclick="accionTurno('finalizar')">■ Finalizar turno</button></div>`;
     else if (ahoraMin < ent)
-      turnoEl.innerHTML = `<div class="turno-card turno-tarde"><span class="turno-icon">⏰</span><div><div class="turno-label">Turno más tarde</div><div class="turno-horas">${hrs}</div></div></div>`;
+      turnoEl.innerHTML = `<div class="turno-card turno-tarde"><span class="turno-icon">⏰</span><div style="flex:1"><div class="turno-label">Turno más tarde</div><div class="turno-horas">${hrs}</div></div><button class="btn-turno btn-turno-ini" onclick="accionTurno('iniciar')">▶ Iniciar ahora</button></div>`;
     else
       turnoEl.innerHTML = `<div class="turno-card turno-fin"><span class="turno-icon">✓</span><div><div class="turno-label">Turno terminado</div><div class="turno-horas">${hrs}</div></div></div>`;
   }
@@ -419,6 +443,31 @@ async function tomarCita(citaId, btn) {
     btn.textContent = 'Error';
     btn.disabled = false;
   }
+}
+
+async function confirmarTurno(accion) {
+  const horaEntrada = document.getElementById('tEntrada')?.value || null;
+  const horaSalida  = document.getElementById('tSalida')?.value  || null;
+  await accionTurno(accion, horaEntrada, horaSalida);
+}
+async function accionTurno(accion, horaEntrada, horaSalida) {
+  if (!_cedulaActiva) return;
+  const url = empId
+    ? `${API}/peluqueria/portal-empleado/${empId}/turno`
+    : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/turno`;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ cedula: _cedulaActiva, accion, horaEntrada, horaSalida })
+    });
+    if (r.ok) {
+      cargarDatos(_cedulaActiva);
+    } else {
+      const d = await r.json().catch(()=>({}));
+      alert(d.error || 'Error al gestionar turno');
+    }
+  } catch { alert('Error de conexión'); }
 }
 
 async function iniciarSesion(){
