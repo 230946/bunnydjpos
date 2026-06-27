@@ -88,9 +88,15 @@
   .btn-turno-ini:hover{background:var(--acc-d)}
   .btn-turno-fin{background:#ef4444;color:#fff}
   .btn-turno-fin:hover{background:#dc2626}
+  .btn-turno-pau{background:#f59e0b;color:#fff}
+  .btn-turno-pau:hover{background:#d97706}
+  .turno-pausa{background:#fef3c7;border:1.5px solid #f59e0b}
+  .turno-pausa .turno-label{color:#92400e}
+  .turno-pausa .turno-horas{color:#78350f}
   .turno-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
   .turno-form label{font-size:11px;font-weight:600;color:var(--text2)}
   .turno-form input[type=time]{border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;background:var(--bg2)}
+  .motivo-sel{border:1.5px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;background:var(--bg2)}
   @media(max-width:600px){.btn-turno{font-size:11px;padding:7px 10px}}
   /* ── COLA ── */
   .cola-header{background:#fef9c3;border:1.5px solid #fcd34d;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;font-weight:600}
@@ -316,7 +322,7 @@ async function refrescarManual() {
   if (btn) { btn.textContent = '↻ Actualizar'; btn.disabled = false; }
 }
 
-function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
+function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
   // Tarjeta de turno hoy
   const turnoEl = document.getElementById('pTurno');
   const hoyNum  = new Date().getDay();
@@ -347,9 +353,20 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
   } else {
     const ent = parseMinT(turnoHoy.hora_entrada), sal = parseMinT(turnoHoy.hora_salida);
     const hrs = `${fmtT(turnoHoy.hora_entrada)} – ${fmtT(turnoHoy.hora_salida)}`;
-    if (ahoraMin >= ent && ahoraMin < sal)
-      turnoEl.innerHTML = `<div class="turno-card turno-en"><span class="turno-icon">🟢</span><div style="flex:1"><div class="turno-label">En turno ahora</div><div class="turno-horas">${hrs}</div></div><button class="btn-turno btn-turno-fin" onclick="accionTurno('finalizar')">■ Finalizar turno</button></div>`;
-    else if (ahoraMin < ent)
+    const motivoSel = `<select class="motivo-sel" id="motivoPausa">
+      <option value="Almuerzo">🍽 Almuerzo</option>
+      <option value="Descanso">☕ Descanso</option>
+      <option value="Diligencia">📋 Diligencia</option>
+      <option value="Otro">⋯ Otro</option>
+    </select>`;
+    if (ahoraMin >= ent && ahoraMin < sal) {
+      if (pausa) {
+        const desdeMins = Math.floor((Date.now() - new Date(pausa.inicio)) / 60000);
+        turnoEl.innerHTML = `<div class="turno-card turno-pausa"><span class="turno-icon">⏸</span><div style="flex:1"><div class="turno-label">En pausa · ${pausa.motivo}</div><div class="turno-horas">${hrs} · hace ${desdeMins} min</div></div><button class="btn-turno btn-turno-ini" onclick="accionPausa('reanudar')">▶ Reanudar</button></div>`;
+      } else {
+        turnoEl.innerHTML = `<div class="turno-card turno-en"><span class="turno-icon">🟢</span><div style="flex:1"><div class="turno-label">En turno ahora</div><div class="turno-horas">${hrs}</div><div id="pausaFormWrap" style="display:none" class="turno-form">${motivoSel}<button class="btn-turno btn-turno-pau" onclick="accionPausa('pausar')">Pausar</button><button class="btn-turno" style="background:var(--bg);color:var(--text2);border:1px solid var(--border)" onclick="document.getElementById('pausaFormWrap').style.display='none';document.getElementById('btnPausar').style.display=''">Cancelar</button></div></div><div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"><button class="btn-turno btn-turno-pau" id="btnPausar" onclick="this.style.display='none';document.getElementById('pausaFormWrap').style.display='flex'">⏸ Pausar</button><button class="btn-turno btn-turno-fin" onclick="accionTurno('finalizar')">■ Finalizar</button></div></div>`;
+      }
+    } else if (ahoraMin < ent)
       turnoEl.innerHTML = `<div class="turno-card turno-tarde"><span class="turno-icon">⏰</span><div style="flex:1"><div class="turno-label">Turno más tarde</div><div class="turno-horas">${hrs}</div></div><button class="btn-turno btn-turno-ini" onclick="accionTurno('iniciar')">▶ Iniciar ahora</button></div>`;
     else
       turnoEl.innerHTML = `<div class="turno-card turno-fin"><span class="turno-icon">✓</span><div><div class="turno-label">Turno terminado</div><div class="turno-horas">${hrs}</div></div></div>`;
@@ -486,6 +503,22 @@ async function _postTurno(body) {
   if (!r.ok) { const d=await r.json().catch(()=>({})); alert(d.error||'Error'); return false; }
   return true;
 }
+function _pausaUrl() {
+  return empId
+    ? `${API}/peluqueria/portal-empleado/${empId}/pausa`
+    : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/pausa`;
+}
+async function accionPausa(accion) {
+  if (!_cedulaActiva) return;
+  const motivo = document.getElementById('motivoPausa')?.value || 'Descanso';
+  const r = await fetch(_pausaUrl(), {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ cedula: _cedulaActiva, accion, motivo })
+  });
+  if (r.ok) cargarDatos(_cedulaActiva);
+  else { const d=await r.json().catch(()=>({})); alert(d.error||'Error'); }
+}
+
 async function confirmarTurno(accion) {
   const horaEntrada = document.getElementById('tEntrada')?.value || null;
   const horaSalida  = document.getElementById('tSalida')?.value  || null;
@@ -584,7 +617,7 @@ async function checkContrato(negId){
   return false;
 }
 
-async function mostrarPortal({empleado:e, horarios, citasHoy, proximas, cola}){
+async function mostrarPortal({empleado:e, horarios, citasHoy, proximas, cola, pausa}){
   document.getElementById('loginWrap').style.display='none';
   // Verificar contrato ANTES de mostrar el contenido
   const bloqueado = await checkContrato(e.negocio_id||negocioId);
@@ -603,7 +636,7 @@ async function mostrarPortal({empleado:e, horarios, citasHoy, proximas, cola}){
   document.getElementById('pCargo').textContent=e.cargo||e.especialidad||'Empleado';
   document.getElementById('pCedula').textContent=e.cedula?'CC '+e.cedula:'';
   document.getElementById('pFecha').textContent=hoyNombre();
-  actualizarSecciones({horarios, citasHoy, proximas, cola});
+  actualizarSecciones({horarios, citasHoy, proximas, cola, pausa});
 }
 
 // Auto-login si ya hay sesión guardada

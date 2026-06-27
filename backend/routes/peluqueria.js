@@ -91,12 +91,20 @@ router.get('/portal-empleado/:id', async (req, res) => {
        ORDER BY c.fecha_hora LIMIT 20`, [e.negocio_id]
     );
 
+    const { rows: pausaR } = await pool.query(
+      `SELECT id, motivo, inicio FROM pel_pausas_turno
+       WHERE BINARY empleado_id=? AND DATE(inicio)=CURDATE() AND fin IS NULL
+       ORDER BY inicio DESC LIMIT 1`, [e.id]
+    );
+    const pausa = pausaR[0] ? { id: pausaR[0].id, motivo: pausaR[0].motivo, inicio: toISO(pausaR[0].inicio) } : null;
+
     res.json({
       empleado: { ...e, dias: DIAS },
       horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana, fecha: h.fecha ? toISO(h.fecha).slice(0,10) : null })),
       citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       proximas: proximas.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       cola: cola.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
+      pausa,
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -225,6 +233,62 @@ router.post('/portal-empleado/:empId/tomar-cita', async (req, res) => {
     res.json({ ok: true, empleadoNombre: emp.nombre });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
+// ── Ruta pública: pausas de turno ────────────────────────────────
+async function _verificarEmpNegocio(empId, negocioId, cedula) {
+  if (empId) {
+    const { rows } = await pool.query(
+      `SELECT id, negocio_id FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [empId, cedula]
+    );
+    return rows[0] ? { id: rows[0].id, negocioId: rows[0].negocio_id } : null;
+  }
+  const { rows } = await pool.query(
+    `SELECT id FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+    [negocioId, cedula]
+  );
+  return rows[0] ? { id: rows[0].id, negocioId } : null;
+}
+
+router.post('/portal-negocio/:negocioId/pausa', async (req, res) => {
+  try {
+    const { cedula, accion, motivo } = req.body;
+    if (!cedula || !accion) return res.status(400).json({ error: 'cedula y accion requeridos' });
+    const emp = await _verificarEmpNegocio(null, req.params.negocioId, cedula);
+    if (!emp) return res.status(403).json({ error: 'No autorizado' });
+    await _gestionarPausa(emp.id, emp.negocioId, accion, motivo);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/portal-empleado/:empId/pausa', async (req, res) => {
+  try {
+    const { cedula, accion, motivo } = req.body;
+    if (!cedula || !accion) return res.status(400).json({ error: 'cedula y accion requeridos' });
+    const emp = await _verificarEmpNegocio(req.params.empId, null, cedula);
+    if (!emp) return res.status(403).json({ error: 'No autorizado' });
+    await _gestionarPausa(emp.id, emp.negocioId, accion, motivo);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+async function _gestionarPausa(empId, negocioId, accion, motivo) {
+  if (accion === 'pausar') {
+    await pool.query(
+      `UPDATE pel_pausas_turno SET fin=NOW() WHERE BINARY empleado_id=? AND DATE(inicio)=CURDATE() AND fin IS NULL`,
+      [empId]
+    );
+    await pool.query(
+      `INSERT INTO pel_pausas_turno (id, empleado_id, negocio_id, motivo, inicio) VALUES (?,?,?,?,NOW())`,
+      [require('uuid').v4(), empId, negocioId, motivo || 'Descanso']
+    );
+  } else if (accion === 'reanudar') {
+    await pool.query(
+      `UPDATE pel_pausas_turno SET fin=NOW() WHERE BINARY empleado_id=? AND DATE(inicio)=CURDATE() AND fin IS NULL`,
+      [empId]
+    );
+  }
+}
 
 // ── Ruta pública: gestión de turno propio del empleado ───────────
 async function _gestionarTurno(empId, negocioId, accion, horaEntrada, horaSalida, fecha, horarioId) {
@@ -466,6 +530,17 @@ async function _ddl(sql) {
 }
 
 (async () => {
+  // Pausas de turno
+  await _ddl(`CREATE TABLE IF NOT EXISTS pel_pausas_turno (
+    id           VARCHAR(36)  PRIMARY KEY,
+    empleado_id  VARCHAR(36)  NOT NULL,
+    negocio_id   VARCHAR(36)  NOT NULL,
+    motivo       VARCHAR(80)  NOT NULL DEFAULT 'Descanso',
+    inicio       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fin          DATETIME     NULL,
+    INDEX idx_emp_fecha (empleado_id, inicio)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+
   // Categorías de servicio
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_categorias_servicio (
     id          VARCHAR(36)  PRIMARY KEY,
