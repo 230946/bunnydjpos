@@ -2510,8 +2510,7 @@ async function guardarHorario(){
     if(!diasChecked.length){showToast('Selecciona al menos un día','err');return;}
     if(tid)await apiFetch(`${API}/admin/horarios/${tid}`,{method:'DELETE'});
     for(const diaSemana of diasChecked){
-      const fecha=_fechaParaDia(diaSemana);
-      await apiFetch(`${API}/admin/horarios`,{method:'POST',body:JSON.stringify({usuario_id:_gel('h-empleado').value,dia_semana:diaSemana,hora_entrada:_gel('h-entrada').value,hora_salida:_gel('h-salida').value,fecha})});
+      await apiFetch(`${API}/admin/horarios`,{method:'POST',body:JSON.stringify({usuario_id:_gel('h-empleado').value,dia_semana:diaSemana,hora_entrada:_gel('h-entrada').value,hora_salida:_gel('h-salida').value})});
     }
     cerrarModal('horario-modal');showToast('Turno(s) guardado(s) ✓');cargarHorarios();
   }catch(e){showToast(e.message,'err');}

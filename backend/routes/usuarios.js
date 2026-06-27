@@ -244,14 +244,12 @@ router.get('/horarios', async (req, res) => {
        FROM horarios h
        JOIN pel_empleados e ON e.id = h.empleado_pel_id
        WHERE h.negocio_id=${ph(1)} AND h.activo=1 AND h.empleado_pel_id IS NOT NULL
-       AND (h.fecha IS NULL OR h.fecha >= CURDATE())
        ORDER BY e.nombre, h.dia_semana`,
       // Fallback: si la columna empleado_pel_id aún no existe, usar usuario_id
       `SELECT h.*, u.nombre AS usuario_nombre
        FROM horarios h
        JOIN usuarios u ON u.id = h.usuario_id
        WHERE h.negocio_id=${ph(1)} AND h.activo=1
-       AND (h.fecha IS NULL OR h.fecha >= CURDATE())
        ORDER BY h.usuario_id, h.dia_semana`,
     ];
     for (const sql of queries) {
@@ -266,14 +264,13 @@ router.get('/horarios', async (req, res) => {
 
 router.post('/horarios', requirePermiso('horarios'), async (req, res) => {
   try {
-    const { usuario_id, dia_semana, hora_entrada, hora_salida, fecha } = req.body;
+    const { usuario_id, dia_semana, hora_entrada, hora_salida } = req.body;
     const id = uuid();
-    const localDate = () => { const d = new Date(Date.now() - 5*60*60*1000); return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; };
-    const fechaVal = fecha || localDate();
+    // fecha = NULL → horario semanal recurrente (no acotado a una fecha específica)
     await pool.query(
-      `INSERT INTO horarios (id,empleado_pel_id,negocio_id,dia_semana,hora_entrada,hora_salida,fecha)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)})`,
-      [id, usuario_id, req.user.negocio_id, dia_semana, hora_entrada, hora_salida, fechaVal]
+      `INSERT INTO horarios (id,empleado_pel_id,negocio_id,dia_semana,hora_entrada,hora_salida)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)})`,
+      [id, usuario_id, req.user.negocio_id, dia_semana, hora_entrada, hora_salida]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
