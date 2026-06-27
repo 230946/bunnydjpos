@@ -60,12 +60,14 @@
   .horario-dia.hoy{border-color:var(--acc);background:var(--acc-l)}
   .horario-dia .dia-nombre{font-weight:600;margin-bottom:4px}
   .horario-dia .dia-horas{color:var(--text2);font-size:12px}
-  .cita-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
-  .cita-item:last-child{border-bottom:none;padding-bottom:0}
-  .cita-hora{font-size:20px;font-weight:700;color:var(--acc);min-width:52px;text-align:center;line-height:1.1}
-  .cita-hora small{display:block;font-size:10px;font-weight:400;color:var(--text3)}
-  .cita-info .cita-servicio{font-weight:600;font-size:14px}
-  .cita-info .cita-cliente{color:var(--text2);font-size:13px;margin-top:2px}
+  .cita-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius);margin-bottom:10px;background:var(--bg2);border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(11,132,87,.07);transition:.15s}
+  .cita-item:last-child{margin-bottom:0}
+  .cita-item:hover{border-color:var(--acc);box-shadow:0 4px 16px rgba(11,132,87,.13)}
+  .cita-hora{font-size:22px;font-weight:800;color:var(--acc);min-width:58px;text-align:center;line-height:1.1;background:var(--acc-l);border-radius:10px;padding:8px 6px;flex-shrink:0}
+  .cita-hora small{display:block;font-size:10px;font-weight:500;color:var(--acc-d);margin-top:2px}
+  .cita-info{flex:1}
+  .cita-info .cita-servicio{font-weight:700;font-size:15px;color:var(--text)}
+  .cita-info .cita-cliente{color:var(--text2);font-size:13px;margin-top:3px}
   .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-top:4px}
   .badge-green{background:var(--green-l);color:var(--green)}
   .badge-amber{background:var(--amber-l);color:var(--amber)}
@@ -228,7 +230,7 @@
     </div>
     <div class="card" id="pHorario"></div>
     <div class="section-title">Citas de hoy</div>
-    <div class="card" id="pCitasHoy"></div>
+    <div id="pCitasHoy"></div>
     <div class="section-title">Próximas citas (7 días)</div>
     <div class="card" id="pProximas"></div>
   </div>
@@ -430,7 +432,7 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
           ${estadoBadge(c.estado)}
         </div>
       </div>`).join('')
-    : '<div class="empty">Sin citas programadas para hoy</div>';
+    : '<div class="card"><div class="empty">Sin citas programadas para hoy</div></div>';
 
   // Próximas citas
   if (!proximas.length) { document.getElementById('pProximas').innerHTML='<div class="empty">Sin citas próximas</div>'; return; }
