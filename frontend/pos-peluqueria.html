@@ -736,7 +736,7 @@ function renderCitas() {
         <div class="cc-body">
           <div class="cc-cliente">${esc(c.clienteNombre || c.cliente_nombre || '—')}</div>
           <div class="cc-svc">✂️ ${esc(svcsNombres)}</div>
-          ${emp ? `<div class="cc-emp">👤 ${esc(emp)}</div>` : ''}
+          ${emp ? `<div class="cc-emp">👤 ${esc(emp)}</div>` : `<div class="cc-emp" style="color:var(--amber);font-size:11px">⏳ Sin asignar — disponible en cola</div>`}
         </div>
         <div class="cc-right">
           <span class="status-badge s-${c.estado}">${estadoLabel(c.estado)}</span>
@@ -1295,6 +1295,11 @@ function renderPool() {
     return;
   }
 
+  // Especialidad del empleado seleccionado (para resaltar citas afines)
+  const yoId = $('poolYo')?.value;
+  const yo = _empleados.find(e => e.id === yoId);
+  const miEsp = (yo?.especialidad || '').toLowerCase();
+
   // Agrupar por nombre de servicio(s)
   const grupos = {};
   for (const c of _poolCitas) {
@@ -1303,27 +1308,40 @@ function renderPool() {
     grupos[clave].push(c);
   }
 
-  el.innerHTML = Object.entries(grupos)
-    .sort(([a],[b]) => a.localeCompare(b, 'es'))
-    .map(([svc, citas]) => `
+  // Ordenar: primero los que coinciden con la especialidad del empleado, luego el resto
+  const entries = Object.entries(grupos).sort(([a],[b]) => {
+    const aMatch = miEsp && a.toLowerCase().includes(miEsp);
+    const bMatch = miEsp && b.toLowerCase().includes(miEsp);
+    if (aMatch && !bMatch) return -1;
+    if (!aMatch && bMatch) return 1;
+    return a.localeCompare(b, 'es');
+  });
+
+  el.innerHTML = entries.map(([svc, citas]) => {
+    const esMia = miEsp && svc.toLowerCase().includes(miEsp);
+    return `
     <div class="pool-grupo">
-      <div class="pool-grupo-titulo">✂️ ${esc(svc)} <span style="font-size:11px;font-weight:400;color:var(--text3)">(${citas.length})</span></div>
+      <div class="pool-grupo-titulo" style="${esMia ? 'color:var(--acc);border-color:var(--acc)' : ''}">
+        ${esMia ? '⭐' : '✂️'} ${esc(svc)} <span style="font-size:11px;font-weight:400;color:var(--text3)">(${citas.length})</span>
+        ${esMia ? '<span style="font-size:10px;background:var(--acc-l);color:var(--acc-d);padding:2px 7px;border-radius:10px;font-weight:600;margin-left:4px">Tu especialidad</span>' : ''}
+      </div>
       ${citas.map(c => {
         const hora = c.fechaHora || c.fecha_hora;
         const d = new Date(String(hora).replace(' ','T'));
         const diaSem = d.toLocaleDateString('es-CO',{weekday:'short'});
         return `
-        <div class="pool-card">
+        <div class="pool-card" style="${esMia ? 'border-color:var(--acc);' : ''}">
           <div class="pool-hora">${fmtHora(hora)}<small>${diaSem}</small></div>
           <div class="pool-info">
             <div class="pool-cli">${esc(c.clienteNombre || c.cliente_nombre || '—')}</div>
             <div class="pool-svc">✂️ ${esc(svc)}${c.duracion_min ? ' · ' + c.duracion_min + ' min' : ''}</div>
             ${c.precio ? `<div class="pool-precio">${fmtCOP(c.precio)}</div>` : ''}
           </div>
-          <button class="btn btn-acc btn-sm" onclick="tomarCita('${c.id}')">Tomar</button>
+          <button class="btn btn-sm ${esMia ? 'btn-acc' : 'btn-outline'}" onclick="tomarCita('${c.id}')">Tomar</button>
         </div>`;
       }).join('')}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function tomarCita(citaId) {

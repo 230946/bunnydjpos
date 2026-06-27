@@ -993,23 +993,37 @@ async function renderAgenda(){
       <input id="agendaFecha" type="date" value="${hoy}" onchange="renderAgenda()">
       <button class="btn btn-acc btn-sm" onclick="abrirNuevaCita()">+ Nueva cita</button>
     </div><div id="agendaList">Cargando...</div>`;
-  try{const d=await apiFetch(`${API}/peluqueria/citas?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59&tamPagina=50`);
-  const citas=(d?.items||[]).filter(c=>c.estado!=='Cancelada'&&c.estado!=='NoAsistio');
-  document.getElementById('agendaList').innerHTML=citas.length===0?'<div style="color:var(--text3);text-align:center;padding:40px">No hay citas para este día.</div>':
-    citas.sort((a,b)=>new Date(a.fechaHora)-new Date(b.fechaHora)).map(c=>`
-      <div class="cita-card ${c.estado}" onclick="verCita('${c.id}')">
-        <div>
-          <div style="font-size:15px;font-weight:700">${esc(c.clienteNombre)}</div>
-          <div style="font-size:13px;color:var(--acc);margin-top:2px">${(c.servicios&&c.servicios.length)?c.servicios.map(s=>esc(s.nombre)).join(' · '):esc(c.servicioNombre||'Sin servicio')}</div>
-          ${c.empleadoNombre?`<div style="font-size:12px;color:var(--text2)">✂️ ${esc(c.empleadoNombre)}</div>`:`<div style="font-size:11px;font-weight:700;color:#d97706;margin-top:2px">⚠️ Sin empleado asignado</div>`}
-          ${c.notas?`<div style="font-size:12px;color:var(--text3);margin-top:4px">${esc(c.notas)}</div>`:''}
-        </div>
-        <div style="text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-          <span class="hora-badge">${fmtDT(c.fechaHora)}</span>
-          <span class="chip chip-${c.estado}">${esc(c.estado)}</span>
-          <span style="font-weight:700;font-size:14px">${fmt(c.precio||c.montoTotal||0)}</span>
-        </div>
-      </div>`).join('');}
+  try{const d=await apiFetch(`${API}/peluqueria/citas?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59&tamPagina=100`);
+  const citas=(d?.items||[]).filter(c=>c.estado!=='Cancelada'&&c.estado!=='NoAsistio'&&c.estado!=='Completada').sort((a,b)=>new Date(a.fechaHora)-new Date(b.fechaHora));
+  const sinAsignar=citas.filter(c=>!c.empleadoNombre&&!c.empleadoId);
+  const conEmp=citas.filter(c=>c.empleadoNombre||c.empleadoId);
+  const _citaRow=c=>`
+    <div class="cita-card ${c.estado}" onclick="verCita('${c.id}')">
+      <div>
+        <div style="font-size:15px;font-weight:700">${esc(c.clienteNombre)}</div>
+        <div style="font-size:13px;color:var(--acc);margin-top:2px">${(c.servicios&&c.servicios.length)?c.servicios.map(s=>esc(s.nombre)).join(' · '):esc(c.servicioNombre||'Sin servicio')}</div>
+        ${c.empleadoNombre?`<div style="font-size:12px;color:var(--text2)">✂️ ${esc(c.empleadoNombre)}</div>`:`<div style="font-size:11px;font-weight:700;color:#d97706;margin-top:2px">⏳ Sin asignar — disponible en cola</div>`}
+        ${c.notas?`<div style="font-size:12px;color:var(--text3);margin-top:4px">${esc(c.notas)}</div>`:''}
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <span class="hora-badge">${fmtDT(c.fechaHora)}</span>
+        <span class="chip chip-${c.estado}">${esc(c.estado)}</span>
+        <span style="font-weight:700;font-size:14px">${fmt(c.precio||c.montoTotal||0)}</span>
+      </div>
+    </div>`;
+  if(citas.length===0){document.getElementById('agendaList').innerHTML='<div style="color:var(--text3);text-align:center;padding:40px">No hay citas para este día.</div>';return;}
+  let html='';
+  if(sinAsignar.length){
+    html+=`<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🎯 Cola — Sin asignar (${sinAsignar.length})</div>
+      ${sinAsignar.map(_citaRow).join('')}
+    </div>`;
+  }
+  if(conEmp.length){
+    if(sinAsignar.length)html+=`<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Citas asignadas</div>`;
+    html+=conEmp.map(_citaRow).join('');
+  }
+  document.getElementById('agendaList').innerHTML=html;}
   catch(e){document.getElementById('agendaList').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
 }
 

@@ -142,10 +142,18 @@ textarea.f-inp{resize:none;height:76px}
 .btn-reservar:hover{background:var(--acc-d);box-shadow:0 6px 20px rgba(11,132,87,.4)}
 .btn-reservar:active{transform:scale(.98)}
 
+/* LIBRE (cualquier disponible) */
+.libre-note{background:var(--acc-l);border:1px solid rgba(11,132,87,.25);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.libre-note strong{color:var(--acc)}
+.hora-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}
+.hora-btn{padding:9px 4px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg2);cursor:pointer;font-size:13px;font-weight:600;color:var(--text);text-align:center;transition:.15s}
+.hora-btn:hover{border-color:var(--acc);color:var(--acc)}
+.hora-btn.sel{background:var(--acc);color:#fff;border-color:var(--acc)}
 /* RESPONSIVE */
 @media(max-width:400px){
   .page{padding:16px 10px 40px}
   .slots-grid{grid-template-columns:repeat(2,1fr)}
+  .hora-grid{grid-template-columns:repeat(3,1fr)}
   .s-title{font-size:16px}
   .home-nombre{font-size:20px}
 }
@@ -226,7 +234,7 @@ textarea.f-inp{resize:none;height:76px}
   <!-- STEP 2: Especialista -->
   <div class="screen" id="s2">
     <div class="s-title">¿Con quién te gustaría?</div>
-    <div class="s-sub">Elige un especialista o déjanos asignar el mejor disponible</div>
+    <div class="s-sub">Elige un especialista específico, o selecciona <strong>Cualquier disponible</strong> y elige tu hora libremente — un especialista de tu servicio la tomará.</div>
     <div id="empList"></div>
     <div class="err-box" id="e2"></div>
     <button class="btn-next" onclick="goStep(3)">Continuar →</button>
@@ -236,7 +244,7 @@ textarea.f-inp{resize:none;height:76px}
   <!-- STEP 3: Fecha y hora -->
   <div class="screen" id="s3">
     <div class="s-title">¿Cuándo puedes venir?</div>
-    <div class="s-sub">Elige la fecha y selecciona un horario disponible</div>
+    <div class="s-sub" id="s3Sub">Elige la fecha y selecciona un horario</div>
     <label class="field-label">Fecha</label>
     <input type="date" class="date-inp" id="fechaInp" oninput="loadSlots()">
     <div class="slots-head" id="slotsHead" style="display:none">Horarios disponibles</div>
@@ -443,10 +451,10 @@ function renderEmps() {
   const el = document.getElementById('empList');
   const cards = [`
     <div class="emp-card sel" id="emp-any" onclick="selEmp(null)">
-      <div class="emp-av">✦</div>
+      <div class="emp-av">🎯</div>
       <div class="emp-info">
         <div class="emp-name">Cualquier disponible</div>
-        <div class="emp-role">El sistema asignará el mejor horario</div>
+        <div class="emp-role">Elige tu hora libremente — el especialista adecuado tomará tu cita</div>
       </div>
       <div class="emp-radio"></div>
     </div>`];
@@ -477,14 +485,21 @@ async function loadSlots() {
   if (!fecha) return;
   _selFecha = fecha;
   _selHora  = '';
-  const dur = _selSvcs.reduce((a,s) => a + parseInt(s.duracion_min||30), 0) || 30;
-  const p = new URLSearchParams({ fecha, duracion: dur });
-  if (_selEmpId) p.set('empleadoId', _selEmpId);
 
   const listEl = document.getElementById('slotsList');
   const headEl = document.getElementById('slotsHead');
-  listEl.innerHTML = '<div class="slots-spin"><div class="sp"></div> Buscando horarios...</div>';
   headEl.style.display = 'block';
+
+  // Cuando elige "Cualquier disponible", mostrar horario libre (sin restricción de empleados)
+  if (!_selEmpId) {
+    renderHorarioLibre(fecha);
+    return;
+  }
+
+  const dur = _selSvcs.reduce((a,s) => a + parseInt(s.duracion_min||30), 0) || 30;
+  const p = new URLSearchParams({ fecha, duracion: dur, empleadoId: _selEmpId });
+
+  listEl.innerHTML = '<div class="slots-spin"><div class="sp"></div> Buscando horarios...</div>';
 
   try {
     const r = await fetch(`${BASE}/${NID}/disponibilidad?${p}`);
@@ -494,7 +509,7 @@ async function loadSlots() {
     const hoy = new Date();
     const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
     if (fecha === hoyStr) {
-      const ahoraMin = hoy.getHours() * 60 + hoy.getMinutes() + 30; // buffer 30 min
+      const ahoraMin = hoy.getHours() * 60 + hoy.getMinutes() + 30;
       slots = slots.filter(s => {
         const [h, m] = (s.hora || s).split(':').map(Number);
         return h * 60 + m >= ahoraMin;
@@ -502,17 +517,13 @@ async function loadSlots() {
     }
 
     if (!slots.length) {
-      listEl.innerHTML = '<div class="slots-empty">No hay horarios disponibles para este día.<br>Prueba eligiendo otra fecha o especialista.</div>';
+      listEl.innerHTML = '<div class="slots-empty">No hay horarios disponibles para este especialista este día.<br>Prueba otra fecha o elige "Cualquier disponible".</div>';
       return;
     }
     listEl.innerHTML = `<div class="slots-grid">${slots.map(s => {
       const hora = s.hora || s;
-      const emps = s.empleados || [];
-      const empLabel = !_selEmpId && emps.length
-        ? (emps.length > 2 ? `${emps.length} disponibles` : emps.map(e => e.nombre.split(' ')[0]).join(' · '))
-        : '';
       return `<button class="slot" id="sl-${hora.replace(':','-')}" onclick="selSlot('${hora}')">
-        <span class="slot-time">${fmtHora(hora)}</span>${empLabel ? `<span class="slot-emp">${empLabel}</span>` : ''}
+        <span class="slot-time">${fmtHora(hora)}</span>
       </button>`;
     }).join('')}</div>`;
   } catch {
@@ -520,9 +531,37 @@ async function loadSlots() {
   }
 }
 
+function renderHorarioLibre(fecha) {
+  const listEl = document.getElementById('slotsList');
+  const hoy = new Date();
+  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  const esHoy = fecha === hoyStr;
+  const ahoraMin = hoy.getHours() * 60 + hoy.getMinutes() + 60; // buffer 1h
+
+  // Generar franjas de 8:00 a 19:00 cada 30 min
+  const horas = [];
+  for (let m = 8 * 60; m < 19 * 60; m += 30) {
+    if (esHoy && m < ahoraMin) continue;
+    const hh = String(Math.floor(m / 60)).padStart(2,'0');
+    const mm = String(m % 60).padStart(2,'0');
+    horas.push(`${hh}:${mm}`);
+  }
+
+  listEl.innerHTML = `
+    <div class="libre-note">
+      <strong>🎯 Cita libre</strong> — Tu cita quedará disponible en la cola de nuestro equipo. El especialista adecuado la tomará y te atenderá en el horario que elijas.
+    </div>
+    <div class="hora-grid">
+      ${horas.map(h => `<button class="hora-btn" id="sl-${h.replace(':','-')}" onclick="selSlot('${h}')">${fmtHora(h)}</button>`).join('')}
+    </div>`;
+  if (!horas.length) {
+    listEl.innerHTML = '<div class="slots-empty">No hay horarios disponibles para hoy.<br>Elige otra fecha.</div>';
+  }
+}
+
 function selSlot(hora) {
   _selHora = hora;
-  document.querySelectorAll('.slot').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('.slot,.hora-btn').forEach(b => b.classList.remove('sel'));
   document.getElementById('sl-' + hora.replace(':','-'))?.classList.add('sel');
 }
 
@@ -549,6 +588,12 @@ function goStep(n) {
   if (n > _step) {
     if (_step === 1 && !_selSvcs.length) { showErr('e1'); return; }
     if (_step === 3 && (!_selFecha || !_selHora)) { showErr('e3'); return; }
+  }
+  if (n === 3) {
+    const sub = document.getElementById('s3Sub');
+    if (sub) sub.textContent = _selEmpId
+      ? 'Elige la fecha y el horario disponible del especialista'
+      : 'Elige la fecha y el horario — tu cita quedará en cola para el especialista adecuado';
   }
   if (n === 4) fillResumen();
   showStep(n);
