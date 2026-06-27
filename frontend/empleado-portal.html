@@ -191,7 +191,7 @@
     </div>
   </div>
   <div class="container">
-    <div class="section-title" id="sColaTit" style="display:none">🎯 Cola — Citas sin asignar</div>
+    <div class="section-title" id="sColaTit">🎯 Cola — Citas sin asignar</div>
     <div id="pCola"></div>
     <div class="section-title">Horario semanal</div>
     <div class="card" id="pHorario"></div>
@@ -311,8 +311,8 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
           </div>`;
         }).join('');
   } else {
-    colaTit.style.display = 'none';
-    colaEl.innerHTML = '';
+    colaTit.style.display = '';
+    colaEl.innerHTML = '<div class="empty" style="color:var(--text3)">No hay citas sin asignar en este momento</div>';
   }
 
   // Horario semanal
