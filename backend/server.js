@@ -34,7 +34,8 @@ app.use('/uploads', express.static(process.env.UPLOADS_DIR || './uploads'));
 
 // ── Servir frontend desde el servidor (evita problema file://) ────
 const frontendPath = path.join(__dirname, '..', 'frontend');
-app.use(express.static(frontendPath));
+app.disable('etag');  // sin cache en desarrollo
+app.use(express.static(frontendPath, { etag: false, lastModified: false }));
 // Rutas directas para cada panel
 app.get('/',             (_, res) => res.sendFile(path.join(frontendPath, 'restaurante-pos.html')));
 app.get('/superadmin',   (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
