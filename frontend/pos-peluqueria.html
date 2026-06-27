@@ -331,7 +331,28 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 .prod-panel-footer{padding:12px 14px;border-top:0.5px solid var(--border)}
 .prod-total-main{display:flex;justify-content:space-between;font-size:16px;font-weight:600;margin:0 0 12px}
 .prod-empty{text-align:center;padding:40px 16px;color:var(--text3);font-size:13px}
-@media(max-width:767px){.prod-panel{width:100%;border-left:none;border-top:0.5px solid var(--border)}}
+@media(max-width:767px){
+  .prod-panel{width:100%;border-left:none;border-top:0.5px solid var(--border)}
+  #vistaProductos{flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important}
+  #vistaProductos>div:first-child{border-right:none!important;border-bottom:0.5px solid var(--border);max-height:55vh}
+  .prod-panel{flex-shrink:0}
+}
+/* ── Modal pago productos ── */
+.ppay-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
+.ppay-box{background:var(--bg);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;padding:20px 18px}
+@media(min-width:480px){.ppay-overlay{align-items:center}.ppay-box{border-radius:var(--rl);max-height:85vh}}
+.ppay-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:12px}
+.ppay-card h3{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px}
+.ppay-btns{display:flex;gap:8px}
+.ppay-btn{flex:1;padding:12px 6px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;background:transparent;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text2);transition:.12s}
+.ppay-btn span{font-size:20px}
+.ppay-btn.sel{border-color:var(--blue);background:var(--blue-l);color:var(--blue-d)}
+.ppay-vueltas{background:var(--green-l);border:0.5px solid var(--green);border-radius:var(--r);padding:10px 14px;margin-top:8px;display:none}
+.ppay-vueltas-lbl{font-size:11px;color:var(--green-d);margin-bottom:2px}
+.ppay-vueltas-val{font-size:24px;font-weight:700;color:var(--green-d)}
+.ppay-err{background:var(--red-l);border:0.5px solid var(--red);border-radius:var(--r);padding:8px 12px;margin-top:8px;font-size:12px;color:var(--red);display:none}
+.ppay-billetes{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.ppay-billete{padding:5px 10px;border-radius:var(--r);border:0.5px solid var(--border2);cursor:pointer;font-size:11px;background:transparent;color:var(--text2)}
 /* ── Resumen de citas (panel Citas) ── */
 .resumen-wrap{padding:10px 14px 0;flex-shrink:0}
 .resumen-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
@@ -498,9 +519,6 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
         <div class="prod-total-main">
           <span>Total</span><span id="prod-total">$ 0</span>
         </div>
-        <select id="prod-metodo" style="width:100%;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;background:var(--bg2);color:var(--text);margin-bottom:8px">
-          <option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Nequi</option>
-        </select>
         <button id="prod-cobrar-btn" onclick="cobrarProductos()" disabled
           class="btn btn-success btn-block" style="opacity:.5;font-size:14px;font-weight:700;min-height:44px">
           Cobrar
@@ -556,6 +574,61 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
       <button class="btn btn-outline" onclick="cerrarModal('reciboModal');cargarCitas()">Cerrar</button>
       <button class="btn btn-acc" onclick="window.print()">🖨️ Imprimir</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL PAGO PRODUCTOS -->
+<div class="ppay-overlay" id="ppayModal" onclick="if(event.target===this)cerrarPPay()">
+  <div class="ppay-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font-size:16px;font-weight:700">🛍️ Cobrar productos</span>
+      <button onclick="cerrarPPay()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>
+    </div>
+    <!-- Resumen -->
+    <div class="ppay-card">
+      <h3>Resumen</h3>
+      <div id="ppay-resumen"></div>
+      <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+        <span>Total</span><span id="ppay-total">$0</span>
+      </div>
+    </div>
+    <!-- Método de pago -->
+    <div class="ppay-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h3 style="margin:0">Método de pago</h3>
+        <button onclick="togglePPMixto()" id="ppay-mixto-btn"
+          style="font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">⚡ Mixto</button>
+      </div>
+      <div id="ppay-single">
+        <div class="ppay-btns">
+          <button class="ppay-btn sel" id="ppb-efectivo" onclick="selPPay('efectivo')"><span>💵</span>Efectivo</button>
+          <button class="ppay-btn" id="ppb-tarjeta"  onclick="selPPay('tarjeta')"><span>💳</span>Tarjeta</button>
+          <button class="ppay-btn" id="ppb-nequi"    onclick="selPPay('nequi')"><span>📱</span>QR/Nequi</button>
+        </div>
+      </div>
+      <div id="ppay-mixed" style="display:none;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;width:22px">💵</span><span style="flex:1;font-size:13px">Efectivo</span><input id="ppm-efectivo" type="number" min="0" placeholder="0" oninput="calcPPSplit()" style="width:90px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:14px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none"><button onclick="ppmResto('efectivo')" style="padding:5px 8px;background:none;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--text2)">↑ resto</button></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;width:22px">💳</span><span style="flex:1;font-size:13px">Tarjeta</span><input id="ppm-tarjeta" type="number" min="0" placeholder="0" oninput="calcPPSplit()" style="width:90px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:14px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none"><button onclick="ppmResto('tarjeta')" style="padding:5px 8px;background:none;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--text2)">↑ resto</button></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;width:22px">📱</span><span style="flex:1;font-size:13px">QR/Nequi</span><input id="ppm-nequi" type="number" min="0" placeholder="0" oninput="calcPPSplit()" style="width:90px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:14px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none"><button onclick="ppmResto('nequi')" style="padding:5px 8px;background:none;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--text2)">↑ resto</button></div>
+        <div id="ppm-resumen" style="display:none;background:var(--bg);border-radius:var(--r);padding:8px 10px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:var(--text2)">Asignado</span><span id="ppm-asig" style="font-weight:600">$0</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Pendiente</span><span id="ppm-pend" style="font-weight:700">$0</span></div>
+        </div>
+      </div>
+    </div>
+    <!-- Efectivo -->
+    <div class="ppay-card" id="ppay-efectivo-sec">
+      <h3>Valor recibido</h3>
+      <input id="ppay-recibido" type="number" min="0" placeholder="0" oninput="calcPPVueltas()"
+        style="width:100%;padding:10px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:20px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none">
+      <div class="ppay-billetes" id="ppay-billetes"></div>
+      <button onclick="ppayExacto()" style="width:100%;margin-top:8px;padding:7px;border-radius:var(--r);border:0.5px solid var(--border2);background:transparent;cursor:pointer;font-size:12px;color:var(--text2)">Valor exacto</button>
+      <div class="ppay-vueltas" id="ppay-vueltas"><div class="ppay-vueltas-lbl">Vueltas</div><div class="ppay-vueltas-val" id="ppay-vueltas-val">$0</div></div>
+      <div class="ppay-err" id="ppay-err">⚠️ Valor menor al total</div>
+    </div>
+    <!-- Botón -->
+    <button id="ppay-procesar" onclick="procesarPagoProductos()"
+      class="btn btn-green btn-block" style="padding:16px;font-size:15px">✓ Procesar pago</button>
   </div>
 </div>
 
@@ -1634,24 +1707,127 @@ function cambiarCantidad(i, delta) {
 function quitarDelCarrito(i) { _carrito.splice(i,1); renderCarrito(); }
 function limpiarCarrito() { _carrito=[]; renderCarrito(); }
 
-async function cobrarProductos() {
+// ── Modal pago productos ─────────────────────────────────────
+let _ppMixto = false, _ppMetodo = 'efectivo';
+
+function cobrarProductos() {
   if (!_carrito.length) return;
-  const btn = $('prod-cobrar-btn');
-  const metodo = $('prod-metodo')?.value || 'Efectivo';
+  if (!_cajaId) { showToast('⚠️ Abre la caja primero'); switchTab('caja'); return; }
   const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad, 0);
+  // Resumen
+  $('ppay-resumen').innerHTML = _carrito.map(c=>`
+    <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:0.5px solid var(--border)">
+      <span>${esc(c.nombre)} × ${c.cantidad}</span>
+      <span style="font-weight:600">${fmtCOP(c.precio*c.cantidad)}</span>
+    </div>`).join('');
+  $('ppay-total').textContent = fmtCOP(total);
+  // Reset método
+  _ppMixto = false; _ppMetodo = 'efectivo';
+  $('ppay-single').style.display = '';
+  $('ppay-mixed').style.display = 'none';
+  ['efectivo','tarjeta','nequi'].forEach(m => { $(`ppb-${m}`)?.classList.toggle('sel', m==='efectivo'); $(`ppm-${m}`).value=''; });
+  $('ppay-efectivo-sec').style.display = '';
+  $('ppay-recibido').value = '';
+  $('ppay-vueltas').style.display = 'none';
+  $('ppay-err').style.display = 'none';
+  renderPPBilletes(total);
+  $('ppayModal').style.display = 'flex';
+}
+
+function cerrarPPay() { $('ppayModal').style.display = 'none'; }
+
+function selPPay(m) {
+  _ppMetodo = m;
+  ['efectivo','tarjeta','nequi'].forEach(k => $(`ppb-${k}`)?.classList.toggle('sel', k===m));
+  $('ppay-efectivo-sec').style.display = m==='efectivo' ? '' : 'none';
+  $('ppay-recibido').value = '';
+  $('ppay-vueltas').style.display = 'none';
+  $('ppay-err').style.display = 'none';
+  if (m==='efectivo') renderPPBilletes(_carrito.reduce((a,c)=>a+c.precio*c.cantidad,0));
+}
+
+function togglePPMixto() {
+  _ppMixto = !_ppMixto;
+  $('ppay-single').style.display = _ppMixto ? 'none' : '';
+  $('ppay-mixed').style.display  = _ppMixto ? 'flex' : 'none';
+  $('ppay-efectivo-sec').style.display = _ppMixto ? 'none' : (_ppMetodo==='efectivo'?'':'none');
+  $('ppay-mixto-btn').style.background = _ppMixto ? 'var(--blue-l)' : '';
+  $('ppay-mixto-btn').style.color = _ppMixto ? 'var(--blue)' : '';
+  ['efectivo','tarjeta','nequi'].forEach(m => { $(`ppm-${m}`).value=''; });
+  $('ppm-resumen').style.display='none';
+}
+
+function renderPPBilletes(total) {
+  const bills = [1000,2000,5000,10000,20000,50000,100000].filter(b=>b>=total*0.5);
+  $('ppay-billetes').innerHTML = bills.map(b=>`<button class="ppay-billete" onclick="$('ppay-recibido').value=${b};calcPPVueltas()">$${(b/1000).toFixed(0)}k</button>`).join('');
+}
+
+function ppayExacto() {
+  const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad,0);
+  $('ppay-recibido').value = total;
+  calcPPVueltas();
+}
+
+function calcPPVueltas() {
+  const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad,0);
+  const rec = parseFloat($('ppay-recibido').value)||0;
+  const vueltas = rec - total;
+  if (rec <= 0) { $('ppay-vueltas').style.display='none'; $('ppay-err').style.display='none'; return; }
+  if (vueltas < 0) { $('ppay-vueltas').style.display='none'; $('ppay-err').style.display=''; return; }
+  $('ppay-err').style.display='none';
+  $('ppay-vueltas-val').textContent = fmtCOP(vueltas);
+  $('ppay-vueltas').style.display = '';
+}
+
+function calcPPSplit() {
+  const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad,0);
+  const asig = ['efectivo','tarjeta','nequi'].reduce((a,m)=>a+(parseFloat($(`ppm-${m}`)?.value)||0),0);
+  const pend = total - asig;
+  $('ppm-resumen').style.display = asig>0 ? '' : 'none';
+  $('ppm-asig').textContent = fmtCOP(asig);
+  $('ppm-pend').textContent = fmtCOP(Math.max(0,pend));
+}
+
+function ppmResto(m) {
+  const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad,0);
+  const otros = ['efectivo','tarjeta','nequi'].filter(k=>k!==m).reduce((a,k)=>a+(parseFloat($(`ppm-${k}`)?.value)||0),0);
+  $(`ppm-${m}`).value = Math.max(0, total - otros);
+  calcPPSplit();
+}
+
+async function procesarPagoProductos() {
+  const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad,0);
+  let pagos = [];
+  if (_ppMixto) {
+    ['efectivo','tarjeta','nequi'].forEach(m => {
+      const v = parseFloat($(`ppm-${m}`)?.value)||0;
+      if (v > 0) pagos.push({ metodo: m.charAt(0).toUpperCase()+m.slice(1), monto: v });
+    });
+    if (!pagos.length) { showToast('⚠️ Ingresa los montos del pago mixto'); return; }
+    const asig = pagos.reduce((a,p)=>a+p.monto,0);
+    if (asig < total) { showToast('⚠️ El monto asignado es menor al total'); return; }
+  } else {
+    if (_ppMetodo === 'efectivo') {
+      const rec = parseFloat($('ppay-recibido').value)||0;
+      if (rec < total) { $('ppay-err').style.display=''; return; }
+    }
+    pagos = [{ metodo: _ppMetodo.charAt(0).toUpperCase()+_ppMetodo.slice(1), monto: total }];
+  }
+  const btn = $('ppay-procesar');
   btn.disabled = true; btn.textContent = '...';
   try {
-    if (!_cajaId) { alert('Debes abrir la caja primero'); switchTab('caja'); return; }
     await api('POST', '/ventas', {
       items: _carrito.map(c=>({ nombre:c.nombre, precio:c.precio, cantidad:c.cantidad, tipo:'producto', refId:c.id })),
-      pagos: [{ metodo, monto: total }]
+      pagos
     });
+    cerrarPPay();
     showToast(`✅ Venta de ${fmtCOP(total)} registrada`);
     limpiarCarrito();
     cargarProductosPOS();
   } catch(e) {
-    alert(e.message);
-    btn.disabled=false; btn.textContent=`Cobrar ${fmtCOP(total)}`;
+    showToast('Error: '+e.message);
+  } finally {
+    btn.disabled=false; btn.textContent='✓ Procesar pago';
   }
 }
 
