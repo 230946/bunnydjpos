@@ -73,11 +73,29 @@ router.get('/portal-empleado/:id', async (req, res) => {
        ORDER BY c.fecha_hora LIMIT 30`, [e.id, e.nombre]
     );
 
+    const { rows: cola } = await pool.query(
+      `SELECT c.id, c.fecha_hora, c.duracion_min, c.precio,
+              COALESCE(
+                (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
+                 FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
+                s.nombre
+              ) AS servicio_nombre,
+              COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre
+       FROM pel_citas c
+       LEFT JOIN pel_servicios s ON BINARY s.id = BINARY c.servicio_id
+       LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
+       WHERE c.negocio_id=? AND c.empleado_id IS NULL
+         AND c.estado NOT IN ('Cancelada','NoAsistio','Completada')
+         AND DATE(c.fecha_hora) >= CURDATE()
+       ORDER BY c.fecha_hora LIMIT 20`, [e.negocio_id]
+    );
+
     res.json({
       empleado: { ...e, dias: DIAS },
       horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana })),
       citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       proximas: proximas.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
+      cola: cola.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -142,12 +160,67 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
          AND c.estado NOT IN ('Cancelada','NoAsistio')
        ORDER BY c.fecha_hora LIMIT 30`, [e.id, e.nombre]
     );
+    const { rows: cola } = await pool.query(
+      `SELECT c.id, c.fecha_hora, c.duracion_min, c.precio,
+              COALESCE(
+                (SELECT GROUP_CONCAT(cd.nombre ORDER BY cd.id SEPARATOR ' · ')
+                 FROM pel_cita_detalle cd WHERE cd.cita_id=c.id),
+                s.nombre
+              ) AS servicio_nombre,
+              COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre
+       FROM pel_citas c
+       LEFT JOIN pel_servicios s ON BINARY s.id = BINARY c.servicio_id
+       LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
+       WHERE c.negocio_id=? AND c.empleado_id IS NULL
+         AND c.estado NOT IN ('Cancelada','NoAsistio','Completada')
+         AND DATE(c.fecha_hora) >= CURDATE()
+       ORDER BY c.fecha_hora LIMIT 20`, [negocioId]
+    );
+
     res.json({
       empleado: { ...e, dias: DIAS },
       horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana })),
       citasHoy: citasHoy.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       proximas: proximas.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
+      cola: cola.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
     });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Ruta pública: tomar cita desde portal del empleado ────────────
+router.post('/portal-negocio/:negocioId/tomar-cita', async (req, res) => {
+  try {
+    const { cedula, citaId } = req.body;
+    const negocioId = req.params.negocioId;
+    if (!cedula || !citaId) return res.status(400).json({ error: 'cedula y citaId requeridos' });
+    const { rows: empR } = await pool.query(
+      `SELECT id, nombre FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [negocioId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    const emp = empR[0];
+    await pool.query(
+      `UPDATE pel_citas SET empleado_id=?, empleado_nombre=? WHERE id=? AND negocio_id=? AND empleado_id IS NULL`,
+      [emp.id, emp.nombre, citaId, negocioId]
+    );
+    res.json({ ok: true, empleadoNombre: emp.nombre });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/portal-empleado/:empId/tomar-cita', async (req, res) => {
+  try {
+    const { cedula, citaId } = req.body;
+    const { rows: empR } = await pool.query(
+      `SELECT id, negocio_id, nombre FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [req.params.empId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    const emp = empR[0];
+    await pool.query(
+      `UPDATE pel_citas SET empleado_id=?, empleado_nombre=? WHERE id=? AND negocio_id=? AND empleado_id IS NULL`,
+      [emp.id, emp.nombre, citaId, emp.negocio_id]
+    );
+    res.json({ ok: true, empleadoNombre: emp.nombre });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

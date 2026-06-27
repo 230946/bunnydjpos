@@ -71,6 +71,26 @@
   .badge-amber{background:var(--amber-l);color:var(--amber)}
   .empty{text-align:center;padding:28px;color:var(--text3);font-size:13px}
   .prox-fecha{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:14px 0 4px;padding-left:2px}
+
+  /* ── COLA ── */
+  .cola-header{background:#fef9c3;border:1.5px solid #fcd34d;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;font-weight:600}
+  .cola-card{background:var(--bg2);border:1.5px solid #fcd34d;border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+  .cola-card:last-child{margin-bottom:0}
+  .cola-hora{font-size:20px;font-weight:700;color:var(--amber);min-width:52px;text-align:center;line-height:1.1}
+  .cola-hora small{display:block;font-size:10px;font-weight:400;color:var(--text3)}
+  .cola-info{flex:1;min-width:0}
+  .cola-info .cola-svc{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cola-info .cola-cli{color:var(--text2);font-size:13px;margin-top:2px}
+  .cola-info .cola-fecha{font-size:11px;color:var(--text3);margin-top:3px}
+  .btn-tomar{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.15s}
+  .btn-tomar:hover{background:var(--acc-d)}
+  .btn-tomar:disabled{opacity:.5;cursor:not-allowed}
+  @media(max-width:600px){
+    .cola-card{gap:10px;padding:12px}
+    .cola-hora{font-size:17px;min-width:44px}
+    .cola-info .cola-svc{font-size:13px}
+    .btn-tomar{padding:8px 12px;font-size:12px}
+  }
     img[src="/img/logo.png"]{transition:transform .3s ease;cursor:zoom-in;display:block;margin:0 auto}
     img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     .header-logo-img{transition:none!important;cursor:default!important;transform:none!important;display:inline-block!important;margin:0!important}
@@ -168,6 +188,8 @@
     </div>
   </div>
   <div class="container">
+    <div class="section-title" id="sColaTit" style="display:none">🎯 Cola — Citas sin asignar</div>
+    <div id="pCola"></div>
     <div class="section-title">Horario semanal</div>
     <div class="card" id="pHorario"></div>
     <div class="section-title">Citas de hoy</div>
@@ -236,6 +258,7 @@ function estadoBadge(e){
 
 let _refreshInterval = null;
 let _cedulaActiva = null;
+let _empleadoActual = null;
 
 async function cargarDatos(cedula) {
   try {
@@ -256,7 +279,34 @@ async function refrescarManual() {
   if (btn) { btn.textContent = '↻ Actualizar'; btn.disabled = false; }
 }
 
-function actualizarSecciones({horarios, citasHoy, proximas}) {
+function actualizarSecciones({horarios, citasHoy, proximas, cola}) {
+  // Cola sin asignar
+  const colaEl = document.getElementById('pCola');
+  const colaTit = document.getElementById('sColaTit');
+  const items = cola || [];
+  if (items.length) {
+    colaTit.style.display = '';
+    colaEl.innerHTML = `<div class="cola-header">Hay ${items.length} cita${items.length>1?'s':''} sin asignar — ¡puedes tomarla${items.length>1?'s':''}!</div>`
+      + items.map(c => {
+          const d = new Date(c.fecha_hora);
+          const esHoy = d.toDateString() === new Date().toDateString();
+          const fechaStr = esHoy ? 'Hoy' : fmtFechaCorta(c.fecha_hora);
+          return `<div class="cola-card">
+            <div class="cola-hora">${fmtHora(c.fecha_hora)}<small>${c.duracion_min ? c.duracion_min+' min' : ''}</small></div>
+            <div class="cola-info">
+              <div class="cola-svc">${c.servicio_nombre||'Sin servicio'}</div>
+              <div class="cola-cli">👤 ${c.cliente_nombre||'—'}</div>
+              <div class="cola-fecha">📅 ${fechaStr}</div>
+            </div>
+            <button class="btn-tomar" id="btn-tomar-${c.id}" onclick="tomarCita('${c.id}',this)">Tomar</button>
+          </div>`;
+        }).join('');
+  } else {
+    colaTit.style.display = 'none';
+    colaEl.innerHTML = '';
+  }
+
+  // Horario semanal
   const hoy = new Date().getDay();
   document.getElementById('pHorario').innerHTML = horarios.length
     ? `<div class="horario-grid">${horarios.map(h => {
@@ -268,6 +318,7 @@ function actualizarSecciones({horarios, citasHoy, proximas}) {
       }).join('')}</div>`
     : '<div class="empty">Sin horario asignado</div>';
 
+  // Citas de hoy
   document.getElementById('pCitasHoy').innerHTML = citasHoy.length
     ? citasHoy.map(c => `<div class="cita-item">
         <div class="cita-hora">${fmtHora(c.fecha_hora)}<small>${c.duracion_min?c.duracion_min+' min':''}</small></div>
@@ -280,6 +331,7 @@ function actualizarSecciones({horarios, citasHoy, proximas}) {
       </div>`).join('')
     : '<div class="empty">Sin citas programadas para hoy</div>';
 
+  // Próximas citas
   if (!proximas.length) { document.getElementById('pProximas').innerHTML='<div class="empty">Sin citas próximas</div>'; return; }
   let html='', fechaAct='';
   proximas.forEach(c => {
@@ -296,6 +348,35 @@ function actualizarSecciones({horarios, citasHoy, proximas}) {
     </div>`;
   });
   document.getElementById('pProximas').innerHTML = html;
+}
+
+async function tomarCita(citaId, btn) {
+  if (!_cedulaActiva) return;
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    const url = empId
+      ? `${API}/peluqueria/portal-empleado/${empId}/tomar-cita`
+      : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/tomar-cita`;
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ cedula: _cedulaActiva, citaId })
+    });
+    if (r.ok) {
+      btn.textContent = '✓ Tomada';
+      btn.style.background = '#16a34a';
+      setTimeout(() => cargarDatos(_cedulaActiva), 800);
+    } else {
+      const d = await r.json();
+      btn.textContent = d.error || 'Error';
+      btn.style.background = '#dc2626';
+      setTimeout(() => { btn.textContent='Tomar'; btn.style.background=''; btn.disabled=false; }, 2000);
+    }
+  } catch {
+    btn.textContent = 'Error';
+    btn.disabled = false;
+  }
 }
 
 async function iniciarSesion(){
@@ -361,11 +442,12 @@ async function checkContrato(negId){
   return false;
 }
 
-async function mostrarPortal({empleado:e, horarios, citasHoy, proximas}){
+async function mostrarPortal({empleado:e, horarios, citasHoy, proximas, cola}){
   document.getElementById('loginWrap').style.display='none';
   // Verificar contrato ANTES de mostrar el contenido
   const bloqueado = await checkContrato(e.negocio_id||negocioId);
   if(bloqueado) return false;
+  _empleadoActual = e;
   document.getElementById('portalWrap').style.display='block';
   document.title=`Portal — ${e.nombre}`;
   const iniciales=(e.nombre[0]+(e.apellido?.[0]||'')).toUpperCase();
@@ -374,7 +456,7 @@ async function mostrarPortal({empleado:e, horarios, citasHoy, proximas}){
   document.getElementById('pCargo').textContent=e.cargo||e.especialidad||'Empleado';
   document.getElementById('pCedula').textContent=e.cedula?'CC '+e.cedula:'';
   document.getElementById('pFecha').textContent=hoyNombre();
-  actualizarSecciones({horarios, citasHoy, proximas});
+  actualizarSecciones({horarios, citasHoy, proximas, cola});
 }
 
 // Auto-login si ya hay sesión guardada
