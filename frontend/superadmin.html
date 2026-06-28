@@ -772,8 +772,7 @@ async function loadNegocios(){
       farmacia:    [['Admin','/farmacia-admin.html']],
     };
     const _urlBtns = n => (_negLinks[n.tipo]||[]).map(([lbl,p])=>
-      `<button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="copiarURL('${base}${p}?n=${n.id}')" title="Copiar URL ${lbl}">📋 ${lbl}</button>`+
-      `<a class="btn btn-outline btn-sm" href="${base}${p}?n=${n.id}" target="_blank" style="text-decoration:none;font-size:11px;padding:3px 8px">↗</a>`
+      `<a class="btn btn-primary btn-sm" href="${base}${p}?n=${n.id}" target="_blank" style="text-decoration:none;font-size:11px;padding:4px 12px;font-weight:600">↗ ${lbl}</a>`
     ).join('');
     document.getElementById('negocios-tbody').innerHTML = data.map(n=>`
       <div class="neg-acc-item" style="border-bottom:0.5px solid var(--border)">
