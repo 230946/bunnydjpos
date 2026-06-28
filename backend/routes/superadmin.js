@@ -275,28 +275,24 @@ router.get('/reportes', async (req, res) => {
     const hasta = req.query.hasta || today;
     const { rows } = await pool.query(`
       SELECT n.id AS negocio_id, n.nombre, n.tipo,
-        COALESCE(np.plan,'free') AS plan,
         COUNT(v.id) AS total_ventas,
         COALESCE(SUM(v.total),0) AS ingresos,
         COALESCE(AVG(v.total),0) AS promedio,
         MAX(v.creado) AS ultima_venta
       FROM negocios n
-      LEFT JOIN neg_planes np ON np.negocio_id = n.id
       LEFT JOIN (
         SELECT id, negocio_id, total, creado FROM ventas
         UNION ALL
         SELECT id, negocio_id, total, fecha AS creado FROM pel_ventas WHERE estado='completada'
       ) v ON v.negocio_id = n.id AND DATE(v.creado) BETWEEN ? AND ?
       WHERE n.activo = 1
-      GROUP BY n.id, n.nombre, n.tipo, np.plan
+      GROUP BY n.id, n.nombre, n.tipo
       ORDER BY ingresos DESC
     `, [desde, hasta]);
-    const planRate = { basic: 0.05, plus: 0.07, premium: 0.09, personalizado: 0.07 };
-    const totalIngresos   = rows.reduce((s,r) => s + parseFloat(r.ingresos||0), 0);
-    const totalVentas     = rows.reduce((s,r) => s + parseInt(r.total_ventas||0), 0);
-    const conVentas       = rows.filter(r => parseInt(r.total_ventas||0) > 0).length;
-    const totalComision   = rows.reduce((s,r) => s + parseFloat(r.ingresos||0) * (planRate[r.plan]||0), 0);
-    res.json({ rows, totalIngresos, totalVentas, conVentas, totalComision, desde, hasta });
+    const totalIngresos = rows.reduce((s,r) => s + parseFloat(r.ingresos||0), 0);
+    const totalVentas   = rows.reduce((s,r) => s + parseInt(r.total_ventas||0), 0);
+    const conVentas     = rows.filter(r => parseInt(r.total_ventas||0) > 0).length;
+    res.json({ rows, totalIngresos, totalVentas, conVentas, desde, hasta });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

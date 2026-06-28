@@ -263,16 +263,10 @@ tr:hover td{background:var(--bg2)}
           <div class="stat-card"><div class="stat-label">Negocios activos</div><div class="stat-val" id="s-negocios">—</div></div>
           <div class="stat-card"><div class="stat-label">Usuarios totales</div><div class="stat-val" id="s-usuarios">—</div></div>
           <div class="stat-card"><div class="stat-label">Ingresos plataforma</div><div class="stat-val" id="s-ingresos">—</div></div>
-          <div class="stat-card" style="border-left:3px solid var(--green-d)">
-            <div class="stat-label">Comisión total</div>
-            <div class="stat-val" id="s-comision">—</div>
-            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-              <span style="font-size:10px;background:var(--bg2);border-radius:5px;padding:2px 7px;color:var(--text3)">Free 0%</span>
-              <span style="font-size:10px;background:var(--bg2);border-radius:5px;padding:2px 7px;color:var(--blue-d)">Basic 5%</span>
-              <span style="font-size:10px;background:var(--bg2);border-radius:5px;padding:2px 7px;color:#e65c00">Plus 7%</span>
-              <span style="font-size:10px;background:var(--bg2);border-radius:5px;padding:2px 7px;color:var(--purple-d)">Premium 9%</span>
-            </div>
-          </div>
+          <div class="stat-card" style="border-left:3px solid var(--text3)"><div class="stat-label">Free — 0% (demo)</div><div class="stat-val" style="color:var(--text2);font-size:16px">$0</div></div>
+          <div class="stat-card" style="border-left:3px solid var(--blue)"><div class="stat-label">Basic — 5%</div><div class="stat-val" id="s-com5">—</div></div>
+          <div class="stat-card" style="border-left:3px solid #e65c00"><div class="stat-label">Plus — 7%</div><div class="stat-val" id="s-com7">—</div></div>
+          <div class="stat-card" style="border-left:3px solid var(--purple-d)"><div class="stat-label">Premium — 9%</div><div class="stat-val" id="s-com9">—</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
           <div class="table-wrap">
@@ -737,8 +731,11 @@ async function loadDashboard(){
     document.getElementById('s-negocios').textContent = negocios.filter(n=>n.activo).length;
     document.getElementById('s-usuarios').textContent  = usuarios.length;
     if(rep){
-      document.getElementById('s-ingresos').textContent  = fmt(rep.totalIngresos || 0);
-      document.getElementById('s-comision').textContent  = fmt(rep.totalComision  || 0);
+      const ti = rep.totalIngresos || 0;
+      document.getElementById('s-ingresos').textContent = fmt(ti);
+      document.getElementById('s-com5').textContent = fmt(ti * 0.05);
+      document.getElementById('s-com7').textContent = fmt(ti * 0.07);
+      document.getElementById('s-com9').textContent = fmt(ti * 0.09);
     }
 
     const tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
