@@ -564,25 +564,29 @@ tr:hover td{background:var(--bg2)}
             <div id="d-plan-com" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
           </div>
         </div>
-        <div style="display:flex;gap:12px;margin:10px 0;flex-wrap:wrap">
-          <span style="font-size:13px;color:var(--text2)">💵 Efectivo: <b id="rm-efectivo">—</b></span>
-          <span style="font-size:13px;color:var(--text2)">💳 Tarjeta: <b id="rm-tarjeta">—</b></span>
-          <span style="font-size:13px;color:var(--text2)">📱 Nequi/QR: <b id="rm-nequi">—</b></span>
+        <!-- Métodos de pago -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><h3>Métodos de pago</h3></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0">
+            <div style="padding:12px 16px;border-right:0.5px solid var(--border)"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">💵 Efectivo</div><div id="rm-efectivo" style="font-size:18px;font-weight:600">—</div></div>
+            <div style="padding:12px 16px;border-right:0.5px solid var(--border)"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">💳 Tarjeta</div><div id="rm-tarjeta" style="font-size:18px;font-weight:600">—</div></div>
+            <div style="padding:12px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">📱 Nequi/QR</div><div id="rm-nequi" style="font-size:18px;font-weight:600">—</div></div>
+          </div>
         </div>
 
-        <!-- Tabla ventas del período -->
+        <!-- Detalle de ventas -->
         <div class="card" style="margin-bottom:14px">
           <div class="card-header">
-            <h3>Ventas del período</h3>
+            <h3>Detalle de ventas</h3>
             <div style="display:flex;align-items:center;gap:10px">
               <span id="r-ventas-count" style="font-size:12px;color:var(--text2)"></span>
               <button class="btn btn-sm btn-outline" onclick="exportarExcel()">⬇ Exportar Excel</button>
             </div>
           </div>
-          <div class="table-wrap" style="max-height:340px;overflow-y:auto">
-            <table style="font-size:12px">
-              <thead><tr><th></th><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Método</th><th>Total</th><th>Cliente</th><th>Cajero</th><th>Factura</th></tr></thead>
-              <tbody id="tbl-rep-ventas"><tr><td colspan="9" style="color:var(--text2);text-align:center;padding:16px">Consulta un período para ver ventas</td></tr></tbody>
+          <div class="table-wrap">
+            <table id="tbl-rep-ventas" style="font-size:12px">
+              <thead><tr><th></th><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Cliente</th><th>Método</th><th>Total</th><th>Cajero</th><th>Factura</th></tr></thead>
+              <tbody id="r-ventas-tbody"><tr><td colspan="9" style="color:var(--text2);text-align:center;padding:16px">Consulta un período para ver ventas</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -2135,7 +2139,7 @@ async function loadReportes(){
     const mb = m=>`<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
     const vc = $('r-ventas-count');
     if(vc) vc.textContent = ventas.length ? `${ventas.length} transacciones` : '';
-    $('tbl-rep-ventas').innerHTML = ventas.length
+    $('r-ventas-tbody').innerHTML = ventas.length
       ? ventas.map((v,i)=>{
           const bid=`rv_r${i}`;
           const ef=+v.monto_efectivo||0, ta=+v.monto_tarjeta||0, ne=+v.monto_nequi||0;
@@ -2147,8 +2151,9 @@ async function loadReportes(){
           return `<tr class="rep-venta-row" onclick="toggleRepVenta('${bid}')" style="cursor:pointer">
             <td style="width:18px;text-align:center"><span id="${bid}_ic" style="font-size:9px;color:var(--text3)">▸</span></td>
             <td>${fmtDate(v.fecha||v.creado)}</td><td>${v.hora||''}</td><td>${v.lugar||'—'}</td>
+            <td style="color:var(--text2)">${v.cliente||'—'}</td>
             <td>${mb(v.metodo_pago)}</td>
-            <td><b>${fmt(v.total)}</b></td><td style="color:var(--text2)">${v.cliente||'—'}</td>
+            <td><b>${fmt(v.total)}</b></td>
             <td style="color:var(--text2)">${v.cajero||'—'}</td>
             <td style="color:var(--text2);font-size:11px">${v.numero_factura||'—'}</td>
           </tr>
@@ -2265,8 +2270,8 @@ function exportarExcel(){
     ['Nequi/QR',fmt(r?.ventas?.nequi)],
     [],
     ['VENTAS DETALLADAS'],
-    ['Fecha','Hora','Lugar','Método','Total','Cliente','Cajero','Factura'],
-    ...(ventas||[]).map(v=>[v.fecha,v.hora,v.lugar,v.metodo_pago,v.total,v.cliente,v.cajero,v.numero_factura]),
+    ['Fecha','Hora','Lugar','Cliente','Método','Total','Cajero','Factura'],
+    ...(ventas||[]).map(v=>[v.fecha,v.hora,v.lugar,v.cliente,v.metodo_pago,v.total,v.cajero,v.numero_factura]),
     [],
     ['INVENTARIO'],
     ['Artículo','Categoría','Stock','Mínimo','Estado'],

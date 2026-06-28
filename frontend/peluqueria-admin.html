@@ -12,7 +12,7 @@
       --acc:#0B8457;--acc-d:#086644;--acc-l:#C6F135;--acc-ll:rgba(11,132,87,0.1);
       --green:#0B8457;--red:#E24B4A;--yellow:#C6F135;
       --text:#102A24;--text2:#2a5040;--text3:#4a7060;
-      --border:rgba(0,0,0,0.1);--r:8px;
+      --border:rgba(0,0,0,0.1);--r:8px;--rl:12px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
@@ -64,7 +64,7 @@
     .btn-sm-outline{padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-family:inherit;transition:.1s}
     .btn-sm-outline:hover{border-color:var(--acc);color:var(--acc)}
     .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
-    .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+    .stat-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px 16px}
     .stat-card .label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
     .stat-card .value{font-size:22px;font-weight:700}
     table{width:100%;border-collapse:collapse;font-size:13px}
