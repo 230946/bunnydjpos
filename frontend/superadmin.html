@@ -146,14 +146,14 @@ tr:hover td{background:var(--bg2)}
   #sb-overlay{display:none!important}
   #sb-hamburger{display:none!important}
   .mob-nav{display:none!important}
-  /* ── Sidebar vertical de iconos ── */
-  .app{align-items:flex-start}
+  /* ── Layout en móvil: sidebar + contenido lado a lado ── */
+  .app{height:100vh;overflow:hidden;align-items:stretch}
+  .main{overflow-y:auto;height:100vh}
   .mob-sidebar{
     display:flex;flex-direction:column;align-items:center;
-    width:64px;flex-shrink:0;
+    width:64px;flex-shrink:0;height:100vh;
     background:var(--bg);border-right:0.5px solid var(--border);
     padding:8px 4px;gap:2px;overflow-y:auto;
-    position:sticky;top:0;height:100vh;
   }
   .mob-sidebar-logo{padding:6px 0 10px;border-bottom:0.5px solid var(--border);margin-bottom:4px;width:100%;display:flex;justify-content:center}
   .mob-sidebar-logo img{width:36px;height:36px;border-radius:8px;object-fit:cover}
