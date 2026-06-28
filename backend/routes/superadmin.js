@@ -280,7 +280,11 @@ router.get('/reportes', async (req, res) => {
         COALESCE(AVG(v.total),0) AS promedio,
         MAX(v.creado) AS ultima_venta
       FROM negocios n
-      LEFT JOIN ventas v ON v.negocio_id = n.id AND DATE(v.creado) BETWEEN ? AND ?
+      LEFT JOIN (
+        SELECT id, negocio_id, total, creado FROM ventas
+        UNION ALL
+        SELECT id, negocio_id, total, fecha AS creado FROM pel_ventas WHERE estado='completada'
+      ) v ON v.negocio_id = n.id AND DATE(v.creado) BETWEEN ? AND ?
       WHERE n.activo = 1
       GROUP BY n.id, n.nombre, n.tipo
       ORDER BY ingresos DESC
