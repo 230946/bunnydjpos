@@ -133,50 +133,42 @@ tr:hover td{background:var(--bg2)}
   .sidebar{width:180px}
   .stats-row{grid-template-columns:repeat(2,1fr)}
 }
-/* ── MOBILE ── */
+/* ── Nav bar móvil ── */
+.mob-nav{display:none}
 @media(max-width:767px){
   body{overflow-x:hidden}
-  /* ── Sidebar: drawer animado desde la izquierda ── */
-  .sidebar{
-    position:fixed;left:0;top:0;bottom:0;height:auto;
-    width:min(260px,82vw);
-    z-index:200;overflow-y:auto;overflow-x:hidden;
-    transform:translateX(-110%);
-    transition:transform .22s cubic-bezier(.4,0,.2,1);
-    padding:14px 8px;gap:3px;
-    border-right:0.5px solid var(--border);
+  .sidebar{display:none!important}
+  #sb-overlay{display:none!important}
+  #sb-hamburger{display:none!important}
+  /* ── Barra de navegación horizontal ── */
+  .mob-nav{
+    display:flex;overflow-x:auto;gap:4px;padding:8px 10px;
+    background:var(--bg);border-bottom:0.5px solid var(--border);
+    position:sticky;top:0;z-index:50;
+    scrollbar-width:none;-ms-overflow-style:none;
   }
-  .sidebar.sb-open{
-    transform:translateX(0);
-    box-shadow:6px 0 28px rgba(0,0,0,.24);
+  .mob-nav::-webkit-scrollbar{display:none}
+  .mob-nav button{
+    flex-shrink:0;padding:7px 13px;border-radius:20px;border:0.5px solid var(--border2);
+    background:transparent;font-size:12px;cursor:pointer;color:var(--text2);white-space:nowrap;
   }
-  .nav-btn{padding:12px 14px;font-size:14px;min-height:44px}
-  .sidebar-logo{padding:6px 8px 14px;margin-bottom:4px}
-  /* ── Hamburger ── */
-  #sb-hamburger{display:flex!important}
+  .mob-nav button.active{background:var(--acc);color:#fff;border-color:var(--acc)}
   /* ── Stats: 2 columnas ── */
   .stats-row{grid-template-columns:1fr 1fr}
   .stat-val{font-size:22px}
-  /* ── Grids inline → columna única ── */
   [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
-  /* ── Tablas: scroll horizontal ── */
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table-wrap{overflow-x:auto}
   table{min-width:420px}
   th,td{padding:8px 10px;white-space:nowrap}
-  /* ── Filtros apilados ── */
   .filter-row{flex-direction:column;align-items:stretch;gap:8px}
   .filter-row input,.filter-row select{width:100%}
-  /* ── Topbar y contenido ── */
   .topbar{padding:10px 14px}
   .topbar-title{font-size:14px}
   .content{padding:12px}
-  /* ── Botones táctiles ── */
-  .btn{min-height:44px;padding:10px 16px}
-  .btn-sm{min-height:36px;padding:7px 12px}
-  /* ── Modal → sheet inferior ── */
+  .btn{min-height:40px}
+  .btn-sm{min-height:34px}
   .modal-bg,.mb{align-items:flex-end;padding:0}
   .modal,.md{max-width:100%;width:100%;border-radius:var(--rl) var(--rl) 0 0;max-height:92vh;margin:0}
-  /* ── Est-grid ── */
   .est-grid{gap:10px}
   .mod-grid{grid-template-columns:1fr}
 }</style>
@@ -230,6 +222,18 @@ tr:hover td{background:var(--bg2)}
 
   <div id="sb-overlay" onclick="closeMobileSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90"></div>
   <div class="main">
+  <!-- Navegación móvil (reemplaza el drawer táctil) -->
+  <nav class="mob-nav" id="mob-nav">
+    <button class="active" onclick="showPanel('dashboard',this)">📊 Dashboard</button>
+    <button onclick="showPanel('negocios',this)">🏪 Negocios</button>
+    <button onclick="showPanel('usuarios',this)">👥 Usuarios</button>
+    <button onclick="showPanel('establecimientos',this)">🏪 Establec.</button>
+    <button onclick="showPanel('facturacion',this)">💰 Facturación</button>
+    <button onclick="showPanel('planes',this)">📋 Planes</button>
+    <button onclick="showPanel('actividad',this)">📜 Actividad</button>
+    <button onclick="showPanel('contratos',this)">📄 Contratos</button>
+    <button onclick="doLogout()" style="color:var(--red)">🚪 Salir</button>
+  </nav>
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:10px">
         <button id="sb-hamburger" class="show-mobile" onclick="openMobileSidebar()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 6px;border-radius:var(--r);color:var(--text);display:none">☰</button>
@@ -633,9 +637,9 @@ function closeMobileSidebar(){
   ov.style.display='none';
 }
 function showPanel(p,btn){
-  if(window.innerWidth<=767)closeMobileSidebar();
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.mob-nav button').forEach(el=>el.classList.remove('active'));
   document.getElementById('panel-'+p).classList.add('active');
   if(btn) btn.classList.add('active');
   const titles={dashboard:'Dashboard',negocios:'Negocios',usuarios:'Usuarios',establecimientos:'Por establecimiento',facturacion:'Facturación',planes:'Planes & Licencias',actividad:'Log de actividad',contratos:'Contratos'};
