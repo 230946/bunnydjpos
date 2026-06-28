@@ -1588,18 +1588,38 @@ async function checkContrato(negocioId){
       $('contrato-block').style.display='flex';
       return;
     }
-    const {estado,dias_para_vencer}=d.contrato;
-    if(estado==='vencido'||estado==='cancelado'||estado==='pendiente'){
-      const msgs={vencido:'Tu contrato ha vencido.<br>Contacta al administrador del sistema.',cancelado:'Tu contrato fue cancelado.<br>Contacta al administrador del sistema.',pendiente:'Tu contrato aún no ha iniciado.<br>Contacta al administrador del sistema.'};
+    const {estado, dias_para_vencer, renovacion, tipo}=d.contrato;
+    const esMensual = tipo==='mensual';
+    if(estado==='vencido'||estado==='cancelado'){
+      const msgs={
+        vencido:'Tu contrato ha vencido.<br>Contacta al administrador del sistema.',
+        cancelado:'Tu contrato fue cancelado.<br>Contacta al administrador del sistema.'
+      };
       $('contrato-block-msg').innerHTML=msgs[estado]||msgs.vencido;
+      $('contrato-block').style.display='flex';
+      return;
+    }
+    if(estado==='pendiente'){
+      if(renovacion){
+        $('contrato-block-msg').innerHTML = esMensual
+          ? '&#128337; Tu <b>factura mensual ha vencido</b>.<br>El contrato está pendiente por renovación.<br>Contacta al administrador para realizar el pago y continuar usando el sistema.'
+          : '&#128197; Tu contrato está <b>pendiente por renovación</b>.<br>Solicita la renovación contactando al administrador del sistema.';
+      } else {
+        $('contrato-block-msg').innerHTML='Tu contrato aún no ha iniciado.<br>Contacta al administrador del sistema.';
+      }
       $('contrato-block').style.display='flex';
       return;
     }
     if(estado==='activo'&&dias_para_vencer!==null&&dias_para_vencer<=5){
       const dias=dias_para_vencer;
-      $('contrato-alert-msg').textContent=dias<=0
-        ?' Tu contrato venció hoy. Renuévalo para continuar usando el sistema.'
-        :` Tu contrato vence en ${dias} día${dias===1?'':'s'}. Contáctanos para renovarlo.`;
+      const msg = esMensual
+        ? (dias<=0
+            ? ' Tu factura mensual venció hoy. Realiza el pago para continuar.'
+            : ` Tu factura mensual vence en ${dias} día${dias===1?'':'s'}. Contacta al administrador para renovar.`)
+        : (dias<=0
+            ? ' Tu contrato venció hoy. Renuévalo para continuar usando el sistema.'
+            : ` Tu contrato vence en ${dias} día${dias===1?'':'s'}. Contáctanos para renovarlo.`);
+      $('contrato-alert-msg').textContent=msg;
       $('contrato-alert').style.display='flex';
     }
   }catch(_){}

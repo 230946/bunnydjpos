@@ -102,30 +102,48 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
     let contrato = null;
     try {
       const { rows: cr } = await pool.query(
-        `SELECT id, estado, fecha_inicio, fecha_fin FROM neg_contratos
+        `SELECT id, estado, fecha_inicio, fecha_fin, tipo, valor FROM neg_contratos
          WHERE negocio_id=?
          ORDER BY FIELD(estado,'activo','pendiente','vencido','cancelado'), fecha_fin DESC
          LIMIT 1`,
         [req.params.id]
       );
       if (cr[0]) {
-        let { id: cid, estado, fecha_fin, fecha_inicio } = cr[0];
-        // Auto-activar si está pendiente y la fecha de inicio ya llegó
+        let { id: cid, estado, fecha_fin, fecha_inicio, tipo, valor } = cr[0];
+        const hoy = new Date();
+        // Auto-activar: pendiente → activo si fecha_inicio llegó y fecha_fin no ha pasado aún
         if (estado === 'pendiente' && fecha_inicio) {
-          const hoy = new Date();
           const inicio = new Date(String(fecha_inicio).slice(0,10)+'T12:00:00');
-          if (inicio <= hoy) {
+          const fin2 = fecha_fin ? new Date(String(fecha_fin).slice(0,10)+'T12:00:00') : null;
+          if (inicio <= hoy && (!fin2 || fin2 >= hoy)) {
             await pool.query(`UPDATE neg_contratos SET estado='activo', actualizado=NOW() WHERE id=?`, [cid]);
             estado = 'activo';
+          }
+        }
+        // Auto-vencer: activo → pendiente (renovación) si fecha_fin ya pasó
+        let renovacion = false;
+        if (estado === 'activo' && fecha_fin) {
+          const fin2 = new Date(String(fecha_fin).slice(0,10)+'T12:00:00');
+          if (fin2 < hoy) {
+            await pool.query(`UPDATE neg_contratos SET estado='pendiente', actualizado=NOW() WHERE id=?`, [cid]);
+            estado = 'pendiente';
+            renovacion = true;
           }
         }
         const fin = fecha_fin;
         let dias = null;
         if (fin) {
-          const ms = new Date(String(fin).slice(0,10)+'T12:00:00') - new Date();
+          const ms = new Date(String(fin).slice(0,10)+'T12:00:00') - hoy;
           dias = Math.ceil(ms / (1000*60*60*24));
         }
-        contrato = { estado, fecha_fin: fin ? String(fin).slice(0,10) : null, dias_para_vencer: dias };
+        contrato = {
+          estado,
+          fecha_fin: fin ? String(fin).slice(0,10) : null,
+          dias_para_vencer: dias,
+          renovacion,
+          tipo: tipo || 'mensual',
+          valor: parseFloat(valor) || 0
+        };
       }
     } catch (_) {}
 
