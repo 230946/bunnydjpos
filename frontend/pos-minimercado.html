@@ -317,35 +317,12 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
       <div class="caja-toolbar">
         <div>
           <div style="font-size:16px;font-weight:700">Caja del día</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">Ventas completadas</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px" id="caja-status-lbl">Verificando...</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="date" id="caja-fecha" class="date-inp" onchange="renderCaja()">
-          <button class="btn" onclick="renderCaja()">↺ Actualizar</button>
-        </div>
+        <button class="btn" onclick="loadCaja()">↺ Actualizar</button>
       </div>
-      <div class="caja-stats" id="caja-stats"></div>
-      <div class="caja-charts" id="caja-charts" style="display:none">
-        <div class="caja-chart-card">
-          <div class="caja-chart-hdr">
-            <span>Ventas por hora</span>
-            <span id="caja-hora-pico"></span>
-          </div>
-          <div class="caja-chart-box"><canvas id="caja-chart-horas"></canvas></div>
-        </div>
-        <div class="caja-chart-card">
-          <div class="caja-chart-hdr">
-            <span>Tendencia · 7 días</span>
-            <span id="caja-7d-total"></span>
-          </div>
-          <div class="caja-chart-box"><canvas id="caja-chart-dias"></canvas></div>
-        </div>
-      </div>
-      <div class="caja-tbl-wrap">
-        <table class="caja-tbl">
-          <thead><tr><th>Hora</th><th>Productos</th><th>Método</th><th style="text-align:right">Total</th></tr></thead>
-          <tbody id="caja-tbody"><tr><td colspan="4" class="empty-state">Selecciona una fecha</td></tr></tbody>
-        </table>
+      <div id="caja-body" style="flex:1;overflow-y:auto">
+        <div style="text-align:center;padding:40px;color:var(--text2)">Cargando...</div>
       </div>
     </div>
   </div>
@@ -452,6 +429,7 @@ if (_urlNeg) {
 }
 let allProds = [], allCats = [], cart = [], catId = null, metodo = 'Efectivo';
 let _lastVenta = null, _selectedCliente = null, _negInfo = null, _pendingVenta = null;
+let cajaAbierta = false, cajaActual = null, _cajaTimer = null;
 
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('es-CO', {style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0);
@@ -531,6 +509,17 @@ async function iniciar(){
   $('h-user').textContent = _ur ? `${_un} · ${_ur}` : _un;
   if(_urlNeg) checkContrato(_urlNeg);
   await cargarProductos();
+  // Verificar caja — si no está abierta, ir al panel de caja primero
+  try {
+    const caja = await api('/admin/caja');
+    cajaActual = caja;
+    cajaAbierta = !!(caja && caja.estado === 'abierta');
+    if (!cajaAbierta) switchTab('caja');
+    else renderCajaBtnState();
+  } catch(e) {
+    cajaAbierta = false;
+    switchTab('caja');
+  }
 }
 
 // ── TABS ──────────────────────────────────────────────────────────
@@ -539,7 +528,7 @@ function switchTab(tab){
     $('tab-'+t).classList.toggle('active', t===tab);
     $('panel-'+t).classList.toggle('active', t===tab);
   });
-  if (tab === 'caja') renderCaja();
+  if (tab === 'caja') loadCaja();
 }
 
 // ── STOCK EFECTIVO ────────────────────────────────────────────────
@@ -667,11 +656,13 @@ function renderCart(){
     </div>`).join('');
   $('c-sub').textContent = fmt(sub);
   $('c-total').textContent = fmt(total);
-  $('btn-cobrar').disabled = false;
+  $('btn-cobrar').disabled = !cajaAbierta;
+  $('btn-cobrar').title = cajaAbierta ? '' : 'Abre la caja para cobrar';
 }
 
 // ── COBRO ─────────────────────────────────────────────────────────
 function openCheckout(){
+  if (!cajaAbierta){ toast('⚠️ Debes abrir la caja antes de cobrar'); switchTab('caja'); return; }
   if (!cart.length) return;
   _selectedCliente = null;
   metodo = 'Efectivo';
@@ -891,7 +882,161 @@ function imprimirRecibo(){
   w.document.close(); w.focus(); w.print(); w.close();
 }
 
-// ── CAJA ──────────────────────────────────────────────────────────
+// ── CAJA — GESTIÓN ────────────────────────────────────────────────
+function renderCajaBtnState(){
+  const btn = $('btn-cobrar');
+  if(!btn) return;
+  if(!cajaAbierta){ btn.disabled=true; btn.title='Abre la caja para cobrar'; }
+  else if(!cart.length){ btn.disabled=true; btn.title=''; }
+  else { btn.disabled=false; btn.title=''; }
+  const lbl = $('caja-status-lbl');
+  if(lbl) lbl.textContent = cajaAbierta ? '🟢 Caja abierta' : '🔴 Caja cerrada';
+}
+
+async function loadCaja(){
+  try {
+    const [caja, ventas] = await Promise.all([
+      api('/admin/caja'),
+      api('/admin/ventas/recientes').catch(()=>[]),
+    ]);
+    cajaActual = caja;
+    cajaAbierta = !!(caja && caja.estado === 'abierta');
+    renderCajaBtnState();
+    renderCajaPanel(ventas);
+  } catch(e){ toast('Error cargando caja: '+e.message); }
+  clearTimeout(_cajaTimer);
+  if($('panel-caja').classList.contains('active')){
+    _cajaTimer = setTimeout(loadCaja, 30000);
+  }
+}
+
+function renderCajaPanel(ventasRec=[]){
+  const body = $('caja-body');
+  const mBadge = m => {
+    const map={efectivo:'mp-efectivo',tarjeta:'mp-tarjeta',nequi:'mp-nequi'};
+    return `<span class="mpago ${map[m]||'mp-efectivo'}">${m||'efectivo'}</span>`;
+  };
+  const ventasHtml = ventasRec.length
+    ? `<table class="caja-tbl"><thead><tr><th>Hora</th><th>Productos</th><th>Método</th><th style="text-align:right">Total</th></tr></thead>
+        <tbody>${ventasRec.map(v=>`<tr>
+          <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</td>
+          <td style="color:var(--text2);font-size:12px">${(()=>{try{const p=JSON.parse(v.items||'[]');return Array.isArray(p)?p.length+' ítems':'—';}catch{return '—';}})()}</td>
+          <td>${mBadge(v.metodo_pago)}</td>
+          <td style="text-align:right"><b>${fmt(v.total)}</b></td>
+        </tr>`).join('')}</tbody></table>`
+    : `<div style="color:var(--text2);font-size:12px;padding:12px 0;text-align:center">Sin ventas registradas hoy</div>`;
+
+  if(!cajaActual){
+    body.innerHTML = `
+      <div style="max-width:400px;margin:24px auto;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:6px">Sin caja abierta hoy</h3>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Ingresa el monto inicial en efectivo para comenzar el día.</p>
+        <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Monto de apertura ($)</label>
+        <input id="caja-apertura" type="number" min="0" placeholder="0"
+          style="width:100%;padding:10px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:16px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-bottom:12px">
+        <button class="btn-cobrar" style="font-size:14px;padding:13px" onclick="abrirCaja()">🔓 Abrir caja</button>
+      </div>`;
+    return;
+  }
+
+  const c = cajaActual;
+  const abierta = c.estado === 'abierta';
+  const util = (+c.total_ventas||0) - (+c.total_gastos||0);
+  const ahora = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-bottom:12px">
+
+      <div>
+        <!-- Stats -->
+        <div class="caja-stats" style="margin-bottom:12px">
+          <div class="stat-c"><div class="lbl">Ventas</div><div class="val">${fmt(c.total_ventas||0)}</div></div>
+          <div class="stat-c"><div class="lbl">💵 Efectivo</div><div class="val">${fmt(c.total_efectivo||0)}</div></div>
+          <div class="stat-c"><div class="lbl">💳 Tarjeta</div><div class="val">${fmt(c.total_tarjeta||0)}</div></div>
+          <div class="stat-c"><div class="lbl">📱 Nequi/QR</div><div class="val">${fmt(c.total_nequi||0)}</div></div>
+          <div class="stat-c"><div class="lbl">Gastos</div><div class="val" style="color:var(--red)">${fmt(c.total_gastos||0)}</div></div>
+          <div class="stat-c"><div class="lbl">Utilidad</div><div class="val" style="color:${util>=0?'var(--acc-d)':'var(--red)'}">${fmt(util)}</div></div>
+        </div>
+
+        <!-- Apertura registrada -->
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">
+          Apertura: <b>${fmt(c.monto_apertura||0)}</b> · ${c.apertura_en?new Date(c.apertura_en).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):c.fecha}
+          ${c.usuario_nombre?` · ${c.usuario_nombre}`:''}
+        </div>
+
+        <!-- Cierre / Reabrir -->
+        ${abierta ? `
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">Cerrar caja</div>
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Monto de cierre en caja ($)</label>
+          <input id="caja-cierre" type="number" min="0" placeholder="0"
+            style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:15px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-bottom:8px">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Notas del cierre</label>
+          <input id="caja-notas" type="text" placeholder="Observaciones opcionales..."
+            style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-bottom:12px">
+          <button onclick="cerrarCaja()" style="width:100%;padding:11px;background:#ef4444;color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer">🔒 Cerrar caja del día</button>
+        </div>` : `
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px">
+          <div style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:center">
+            Cerrada ${c.cierre_en?new Date(c.cierre_en).toLocaleString('es-CO',{hour:'2-digit',minute:'2-digit'}):c.fecha}
+            ${c.notas?`<br><i style="font-size:12px">${c.notas}</i>`:''}
+          </div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">Reabrir caja — nuevo turno</div>
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Monto de apertura ($)</label>
+          <input id="caja-reabrir-monto" type="number" min="0" placeholder="0"
+            style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:15px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-bottom:12px">
+          <button onclick="reabrirCajaMini()" style="width:100%;padding:11px;background:#f59e0b;color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer">🔓 Reabrir caja (nuevo turno)</button>
+        </div>`}
+      </div>
+
+      <!-- Columna derecha: últimas ventas -->
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px;overflow:hidden">
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">
+          Últimas ventas de hoy
+          <span style="font-size:11px;color:var(--text3);margin-left:6px">Actualizado ${ahora}</span>
+        </div>
+        <div style="overflow-y:auto;max-height:420px">${ventasHtml}</div>
+      </div>
+
+    </div>`;
+}
+
+async function abrirCaja(){
+  const monto = parseFloat($('caja-apertura').value)||0;
+  try {
+    await api('/admin/caja/abrir',{method:'POST',body:JSON.stringify({monto_apertura:monto})});
+    cajaAbierta = true;
+    toast('✅ Caja abierta — puedes comenzar a vender');
+    loadCaja();
+    setTimeout(()=>switchTab('venta'), 800);
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+async function cerrarCaja(){
+  const monto = parseFloat($('caja-cierre').value)||0;
+  const notas = $('caja-notas').value||'';
+  if(!confirm('¿Cerrar la caja del día? No podrás procesar ventas hasta abrir una nueva.')) return;
+  try {
+    await api('/admin/caja/cerrar',{method:'POST',body:JSON.stringify({monto_cierre:monto,notas})});
+    cajaAbierta = false;
+    toast('✅ Caja cerrada');
+    renderCajaBtnState();
+    loadCaja();
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+async function reabrirCajaMini(){
+  const monto = parseFloat($('caja-reabrir-monto').value)||0;
+  try {
+    await api('/admin/caja/reabrir',{method:'POST',body:JSON.stringify({monto_apertura:monto})});
+    cajaAbierta = true;
+    toast('✅ Caja reabierta — nuevo turno activo');
+    loadCaja();
+    setTimeout(()=>switchTab('venta'), 800);
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+// ── CAJA — HISTÓRICO ──────────────────────────────────────────────
 let _cajaChtH=null, _cajaChtD=null;
 
 function _localDate(offset=0){
