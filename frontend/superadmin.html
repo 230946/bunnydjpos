@@ -936,51 +936,35 @@ async function loadEstablecimientos(){
       return;
     }
 
-    grid.innerHTML = grupos.map(({ negocio: n, usuarios: us }) => `
-      <div class="est-card">
-        <div class="est-card-header">
-          <h3>
-            <span class="badge ${n.tipo==='restaurante'?'tipo-rest':'tipo-mini'}">${n.tipo}</span>
-            ${n.nombre}
-          </h3>
-          <span class="est-meta">${us.length} usuario${us.length!==1?'s':''} · ${n.ciudad||'Sin ciudad'}</span>
+    const estRow = (n, us, extra='') => `
+      <div class="neg-acc-item" style="border-bottom:0.5px solid var(--border);margin-bottom:2px">
+        <button class="neg-acc-header" onclick="toggleNegAcc(this)" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:transparent;border:none;cursor:pointer;text-align:left">
+          <span style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
+          ${extra ? `<span style="font-weight:600;font-size:13px;flex:1">${extra}</span>` : `
+          <span class="badge ${n.tipo==='minimercado'?'tipo-mini':n.tipo==='peluqueria'?'tipo-pel':n.tipo==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(n.tipo)?'tipo-ext':'tipo-rest'}">${n.tipo}</span>
+          <span style="font-weight:600;font-size:13px;flex:1">${n.nombre}</span>`}
+          <span style="font-size:11px;color:var(--text3)">${us.length} usuario${us.length!==1?'s':''} · ${n?.ciudad||'Sin ciudad'}</span>
+        </button>
+        <div class="neg-acc-body" style="display:none;padding:0 0 8px 0">
+          ${us.length ? `
+          <table>
+            <thead><tr><th>#</th><th>Nombre</th><th>Email / Usuario</th><th>Rol</th><th>Estado</th></tr></thead>
+            <tbody>
+              ${us.map(u=>`
+              <tr>
+                <td style="color:var(--text2);font-size:12px;font-weight:600">${u.numero_empleado!=null?String(u.numero_empleado).padStart(3,'0'):'—'}</td>
+                <td><b>${u.nombre}</b></td>
+                <td style="color:var(--text2)">${u.email||u.username||'—'}</td>
+                <td><span class="badge badge-blue">${u.rol_nombre||'Sin rol'}</span></td>
+                <td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>` : `<div style="padding:12px 16px;color:var(--text2);font-size:13px">Sin usuarios asignados</div>`}
         </div>
-        ${us.length ? `
-        <table>
-          <thead><tr><th>#</th><th>Nombre</th><th>Email / Usuario</th><th>Rol</th><th>Estado</th></tr></thead>
-          <tbody>
-            ${us.map(u => `
-            <tr>
-              <td style="color:var(--text2);font-size:12px;font-weight:600">${u.numero_empleado!=null?String(u.numero_empleado).padStart(3,'0'):'—'}</td>
-              <td><b>${u.nombre}</b></td>
-              <td style="color:var(--text2)">${u.email||u.username||'—'}</td>
-              <td><span class="badge badge-blue">${u.rol_nombre||'Sin rol'}</span></td>
-              <td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>` :
-        `<div style="padding:16px;color:var(--text2);font-size:13px">Sin usuarios asignados</div>`}
-      </div>`).join('') +
-      (sinNegocio.length ? `
-      <div class="est-card">
-        <div class="est-card-header">
-          <h3>⚠️ Sin establecimiento asignado</h3>
-          <span class="est-meta">${sinNegocio.length} usuario${sinNegocio.length!==1?'s':''}</span>
-        </div>
-        <table>
-          <thead><tr><th>#</th><th>Nombre</th><th>Email / Usuario</th><th>Rol</th><th>Estado</th></tr></thead>
-          <tbody>
-            ${sinNegocio.map(u => `
-            <tr>
-              <td style="color:var(--text2);font-size:12px;font-weight:600">${u.numero_empleado!=null?String(u.numero_empleado).padStart(3,'0'):'—'}</td>
-              <td><b>${u.nombre}</b></td>
-              <td style="color:var(--text2)">${u.email||u.username||'—'}</td>
-              <td><span class="badge badge-gray">${u.rol_nombre||'Sin rol'}</span></td>
-              <td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>` : '');
+      </div>`;
+
+    grid.innerHTML = grupos.map(({ negocio: n, usuarios: us }) => estRow(n, us)).join('') +
+      (sinNegocio.length ? estRow({ciudad:''}, sinNegocio, '⚠️ Sin establecimiento asignado') : '');
   } catch(e){ grid.innerHTML = `<p style="color:var(--text2);font-size:13px">Error al cargar: ${e.message}</p>`; }
 }
 
