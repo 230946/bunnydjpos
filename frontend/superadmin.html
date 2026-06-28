@@ -284,8 +284,7 @@ tr:hover td{background:var(--bg2)}
             <h3>Todos los negocios</h3>
             <button class="btn btn-primary btn-sm" onclick="openNegocioModal(null)">+ Nuevo</button>
           </div>
-          <table><thead><tr><th>Nombre</th><th>Tipo</th><th>Ciudad</th><th>Usuarios</th><th>Estado</th><th></th></tr></thead>
-          <tbody id="negocios-tbody"></tbody></table>
+          <div id="negocios-tbody"></div>
         </div>
       </div>
 
@@ -760,58 +759,40 @@ async function loadNegocios(){
     const data = await api('/superadmin/negocios');
     negociosCache = data;
     const base = window.location.origin;
-    document.getElementById('negocios-tbody').innerHTML = data.map(n=>{
-      const esRest = n.tipo === 'restaurante';
-      const esMini = n.tipo === 'minimercado';
-      const esPel  = n.tipo === 'peluqueria';
-      const esBar  = n.tipo === 'bar';
-      const esVet  = n.tipo === 'veterinaria';
-      const esTall = n.tipo === 'taller';
-      const esLav  = n.tipo === 'lavanderia';
-      const esGim  = n.tipo === 'gimnasio';
-      const esFarm = n.tipo === 'farmacia';
-      const urlsBtns = [
-        esRest ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/admin?n=${n.id}')" title="${base}/admin?n=${n.id}">📋 Admin</button>` : '',
-        esRest ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/pos?n=${n.id}')" title="${base}/pos?n=${n.id}">📋 POS</button>` : '',
-        esMini ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/minimercado-admin.html?n=${n.id}')" title="${base}/minimercado-admin.html?n=${n.id}">📋 Admin</button>` : '',
-        esMini ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/pos-minimercado.html?n=${n.id}')" title="${base}/pos-minimercado.html?n=${n.id}">📋 POS</button>` : '',
-        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/peluqueria-admin.html?n=${n.id}')" title="${base}/peluqueria-admin.html?n=${n.id}">📋 Admin</button>` : '',
-        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/pos-peluqueria.html?n=${n.id}')" title="${base}/pos-peluqueria.html?n=${n.id}">📋 POS</button>` : '',
-        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/peluqueria-reservar.html?n=${n.id}')" title="${base}/peluqueria-reservar.html?n=${n.id}">📋 Reservas</button>` : '',
-        esPel  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/portal-empleado.html?n=${n.id}')" title="${base}/portal-empleado.html?n=${n.id}">📋 Portal Empleados</button>` : '',
-        esBar  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/bar-admin.html?n=${n.id}')" title="${base}/bar-admin.html?n=${n.id}">📋 Admin</button>` : '',
-        esVet  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/vet-admin.html?n=${n.id}')" title="${base}/vet-admin.html?n=${n.id}">📋 Admin</button>` : '',
-        esTall ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/taller-admin.html?n=${n.id}')" title="${base}/taller-admin.html?n=${n.id}">📋 Admin</button>` : '',
-        esLav  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/lavanderia-admin.html?n=${n.id}')" title="${base}/lavanderia-admin.html?n=${n.id}">📋 Admin</button>` : '',
-        esGim  ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/gimnasio-admin.html?n=${n.id}')" title="${base}/gimnasio-admin.html?n=${n.id}">📋 Admin</button>` : '',
-        esFarm ? `<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="copiarURL('${base}/farmacia-admin.html?n=${n.id}')" title="${base}/farmacia-admin.html?n=${n.id}">📋 Admin</button>` : '',
-      ].filter(Boolean).join('');
-      return `<tr>
-        <td>
-          <b>${n.nombre}</b><br>
-          <span style="font-size:11px;color:var(--text2)">${n.ciudad||''}</span><br>
-          <div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">${urlsBtns}</div>
-        </td>
-        <td><span class="badge ${n.tipo==='minimercado'?'tipo-mini':n.tipo==='peluqueria'?'tipo-pel':n.tipo==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(n.tipo)?'tipo-ext':'tipo-rest'}">${n.tipo}</span></td>
-        <td>${n.ciudad||'—'}</td>
-        <td>${n.total_usuarios||0}</td>
-        <td><span class="badge ${n.activo?'badge-green':'badge-gray'}">${n.activo?'Activo':'Inactivo'}</span></td>
-        <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-outline btn-sm" onclick="openNegocioModal('${n.id}')">Editar</button>
-          <button class="btn btn-primary btn-sm" onclick="openCrearAdminModal('${n.id}','${n.nombre}')">+ Admin</button>
-          <button class="btn btn-outline btn-sm" onclick="showQR('${n.id}','${n.nombre}','${n.tipo}')" title="Ver códigos QR">🔲 QR</button>
-          ${esRest ? `<a class="btn btn-outline btn-sm" href="${base}/admin?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos?n=${n.id}" target="_blank" style="text-decoration:none">POS</a>` : ''}
-          ${esMini ? `<a class="btn btn-outline btn-sm" href="${base}/minimercado-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-minimercado.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a>` : ''}
-          ${esPel  ? `<a class="btn btn-outline btn-sm" href="${base}/peluqueria-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a><a class="btn btn-outline btn-sm" href="${base}/pos-peluqueria.html?n=${n.id}" target="_blank" style="text-decoration:none">POS</a><a class="btn btn-primary btn-sm" href="${base}/peluqueria-reservar.html?n=${n.id}" target="_blank" style="text-decoration:none">Reservas</a><a class="btn btn-outline btn-sm" href="${base}/portal-empleado.html?n=${n.id}" target="_blank" style="text-decoration:none">Portal Emp.</a>` : ''}
-          ${esBar  ? `<a class="btn btn-outline btn-sm" href="${base}/bar-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
-          ${esVet  ? `<a class="btn btn-outline btn-sm" href="${base}/vet-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
-          ${esTall ? `<a class="btn btn-outline btn-sm" href="${base}/taller-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
-          ${esLav  ? `<a class="btn btn-outline btn-sm" href="${base}/lavanderia-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
-          ${esGim  ? `<a class="btn btn-outline btn-sm" href="${base}/gimnasio-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
-          ${esFarm ? `<a class="btn btn-outline btn-sm" href="${base}/farmacia-admin.html?n=${n.id}" target="_blank" style="text-decoration:none">Admin</a>` : ''}
-        </td>
-      </tr>`;
-    }).join('');
+    const _tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
+    const _negLinks = {
+      restaurante: [['Admin','/admin'],['POS','/pos']],
+      minimercado: [['Admin','/minimercado-admin.html'],['POS','/pos-minimercado.html']],
+      peluqueria:  [['Admin','/peluqueria-admin.html'],['POS','/pos-peluqueria.html'],['Reservas','/peluqueria-reservar.html'],['Portal','/portal-empleado.html']],
+      bar:         [['Admin','/bar-admin.html']],
+      veterinaria: [['Admin','/vet-admin.html']],
+      taller:      [['Admin','/taller-admin.html']],
+      lavanderia:  [['Admin','/lavanderia-admin.html']],
+      gimnasio:    [['Admin','/gimnasio-admin.html']],
+      farmacia:    [['Admin','/farmacia-admin.html']],
+    };
+    const _urlBtns = n => (_negLinks[n.tipo]||[]).map(([lbl,p])=>
+      `<button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="copiarURL('${base}${p}?n=${n.id}')" title="Copiar URL ${lbl}">📋 ${lbl}</button>`+
+      `<a class="btn btn-outline btn-sm" href="${base}${p}?n=${n.id}" target="_blank" style="text-decoration:none;font-size:11px;padding:3px 8px">↗</a>`
+    ).join('');
+    document.getElementById('negocios-tbody').innerHTML = data.map(n=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:0.5px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+            <span style="font-weight:600;font-size:13px">${n.nombre}</span>
+            ${_tipoBadge(n.tipo)}
+            <span style="font-size:11px;color:var(--text3)">${n.ciudad||''}</span>
+            <span class="badge badge-blue" style="font-size:10px">${n.total_usuarios||0} usuarios</span>
+            <span class="badge ${n.activo?'badge-green':'badge-gray'}" style="font-size:10px">${n.activo?'Activo':'Inactivo'}</span>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:7px;align-items:center">
+            <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 9px" onclick="openNegocioModal('${n.id}')">✏️ Editar</button>
+            <button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 9px" onclick="openCrearAdminModal('${n.id}','${n.nombre}')">+ Admin</button>
+            <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 9px" onclick="showQR('${n.id}','${n.nombre}','${n.tipo}')">🔲 QR</button>
+            ${_urlBtns(n)}
+          </div>
+        </div>
+      </div>`).join('');
   } catch(e){ showToast('Error cargando negocios'); }
 }
 
