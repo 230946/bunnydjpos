@@ -776,16 +776,19 @@ async function loadNegocios(){
       `<a class="btn btn-outline btn-sm" href="${base}${p}?n=${n.id}" target="_blank" style="text-decoration:none;font-size:11px;padding:3px 8px">↗</a>`
     ).join('');
     document.getElementById('negocios-tbody').innerHTML = data.map(n=>`
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:0.5px solid var(--border)">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-            <span style="font-weight:600;font-size:13px">${n.nombre}</span>
-            ${_tipoBadge(n.tipo)}
-            <span style="font-size:11px;color:var(--text3)">${n.ciudad||''}</span>
+      <div class="neg-acc-item" style="border-bottom:0.5px solid var(--border)">
+        <button class="neg-acc-header" onclick="toggleNegAcc(this)" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:transparent;border:none;cursor:pointer;text-align:left">
+          <span style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
+          <span style="font-weight:600;font-size:13px;flex:1">${n.nombre}</span>
+          ${_tipoBadge(n.tipo)}
+          <span class="badge ${n.activo?'badge-green':'badge-gray'}" style="font-size:10px">${n.activo?'Activo':'Inactivo'}</span>
+        </button>
+        <div class="neg-acc-body" style="display:none;padding:0 14px 12px 32px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--text3)">📍 ${n.ciudad||'—'}</span>
             <span class="badge badge-blue" style="font-size:10px">${n.total_usuarios||0} usuarios</span>
-            <span class="badge ${n.activo?'badge-green':'badge-gray'}" style="font-size:10px">${n.activo?'Activo':'Inactivo'}</span>
           </div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:7px;align-items:center">
+          <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
             <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 9px" onclick="openNegocioModal('${n.id}')">✏️ Editar</button>
             <button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 9px" onclick="openCrearAdminModal('${n.id}','${n.nombre}')">+ Admin</button>
             <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 9px" onclick="showQR('${n.id}','${n.nombre}','${n.tipo}')">🔲 QR</button>
@@ -794,6 +797,14 @@ async function loadNegocios(){
         </div>
       </div>`).join('');
   } catch(e){ showToast('Error cargando negocios'); }
+}
+
+function toggleNegAcc(btn){
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector('span');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  arrow.style.transform = open ? '' : 'rotate(90deg)';
 }
 
 let editingNegocioId = null;
