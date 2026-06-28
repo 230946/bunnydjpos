@@ -36,6 +36,7 @@ const _runDDL = async (sql) => {
     UNIQUE KEY uq_np_neg (negocio_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
   await _runDDL(`ALTER TABLE neg_planes CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await _runDDL(`ALTER TABLE neg_planes MODIFY COLUMN plan VARCHAR(50) DEFAULT 'free'`);
   await _runDDL(`CREATE TABLE IF NOT EXISTS platform_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     negocio_id VARCHAR(36) COLLATE utf8mb4_unicode_ci,
@@ -275,7 +276,11 @@ router.get('/reportes', async (req, res) => {
     const hasta = req.query.hasta || today;
     const { rows } = await pool.query(`
       SELECT n.id AS negocio_id, n.nombre, n.tipo,
-        COALESCE(np.plan,'free') AS plan,
+        COALESCE(
+          (SELECT plan FROM neg_contratos WHERE negocio_id=n.id AND estado='activo' ORDER BY fecha_fin DESC LIMIT 1),
+          np.plan,
+          'free'
+        ) AS plan,
         COUNT(v.id) AS total_ventas,
         COALESCE(SUM(v.total),0) AS ingresos,
         COALESCE(AVG(v.total),0) AS promedio,
