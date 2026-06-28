@@ -419,14 +419,17 @@ router.get('/reportes/resumen', async (req, res) => {
     const d = desde || localDate();
     const h = hasta  || d;
     let vSql = `
-        SELECT COUNT(*) AS pedidos,
-               COALESCE(SUM(total),0) AS total_ventas,
-               COALESCE(SUM(CASE WHEN monto_efectivo>0 THEN monto_efectivo WHEN metodo_pago='efectivo' THEN total ELSE 0 END),0) AS efectivo,
-               COALESCE(SUM(CASE WHEN monto_tarjeta>0  THEN monto_tarjeta  WHEN metodo_pago='tarjeta'  THEN total ELSE 0 END),0) AS tarjeta,
-               COALESCE(SUM(CASE WHEN monto_nequi>0    THEN monto_nequi    WHEN metodo_pago='nequi'    THEN total ELSE 0 END),0) AS nequi
-        FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+        SELECT COUNT(v.id) AS pedidos,
+               COALESCE(SUM(v.total),0) AS total_ventas,
+               COALESCE(SUM(CASE WHEN v.monto_efectivo>0 THEN v.monto_efectivo WHEN v.metodo_pago='efectivo' THEN v.total ELSE 0 END),0) AS efectivo,
+               COALESCE(SUM(CASE WHEN v.monto_tarjeta>0  THEN v.monto_tarjeta  WHEN v.metodo_pago='tarjeta'  THEN v.total ELSE 0 END),0) AS tarjeta,
+               COALESCE(SUM(CASE WHEN v.monto_nequi>0    THEN v.monto_nequi    WHEN v.metodo_pago='nequi'    THEN v.total ELSE 0 END),0) AS nequi,
+               COALESCE(SUM(vi_s.cant),0) AS total_items
+        FROM ventas v
+        LEFT JOIN (SELECT venta_id, SUM(cantidad) AS cant FROM venta_items GROUP BY venta_id) vi_s ON vi_s.venta_id=v.id
+        WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
     const vParams = [nid(req), d, h];
-    if (tipo) { vParams.push(tipo); vSql += ` AND tipo=${ph(vParams.length)}`; }
+    if (tipo) { vParams.push(tipo); vSql += ` AND v.tipo=${ph(vParams.length)}`; }
     const [ventas, gastos, cajas] = await Promise.all([
       pool.query(vSql, vParams),
       pool.query(`
