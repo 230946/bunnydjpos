@@ -267,6 +267,7 @@ tr:hover td{background:var(--bg2)}
           <div class="stat-card" style="border-left:3px solid var(--blue)"><div class="stat-label">Basic — 5%</div><div class="stat-val" id="s-com5">—</div></div>
           <div class="stat-card" style="border-left:3px solid #e65c00"><div class="stat-label">Plus — 7%</div><div class="stat-val" id="s-com7">—</div></div>
           <div class="stat-card" style="border-left:3px solid var(--purple-d)"><div class="stat-label">Premium — 9%</div><div class="stat-val" id="s-com9">—</div></div>
+          <div class="stat-card" style="border-left:3px solid var(--green-d)"><div class="stat-label" style="font-weight:600">Total comisión</div><div class="stat-val" id="s-com-total" style="color:var(--green-d)">—</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
           <div class="table-wrap">
@@ -733,9 +734,10 @@ async function loadDashboard(){
     if(rep){
       const ti = rep.totalIngresos || 0;
       document.getElementById('s-ingresos').textContent = fmt(ti);
-      document.getElementById('s-com5').textContent = fmt(ti * 0.05);
-      document.getElementById('s-com7').textContent = fmt(ti * 0.07);
-      document.getElementById('s-com9').textContent = fmt(ti * 0.09);
+      document.getElementById('s-com5').textContent     = fmt(ti * 0.05);
+      document.getElementById('s-com7').textContent     = fmt(ti * 0.07);
+      document.getElementById('s-com9').textContent     = fmt(ti * 0.09);
+      document.getElementById('s-com-total').textContent = fmt(ti * 0.05 + ti * 0.07 + ti * 0.09);
     }
 
     const tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
