@@ -328,7 +328,7 @@ tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap">
           <div class="table-header"><h3>Ingresos por negocio</h3></div>
-          <table><thead><tr><th>Negocio</th><th>Tipo</th><th>Ventas</th><th>Ingresos</th><th>Promedio</th><th>Última venta</th></tr></thead>
+          <table><thead><tr><th>Negocio</th><th>Tipo</th><th>Plan</th><th>Ventas</th><th>Ingresos</th><th>Comisión</th><th>Promedio</th><th>Última venta</th></tr></thead>
           <tbody id="rep-tbody"></tbody></table>
         </div>
       </div>
@@ -734,10 +734,10 @@ async function loadDashboard(){
     if(rep){
       const ti = rep.totalIngresos || 0;
       document.getElementById('s-ingresos').textContent = fmt(ti);
-      document.getElementById('s-com5').textContent     = fmt(ti * 0.05);
-      document.getElementById('s-com7').textContent     = fmt(ti * 0.07);
-      document.getElementById('s-com9').textContent     = fmt(ti * 0.09);
-      document.getElementById('s-com-total').textContent = fmt(ti * 0.05 + ti * 0.07 + ti * 0.09);
+      document.getElementById('s-com5').textContent      = fmt(rep.comBasic    || 0);
+      document.getElementById('s-com7').textContent      = fmt(rep.comPlus     || 0);
+      document.getElementById('s-com9').textContent      = fmt(rep.comPremium  || 0);
+      document.getElementById('s-com-total').textContent = fmt(rep.totalComision|| 0);
     }
 
     const tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
@@ -1034,22 +1034,29 @@ async function loadReportes(){
   try {
     const d = await api(`/superadmin/reportes?desde=${desdeEl.value}&hasta=${hastaEl.value}`);
     document.getElementById('rep-total-ing').textContent = fmt(d.totalIngresos);
-    const ti = d.totalIngresos || 0;
-    document.getElementById('rep-com5').textContent = fmt(ti * 0.05);
-    document.getElementById('rep-com7').textContent = fmt(ti * 0.07);
-    document.getElementById('rep-com9').textContent = fmt(ti * 0.09);
-    document.getElementById('rep-comisiones').style.display = ti > 0 ? 'flex' : 'none';
+    document.getElementById('rep-com5').textContent = fmt(d.comBasic   || 0);
+    document.getElementById('rep-com7').textContent = fmt(d.comPlus    || 0);
+    document.getElementById('rep-com9').textContent = fmt(d.comPremium || 0);
+    document.getElementById('rep-comisiones').style.display = (d.totalIngresos||0) > 0 ? 'flex' : 'none';
     document.getElementById('rep-total-ven').textContent = d.totalVentas;
     document.getElementById('rep-con-ven').textContent   = d.conVentas;
-    document.getElementById('rep-tbody').innerHTML = d.rows.map(r=>`
-      <tr>
+    const _rate={basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
+    document.getElementById('rep-tbody').innerHTML = d.rows.map(r=>{
+      const ing = parseFloat(r.ingresos)||0;
+      const tasa = _rate[r.plan]||0;
+      const com = ing * tasa;
+      const tasaLbl = tasa>0 ? `${(tasa*100).toFixed(0)}%` : '0%';
+      return `<tr>
         <td><b>${r.nombre}</b></td>
-        <td><span class="badge ${r.tipo==='minimercado'?'tipo-mini':'tipo-rest'}">${r.tipo}</span></td>
+        <td><span class="badge ${r.tipo==='minimercado'?'tipo-mini':r.tipo==='peluqueria'?'tipo-pel':r.tipo==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(r.tipo)?'tipo-ext':'tipo-rest'}">${r.tipo}</span></td>
+        <td>${planBadge(r.plan)}</td>
         <td>${parseInt(r.total_ventas)||0}</td>
-        <td><b>${fmt(r.ingresos)}</b></td>
+        <td><b>${fmt(ing)}</b></td>
+        <td style="font-weight:600;color:${com>0?'var(--green-d)':'var(--text2)'}">${com>0?fmt(com):'—'} <span style="font-size:10px;color:var(--text3)">${tasaLbl}</span></td>
         <td style="color:var(--text2)">${parseInt(r.total_ventas) ? fmt(r.promedio) : '—'}</td>
         <td style="font-size:12px;color:var(--text2)">${fmtDT(r.ultima_venta)}</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   } catch(e){ showToast('Error: '+e.message); }
 }
 
