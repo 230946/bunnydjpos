@@ -93,7 +93,7 @@ app.use('/api/peluqueria', peluqueriaRouter);
 app.get('/api/negocio-pub/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT nombre, tipo, logo_url FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+      `SELECT nombre, tipo, logo_url, nit, direccion, ciudad, telefono FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
@@ -129,7 +129,20 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
       }
     } catch (_) {}
 
-    res.json({ ...rows[0], contrato });
+    let plan = 'free';
+    try {
+      const { rows: planRows } = await pool.query(
+        `SELECT COALESCE(
+           (SELECT c.plan FROM neg_contratos c WHERE c.negocio_id=? AND c.estado='activo' ORDER BY c.fecha_fin DESC LIMIT 1),
+           np.plan, 'free'
+         ) AS plan
+         FROM negocios n LEFT JOIN neg_planes np ON np.negocio_id=n.id WHERE n.id=? LIMIT 1`,
+        [req.params.id, req.params.id]
+      );
+      plan = planRows[0]?.plan || 'free';
+    } catch (_) {}
+
+    res.json({ ...rows[0], contrato, plan });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

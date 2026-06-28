@@ -420,7 +420,7 @@ router.put('/comandas/limpiar/todo', async (req, res) => {
 
 router.post('/ventas', async (req, res) => {
   try {
-    const { mesa_id, mesa_num, tipo='pos', items, subtotal, iva, total,
+    const { mesa_id, mesa_num, tipo='pos', items, subtotal, iva=0, total,
             metodo_pago, recibido, cambio, cliente_nombre, cliente_id, descuento,
             monto_efectivo=0, monto_tarjeta=0, monto_nequi=0 } = req.body;
 
@@ -439,7 +439,7 @@ router.post('/ventas', async (req, res) => {
     // Verificar stock antes de procesar
     for (const item of (items || [])) {
       if (!item.item_id) continue;
-      const qty = item.qty || 1;
+      const qty = item.qty || item.cantidad || 1;
 
       // Verificar ingredientes de receta primero
       const { rows: receta } = await pool.query(
@@ -535,11 +535,12 @@ router.post('/ventas', async (req, res) => {
         `INSERT INTO venta_items (venta_id,negocio_id,inventario_id,nombre,cantidad,precio_unit,subtotal_item)
          VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)})`,
         [id, nid(req), item.inventario_id||null, item.nombre, item.qty||item.cantidad||1,
-         item.precio||item.precio_unit, (item.qty||1)*(item.precio||0)]
+         item.precio||item.precio_unit||item.precio_unitario||0,
+         (item.qty||item.cantidad||1)*(item.precio||item.precio_unit||item.precio_unitario||0)]
       );
       // Descontar stock según receta o vínculo directo
       if (item.item_id) {
-        const qty = item.qty || 1;
+        const qty = item.qty || item.cantidad || 1;
         // Receta: descontar cada ingrediente
         const { rows: receta } = await pool.query(
           `SELECT inventario_id, cantidad FROM menu_item_recetas WHERE menu_item_id=${ph(1)} AND negocio_id=${ph(2)}`,
@@ -589,6 +590,37 @@ router.post('/ventas', async (req, res) => {
     `, [total, metodo_pago, total, metodo_pago, total, metodo_pago, total, nid(req), req.user.id]);
 
     res.status(201).json({ id, numero_factura });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/clientes', async (req, res) => {
+  try {
+    const { q } = req.query;
+    let sql = `SELECT id, nombre, telefono, email, documento FROM clientes WHERE negocio_id=${ph(1)} AND activo=1`;
+    const params = [nid(req)];
+    if (q) { params.push(`%${q}%`); sql += ` AND (nombre LIKE ${ph(params.length)} OR documento LIKE ${ph(params.length)})`; }
+    sql += ' ORDER BY nombre LIMIT 100';
+    const { rows } = await pool.query(sql, params);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/clientes', async (req, res) => {
+  try {
+    const { nombre, telefono, email, documento } = req.body;
+    if (!nombre?.trim()) return res.status(400).json({ error: 'Nombre requerido' });
+    if (!documento?.trim()) return res.status(400).json({ error: 'Número de documento requerido' });
+    const exist = await pool.query(
+      `SELECT id FROM clientes WHERE negocio_id=${ph(1)} AND LOWER(TRIM(nombre))=LOWER(TRIM(${ph(2)})) AND activo=1 LIMIT 1`,
+      [nid(req), nombre]
+    );
+    if (exist.rows[0]) return res.json({ id: exist.rows[0].id, nombre, nuevo: false });
+    const id = uuid();
+    await pool.query(
+      `INSERT INTO clientes (id,negocio_id,nombre,telefono,email,documento) VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)})`,
+      [id, nid(req), nombre.trim(), telefono||null, email||null, documento.trim()]
+    );
+    res.status(201).json({ id, nombre: nombre.trim(), nuevo: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

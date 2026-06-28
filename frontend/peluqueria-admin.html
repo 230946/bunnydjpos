@@ -264,7 +264,6 @@
       <div class="nav-item" data-nav="caja" onclick="nav('caja')">💰 Caja del día</div>
       <div class="nav-item" id="nav-toggle-comisiones" data-nav="comisiones" onclick="nav('comisiones')">💸 Comisiones</div>
       <div class="nav-item" data-nav="gastos" onclick="nav('gastos')">📋 Gastos</div>
-      <div class="nav-item" data-nav="facturas" onclick="nav('facturas')">🧾 Facturas</div>
       <div class="nav-item" data-nav="clientes" onclick="nav('clientes')">👤 Clientes</div>
       <div class="nav-item" data-nav="proveedores" onclick="nav('proveedores')">🚚 Proveedores</div>
       <div class="nav-item" data-nav="pedidos-prov" onclick="nav('pedidos-prov')">🛒 Pedidos prov.</div>
@@ -286,6 +285,9 @@
       <a class="nav-item nav-portal-link" id="link-reservas" href="#" target="_blank" onclick="return _abrirPortal('reservar')">🌐 Portal reservas</a>
       <a class="nav-item nav-portal-link" id="link-empleado" href="#" target="_blank" onclick="return _abrirPortal('empleado')">👤 Portal empleado</a>
       <a class="nav-item nav-portal-link" id="link-pos"      href="#" target="_blank" onclick="return _abrirPortal('pos')">💻 POS peluquería</a>
+    </div>
+    <div style="padding:4px 6px;border-top:0.5px solid var(--border);margin:4px 0">
+      <div class="nav-item" id="nav-facturas-fixed" data-nav="facturas" onclick="nav('facturas')" style="border-radius:6px">🖨️ Reimprimir</div>
     </div>
     <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
   </nav>
@@ -753,7 +755,7 @@ let IS_SUPERADMIN=sessionStorage.getItem('pel_superadmin')==='1';
 const NAV_PERMS={
   reportes:['reportes'],servicios:['personal'],paquetes:['personal'],
   inventario:['inventario'],caja:['pos_cobro'],gastos:['gastos'],
-  facturas:['facturacion'],proveedores:['proveedores'],'pedidos-prov':['proveedores'],
+  proveedores:['proveedores'],'pedidos-prov':['proveedores'],
   clientes:['clientes'],
   empleados:['personal'],personal:['personal'],roles:['personal'],
   horarios:['horarios'],'cfg-factura':['personal'],'cfg-impresora':['personal'],
@@ -842,12 +844,17 @@ async function doLogin(){
   }catch(e){errEl.textContent=e.message||'Credenciales inválidas';errEl.style.display='block';}
 }
 function salir(){TOKEN='';sessionStorage.removeItem('pel_token');clearInterval(_alertInterval);_alertInterval=null;_alertedCitas.clear();document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';}
+const _PEL_PLAN_RATES  = {free:0,basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
+const _PEL_PLAN_LABELS = {free:'Free (demo)',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
+const _PEL_PLAN_COLORS = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
+
 async function checkContrato(negocioId){
   if(IS_SUPERADMIN) return;
   try{
     const r=await fetch(`/api/negocio-pub/${negocioId}`);
     if(!r.ok) return;
     const d=await r.json();
+    window._negPlan = d.plan || 'free';
     if(!d.contrato){
       document.getElementById('contrato-block-msg').innerHTML='No tienes un contrato activo.<br>Contacta al administrador del sistema.';
       document.getElementById('contrato-block').style.display='flex';
@@ -978,19 +985,29 @@ function toggleGrupo(id){
 function cerrarModal(id){document.getElementById(id).style.display='none';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')['modalCita','modalDetCita','svc-modal','emp-modal','inv-modal','inv-ajuste-modal','gasto-modal','cat-modal','personal-modal','prov-modal','pedido-prov-modal','rol-modal','role-assign-modal','horario-modal','cfg-imp-modal','paq-modal'].forEach(id=>cerrarModal(id));});
 
-let _pelChartH=null,_pelChartM=null,_pelChartD=null;
+let _pelChartH=null,_pelChartM=null,_pelChartD=null,_pelChartCom=null;
 async function renderDashboard(){
   document.getElementById('content').innerHTML='<div style="color:var(--text2)">Cargando...</div>';
   try{
     const hoy=today();
-    const [d, r, horas, dias] = await Promise.all([
+    const _pelNid = sessionStorage.getItem('pel_negocio_id')||urlNegocio;
+    const [d, r, horas, dias, pubData, rTotal] = await Promise.all([
       apiFetch(`${API}/peluqueria/dashboard`),
       apiFetch(`${API}/admin/reportes/resumen?desde=${hoy}&hasta=${hoy}`).catch(()=>null),
       apiFetch(`${API}/admin/reportes/ventas-por-hora?desde=${hoy}&hasta=${hoy}`).catch(()=>[]),
       apiFetch(`${API}/admin/reportes/ventas-por-dia?desde=${hoy}&hasta=${hoy}`).catch(()=>[]),
+      _pelNid ? fetch(`/api/negocio-pub/${_pelNid}`).then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null),
+      apiFetch(`${API}/admin/reportes/resumen?desde=2000-01-01&hasta=${hoy}`).catch(()=>null),
     ]);
     if(!d)return;
+    if(pubData?.plan) window._negPlan = pubData.plan;
     const fmtV=n=>'$'+(Math.round(n)||0).toLocaleString('es-CO');
+    const _plan      = window._negPlan || 'free';
+    const _planRate  = _PEL_PLAN_RATES[_plan]  ?? 0;
+    const _planLabel = _PEL_PLAN_LABELS[_plan] || _plan;
+    const _planColor = _PEL_PLAN_COLORS[_plan] || '#9e9e9e';
+    const _planPct   = Math.round(_planRate * 100);
+    const _planCom   = (+(rTotal?.ventas?.total_ventas)||0) * _planRate;
     document.getElementById('content').innerHTML=`
     <div class="stat-grid">
       <div class="stat-card"><div class="label">Citas hoy</div><div class="value" style="color:var(--acc)">${d.citasHoy||0}</div></div>
@@ -1041,6 +1058,7 @@ async function renderDashboard(){
         <div class="stat-card"><div class="label">Gastos</div><div class="value" style="font-size:18px;color:var(--red)">${fmtV(r?.gastos?.total_gastos)}</div></div>
         <div class="stat-card"><div class="label">Utilidad</div><div class="value" style="font-size:18px;color:${(r?.utilidad||0)>=0?'var(--green)':'var(--red)'}">${fmtV(r?.utilidad)}</div></div>
         <div class="stat-card"><div class="label">Citas cobradas</div><div class="value" style="font-size:18px">${r?.ventas?.pedidos||0}</div></div>
+        <div class="stat-card" style="text-align:center"><div class="label" style="text-align:left">Comisión total ventas</div><div style="position:relative;height:88px;margin:4px 0"><canvas id="pel-chart-comision"></canvas><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none"><span style="font-size:20px;font-weight:700;color:${_planColor}">${_planPct}%</span></div></div><span style="background:${_planColor}1a;color:${_planColor};padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600">${_planLabel}</span><div style="font-size:11px;color:var(--text2);margin-top:4px">${_planRate>0?`Comisión: <b>${fmtV(_planCom)}</b>`:'Sin comisión (demo)'}</div></div>
       </div>
       <div class="chart-row">
         <div class="stat-card" style="padding:12px"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">📊 VENTAS POR HORA</div><div style="height:150px"><canvas id="pel-chart-horas"></canvas></div></div>
@@ -1057,6 +1075,20 @@ async function renderDashboard(){
     if(_pelChartM){_pelChartM.destroy();_pelChartM=null;}
     const ef=r?+r.ventas.efectivo||0:0,ta=r?+r.ventas.tarjeta||0:0,ne=r?+r.ventas.nequi||0:0;
     _pelChartM=new Chart(document.getElementById('pel-chart-metodos').getContext('2d'),{type:'doughnut',data:{labels:['Efectivo','Tarjeta','Nequi/QR'],datasets:[{data:[ef,ta,ne],backgroundColor:['rgba(16,185,129,0.85)','rgba(59,130,246,0.85)','rgba(168,85,247,0.85)'],borderColor:'#fff',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:tc,font:bf,boxWidth:10,padding:6}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: $${(+ctx.raw).toLocaleString('es-CO')}`}}}}});
+    if(_pelChartCom){_pelChartCom.destroy();_pelChartCom=null;}
+    const _comCanvas=document.getElementById('pel-chart-comision');
+    if(_comCanvas){
+      const _hasCom=_planRate>0&&_planCom>0;
+      _pelChartCom=new Chart(_comCanvas.getContext('2d'),{
+        type:'doughnut',
+        data:{labels:['Comisión','Ingreso neto'],datasets:[{
+          data:_hasCom?[_planCom,Math.max(_planCom/_planRate-_planCom,0)]:[1],
+          backgroundColor:_hasCom?[_planColor,'rgba(0,0,0,0.07)']:['rgba(0,0,0,0.07)'],
+          borderColor:'#fff',borderWidth:2,borderRadius:3
+        }]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:_hasCom,callbacks:{label:ctx=>` ${ctx.label}: ${fmtV(+ctx.raw)}`}}}}
+      });
+    }
   }
   catch(e){document.getElementById('content').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
 }
@@ -2244,7 +2276,7 @@ function repFiltro(ev,tipo){
   let desde,hasta=ls(d);
   if(tipo==='hoy')desde=hasta;
   else if(tipo==='ayer'){const y=new Date(d-864e5);desde=ls(y);hasta=ls(y);}
-  else if(tipo==='semana'){const s=new Date(d);s.setDate(d.getDate()-d.getDay());desde=ls(s);}
+  else if(tipo==='semana'){const s=new Date(d);s.setDate(d.getDate()-((d.getDay()+6)%7));desde=ls(s);}
   else if(tipo==='mes')desde=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
   else if(tipo==='30d'){const m=new Date(d);m.setDate(d.getDate()-29);desde=ls(m);}
   document.querySelectorAll('.rep-q').forEach(b=>b.classList.remove('active'));ev.currentTarget.classList.add('active');
@@ -2310,14 +2342,14 @@ function exportarExcelPel(){
 function renderFacturas(){
   document.getElementById('content').innerHTML=`
     <div class="card">
-      <div class="card-header"><h3>Facturas</h3>
+      <div class="card-header"><h3>🖨️ Reimprimir facturas</h3>
         <div class="card-header-actions">
           <input type="date" id="fact-desde" class="btn btn-outline btn-sm" onchange="cargarFacturas()" value="${today()}">
           <input type="date" id="fact-hasta" class="btn btn-outline btn-sm" onchange="cargarFacturas()" value="${today()}">
           <input id="fact-q" placeholder="N° o cliente..." oninput="cargarFacturas()" style="width:160px">
           <button class="btn btn-outline btn-sm" onclick="cargarFacturas()">↻</button>
         </div></div>
-      <div class="table-wrap"><table><thead><tr><th>N° Factura</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th><th>Cajero</th><th></th></tr></thead><tbody id="fact-tbody"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th><th>Profesional</th><th></th></tr></thead><tbody id="fact-tbody"></tbody></table></div>
       <div id="fact-empty" style="display:none;text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin facturas en el rango seleccionado</div>
       <div id="fact-loading" style="display:none;text-align:center;padding:24px;color:var(--text2)">Cargando...</div>
     </div>`;
@@ -2328,27 +2360,45 @@ async function cargarFacturas(){
   const fl=_gel('fact-loading'),fe=_gel('fact-empty'),ft=_gel('fact-tbody');
   if(fl)fl.style.display='block';if(fe)fe.style.display='none';if(ft)ft.innerHTML='';
   try{
-    let url=`${API}/admin/facturas?desde=${desde}&hasta=${hasta}`;if(q)url+=`&q=${encodeURIComponent(q)}`;
+    let url=`${API}/peluqueria/facturas?desde=${desde}&hasta=${hasta}`;if(q)url+=`&q=${encodeURIComponent(q)}`;
     const data=await apiFetch(url)||[];
     if(fl)fl.style.display='none';
     if(!data.length){if(fe)fe.style.display='block';return;}
-    if(ft)ft.innerHTML=data.map(v=>`<tr><td><b>${v.numero_factura||'—'}</b></td><td>${fmtDate(v.creado)}</td><td>${v.cliente_nombre||'<span style="color:var(--text3)">Mostrador</span>'}</td><td style="font-size:12px">${v.metodo_pago||'—'}</td><td><b>${fmt(+v.total)}</b></td><td style="color:var(--text2);font-size:12px">${v.cajero_nombre||'—'}</td><td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td></tr>`).join('');
+    if(ft)ft.innerHTML=data.map(v=>{
+      const dt=new Date(v.fecha);
+      const fStr=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+      return `<tr><td style="font-size:11px">${fStr}</td><td>${v.cliente_nombre||'<span style="color:var(--text3)">Mostrador</span>'}</td><td style="font-size:12px">${v.metodo_pago||'—'}</td><td><b>${fmt(+v.total)}</b></td><td style="color:var(--text2);font-size:12px">${v.empleado_nombre||v.cajero_nombre||'—'}</td><td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td></tr>`;
+    }).join('');
   }catch(e){if(fl)fl.style.display='none';showToast(e.message,'err');}
 }
 async function abrirFactura(id){
   try{
-    const [v,cfg]=await Promise.all([apiFetch(`${API}/admin/facturas/${id}`),_factCfg?Promise.resolve(_factCfg):apiFetch(`${API}/admin/config/factura`).then(c=>{_factCfg=c;return c;})]);
-    _factActual=v;const cf=cfg||{};const items=Array.isArray(v.items)?v.items:[];
-    const dt=new Date(v.creado),fecha=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}),hora=dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    const [v,cfg]=await Promise.all([apiFetch(`${API}/peluqueria/facturas/${id}`),_factCfg?Promise.resolve(_factCfg):apiFetch(`${API}/admin/config/factura`).then(c=>{_factCfg=c;return c;})]);
+    _factActual=v;const cf=cfg||{};
+    const items=Array.isArray(v.detalle)?v.detalle:[];
+    const dt=new Date(v.fecha),fecha=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}),hora=dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     let h=`<div class="recibo">`;
     if(cf.nombre)h+=`<div class="recibo-center" style="font-weight:700;font-size:13px">${esc(cf.nombre)}</div>`;
     if(cf.togNit!==false&&cf.nit)h+=`<div class="recibo-center">NIT: ${cf.nit}</div>`;
-    h+=`<hr class="recibo-hr"><div class="recibo-row recibo-total"><span>Factura</span><span>${v.numero_factura||'—'}</span></div>`;
+    if(cf.direccion)h+=`<div class="recibo-center" style="font-size:10px">${esc(cf.direccion)}</div>`;
+    h+=`<hr class="recibo-hr">`;
     h+=`<div class="recibo-row"><span>${fecha}</span><span>${hora}</span></div>`;
     if(v.cliente_nombre)h+=`<div class="recibo-row"><span>Cliente</span><span>${esc(v.cliente_nombre)}</span></div>`;
+    if(v.cliente_doc)h+=`<div class="recibo-row"><span>Doc.</span><span>${esc(v.cliente_doc)}</span></div>`;
+    if(v.cliente_tel)h+=`<div class="recibo-row"><span>Tel.</span><span>${esc(v.cliente_tel)}</span></div>`;
+    if(v.empleado_nombre)h+=`<div class="recibo-row"><span>Profesional</span><span>${esc(v.empleado_nombre)}</span></div>`;
+    if(v.cajero_nombre)h+=`<div class="recibo-row"><span>Cajero</span><span>${esc(v.cajero_nombre)}</span></div>`;
     h+=`<hr class="recibo-hr">`;
-    items.forEach(i=>{h+=`<div class="recibo-row"><span>${esc(i.nombre)}</span><span>${fmt((+i.precio)*(+i.qty))}</span></div>`;if(+i.qty>1)h+=`<div style="color:var(--text2);padding-left:6px;font-size:11px">${i.qty}×${fmt(+i.precio)}</div>`;});
-    h+=`<hr class="recibo-hr"><div class="recibo-row recibo-total" style="font-size:14px"><span>TOTAL</span><span>${fmt(+v.total)}</span></div></div>`;
+    items.forEach(i=>{
+      const sub=+(i.subtotal||0)||((+i.precio_unitario)*(+i.cantidad));
+      h+=`<div class="recibo-row"><span>${esc(i.descripcion)}</span><span>${fmt(sub)}</span></div>`;
+      if(+i.cantidad>1)h+=`<div style="color:var(--text2);padding-left:6px;font-size:11px">${i.cantidad}×${fmt(+i.precio_unitario)}</div>`;
+    });
+    h+=`<hr class="recibo-hr">`;
+    if(+v.descuento>0)h+=`<div class="recibo-row"><span>Descuento</span><span>-${fmt(+v.descuento)}</span></div>`;
+    h+=`<div class="recibo-row recibo-total" style="font-size:14px"><span>TOTAL</span><span>${fmt(+v.total)}</span></div>`;
+    if(Array.isArray(v.pagos)&&v.pagos.length){v.pagos.forEach(p=>h+=`<div class="recibo-row" style="font-size:11px;color:var(--text2)"><span>${esc(p.metodo)}</span><span>${fmt(+p.monto)}</span></div>`);}
+    h+=`<div class="recibo-center" style="margin-top:10px;font-size:11px">¡Gracias por su visita!</div></div>`;
     _gel('fact-recibo-wrap').innerHTML=h;_gel('fact-modal').style.display='flex';
   }catch(e){showToast('Error cargando factura: '+e.message,'err');}
 }

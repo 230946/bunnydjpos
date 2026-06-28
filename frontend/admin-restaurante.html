@@ -99,6 +99,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .stat-trend{font-size:11px;font-weight:600;margin-top:5px;min-height:14px;transition:color .2s}
 .stat-trend.up{color:#15803d}.stat-trend.down{color:var(--red)}.stat-trend.neutral{color:var(--text3)}
 .stat-trend.up-inv{color:var(--red)}.stat-trend.down-inv{color:#15803d}
+.dash-q,.rep-q{background:transparent;border:none;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .15s;white-space:nowrap;line-height:1.4}
+.dash-q.active,.rep-q.active{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 1px 5px rgba(0,0,0,.12)}
+.dash-q:hover:not(.active),.rep-q:hover:not(.active){color:var(--text);background:rgba(0,0,0,.04)}
 .stat-sub{font-size:11px;color:var(--text2);margin-top:2px}
 .card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:14px}
 .card-header{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border)}
@@ -304,7 +307,7 @@ tr:hover td{background:var(--bg2)}
       <button class="nav-btn" data-permiso="gastos" onclick="nav('gastos',this)" title="Gastos"><span class="nav-icon">📋</span><span class="nav-label"> Gastos</span></button>
       <button class="nav-btn" data-permiso="reportes" onclick="nav('reportes',this)" title="Reportes"><span class="nav-icon">📈</span><span class="nav-label"> Reportes</span></button>
       <button class="nav-btn" data-permiso="clientes" onclick="nav('clientes',this)" title="Clientes"><span class="nav-icon">👤</span><span class="nav-label"> Clientes</span></button>
-      <button class="nav-btn" data-permiso="facturacion" onclick="nav('facturas',this)" title="Facturas"><span class="nav-icon">🧾</span><span class="nav-label"> Facturas</span></button>
+      <button class="nav-btn" data-permiso="facturacion" onclick="nav('facturas',this)" title="Reimprimir facturas"><span class="nav-icon">🖨️</span><span class="nav-label"> Reimprimir</span></button>
     </div>
 
     <div class="nav-section" data-seccion="operacion" onclick="toggleNavGroup('operacion')"><span class="nav-label">Operación</span><span class="nav-group-arrow">›</span></div>
@@ -363,20 +366,26 @@ tr:hover td{background:var(--bg2)}
       <!-- DASHBOARD -->
       <div class="panel active" id="panel-dashboard">
 
-        <!-- Filtros del dashboard -->
-        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rl);padding:10px 14px">
-          <button class="btn btn-outline btn-sm dash-q active" onclick="dashFiltro('hoy',event)">Hoy</button>
-          <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('ayer',event)">Ayer</button>
-          <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('semana',event)">Esta semana</button>
-          <button class="btn btn-outline btn-sm dash-q" onclick="dashFiltro('mes',event)">Este mes</button>
-          <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
-          <label style="font-size:12px;color:var(--text2)">Desde</label>
-          <input type="date" id="dash-desde" class="btn btn-outline btn-sm" style="cursor:pointer">
-          <label style="font-size:12px;color:var(--text2)">Hasta</label>
-          <input type="date" id="dash-hasta" class="btn btn-outline btn-sm" style="cursor:pointer">
-          <button class="btn btn-primary btn-sm" onclick="loadDashboard()">Consultar</button>
-          <span class="live-badge" style="margin-left:auto"><span class="live-dot"></span><span id="dash-live-lbl">En vivo</span></span>
-          <span class="live-update" id="dash-updated"></span>
+        <!-- Filtro período dashboard -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;padding:10px 16px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+          <div style="display:flex;background:var(--bg2);border:0.5px solid var(--border);border-radius:30px;padding:3px;gap:1px;flex-shrink:0">
+            <button class="dash-q active" onclick="dashFiltro('hoy',event)">Hoy</button>
+            <button class="dash-q" onclick="dashFiltro('ayer',event)">Ayer</button>
+            <button class="dash-q" onclick="dashFiltro('semana',event)">Esta semana</button>
+            <button class="dash-q" onclick="dashFiltro('mes',event)">Este mes</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid var(--border);border-radius:30px;padding:5px 14px;font-size:12px;color:var(--text2);flex-shrink:0">
+            <span>Desde</span>
+            <input type="date" id="dash-desde" style="border:none;background:transparent;color:var(--text);font-size:12px;outline:none;cursor:pointer;font-family:inherit">
+            <span style="opacity:.4">→</span>
+            <span>Hasta</span>
+            <input type="date" id="dash-hasta" style="border:none;background:transparent;color:var(--text);font-size:12px;outline:none;cursor:pointer;font-family:inherit">
+          </div>
+          <button onclick="loadDashboard()" style="background:var(--accent,#0B8457);color:#fff;border:none;border-radius:30px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;box-shadow:0 2px 6px rgba(11,132,87,.3)">Consultar</button>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+            <span class="live-badge"><span class="live-dot"></span><span id="dash-live-lbl">En vivo</span></span>
+            <span class="live-update" id="dash-updated"></span>
+          </div>
         </div>
 
         <!-- Resumen totales con tendencia -->
@@ -459,7 +468,7 @@ tr:hover td{background:var(--bg2)}
         <!-- Últimas ventas del día -->
         <div class="card" style="margin-top:14px">
           <div class="card-header">
-            <h3>Últimas ventas de hoy</h3>
+            <h3 id="dash-ventas-titulo">Últimas ventas de hoy</h3>
             <button class="btn btn-sm btn-outline" onclick="loadDashboard()">↻ Actualizar</button>
           </div>
           <div class="table-wrap">
@@ -484,10 +493,8 @@ tr:hover td{background:var(--bg2)}
           </div>
           <div class="card">
             <div class="card-header"><h3>🚨 Artículos en alerta</h3></div>
-            <div class="table-wrap" style="max-height:220px;overflow-y:auto">
-              <table style="font-size:12px"><thead><tr><th>Artículo</th><th>Stock</th><th>Mínimo</th><th>Estado</th></tr></thead>
-              <tbody id="dash-inv-alertas"><tr><td colspan="4" style="color:var(--text2);text-align:center;padding:12px">Cargando...</td></tr></tbody>
-              </table>
+            <div id="dash-inv-alertas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;padding:12px 14px;max-height:240px;overflow-y:auto">
+              <div style="color:var(--text2);text-align:center;padding:12px;grid-column:1/-1;font-size:13px">Cargando...</div>
             </div>
           </div>
         </div>
@@ -534,38 +541,48 @@ tr:hover td{background:var(--bg2)}
       <!-- REPORTES -->
       <div class="panel" id="panel-reportes">
 
-        <!-- Filtros -->
-        <div class="card" style="margin-bottom:14px">
-          <div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 16px">
-            <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro('hoy')">Hoy</button>
-            <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro('ayer')">Ayer</button>
-            <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro('semana')">Esta semana</button>
-            <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro('mes')">Este mes</button>
-            <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro('30d')">Últimos 30 días</button>
-            <div style="width:1px;height:22px;background:var(--border);margin:0 2px"></div>
-            <label style="font-size:12px;color:var(--text2)">Desde</label>
-            <input type="date" id="rep-desde" class="btn btn-outline btn-sm" style="cursor:pointer">
-            <label style="font-size:12px;color:var(--text2)">Hasta</label>
-            <input type="date" id="rep-hasta" class="btn btn-outline btn-sm" style="cursor:pointer">
-            <select id="rep-metodo" class="btn btn-outline btn-sm">
-              <option value="">Todos los métodos</option>
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="nequi">Nequi/QR</option>
-            </select>
-            <button class="btn btn-primary btn-sm" onclick="loadReportes()">Consultar</button>
+        <!-- Filtros Reportes -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;padding:10px 16px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+          <div style="display:flex;background:var(--bg2);border:0.5px solid var(--border);border-radius:30px;padding:3px;gap:1px;flex-shrink:0">
+            <button class="rep-q" onclick="repFiltro('hoy')">Hoy</button>
+            <button class="rep-q" onclick="repFiltro('ayer')">Ayer</button>
+            <button class="rep-q" onclick="repFiltro('semana')">Esta semana</button>
+            <button class="rep-q" onclick="repFiltro('mes')">Este mes</button>
+            <button class="rep-q" onclick="repFiltro('30d')">30 días</button>
           </div>
+          <div style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid var(--border);border-radius:30px;padding:5px 14px;font-size:12px;color:var(--text2);flex-shrink:0">
+            <span>Desde</span>
+            <input type="date" id="rep-desde" style="border:none;background:transparent;color:var(--text);font-size:12px;outline:none;cursor:pointer;font-family:inherit">
+            <span style="opacity:.4">→</span>
+            <span>Hasta</span>
+            <input type="date" id="rep-hasta" style="border:none;background:transparent;color:var(--text);font-size:12px;outline:none;cursor:pointer;font-family:inherit">
+          </div>
+          <select id="rep-metodo" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:30px;padding:5px 14px;font-size:12px;color:var(--text);outline:none;cursor:pointer;flex-shrink:0">
+            <option value="">Todos los métodos</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="nequi">Nequi/QR</option>
+          </select>
+          <button onclick="loadReportes()" style="background:var(--accent,#0B8457);color:#fff;border:none;border-radius:30px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;box-shadow:0 2px 6px rgba(11,132,87,.3)">Consultar</button>
         </div>
 
-        <!-- Resumen + botón exportar -->
-        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin-bottom:14px">
-          <div class="stats-row" id="rep-stats" style="flex:1;margin:0">
-            <div class="stat-card"><div class="stat-label">Ventas</div><div class="stat-val" id="r-ventas">—</div></div>
-            <div class="stat-card"><div class="stat-label">Gastos</div><div class="stat-val" id="r-gastos">—</div></div>
-            <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="r-utilidad">—</div></div>
-            <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="r-pedidos">—</div></div>
+        <!-- Resumen -->
+        <div class="stats-row" id="rep-stats" style="margin-bottom:14px">
+          <div class="stat-card"><div class="stat-label">Ventas</div><div class="stat-val" id="r-ventas">—</div></div>
+          <div class="stat-card"><div class="stat-label">Gastos</div><div class="stat-val" id="r-gastos">—</div></div>
+          <div class="stat-card"><div class="stat-label">Utilidad</div><div class="stat-val" id="r-utilidad">—</div></div>
+          <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-val" id="r-pedidos">—</div></div>
+          <div class="stat-card" id="d-plan-card" style="text-align:center">
+            <div class="stat-label" style="text-align:left">Comisión total ventas</div>
+            <div style="position:relative;height:88px;margin:4px 0">
+              <canvas id="chart-comision"></canvas>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none">
+                <span id="d-plan-pct" style="font-size:20px;font-weight:700">—</span>
+              </div>
+            </div>
+            <div id="d-plan-badge"></div>
+            <div id="d-plan-com" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
           </div>
-          <button class="btn btn-success btn-sm" onclick="exportarExcel()" style="align-self:center;white-space:nowrap;padding:10px 18px">⬇ Exportar Excel</button>
         </div>
 
         <!-- Métodos de pago (fila plana) -->
@@ -578,16 +595,19 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
 
-        <!-- Detalle de ventas (tabla plana) -->
+        <!-- Detalle de ventas -->
         <div class="card" style="margin-bottom:14px">
           <div class="card-header">
             <h3>Detalle de ventas</h3>
-            <span id="r-ventas-count" style="font-size:12px;color:var(--text2)"></span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span id="r-ventas-count" style="font-size:12px;color:var(--text2)"></span>
+              <button class="btn btn-sm btn-outline" onclick="exportarExcel()">⬇ Exportar Excel</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table id="tbl-rep-ventas" style="font-size:12px">
-              <thead><tr><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Cliente</th><th>Método</th><th>Total</th><th>Cajero</th><th>Factura</th></tr></thead>
-              <tbody id="r-ventas-tbody"><tr><td colspan="8" style="color:var(--text2);text-align:center;padding:20px">Consulta un período para ver resultados</td></tr></tbody>
+              <thead><tr><th></th><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Cliente</th><th>Método</th><th>Total</th><th>Cajero</th><th>Factura</th></tr></thead>
+              <tbody id="r-ventas-tbody"><tr><td colspan="9" style="color:var(--text2);text-align:center;padding:20px">Consulta un período para ver resultados</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -645,7 +665,7 @@ tr:hover td{background:var(--bg2)}
       <div class="panel" id="panel-facturas">
         <div class="card">
           <div class="card-header">
-            <h3>Facturas</h3>
+            <h3>🖨️ Reimprimir facturas</h3>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <input type="date" id="fact-desde" style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px" onchange="loadFacturas()">
               <input type="date" id="fact-hasta" style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px" onchange="loadFacturas()">
@@ -1367,7 +1387,7 @@ async function api(path, opts={}) {
   return d;
 }
 function fmt(n){ return '$'+(Math.round(n)||0).toLocaleString('es-CO'); }
-function fmtDate(s){ return s?new Date(s).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
+function fmtDate(s){ return s?new Date(s+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
 function fmtTime(s){ return s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—'; }
 function closeModal(id){ document.getElementById(id).style.display='none'; }
 function showToast(m,ok=true){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
@@ -1514,12 +1534,55 @@ function doLogout(){
 }
 
 // ─── Contrato ────────────────────────────────────────────────
+const _PLAN_RATES  = {free:0,basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
+const _PLAN_LABELS = {free:'Free (demo)',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
+const _PLAN_COLORS = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
+let _comChart = null;
+function updatePlanComCard(totalVenta){
+  const plan  = window._negPlan || 'free';
+  const rate  = _PLAN_RATES[plan]  ?? 0;
+  const label = _PLAN_LABELS[plan] || plan;
+  const color = _PLAN_COLORS[plan] || '#9e9e9e';
+  const pct   = Math.round(rate * 100);
+  const com   = totalVenta * rate;
+  const pctEl = $('d-plan-pct');
+  const badge = $('d-plan-badge');
+  const trend = $('d-plan-com');
+  if(pctEl) pctEl.innerHTML = `<span style="color:${color}">${pct}%</span>`;
+  if(badge) badge.innerHTML = `<span style="background:${color}1a;color:${color};padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600">${label}</span>`;
+  if(trend) trend.innerHTML = rate>0 ? `Comisión: <b>${fmt(com)}</b>` : `<span style="color:var(--text2)">Sin comisión (demo)</span>`;
+  const canvas = $('chart-comision');
+  if(!canvas) return;
+  if(_comChart){ _comChart.destroy(); _comChart=null; }
+  const hasCom = rate>0 && totalVenta>0;
+  _comChart = new Chart(canvas.getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:['Comisión','Ingreso neto'],
+      datasets:[{
+        data: hasCom ? [com, Math.max(totalVenta-com,0)] : [1],
+        backgroundColor: hasCom ? [color,'rgba(0,0,0,0.07)'] : ['rgba(0,0,0,0.07)'],
+        borderColor:'#fff', borderWidth:2, borderRadius:3
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'72%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{ enabled:hasCom, callbacks:{ label:ctx=>` ${ctx.label}: ${fmt(+ctx.raw)}` } }
+      }
+    }
+  });
+}
+
 async function checkContrato(negocioId){
   if(me?.es_superadmin) return;
   try{
     const r=await fetch(`/api/negocio-pub/${negocioId}`);
     if(!r.ok) return;
     const d=await r.json();
+    window._negPlan = d.plan || 'free';
+    updatePlanComCard(0);
     if(!d.contrato){
       $('contrato-block-msg').innerHTML='No tienes un contrato activo.<br>Contacta al administrador del sistema.';
       $('contrato-block').style.display='flex';
@@ -1644,6 +1707,8 @@ async function loadDashboard(){
   // Indicador en vivo solo cuando el filtro es "hoy"
   const ll = $('dash-live-lbl');
   if(ll) ll.textContent = esHoy ? 'En vivo' : desde===hasta ? fmtDate(desde) : `${fmtDate(desde)} – ${fmtDate(hasta)}`;
+  const tv = $('dash-ventas-titulo');
+  if(tv) tv.textContent = esHoy ? 'Últimas ventas de hoy' : desde===hasta ? `Ventas del ${fmtDate(desde)}` : 'Ventas del período';
   // Etiqueta dinámica de la card de ventas
   const lv = $('dash-lbl-ventas');
   if(lv) lv.textContent = esHoy ? 'Ingresos hoy' : 'Ingresos período';
@@ -1661,16 +1726,17 @@ async function loadDashboard(){
   const hoy7  = today();
   const hace7 = fmtUTC(new Date(new Date(hoy7+'T12:00:00Z').getTime() - 6*86400000));
 
-  const [r, cajas_hoy, gr, ventas, inv, horas, dias, rPrev, dias7] = await Promise.all([
+  const [r, cajas_hoy, gr, ventas, inv, horas, dias, rPrev, dias7, rTotal] = await Promise.all([
     api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
     api(`/admin/caja/resumen?fecha=${desde}`).catch(()=>[]),
     api(`/admin/gastos/resumen?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
-    api(`/admin/ventas/recientes?desde=${desde}`).catch(()=>[]),
+    api(`/admin/ventas/recientes?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
     api('/inventario/').catch(()=>[]),
     api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
     api(`/admin/reportes/ventas-por-dia?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
     api(`/admin/reportes/resumen?desde=${prevD}&hasta=${prevH}`).catch(()=>null),
     api(`/admin/reportes/ventas-por-dia?desde=${hace7}&hasta=${hoy7}`).catch(()=>[]),
+    api(`/admin/reportes/resumen?desde=2000-01-01&hasta=${hoy7}`).catch(()=>null),
   ]);
 
   // Totales con animación de contador
@@ -1733,19 +1799,22 @@ async function loadDashboard(){
     $('dash-inv-alertas').innerHTML = alertas.length
       ? alertas.map(i=>{
           const ago=+i.stock<=0;
-          const uc=i.unidad_compra&&i.cantidad_paquete&&i.cantidad_paquete>1;
+          const uc=i.unidad_compra&&i.cantidad_paquete&&+i.cantidad_paquete>1;
           const factor=uc?+i.cantidad_paquete:1;
           const stk=+i.stock||0, smn=+i.stock_min||0;
-          const stockMost=uc?(stk<factor?`${stk} ${i.unidad}`:`${Math.floor(stk/factor)} ${i.unidad_compra}`):`${Math.round(stk)} ${i.unidad||''}`;
-          const minMost=`${Math.round(smn)} ${i.unidad||''}`;
-          return `<tr>
-            <td style="font-weight:500">${i.nombre}</td>
-            <td style="color:${ago?'var(--red-d)':'var(--amber-d)'};font-weight:600">${stockMost}</td>
-            <td style="color:var(--text2)">${minMost}</td>
-            <td><span class="badge ${ago?'badge-red':'badge-amber'}">${ago?'Agotado':'Bajo stock'}</span></td>
-          </tr>`;
+          const stockNum=uc&&stk>=factor?Math.floor(stk/factor):Math.round(stk);
+          const stockUnit=(uc&&stk>=factor?i.unidad_compra:(i.unidad||'uds')).trim();
+          const minMost=`${Math.round(smn)} ${i.unidad||''}`.trim();
+          const color=ago?'var(--red-d)':'var(--amber-d)';
+          const bg=ago?'var(--red-l,#fef2f2)':'var(--amber-l,#fffbeb)';
+          return `<div style="border:1px solid ${color};border-radius:var(--rl);padding:14px 14px 12px;background:${bg}">
+            <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px" title="${i.nombre}">${i.nombre}</div>
+            <span style="font-size:10px;font-weight:700;background:${color};color:#fff;border-radius:20px;padding:2px 9px">${ago?'Agotado':'Bajo stock'}</span>
+            <div style="font-size:28px;font-weight:700;color:${color};line-height:1.1;margin:10px 0 2px">${stockNum}</div>
+            <div style="font-size:11px;color:var(--text2)">${stockUnit} · mín ${minMost}</div>
+          </div>`;
         }).join('')
-      : '<tr><td colspan="4" style="color:var(--green-d);text-align:center;padding:12px">✓ Todo el inventario en niveles correctos</td></tr>';
+      : '<div style="color:var(--green-d);text-align:center;padding:20px;grid-column:1/-1;font-size:13px">✓ Todo el inventario en niveles correctos</div>';
   }
 
   // Timestamp
@@ -1795,7 +1864,7 @@ function dashFiltro(tipo, e){
   let desde, hasta = ls(d);
   if(tipo==='hoy')   { desde = hasta; }
   else if(tipo==='ayer')  { const y=new Date(d-864e5); desde=ls(y); hasta=ls(y); }
-  else if(tipo==='semana'){ const s=new Date(d); s.setDate(d.getDate()-d.getDay()); desde=ls(s); }
+  else if(tipo==='semana'){ const s=new Date(d); s.setDate(d.getDate()-((d.getDay()+6)%7)); desde=ls(s); }
   else if(tipo==='mes')   { desde=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
   document.querySelectorAll('.dash-q').forEach(b=>b.classList.remove('active'));
   if(e?.currentTarget) e.currentTarget.classList.add('active');
@@ -2096,7 +2165,7 @@ function repFiltro(tipo){
   let desde, hasta = ls(d);
   if(tipo==='hoy'){ desde = hasta; }
   else if(tipo==='ayer'){ const y=new Date(d-864e5); desde=ls(y); hasta=ls(y); }
-  else if(tipo==='semana'){ const s=new Date(d); s.setDate(d.getDate()-d.getDay()); desde=ls(s); }
+  else if(tipo==='semana'){ const s=new Date(d); s.setDate(d.getDate()-((d.getDay()+6)%7)); desde=ls(s); }
   else if(tipo==='mes'){ desde=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
   else if(tipo==='30d'){ const m=new Date(d); m.setDate(d.getDate()-29); desde=ls(m); }
   document.querySelectorAll('.rep-q').forEach(b=>b.classList.remove('active'));
@@ -2125,28 +2194,46 @@ async function loadReportes(){
     $('r-pedidos').textContent=r.ventas.pedidos;
     const util=r.utilidad; const ru=$('r-utilidad');
     ru.textContent=fmt(util); ru.style.color=util>=0?'var(--green-d)':'var(--red)';
+    updatePlanComCard(+r.ventas.total_ventas || 0);
 
     // Métodos (nuevos IDs planos)
     $('rm-efectivo').textContent=fmt(r.ventas.efectivo);
     $('rm-tarjeta').textContent =fmt(r.ventas.tarjeta);
     $('rm-nequi').textContent   =fmt(r.ventas.nequi);
 
-    // Tabla detalle de ventas
+    // Tabla detalle de ventas (filas expandibles)
     const mb = m=>`<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
     const vc = $('r-ventas-count');
     if(vc) vc.textContent = ventasList.length ? `${ventasList.length} transacciones` : '';
     $('r-ventas-tbody').innerHTML = ventasList.length
-      ? ventasList.map(v=>`<tr>
-          <td>${fmtDate(v.fecha||v.creado)}</td>
-          <td>${v.hora||''}</td>
-          <td>${v.lugar||'—'}</td>
-          <td style="color:var(--text2)">${v.cliente||'—'}</td>
-          <td>${mb(v.metodo_pago)}</td>
-          <td><b>${fmt(v.total)}</b></td>
-          <td style="color:var(--text2)">${v.cajero||'—'}</td>
-          <td style="color:var(--text2);font-size:11px">${v.numero_factura||'—'}</td>
-        </tr>`).join('')
-      : '<tr><td colspan="8" style="color:var(--text2);text-align:center;padding:20px">Sin ventas en este período</td></tr>';
+      ? ventasList.map((v,i)=>{
+          const bid=`rv_r${i}`;
+          const ef=+v.monto_efectivo||0, ta=+v.monto_tarjeta||0, ne=+v.monto_nequi||0;
+          const desglose=[
+            ef>0?`<span>💵 Efectivo: <b>${fmt(ef)}</b></span>`:'',
+            ta>0?`<span>💳 Tarjeta: <b>${fmt(ta)}</b></span>`:'',
+            ne>0?`<span>📱 Nequi/QR: <b>${fmt(ne)}</b></span>`:'',
+          ].filter(Boolean).join('');
+          return `<tr class="rep-venta-row" onclick="toggleRepVenta('${bid}')" style="cursor:pointer">
+            <td style="width:18px;text-align:center"><span id="${bid}_ic" style="font-size:9px;color:var(--text3)">▸</span></td>
+            <td>${fmtDate(v.fecha||v.creado)}</td>
+            <td>${v.hora||''}</td>
+            <td>${v.lugar||'—'}</td>
+            <td style="color:var(--text2)">${v.cliente||'—'}</td>
+            <td>${mb(v.metodo_pago)}</td>
+            <td><b>${fmt(v.total)}</b></td>
+            <td style="color:var(--text2)">${v.cajero||'—'}</td>
+            <td style="color:var(--text2);font-size:11px">${v.numero_factura||'—'}</td>
+          </tr>
+          <tr id="${bid}" style="display:none">
+            <td colspan="9" style="padding:8px 18px 10px;background:var(--bg2);border-bottom:1px solid var(--border)">
+              <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--text2)">
+                ${desglose||mb(v.metodo_pago)+' <b>'+fmt(v.total)+'</b>'}
+              </div>
+            </td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="9" style="color:var(--text2);text-align:center;padding:20px">Sin ventas en este período</td></tr>';
 
     // Guardar datos para exportar
     window._repData = { desde, hasta, r, ventasList, inv };
@@ -2221,6 +2308,14 @@ async function loadReportes(){
     }
 
   } catch(e){ showToast('Error: '+e.message); }
+}
+
+function toggleRepVenta(id){
+  const row=document.getElementById(id); if(!row) return;
+  const ic=document.getElementById(id+'_ic');
+  const open=row.style.display!=='none';
+  row.style.display=open?'none':'table-row';
+  if(ic) ic.textContent=open?'▸':'▾';
 }
 
 // ─── EXPORTAR EXCEL (CSV con BOM) ────────────────────────────
@@ -3292,17 +3387,22 @@ async function refreshInvStats(){
       $('dash-inv-alertas').innerHTML = alertas.length
         ? alertas.map(i=>{
             const ago=+i.stock<=0;
-            const uc=i.unidad_compra&&i.cantidad_paquete&&i.cantidad_paquete>1;
+            const uc=i.unidad_compra&&i.cantidad_paquete&&+i.cantidad_paquete>1;
             const factor=uc?+i.cantidad_paquete:1;
-            const stk=+i.stock||0;
-            const stockMost=uc?(stk<factor?`${stk} ${i.unidad}`:`${Math.floor(stk/factor)} ${i.unidad_compra}`):`${Math.round(stk)} ${i.unidad||''}`;
-            return `<tr>
-              <td style="font-weight:500">${i.nombre}</td>
-              <td style="color:${ago?'var(--red-d)':'var(--amber-d)'};font-weight:600">${stockMost}</td>
-              <td><span class="badge ${ago?'badge-red':'badge-amber'}">${ago?'Agotado':'Bajo stock'}</span></td>
-            </tr>`;
+            const stk=+i.stock||0, smn=+i.stock_min||0;
+            const stockNum=uc&&stk>=factor?Math.floor(stk/factor):Math.round(stk);
+            const stockUnit=(uc&&stk>=factor?i.unidad_compra:(i.unidad||'uds')).trim();
+            const minMost=`${Math.round(smn)} ${i.unidad||''}`.trim();
+            const color=ago?'var(--red-d)':'var(--amber-d)';
+            const bg=ago?'var(--red-l,#fef2f2)':'var(--amber-l,#fffbeb)';
+            return `<div style="border:1px solid ${color};border-radius:var(--rl);padding:14px 14px 12px;background:${bg}">
+              <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px" title="${i.nombre}">${i.nombre}</div>
+              <span style="font-size:10px;font-weight:700;background:${color};color:#fff;border-radius:20px;padding:2px 9px">${ago?'Agotado':'Bajo stock'}</span>
+              <div style="font-size:28px;font-weight:700;color:${color};line-height:1.1;margin:10px 0 2px">${stockNum}</div>
+              <div style="font-size:11px;color:var(--text2)">${stockUnit} · mín ${minMost}</div>
+            </div>`;
           }).join('')
-        : '<tr><td colspan="3" style="color:var(--green-d);text-align:center;padding:12px">✓ Todo en niveles correctos</td></tr>';
+        : '<div style="color:var(--green-d);text-align:center;padding:20px;grid-column:1/-1;font-size:13px">✓ Todo en niveles correctos</div>';
     }
     // Reportes
     if(currentPage==='reportes'){

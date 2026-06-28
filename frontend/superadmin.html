@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <title>DJPOS — SuperAdmin</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
 <style>
@@ -263,12 +264,19 @@ tr:hover td{background:var(--bg2)}
           <div class="stat-card"><div class="stat-label">Negocios activos</div><div class="stat-val" id="s-negocios">—</div></div>
           <div class="stat-card"><div class="stat-label">Usuarios totales</div><div class="stat-val" id="s-usuarios">—</div></div>
           <div class="stat-card"><div class="stat-label">Ingresos plataforma</div><div class="stat-val" id="s-ingresos">—</div></div>
-          <div class="stat-card" style="border-left:3px solid var(--text3)"><div class="stat-label">Free — 0% (demo)</div><div class="stat-val" style="color:var(--text2);font-size:16px">$0</div></div>
-          <div class="stat-card" style="border-left:3px solid var(--blue)"><div class="stat-label">Basic — 5%</div><div class="stat-val" id="s-com5">—</div></div>
-          <div class="stat-card" style="border-left:3px solid #e65c00"><div class="stat-label">Plus — 7%</div><div class="stat-val" id="s-com7">—</div></div>
-          <div class="stat-card" style="border-left:3px solid var(--purple-d)"><div class="stat-label">Premium — 9%</div><div class="stat-val" id="s-com9">—</div></div>
-          <div class="stat-card" style="border-left:3px solid var(--green-d)"><div class="stat-label" style="font-weight:600">Total comisión</div><div class="stat-val" id="s-com-total" style="color:var(--green-d)">—</div></div>
         </div>
+        <!-- Comisión por negocio -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <h3 style="font-size:14px;font-weight:600">Comisión por negocio</h3>
+            <span id="dash-com-total-lbl" style="font-size:11px;color:var(--text2)"></span>
+          </div>
+          <div id="dash-com-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:16px"></div>
+          <div style="height:210px;position:relative">
+            <canvas id="chart-com-negocios"></canvas>
+          </div>
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
           <div class="table-wrap">
             <div class="table-header"><h3>Negocios recientes</h3></div>
@@ -734,10 +742,6 @@ async function loadDashboard(){
     if(rep){
       const ti = rep.totalIngresos || 0;
       document.getElementById('s-ingresos').textContent = fmt(ti);
-      document.getElementById('s-com5').textContent      = fmt(rep.comBasic    || 0);
-      document.getElementById('s-com7').textContent      = fmt(rep.comPlus     || 0);
-      document.getElementById('s-com9').textContent      = fmt(rep.comPremium  || 0);
-      document.getElementById('s-com-total').textContent = fmt(rep.totalComision|| 0);
     }
 
     const tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
@@ -775,6 +779,64 @@ async function loadDashboard(){
           <span style="font-weight:700;color:${diasColor};font-size:13px;flex-shrink:0">${diasLabel}</span>
         </div>`;
       }).join('');
+    }
+    // ── Comisión por negocio ──────────────────────────────────
+    if(rep && rep.rows && rep.rows.length){
+      const _R = {free:0,basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
+      const _L = {free:'Free',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
+      const _C = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
+
+      const rows = rep.rows.filter(r => parseFloat(r.ingresos||0) > 0 || _R[r.plan] > 0);
+      const coms = rows.map(r => parseFloat(r.ingresos||0) * (_R[r.plan]??0));
+      const maxCom = Math.max(...coms, 1);
+
+      // Mini-cards por negocio
+      document.getElementById('dash-com-cards').innerHTML = rows.map((r,i) => {
+        const rate  = _R[r.plan] ?? 0;
+        const com   = parseFloat(r.ingresos||0) * rate;
+        const pct   = Math.round(rate * 100);
+        const color = _C[r.plan] || '#9e9e9e';
+        const label = _L[r.plan] || r.plan;
+        return `<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid ${color};border-radius:8px;padding:10px 12px">
+          <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px">${r.nombre}</div>
+          <span style="background:${color}1a;color:${color};padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700">${label} · ${pct}%</span>
+          <div style="margin-top:7px;font-size:16px;font-weight:700;color:${coms[i]===maxCom?color:'var(--text1)'}">${fmt(com)}</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:1px">${fmt(parseFloat(r.ingresos||0))} ventas</div>
+        </div>`;
+      }).join('');
+
+      const lbl = document.getElementById('dash-com-total-lbl');
+      if(lbl) lbl.textContent = `Total comisión: ${fmt(rep.totalComision||0)}`;
+
+      // Gráfica tipo "Ventas por hora"
+      const canvas = document.getElementById('chart-com-negocios');
+      if(canvas){
+        if(window._comNegChart){ window._comNegChart.destroy(); window._comNegChart=null; }
+        const gc='rgba(0,0,0,0.06)', tf={family:"'Segoe UI',sans-serif",size:11};
+        const tc = getComputedStyle(document.documentElement).getPropertyValue('--text2').trim()||'#666';
+        window._comNegChart = new Chart(canvas.getContext('2d'),{
+          type:'bar',
+          data:{
+            labels: rows.map(r=>r.nombre.length>14?r.nombre.slice(0,13)+'…':r.nombre),
+            datasets:[{
+              data: coms,
+              backgroundColor: coms.map((v,i)=> v===maxCom ? (_C[rows[i].plan]||'#e65c00') : (_C[rows[i].plan]||'#9e9e9e')+'99'),
+              borderRadius:4, borderWidth:0
+            }]
+          },
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{
+              legend:{display:false},
+              tooltip:{callbacks:{label:ctx=>`  Comisión: ${fmt(+ctx.raw)}  (${rows[ctx.dataIndex]?.plan||'—'})`}}
+            },
+            scales:{
+              x:{grid:{color:gc},ticks:{color:tc,font:tf,maxRotation:0}},
+              y:{grid:{color:gc},ticks:{color:tc,font:tf,callback:v=>v===0?'':'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)}}
+            }
+          }
+        });
+      }
     }
   } catch(e){ console.error(e); }
 }
@@ -1021,7 +1083,7 @@ async function saveCrearAdmin(){
 
 // ── Facturación ───────────────────────────────────────────────
 const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n);
-const fmtDate = s => s ? new Date(s).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+const fmtDate = s => s ? new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
 const fmtDT = s => s ? new Date(s).toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
 
 async function loadReportes(){

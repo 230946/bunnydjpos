@@ -560,19 +560,31 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <div id="cobro-err" style="display:none;background:var(--red-l);color:var(--red);border-radius:var(--r);padding:9px 12px;font-size:12px;margin-top:8px"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('cobroModal')">Cancelar</button>
-      <button class="btn btn-green" id="confirmarBtn" onclick="confirmarCobro()">✓ Confirmar</button>
+      <button class="btn btn-green" id="confirmarBtn" onclick="previewCobroPel()">✓ Confirmar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL RECIBO -->
-<div class="modal-bg" id="reciboModal" style="display:none">
+<!-- MODAL VISTA PREVIA -->
+<div class="modal-bg" id="preview-pel-modal" style="display:none">
   <div class="modal">
-    <h3 class="no-print">Recibo</h3>
-    <div class="recibo" id="reciboContent"></div>
+    <h3 class="no-print">📋 Vista previa — ¿Confirmar pago?</h3>
+    <div class="recibo" id="preview-pel-content"></div>
     <div class="modal-actions no-print">
-      <button class="btn btn-outline" onclick="cerrarModal('reciboModal');cargarCitas()">Cerrar</button>
-      <button class="btn btn-acc" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn btn-outline" onclick="corregirFacturaPel()">← Corregir</button>
+      <button class="btn btn-green" id="btn-confirmar-pago-pel" onclick="confirmarPagoPel()">✓ Confirmar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGO REGISTRADO -->
+<div class="modal-bg" id="success-pel-modal" style="display:none">
+  <div class="modal">
+    <h3 class="no-print" style="color:var(--green)">☑ Pago registrado</h3>
+    <div class="recibo" id="success-pel-content"></div>
+    <div class="modal-actions no-print">
+      <button class="btn btn-outline" style="flex:1" onclick="imprimirReciboPel()">🖨️ Imprimir</button>
+      <button class="btn btn-acc" style="flex:2" onclick="cerrarModal('success-pel-modal');cargarCitas()">✓ Aceptar</button>
     </div>
   </div>
 </div>
@@ -704,6 +716,7 @@ if (NEGOCIO_ID) {
     .then(r => r.ok ? r.json() : null)
     .then(info => {
       if (!info || !info.nombre) return;
+      _negInfoPel = info;
       const el = document.getElementById('login-neg-nombre');
       if (el) { el.textContent = info.nombre; el.style.display = 'block'; }
       document.title = `${info.nombre} — POS`;
@@ -715,14 +728,15 @@ let USER_NOMBRE = sessionStorage.getItem('pos_pel_user') || '';
 let USER_ROL = sessionStorage.getItem('pos_pel_rol') || '';
 let _citas = [], _empleados = [], _servicios = [];
 let _filtroEstado = '', _filtroEmp = '';
-let _citaSel = null;         // cita seleccionada
-let _extraItems = [];        // servicios añadidos en cobro
+let _citaSel = null;
+let _extraItems = [];
 let _metodoPago = 'Efectivo';
 let _pagosRows = [];
 let _cajaId = null, _cajaData = null;
 let _tickInterval = null;
-let _pickSvcTarget = null;   // 'cobro' | 'nc'
-let _ncSvcs = [];            // servicios en modal nueva cita
+let _pickSvcTarget = null;
+let _ncSvcs = [];
+let _negInfoPel = null, _pendingVentaPel = null;
 
 /* ──────── HELPERS ──────── */
 const $ = id => document.getElementById(id);
@@ -789,6 +803,7 @@ async function checkContrato(negId){
     const r=await fetch(`/api/negocio-pub/${negId}`);
     if(!r.ok) return;
     const d=await r.json();
+    if(d?.nombre) _negInfoPel=d;
     const blk=msg=>{ $('contrato-block-msg').innerHTML=msg; $('contrato-block').style.display='flex'; };
     if(!d.contrato){ blk('No tienes un contrato activo.<br>Contacta al administrador del sistema.'); return; }
     const {estado,dias_para_vencer}=d.contrato;
@@ -1251,55 +1266,99 @@ function calcVueltas() {
     : `<div style="margin-top:6px;font-size:12px;color:var(--red)">Falta: ${fmtCOP(Math.abs(vuelta))}</div>`;
 }
 
-async function confirmarCobro() {
+function buildReciboHtmlPel(data) {
+  const { items, total, descuento, metodoPago, pagosRows, clienteNombre, empleadoNombre, fecha } = data;
+  const n = _negInfoPel || {};
+  const dt = fecha ? new Date(fecha) : new Date();
+  const fStr = dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const hStr = dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  let h = '';
+  if (n.logo_url) h += `<div class="rc"><img src="${n.logo_url}" style="max-height:50px;max-width:160px;object-fit:contain;margin-bottom:4px"></div>`;
+  h += `<div class="rc rb" style="font-size:13px">${esc(n.nombre||'Peluquería')}</div>`;
+  if (n.nit) h += `<div class="rc" style="font-size:10px">NIT: ${esc(n.nit)}</div>`;
+  if (n.direccion) h += `<div class="rc" style="font-size:10px">${esc(n.direccion)}${n.ciudad?', '+esc(n.ciudad):''}</div>`;
+  if (n.telefono) h += `<div class="rc" style="font-size:10px">Tel: ${esc(n.telefono)}</div>`;
+  h += `<hr class="rhr">`;
+  h += `<div class="rr"><span>${fStr}</span><span>${hStr}</span></div>`;
+  if (clienteNombre) h += `<div class="rr"><span>Cliente</span><span>${esc(clienteNombre)}</span></div>`;
+  if (empleadoNombre) h += `<div class="rr"><span>Atendido por</span><span>${esc(empleadoNombre)}</span></div>`;
+  if (USER_NOMBRE) h += `<div class="rr"><span>Cajero</span><span>${esc(USER_NOMBRE)}</span></div>`;
+  h += `<hr class="rhr"><div class="rb" style="margin-bottom:3px">SERVICIOS</div>`;
+  items.forEach(s => h += `<div class="rr"><span>${esc(s.nombre)}</span><span>${fmtCOP(+s.precio||0)}</span></div>`);
+  h += `<hr class="rhr">`;
+  if (descuento > 0) h += `<div class="rr" style="color:var(--red)"><span>Descuento</span><span>-${fmtCOP(descuento)}</span></div>`;
+  h += `<div class="rr rb"><span>TOTAL</span><span>${fmtCOP(total)}</span></div>`;
+  if (metodoPago === 'mixto' && pagosRows?.length) {
+    pagosRows.forEach(p => h += `<div class="rr" style="font-size:11px;color:var(--text2)"><span>${esc(p.metodo)}</span><span>${fmtCOP(+p.monto)}</span></div>`);
+  } else {
+    h += `<div class="rr" style="margin-top:3px"><span>Pago</span><span>${metodoPago}</span></div>`;
+  }
+  h += `<hr class="rhr"><div class="rc" style="font-size:10px;margin-top:4px">¡Gracias por tu visita!</div>`;
+  return h;
+}
+
+function previewCobroPel() {
   if (!requireCaja()) return;
-  const { descuento, total } = getTotal();
-  const btn = $('confirmarBtn'); btn.disabled = true;
+  const { subtotal, descuento, total } = getTotal();
+  const c = _citaSel || {};
+  const citaItems = (c.servicios||[]).length ? c.servicios : (c.precio?[{nombre:'Servicio',precio:c.precio}]:[]);
+  const items = [...citaItems, ..._extraItems];
+  const clienteNombre = c.clienteNombre || c.cliente_nombre || '';
+  const empleadoNombre = c.empleadoNombre || c.empleado_nombre || '';
+  _pendingVentaPel = {
+    cita: c, extraItems: [..._extraItems], subtotal, descuento, total,
+    metodoPago: _metodoPago, pagosRows: [..._pagosRows],
+    items, clienteNombre, empleadoNombre, fecha: new Date(),
+  };
+  $('preview-pel-content').innerHTML = buildReciboHtmlPel(_pendingVentaPel);
+  cerrarModal('cobroModal');
+  $('preview-pel-modal').style.display = 'flex';
+}
+
+function corregirFacturaPel() {
+  $('preview-pel-modal').style.display = 'none';
+  $('cobroModal').style.display = 'flex';
+}
+
+async function confirmarPagoPel() {
+  const btn = $('btn-confirmar-pago-pel');
+  btn.disabled = true;
   try {
-    // Si hay extras, actualizar la cita primero
-    if (_extraItems.length) {
-      const citaItems = (_citaSel.servicios||[]).length ? _citaSel.servicios : [];
-      const todosItems = [...citaItems, ..._extraItems];
-      await api('PUT', `/citas/${_citaSel.id}`, {
-        clienteNombre: _citaSel.clienteNombre || _citaSel.cliente_nombre,
-        clienteTelefono: _citaSel.clienteTelefono || _citaSel.cliente_tel,
-        empleadoId: _citaSel.empleado_id,
-        fechaHora: _citaSel.fechaHora || _citaSel.fecha_hora,
+    const p = _pendingVentaPel;
+    const c = p.cita;
+    if (p.extraItems.length) {
+      const citaItems = (c.servicios||[]).length ? c.servicios : [];
+      const todosItems = [...citaItems, ...p.extraItems];
+      await api('PUT', `/citas/${c.id}`, {
+        clienteNombre: c.clienteNombre || c.cliente_nombre,
+        clienteTelefono: c.clienteTelefono || c.cliente_tel,
+        empleadoId: c.empleado_id,
+        fechaHora: c.fechaHora || c.fecha_hora,
         servicios: todosItems.map(s => ({ id: s.id||null, nombre: s.nombre, precio: s.precio, duracion_min: s.duracion_min||30 })),
       });
     }
-    const pagos = _metodoPago === 'mixto' ? _pagosRows : [{ metodo: _metodoPago, monto: total }];
-    await api('PATCH', `/citas/${_citaSel.id}/completar`, {
-      metodoPago: _metodoPago, descuento, pagos,
+    const pagos = p.metodoPago === 'mixto' ? p.pagosRows : [{ metodo: p.metodoPago, monto: p.total }];
+    await api('PATCH', `/citas/${c.id}/completar`, {
+      metodoPago: p.metodoPago, descuento: p.descuento, pagos,
     });
-    cerrarModal('cobroModal');
-    mostrarRecibo(total);
-    _citaSel = null; _extraItems = []; _pagosRows = [];
+    $('preview-pel-modal').style.display = 'none';
+    $('success-pel-content').innerHTML = buildReciboHtmlPel(p);
+    $('success-pel-modal').style.display = 'flex';
+    _citaSel = null; _extraItems = []; _pagosRows = []; _pendingVentaPel = null;
     $('cobroEmpty').style.display = 'flex';
     $('cobroContent').style.display = 'none';
   } catch(e) {
+    $('preview-pel-modal').style.display = 'none';
+    $('cobroModal').style.display = 'flex';
     $('cobro-err').textContent = e.message; $('cobro-err').style.display = 'block';
   } finally { btn.disabled = false; }
 }
 
-function mostrarRecibo(total) {
-  const c = _citaSel || {};
-  const hoy = new Date();
-  $('reciboContent').innerHTML = `
-    <div class="rc rb">DJPOS</div>
-    <div class="rc" style="font-size:11px">${hoy.toLocaleDateString('es-CO')} ${hoy.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</div>
-    <hr class="rhr">
-    <div class="rr"><span>Cliente</span><span>${esc(c.clienteNombre||c.cliente_nombre||'—')}</span></div>
-    ${c.empleadoNombre||c.empleado_nombre ? `<div class="rr"><span>Atendido por</span><span>${esc(c.empleadoNombre||c.empleado_nombre)}</span></div>` : ''}
-    <hr class="rhr">
-    <div class="rb" style="margin-bottom:3px">SERVICIOS</div>
-    ${[...(_citaSel?.servicios||[]),..._extraItems].map(s=>`<div class="rr"><span>${esc(s.nombre)}</span><span>${fmtCOP(s.precio)}</span></div>`).join('')}
-    <hr class="rhr">
-    <div class="rr rb"><span>TOTAL</span><span>${fmtCOP(total)}</span></div>
-    <div class="rr" style="margin-top:3px"><span>Pago</span><span>${_metodoPago==='mixto'?'Mixto':_metodoPago}</span></div>
-    <hr class="rhr">
-    <div class="rc" style="font-size:10px;margin-top:4px">¡Gracias por tu visita!</div>`;
-  $('reciboModal').style.display = 'flex';
+function imprimirReciboPel() {
+  const html = $('success-pel-content').innerHTML;
+  const w = window.open('', '_blank', 'width=400,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;font-size:12px;padding:10px;color:#000;background:#fff}.rc{text-align:center;margin-bottom:3px}.rhr{border:none;border-top:1px dashed #000;margin:5px 0}.rr{display:flex;justify-content:space-between;margin:1px 0}.rb{font-weight:700}img{max-height:50px;max-width:160px;object-fit:contain;display:block;margin:0 auto 4px}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
+  w.document.close();
 }
 
 /* ──────── CAJA ──────── */

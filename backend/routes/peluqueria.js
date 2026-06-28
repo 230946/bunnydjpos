@@ -2597,4 +2597,59 @@ async function autoCancelarCitasPasadas() {
 autoCancelarCitasPasadas();
 setInterval(autoCancelarCitasPasadas, 5 * 60 * 1000);
 
+// ── Facturas peluquería ───────────────────────────────────────────
+router.get('/facturas', async (req, res) => {
+  try {
+    const { desde, hasta, q } = req.query;
+    const d = desde || localDate();
+    const h = hasta  || d;
+    const params = [nid(req), d, h];
+    let where = `v.negocio_id=${ph(1)} AND v.estado='completada' AND DATE(v.fecha) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    if (q && q.trim()) {
+      params.push(`%${q.trim()}%`);
+      const n = params.length;
+      where += ` AND c.nombre LIKE ${ph(n)}`;
+    }
+    const { rows } = await pool.query(`
+      SELECT v.id, v.fecha, v.subtotal, v.descuento, v.total, v.notas, v.estado,
+             c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
+             c.documento AS cliente_doc, c.email AS cliente_email,
+             e.nombre AS empleado_nombre,
+             u.nombre AS cajero_nombre,
+             (SELECT GROUP_CONCAT(p.metodo ORDER BY p.metodo SEPARATOR '/') FROM pel_venta_pagos p WHERE p.venta_id=v.id) AS metodo_pago
+      FROM pel_ventas v
+      LEFT JOIN pel_clientes c ON c.id = v.cliente_id
+      LEFT JOIN pel_empleados e ON e.id = v.empleado_id
+      LEFT JOIN usuarios u ON u.id = v.usuario_id
+      WHERE ${where}
+      ORDER BY v.fecha DESC
+      LIMIT 200
+    `, params);
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/facturas/:id', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT v.*, c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
+             c.documento AS cliente_doc, c.email AS cliente_email,
+             e.nombre AS empleado_nombre,
+             u.nombre AS cajero_nombre
+      FROM pel_ventas v
+      LEFT JOIN pel_clientes c ON c.id = v.cliente_id
+      LEFT JOIN pel_empleados e ON e.id = v.empleado_id
+      LEFT JOIN usuarios u ON u.id = v.usuario_id
+      WHERE v.id=${ph(1)} AND v.negocio_id=${ph(2)}
+    `, [req.params.id, nid(req)]);
+    if (!rows.length) return res.status(404).json({ error: 'No encontrada' });
+    const v = { ...rows[0] };
+    const { rows: det } = await pool.query(`SELECT * FROM pel_venta_detalle WHERE venta_id=${ph(1)} ORDER BY id`, [req.params.id]);
+    const { rows: pags } = await pool.query(`SELECT * FROM pel_venta_pagos WHERE venta_id=${ph(1)}`, [req.params.id]);
+    v.detalle = det;
+    v.pagos = pags;
+    res.json(v);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

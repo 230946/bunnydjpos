@@ -425,8 +425,18 @@ router.get('/reportes/resumen', async (req, res) => {
                COALESCE(SUM(CASE WHEN v.monto_tarjeta>0  THEN v.monto_tarjeta  WHEN v.metodo_pago='tarjeta'  THEN v.total ELSE 0 END),0) AS tarjeta,
                COALESCE(SUM(CASE WHEN v.monto_nequi>0    THEN v.monto_nequi    WHEN v.metodo_pago='nequi'    THEN v.total ELSE 0 END),0) AS nequi,
                COALESCE(SUM(vi_s.cant),0) AS total_items
-        FROM ventas v
-        LEFT JOIN (SELECT venta_id, SUM(cantidad) AS cant FROM venta_items GROUP BY venta_id) vi_s ON vi_s.venta_id=v.id
+        FROM (
+          SELECT id, negocio_id, total, creado, tipo,
+                 monto_efectivo, monto_tarjeta, monto_nequi, metodo_pago, id AS vid
+          FROM ventas
+          UNION ALL
+          SELECT pv.id, pv.negocio_id, pv.total, pv.fecha AS creado, 'servicio' AS tipo,
+                 0, 0, 0,
+                 COALESCE((SELECT pc.metodo_pago FROM pel_citas pc WHERE pc.venta_id=pv.id AND pc.metodo_pago IS NOT NULL LIMIT 1),'efectivo'),
+                 NULL AS vid
+          FROM pel_ventas pv WHERE pv.estado='completada'
+        ) v
+        LEFT JOIN (SELECT venta_id, SUM(cantidad) AS cant FROM venta_items GROUP BY venta_id) vi_s ON vi_s.venta_id=v.vid
         WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
     const vParams = [nid(req), d, h];
     if (tipo) { vParams.push(tipo); vSql += ` AND v.tipo=${ph(vParams.length)}`; }
@@ -458,11 +468,16 @@ router.get('/reportes/ventas-por-hora', async (req, res) => {
     const { desde, hasta, metodo_pago, tipo } = req.query;
     const d = desde || localDate();
     const h = hasta || d;
-    let sql = `SELECT HOUR(creado) AS hora, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
-               FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    let sql = `SELECT HOUR(v.creado) AS hora, COUNT(*) AS pedidos, COALESCE(SUM(v.total),0) AS total
+               FROM (
+                 SELECT negocio_id, total, creado, tipo, metodo_pago FROM ventas
+                 UNION ALL
+                 SELECT negocio_id, total, fecha AS creado, 'servicio', 'efectivo' FROM pel_ventas WHERE estado='completada'
+               ) v
+               WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
     const params = [nid(req), d, h];
-    if (tipo)        { params.push(tipo);        sql += ` AND tipo=${ph(params.length)}`; }
-    if (metodo_pago) { params.push(metodo_pago); sql += ` AND metodo_pago=${ph(params.length)}`; }
+    if (tipo)        { params.push(tipo);        sql += ` AND v.tipo=${ph(params.length)}`; }
+    if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
     sql += ' GROUP BY hora ORDER BY hora';
     const { rows } = await pool.query(sql, params);
     res.json(rows);
@@ -480,20 +495,26 @@ router.get('/reportes/ventas-por-dia', async (req, res) => {
       return `${dd.getUTCFullYear()}-${String(dd.getUTCMonth()+1).padStart(2,'0')}-${String(dd.getUTCDate()).padStart(2,'0')}`;
     })();
     const { rows } = await pool.query(
-      `SELECT DATE_FORMAT(DATE(creado),'%Y-%m-%d') AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
-       FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}
-       GROUP BY DATE_FORMAT(DATE(creado),'%Y-%m-%d') ORDER BY 1`,
+      `SELECT DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(v.total),0) AS total
+       FROM (
+         SELECT negocio_id, total, creado FROM ventas
+         UNION ALL
+         SELECT negocio_id, total, fecha AS creado FROM pel_ventas WHERE estado='completada'
+       ) v
+       WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}
+       GROUP BY DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') ORDER BY 1`,
       [nid(req), d, h]
     );
     res.json(rows);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// Ventas recientes del día (últimas 30)
+// Ventas recientes del período (últimas 30)
 router.get('/ventas/recientes', async (req, res) => {
   try {
-    const { tipo, desde } = req.query;
-    const fechaFiltro = desde || 'CURRENT_DATE';
+    const { tipo, desde, hasta } = req.query;
+    const d = desde || localDate();
+    const h = hasta  || d;
     let sql = `
       SELECT v.id, v.tipo, v.mesa_id, v.mesa_num,
              COALESCE(m.nombre, CONCAT('Mesa ', v.mesa_num)) AS lugar,
@@ -502,9 +523,9 @@ router.get('/ventas/recientes', async (req, res) => {
       FROM ventas v
       LEFT JOIN usuarios u ON u.id = v.cajero_id
       LEFT JOIN mesas m ON m.id = v.mesa_id
-      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado)=${desde ? ph(2) : 'CURRENT_DATE'}
+      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}
     `;
-    const params = desde ? [nid(req), desde] : [nid(req)];
+    const params = [nid(req), d, h];
     if (tipo) { params.push(tipo); sql += ` AND v.tipo=${ph(params.length)}`; }
     sql += ' ORDER BY v.creado DESC LIMIT 30';
     const { rows } = await pool.query(sql, params);
