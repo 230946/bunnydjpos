@@ -305,7 +305,16 @@ tr:hover td{background:var(--bg2)}
           <button class="btn btn-primary btn-sm" onclick="loadReportes()">Consultar</button>
         </div>
         <div class="stats-row" style="margin-bottom:16px">
-          <div class="stat-card"><div class="stat-label">Ingresos plataforma</div><div class="stat-val" id="rep-total-ing">—</div></div>
+          <div class="stat-card">
+            <div class="stat-label">Ingresos plataforma</div>
+            <div class="stat-val" id="rep-total-ing">—</div>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap" id="rep-comisiones" style="display:none">
+              <span style="font-size:11px;color:var(--text2)">Comisión:</span>
+              <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px"><b id="rep-com5">—</b> <span style="color:var(--text3)">5%</span></span>
+              <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px"><b id="rep-com7">—</b> <span style="color:var(--text3)">7%</span></span>
+              <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px"><b id="rep-com9">—</b> <span style="color:var(--text3)">9%</span></span>
+            </div>
+          </div>
           <div class="stat-card"><div class="stat-label">Ventas totales</div><div class="stat-val" id="rep-total-ven">—</div></div>
           <div class="stat-card"><div class="stat-label">Negocios con ventas</div><div class="stat-val" id="rep-con-ven">—</div></div>
         </div>
@@ -1007,6 +1016,11 @@ async function loadReportes(){
   try {
     const d = await api(`/superadmin/reportes?desde=${desdeEl.value}&hasta=${hastaEl.value}`);
     document.getElementById('rep-total-ing').textContent = fmt(d.totalIngresos);
+    const ti = d.totalIngresos || 0;
+    document.getElementById('rep-com5').textContent = fmt(ti * 0.05);
+    document.getElementById('rep-com7').textContent = fmt(ti * 0.07);
+    document.getElementById('rep-com9').textContent = fmt(ti * 0.09);
+    document.getElementById('rep-comisiones').style.display = ti > 0 ? 'flex' : 'none';
     document.getElementById('rep-total-ven').textContent = d.totalVentas;
     document.getElementById('rep-con-ven').textContent   = d.conVentas;
     document.getElementById('rep-tbody').innerHTML = d.rows.map(r=>`
