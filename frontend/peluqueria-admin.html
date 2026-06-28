@@ -267,6 +267,7 @@
       <div class="nav-item" data-nav="clientes" onclick="nav('clientes')">👤 Clientes</div>
       <div class="nav-item" data-nav="proveedores" onclick="nav('proveedores')">🚚 Proveedores</div>
       <div class="nav-item" data-nav="pedidos-prov" onclick="nav('pedidos-prov')">🛒 Pedidos prov.</div>
+      <div class="nav-item" id="nav-facturas-fixed" data-nav="facturas" onclick="nav('facturas')">🖨️ Reimprimir</div>
     </div>
     <div class="nav-sep" onclick="toggleGrupo('grp-personal')">Personal <span class="sep-arrow" id="arr-personal">▼</span></div>
     <div class="nav-group" id="grp-personal">
@@ -285,9 +286,6 @@
       <a class="nav-item nav-portal-link" id="link-reservas" href="#" target="_blank" onclick="return _abrirPortal('reservar')">🌐 Portal reservas</a>
       <a class="nav-item nav-portal-link" id="link-empleado" href="#" target="_blank" onclick="return _abrirPortal('empleado')">👤 Portal empleado</a>
       <a class="nav-item nav-portal-link" id="link-pos"      href="#" target="_blank" onclick="return _abrirPortal('pos')">💻 POS peluquería</a>
-    </div>
-    <div style="padding:4px 6px;border-top:0.5px solid var(--border);margin:4px 0">
-      <div class="nav-item" id="nav-facturas-fixed" data-nav="facturas" onclick="nav('facturas')" style="border-radius:6px">🖨️ Reimprimir</div>
     </div>
     <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
   </nav>
