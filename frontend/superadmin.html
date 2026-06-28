@@ -260,10 +260,42 @@ tr:hover td{background:var(--bg2)}
 
       <!-- DASHBOARD -->
       <div class="panel active" id="panel-dashboard">
-        <div class="stats-row" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
-          <div class="stat-card"><div class="stat-label">Negocios activos</div><div class="stat-val" id="s-negocios">—</div></div>
-          <div class="stat-card"><div class="stat-label">Usuarios totales</div><div class="stat-val" id="s-usuarios">—</div></div>
-          <div class="stat-card"><div class="stat-label">Ingresos plataforma</div><div class="stat-val" id="s-ingresos">—</div></div>
+        <div class="stats-row" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));align-items:stretch">
+
+          <!-- Negocios activos -->
+          <div class="stat-card" style="border-left:3px solid var(--green,#22c55e);padding:18px 20px;display:flex;flex-direction:column;gap:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Negocios activos</span>
+              <span style="font-size:20px;opacity:.7">🏪</span>
+            </div>
+            <div style="font-size:34px;font-weight:700;line-height:1;color:var(--text)" id="s-negocios">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:8px" id="s-negocios-sub">de — registrados</div>
+          </div>
+
+          <!-- Usuarios totales -->
+          <div class="stat-card" style="border-left:3px solid #6366f1;padding:18px 20px;display:flex;flex-direction:column;gap:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Usuarios totales</span>
+              <span style="font-size:20px;opacity:.7">👤</span>
+            </div>
+            <div style="font-size:34px;font-weight:700;line-height:1;color:var(--text)" id="s-usuarios">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:8px">Admins y cajeros registrados</div>
+          </div>
+
+          <!-- Ingresos plataforma -->
+          <div class="stat-card" style="border-left:3px solid #f59e0b;padding:18px 20px;display:flex;flex-direction:column;gap:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Ingresos plataforma</span>
+              <span style="font-size:20px;opacity:.7">💰</span>
+            </div>
+            <div style="font-size:28px;font-weight:700;line-height:1;color:var(--text)" id="s-ingresos">—</div>
+            <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:3px">Comisión BunnyDJ</div>
+              <div style="font-size:18px;font-weight:700;color:#f59e0b" id="s-comision">—</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:7px" id="s-com-pills"></div>
+            </div>
+          </div>
+
         </div>
         <!-- Comisión por negocio -->
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px">
@@ -737,11 +769,21 @@ async function loadDashboard(){
       api('/superadmin/contratos').catch(()=>[]),
       api('/superadmin/reportes').catch(()=>null),
     ]);
-    document.getElementById('s-negocios').textContent = negocios.filter(n=>n.activo).length;
+    const activos = negocios.filter(n=>n.activo).length;
+    document.getElementById('s-negocios').textContent = activos;
+    document.getElementById('s-negocios-sub').textContent = `de ${negocios.length} registrado${negocios.length!==1?'s':''}`;
     document.getElementById('s-usuarios').textContent  = usuarios.length;
     if(rep){
       const ti = rep.totalIngresos || 0;
+      const tc = rep.totalComision || 0;
       document.getElementById('s-ingresos').textContent = fmt(ti);
+      document.getElementById('s-comision').textContent = fmt(tc);
+      const pills = [
+        rep.comBasic   > 0 ? `<span style="font-size:10px;background:#1976d21a;color:#1976d2;border-radius:10px;padding:2px 8px;white-space:nowrap">5% Basic: ${fmt(rep.comBasic)}</span>` : '',
+        rep.comPlus    > 0 ? `<span style="font-size:10px;background:#e65c001a;color:#e65c00;border-radius:10px;padding:2px 8px;white-space:nowrap">7% Plus: ${fmt(rep.comPlus)}</span>` : '',
+        rep.comPremium > 0 ? `<span style="font-size:10px;background:#7b1fa21a;color:#7b1fa2;border-radius:10px;padding:2px 8px;white-space:nowrap">9% Premium: ${fmt(rep.comPremium)}</span>` : '',
+      ].filter(Boolean).join('');
+      document.getElementById('s-com-pills').innerHTML = pills || `<span style="font-size:10px;color:var(--text3)">Sin comisiones este período</span>`;
     }
 
     const tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
