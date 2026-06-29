@@ -179,7 +179,10 @@ body{display:flex;flex-direction:column;min-height:100vh}
       <div id="header-neg">Cargando…</div>
       <div id="header-emp">—</div>
     </div>
-    <span id="gps-badge" title="GPS" style="font-size:18px;flex-shrink:0;opacity:.5">📍</span>
+    <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:2px">
+      <span id="gps-badge" title="GPS" style="font-size:18px;opacity:.5">📍</span>
+      <span id="gps-txt" style="font-size:9px;font-weight:700;color:#94a3b8;letter-spacing:.5px">SIN GPS</span>
+    </div>
     <button id="btn-logout" onclick="logout()">🚪 Salir</button>
   </div>
 
@@ -502,10 +505,16 @@ async function actualizarEstado(id, estado, btn){
 // ── GPS ───────────────────────────────────────────────────────────
 function startGPS(){
   const badge = document.getElementById('gps-badge');
-  if(!navigator.geolocation){ if(badge) badge.style.display='none'; return; }
+  const txt   = document.getElementById('gps-txt');
+  if(!navigator.geolocation){
+    if(badge) badge.style.display='none';
+    if(txt)   txt.textContent='NO DISP';
+    return;
+  }
   gpsWatcher = navigator.geolocation.watchPosition(
     pos => {
       if(badge){ badge.style.opacity='1'; badge.title='GPS activo ✅'; }
+      if(txt){  txt.textContent='GPS OK'; txt.style.color='#22c55e'; }
       const now = Date.now();
       if(now - lastGpsPost < GPS_INTERVAL) return;
       lastGpsPost = now;
@@ -516,6 +525,8 @@ function startGPS(){
     },
     _err => {
       if(badge){ badge.style.opacity='.3'; badge.title='GPS no disponible'; }
+      if(txt){  txt.textContent='SIN GPS'; txt.style.color='#ef4444'; }
+      showToast('⚠️ GPS no disponible. Verifica los permisos de ubicación.');
     },
     { enableHighAccuracy:true, maximumAge:10000, timeout:15000 }
   );

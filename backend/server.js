@@ -244,6 +244,9 @@ async function runMigrations() {
     { table: 'empleados', column: 'lat',    sql: `ALTER TABLE empleados ADD COLUMN lat DECIMAL(10,7) NULL` },
     { table: 'empleados', column: 'lng',    sql: `ALTER TABLE empleados ADD COLUMN lng DECIMAL(10,7) NULL` },
     { table: 'empleados', column: 'gps_at', sql: `ALTER TABLE empleados ADD COLUMN gps_at TIMESTAMP NULL` },
+    { table: 'ventas', column: 'monto_efectivo', sql: `ALTER TABLE ventas ADD COLUMN monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'ventas', column: 'monto_tarjeta',  sql: `ALTER TABLE ventas ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'ventas', column: 'monto_nequi',    sql: `ALTER TABLE ventas ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
     {
       table: 'domicilios_pedidos', column: '__create__',
       createSql: `CREATE TABLE IF NOT EXISTS domicilios_pedidos (
@@ -278,6 +281,9 @@ async function runMigrations() {
         rol VARCHAR(30) NOT NULL DEFAULT 'domiciliario',
         activo TINYINT(1) DEFAULT 1,
         token VARCHAR(80) UNIQUE NOT NULL,
+        lat DECIMAL(10,7) NULL,
+        lng DECIMAL(10,7) NULL,
+        gps_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_negocio (negocio_id),
         UNIQUE KEY uk_neg_doc (negocio_id, documento)

@@ -729,7 +729,8 @@ async function refreshTracking(idOverride) {
     const mapWrap = document.getElementById('rider-map-wrap');
     if (p.estado === 'en_camino' && p.rider_lat && p.rider_lng) {
       mapWrap.style.display = 'block';
-      _updateClientMap(parseFloat(p.rider_lat), parseFloat(p.rider_lng), p.rider_nombre);
+      // setTimeout garantiza que el DOM ya procesó display:block antes de que Leaflet mida el contenedor
+      setTimeout(() => _updateClientMap(parseFloat(p.rider_lat), parseFloat(p.rider_lng), p.rider_nombre), 50);
     } else {
       mapWrap.style.display = 'none';
     }
@@ -748,7 +749,7 @@ function _updateClientMap(lat, lng, riderNombre) {
   const el = document.getElementById('rider-map');
   if (!el || !window.L) return;
   if (!_clientMap) {
-    _clientMap = L.map(el).setView([lat, lng], 15);
+    _clientMap = L.map(el, { zoomControl: true }).setView([lat, lng], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:19
     }).addTo(_clientMap);
@@ -759,6 +760,7 @@ function _updateClientMap(lat, lng, riderNombre) {
     _clientMapMarker = L.marker([lat, lng], { icon })
       .addTo(_clientMap)
       .bindPopup(`🛵 ${riderNombre || 'Tu repartidor'}`).openPopup();
+    setTimeout(()=>_clientMap.invalidateSize(), 200);
   } else {
     _clientMapMarker.setLatLng([lat, lng]);
     _clientMap.setView([lat, lng], _clientMap.getZoom());
