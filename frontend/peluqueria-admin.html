@@ -229,6 +229,7 @@
   .content{padding:12px}
 }</style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="/js/i18n.js"></script>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">Tu contrato ha vencido o fue cancelado.<br>Contacta al administrador del sistema.</p></div>
@@ -286,6 +287,10 @@
       <a class="nav-item nav-portal-link" id="link-reservas" href="#" target="_blank" onclick="return _abrirPortal('reservar')">🌐 Portal reservas</a>
       <a class="nav-item nav-portal-link" id="link-empleado" href="#" target="_blank" onclick="return _abrirPortal('empleado')">👤 Portal empleado</a>
       <a class="nav-item nav-portal-link" id="link-pos"      href="#" target="_blank" onclick="return _abrirPortal('pos')">💻 POS peluquería</a>
+    </div>
+    <div id="lang-switcher" style="display:none;padding:6px 12px;border-top:1px solid var(--border,rgba(0,0,0,.1));margin-top:6px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;padding-bottom:5px">Idioma</div>
+      <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
     </div>
     <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
   </nav>
@@ -853,6 +858,10 @@ async function checkContrato(negocioId){
     if(!r.ok) return;
     const d=await r.json();
     window._negPlan = d.plan || 'free';
+    try{
+      const idiomas=d.idiomas?(typeof d.idiomas==='string'?JSON.parse(d.idiomas):d.idiomas):['es'];
+      if(window.initLangSwitcher) window.initLangSwitcher(idiomas);
+    }catch(_){}
     if(!d.contrato){
       document.getElementById('contrato-block-msg').innerHTML='No tienes un contrato activo.<br>Contacta al administrador del sistema.';
       document.getElementById('contrato-block').style.display='flex';

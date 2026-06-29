@@ -440,7 +440,7 @@ router.get('/reportes/resumen', async (req, res) => {
         WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
     const vParams = [nid(req), d, h];
     if (tipo) { vParams.push(tipo); vSql += ` AND v.tipo=${ph(vParams.length)}`; }
-    const [ventas, gastos, cajas] = await Promise.all([
+    const [ventas, gastos, cajas, breakdown] = await Promise.all([
       pool.query(vSql, vParams),
       pool.query(`
         SELECT COALESCE(SUM(monto),0) AS total_gastos FROM gastos
@@ -452,12 +452,19 @@ router.get('/reportes/resumen', async (req, res) => {
         WHERE c.negocio_id=${ph(1)} AND c.fecha BETWEEN ${ph(2)} AND ${ph(3)}
         ORDER BY c.fecha DESC, c.apertura_en DESC
       `, [nid(req), d, h]),
+      pool.query(`
+        SELECT tipo, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
+        FROM ventas
+        WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}
+        GROUP BY tipo
+      `, [nid(req), d, h]),
     ]);
     res.json({
-      ventas: ventas.rows[0],
-      gastos: gastos.rows[0],
-      cajas:  cajas.rows,
-      utilidad: (ventas.rows[0].total_ventas || 0) - (gastos.rows[0].total_gastos || 0),
+      ventas:    ventas.rows[0],
+      gastos:    gastos.rows[0],
+      cajas:     cajas.rows,
+      utilidad:  (ventas.rows[0].total_ventas || 0) - (gastos.rows[0].total_gastos || 0),
+      breakdown: breakdown.rows,
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -517,7 +524,9 @@ router.get('/ventas/recientes', async (req, res) => {
     const h = hasta  || d;
     let sql = `
       SELECT v.id, v.tipo, v.mesa_id, v.mesa_num,
-             COALESCE(m.nombre, CONCAT('Mesa ', v.mesa_num)) AS lugar,
+             COALESCE(m.nombre, CASE WHEN v.tipo='domicilio' THEN '🛵 Domicilio'
+               WHEN v.mesa_num IS NOT NULL THEN CONCAT('Mesa ',v.mesa_num)
+               ELSE 'Mostrador' END) AS lugar,
              v.total, v.metodo_pago, v.numero_factura, v.items, v.creado,
              u.nombre AS usuario_nombre
       FROM ventas v
@@ -536,14 +545,16 @@ router.get('/ventas/recientes', async (req, res) => {
 // Lista completa de ventas por período (para exportar)
 router.get('/ventas', async (req, res) => {
   try {
-    const { desde, hasta, metodo_pago } = req.query;
+    const { desde, hasta, metodo_pago, tipo } = req.query;
     const d = desde || localDate();
     const h = hasta  || d;
     let sql = `
       SELECT v.id, DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') AS fecha,
              TIME_FORMAT(v.creado,'%H:%i') AS hora,
-             COALESCE(m.nombre, CASE WHEN v.mesa_num IS NOT NULL THEN CONCAT('Mesa ',v.mesa_num) ELSE 'Mostrador' END) AS lugar,
-             v.metodo_pago, v.total,
+             COALESCE(m.nombre, CASE WHEN v.tipo='domicilio' THEN '🛵 Domicilio'
+               WHEN v.mesa_num IS NOT NULL THEN CONCAT('Mesa ',v.mesa_num)
+               ELSE 'Mostrador' END) AS lugar,
+             v.tipo, v.metodo_pago, v.total,
              v.monto_efectivo, v.monto_tarjeta, v.monto_nequi,
              COALESCE(v.cliente_nombre,'') AS cliente,
              u.nombre AS cajero,
@@ -553,11 +564,67 @@ router.get('/ventas', async (req, res) => {
       LEFT JOIN mesas m ON m.id = v.mesa_id
       WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
     const params = [nid(req), d, h];
-    if(metodo_pago){ params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
+    if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
+    if (tipo)        { params.push(tipo);         sql += ` AND v.tipo=${ph(params.length)}`; }
     sql += ' ORDER BY v.creado DESC';
     const { rows } = await pool.query(sql, params);
     res.json(rows);
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════
+// EMPLEADOS (domiciliarios y otros roles operativos)
+// ════════════════════════════════════════════════════════════════
+
+router.get('/empleados', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, nombre, documento, celular, rol, activo, created_at FROM empleados
+       WHERE negocio_id=? ORDER BY nombre`,
+      [nid(req)]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/empleados', async (req, res) => {
+  try {
+    const { nombre, documento, celular, rol = 'domiciliario' } = req.body;
+    if (!nombre || !documento || !celular) return res.status(400).json({ error: 'Nombre, documento y celular son requeridos' });
+    const id    = uuid();
+    const token = uuid().replace(/-/g,'') + uuid().replace(/-/g,'').slice(0,8);
+    const cel   = String(celular).replace(/[\s\-()]/g, '');
+    await pool.query(
+      `INSERT INTO empleados (id, negocio_id, nombre, documento, celular, rol, token)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)})`,
+      [id, nid(req), nombre.trim(), documento.trim(), cel, rol, token]
+    );
+    res.status(201).json({ ok: true, id });
+  } catch (e) {
+    if (e.message?.includes('Duplicate')) return res.status(409).json({ error: 'Ya existe un empleado con ese documento' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.put('/empleados/:id', async (req, res) => {
+  try {
+    const { nombre, documento, celular, rol, activo } = req.body;
+    const cel = celular ? String(celular).replace(/[\s\-()]/g, '') : null;
+    await pool.query(
+      `UPDATE empleados SET nombre=COALESCE(?,nombre), documento=COALESCE(?,documento),
+       celular=COALESCE(?,celular), rol=COALESCE(?,rol), activo=COALESCE(?,activo)
+       WHERE id=? AND negocio_id=?`,
+      [nombre||null, documento||null, cel||null, rol||null, activo!=null?activo:null, req.params.id, nid(req)]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/empleados/:id', async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM empleados WHERE id=? AND negocio_id=?`, [req.params.id, nid(req)]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ════════════════════════════════════════════════════════════════

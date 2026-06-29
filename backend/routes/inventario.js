@@ -31,13 +31,14 @@ const uploadFoto = multer({ storage: diskStorage, limits: { fileSize: 5*1024*102
 
 router.get('/', async (req, res) => {
   try {
-    const { categoria, bajo_stock, es_producto, modulo, q } = req.query;
+    const { categoria, bajo_stock, es_producto, modulo, q, proveedor_id } = req.query;
     let sql = `SELECT i.*, p.nombre AS proveedor_nombre
                FROM inventario i LEFT JOIN proveedores p ON p.id = i.proveedor_id
                WHERE i.negocio_id=${ph(1)} AND i.activo=1`;
     const params = [nid(req)];
-    if (categoria)   { params.push(categoria);          sql += ` AND i.categoria=${ph(params.length)}`; }
-    if (modulo)      { params.push(modulo);             sql += ` AND i.modulo=${ph(params.length)}`; }
+    if (categoria)    { params.push(categoria);          sql += ` AND i.categoria=${ph(params.length)}`; }
+    if (modulo)       { params.push(modulo);             sql += ` AND i.modulo=${ph(params.length)}`; }
+    if (proveedor_id) { params.push(proveedor_id);       sql += ` AND i.proveedor_id=${ph(params.length)}`; }
     if (es_producto !== undefined) { params.push(es_producto==='true'); sql += ` AND i.es_producto=${ph(params.length)}`; }
     if (bajo_stock === 'true') sql += ' AND i.stock > 0 AND i.stock < i.stock_min';
     if (q) { params.push(`%${q}%`, `%${q}%`); sql += ` AND (i.nombre LIKE ${ph(params.length-1)} OR i.codigo LIKE ${ph(params.length)})`; }
@@ -88,19 +89,19 @@ router.post('/', requirePermiso('inventario'), async (req, res) => {
   try {
     const { codigo, nombre, categoria, stock, stock_min, stock_max,
             unidad, unidad_compra, costo, precio_venta, proveedor_id, es_producto,
-            descripcion, margen, es_paquete, cantidad_paquete, modulo } = req.body;
+            descripcion, margen, es_paquete, cantidad_paquete, modulo, iva_pct } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
     const id = uuid();
     await pool.query(
       `INSERT INTO inventario (id,negocio_id,codigo,nombre,categoria,stock,stock_min,stock_max,
-       unidad,unidad_compra,costo,precio_venta,proveedor_id,es_producto,descripcion,margen,es_paquete,cantidad_paquete,modulo)
+       unidad,unidad_compra,costo,precio_venta,proveedor_id,es_producto,descripcion,margen,es_paquete,cantidad_paquete,modulo,iva_pct)
        VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},
-       ${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)},${ph(14)},${ph(15)},${ph(16)},${ph(17)},${ph(18)},${ph(19)})`,
+       ${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)},${ph(14)},${ph(15)},${ph(16)},${ph(17)},${ph(18)},${ph(19)},${ph(20)})`,
       [id, nid(req), codigo||null, nombre, categoria||'General',
        stock||0, stock_min||0, stock_max||null, unidad||'unidades', unidad_compra||null,
        costo||0, precio_venta||0, proveedor_id||null, es_producto||false,
        descripcion||null, margen||null, es_paquete||false, cantidad_paquete||null,
-       modulo||'restaurante']
+       modulo||'restaurante', parseFloat(iva_pct)||0]
     );
     // Registrar movimiento inicial
     if (stock > 0) {

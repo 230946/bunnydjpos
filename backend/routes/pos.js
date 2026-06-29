@@ -219,13 +219,14 @@ router.get('/menu/items/:id', requirePermiso(['pos_menu','personal']), async (re
 
 router.post('/menu/items', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
-    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, inventario_id } = req.body;
+    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, inventario_id, nombre_zh, descripcion_zh } = req.body;
     const id = uuid();
     await pool.query(
-      `INSERT INTO menu_items (id,negocio_id,categoria_id,nombre,descripcion,precio,emoji,disponible,tiempo_prep,orden,inventario_id)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)},${ph(11)})`,
+      `INSERT INTO menu_items (id,negocio_id,categoria_id,nombre,descripcion,precio,emoji,disponible,tiempo_prep,orden,inventario_id,nombre_zh,descripcion_zh)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)})`,
       [id, nid(req), categoria_id||null, nombre, descripcion||null, precio, emoji||'🍽️',
-       disponible!==false, tiempo_prep||15, orden||0, inventario_id||null]
+       disponible!==false, tiempo_prep||15, orden||0, inventario_id||null,
+       nombre_zh||null, descripcion_zh||null]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -233,15 +234,16 @@ router.post('/menu/items', requirePermiso(['pos_menu','personal']), async (req, 
 
 router.put('/menu/items/:id', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
-    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, stock_min, inventario_id } = req.body;
+    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, stock_min, inventario_id, nombre_zh, descripcion_zh } = req.body;
     await pool.query(
       `UPDATE menu_items SET nombre=${ph(1)},descripcion=${ph(2)},precio=${ph(3)},
        categoria_id=${ph(4)},emoji=${ph(5)},disponible=${ph(6)},tiempo_prep=${ph(7)},orden=${ph(8)},stock_min=${ph(9)},
-       inventario_id=${ph(10)}
-       WHERE id=${ph(11)} AND negocio_id=${ph(12)}`,
+       inventario_id=${ph(10)},nombre_zh=${ph(11)},descripcion_zh=${ph(12)}
+       WHERE id=${ph(13)} AND negocio_id=${ph(14)}`,
       [nombre, descripcion, precio, categoria_id||null, emoji||'🍽️',
        disponible!==false, tiempo_prep||15, orden||0, stock_min||0,
-       inventario_id||null, req.params.id, nid(req)]
+       inventario_id||null, nombre_zh||null, descripcion_zh||null,
+       req.params.id, nid(req)]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

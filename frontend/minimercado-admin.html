@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/responsive.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="/js/i18n.js"></script>
 <title>Minimercado — Admin | DJPOS</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
 <style>
@@ -318,6 +319,7 @@ tr:hover td{background:var(--bg2)}
       <button class="nav-btn" data-permiso="personal" onclick="nav('editar-menu',this)" title="Productos"><span class="nav-icon">📦</span><span class="nav-label"> Productos</span></button>
       <button class="nav-btn" data-permiso="proveedores" onclick="nav('proveedores',this)" title="Proveedores"><span class="nav-icon">🚚</span><span class="nav-label"> Proveedores</span></button>
       <button class="nav-btn" data-permiso="proveedores" onclick="nav('pedidos-prov',this)" title="Pedidos prov."><span class="nav-icon">🛒</span><span class="nav-label"> Pedidos prov.</span></button>
+      <button class="nav-btn" data-permiso="caja" onclick="nav('domicilios',this)" title="Domicilios"><span class="nav-icon">🛵</span><span id="dom-nav-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;flex-shrink:0;min-width:18px;text-align:center"></span><span class="nav-label"> Domicilios</span></button>
     </div>
 
     <div class="nav-section" data-seccion="rrhh" onclick="toggleNavGroup('rrhh')"><span class="nav-label">Personal</span><span class="nav-group-arrow">›</span></div>
@@ -337,6 +339,7 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-section" data-seccion="portales" onclick="toggleNavGroup('portales')"><span class="nav-label">Accesos directos</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-portales">
       <button class="nav-btn" onclick="_abrirPortal('pos')" title="POS Minimercado"><span class="nav-icon">🛒</span><span class="nav-label"> POS Minimercado ↗</span></button>
+      <button class="nav-btn" onclick="_abrirPortal('domicilios')" title="App Domicilios"><span class="nav-icon">🛵</span><span class="nav-label"> App Domicilios ↗</span></button>
     </div>
 
 
@@ -346,6 +349,10 @@ tr:hover td{background:var(--bg2)}
         <div style="font-size:10px;color:var(--accent);margin-top:2px" id="sb-user-rol"></div>
       </div>
       <button class="nav-btn" onclick="window.open('/manual-admin-minimercado.html','_blank')" title="Ayuda"><span class="nav-icon">❓</span><span class="nav-label"> Ayuda</span></button>
+      <div id="lang-switcher" style="display:none;padding:6px 10px;border-top:0.5px solid var(--border);margin:4px 0">
+        <div class="nav-label" style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;padding-bottom:5px">Idioma</div>
+        <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
       <button class="nav-btn" onclick="doLogout()" title="Salir"><span class="nav-icon">🚪</span><span class="nav-label"> Salir</span></button>
     </div>
   </div>
@@ -888,6 +895,67 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
 
+      <!-- DOMICILIOS -->
+      <div class="panel" id="panel-domicilios">
+        <div style="display:flex;flex-direction:column;gap:16px">
+
+          <!-- Cabecera con link y acciones -->
+          <div class="card">
+            <div class="card-header">
+              <h3>🛵 Domicilios</h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-sm btn-outline" onclick="domCopyLink()" title="Copiar link de la tienda">🔗 Link tienda</button>
+                <button class="btn btn-sm btn-outline" onclick="domShowRiders()">👤 Domiciliarios</button>
+                <button class="btn btn-sm btn-primary" onclick="loadDomPedidos()">↺ Actualizar</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding-bottom:8px">
+              <div id="dom-link-box" style="display:none;background:var(--bg2);border-radius:var(--r);padding:10px 14px;font-size:13px;word-break:break-all;margin-bottom:8px">
+                <strong>Link para clientes:</strong><br>
+                <span id="dom-link-url" style="color:var(--blue)"></span>
+                <button class="btn btn-sm btn-outline" style="margin-top:6px;width:100%" onclick="navigator.clipboard.writeText(document.getElementById('dom-link-url').textContent).then(()=>toast('Link copiado ✓'))">Copiar</button>
+              </div>
+              <!-- Filtros -->
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <select id="dom-fil-estado" onchange="loadDomPedidos()" style="padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+                  <option value="todos">Todos los estados</option>
+                  <option value="pendiente" selected>Pendiente ⏳</option>
+                  <option value="aceptado">Aceptado ✅</option>
+                  <option value="en_preparacion">En preparación 👨‍🍳</option>
+                  <option value="listo">Listo 📦</option>
+                  <option value="en_camino">En camino 🛵</option>
+                  <option value="entregado">Entregado 🎉</option>
+                  <option value="cancelado">Cancelado ❌</option>
+                </select>
+                <input id="dom-fil-q" placeholder="Buscar cliente…" style="padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px;flex:1;min-width:140px" oninput="loadDomPedidos()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de pedidos -->
+          <div id="dom-pedidos-list" style="display:flex;flex-direction:column;gap:12px">
+            <div style="text-align:center;padding:40px;color:var(--text3)">Cargando pedidos…</div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Domiciliarios -->
+        <div id="panel-dom-riders" style="display:none">
+          <div class="card" style="margin-top:16px">
+            <div class="card-header">
+              <h3>👤 Domiciliarios</h3>
+              <button class="btn btn-sm btn-primary" onclick="openRiderModal(null)">+ Agregar</button>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap"><table>
+                <thead><tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Link rider</th><th></th></tr></thead>
+                <tbody id="dom-riders-tbody"></tbody>
+              </table></div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="domShowPedidos()">← Volver a pedidos</button>
+        </div>
+      </div>
+
       <!-- MESAS -->
       <div class="panel" id="panel-mesas-admin">
         <div class="card">
@@ -1263,13 +1331,141 @@ tr:hover td{background:var(--bg2)}
 
 <!-- Pedido proveedor -->
 <div class="modal-bg" id="pedido-prov-modal" style="display:none">
-  <div class="modal">
+  <div class="modal" style="max-width:700px;width:100%;max-height:90vh;overflow-y:auto">
     <h3>Nueva solicitud de pedido</h3>
-    <div class="field"><label>Proveedor *</label><select id="pp-prov"></select></div>
-    <div class="field"><label>Fecha de entrega esperada</label><input id="pp-fecha" type="date"></div>
-    <div class="field"><label>Notas / Lista de productos</label><textarea id="pp-notas" placeholder="- 10 kg de pollo&#10;- 5 kg de arroz..."></textarea></div>
-    <div class="field"><label>Total estimado ($)</label><input id="pp-total" type="number" min="0" placeholder="0"></div>
-    <div class="modal-actions">
+
+    <div class="field"><label>Proveedor *</label>
+      <select id="pp-prov" onchange="ppProvChange()"></select>
+    </div>
+
+    <!-- Agregar producto -->
+    <div style="background:var(--bg2);border-radius:var(--r);padding:12px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text)">Agregar producto al pedido</div>
+      <div style="display:grid;grid-template-columns:1fr 72px 100px auto;gap:8px;align-items:end">
+        <div class="field" style="margin:0">
+          <label>Producto</label>
+          <select id="pp-producto" onchange="ppProductoChange()">
+            <option value="">— Selecciona un proveedor primero —</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>Cantidad</label>
+          <input id="pp-qty" type="number" min="0.01" step="0.01" value="1">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Costo unit.</label>
+          <input id="pp-costo" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="ppAddItem()" style="height:36px;align-self:end">+ Añadir</button>
+      </div>
+      <div id="pp-iva-hint" style="font-size:11px;color:var(--text2);margin-top:4px;display:none"></div>
+
+      <!-- Crear nuevo producto -->
+      <div style="margin-top:10px">
+        <button class="btn btn-outline btn-sm" id="pp-new-btn" onclick="ppToggleNewProd()">+ Crear nuevo producto</button>
+        <div id="pp-new-form" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text2)">Nuevo producto para este proveedor</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="field" style="margin:0;grid-column:1/-1">
+              <label>Código de barras</label>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input id="ppn-codigo" placeholder="Escanea o escribe el código..." style="flex:1"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();$('ppn-nombre').focus();}">
+                <span style="font-size:18px;cursor:default;color:var(--text2)" title="Escanea con pistola o escribe manualmente">&#128290;</span>
+              </div>
+            </div>
+            <div class="field" style="margin:0"><label>Nombre *</label><input id="ppn-nombre" placeholder="Nombre del producto"></div>
+            <div class="field" style="margin:0"><label>Categoría</label><input id="ppn-cat" placeholder="General" value="General"></div>
+            <div class="field" style="margin:0"><label>Unidad de Medida</label>
+              <select id="ppn-unidad" onchange="ppnUnidadChange()">
+                <option value="unidades">Unidades</option>
+                <option value="kg">Kilogramos (kg)</option>
+                <option value="g">Gramos (g)</option>
+                <option value="lb">Libras (lb)</option>
+                <option value="L">Litros (L)</option>
+                <option value="ml">Mililitros (ml)</option>
+                <option value="caja">Caja</option>
+                <option value="paquete">Paquete</option>
+                <option value="bolsa">Bolsa</option>
+                <option value="docena">Docena</option>
+                <option value="botella">Botella</option>
+                <option value="lata">Lata</option>
+                <option value="metro">Metro (m)</option>
+                <option value="rollo">Rollo</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0"><label>Costo compra</label><input id="ppn-costo" type="number" min="0" step="0.01" placeholder="0.00"></div>
+            <!-- Cantidad por unidad: solo para Caja, Paquete, Bolsa -->
+            <div class="field" id="ppn-cant-wrap" style="margin:0;grid-column:1/-1;display:none">
+              <label id="ppn-cant-lbl">Cantidad por paquete</label>
+              <input id="ppn-cant" type="number" min="1" step="1" placeholder="Ej: 12 unidades por caja">
+            </div>
+          </div>
+          <!-- Impuesto sobre ventas -->
+          <div style="margin-top:12px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text2)">Impuesto sobre ventas</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg)" id="ppn-tax-lbl-0">
+                <input type="radio" name="ppn-tax" value="0" checked onchange="ppnTaxChange(0)"> Exento
+              </label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg)" id="ppn-tax-lbl-5">
+                <input type="radio" name="ppn-tax" value="5" onchange="ppnTaxChange(5)"> IVA 5%
+              </label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg)" id="ppn-tax-lbl-8">
+                <input type="radio" name="ppn-tax" value="8" onchange="ppnTaxChange(8)"> IVA 8%
+              </label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg)" id="ppn-tax-lbl-19">
+                <input type="radio" name="ppn-tax" value="19" onchange="ppnTaxChange(19)"> IVA 19%
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="ppCrearProducto()">Crear y agregar al pedido</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de items -->
+    <div id="pp-items-wrap" style="display:none;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">Items del pedido</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="color:var(--text2);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">
+            <th style="padding:5px 6px;text-align:left">Producto</th>
+            <th style="padding:5px 6px;text-align:right">Cant.</th>
+            <th style="padding:5px 6px;text-align:right">Costo unit.</th>
+            <th style="padding:5px 6px;text-align:right">IVA</th>
+            <th style="padding:5px 6px;text-align:right">Subtotal</th>
+            <th style="padding:5px 6px;text-align:right">Total c/IVA</th>
+            <th style="padding:5px 6px;width:30px"></th>
+          </tr></thead>
+          <tbody id="pp-items-tbody"></tbody>
+          <tfoot style="border-top:1.5px solid var(--border)">
+            <tr>
+              <td colspan="5" style="padding:5px 6px;text-align:right;color:var(--text2);font-size:12px">Subtotal sin IVA:</td>
+              <td style="padding:5px 6px;text-align:right;font-weight:500" id="pp-subtotal">$0</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="5" style="padding:5px 6px;text-align:right;color:var(--text2);font-size:12px">IVA (19%):</td>
+              <td style="padding:5px 6px;text-align:right;font-weight:500" id="pp-iva-total">$0</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="5" style="padding:5px 6px;text-align:right;font-weight:700">Total general:</td>
+              <td style="padding:5px 6px;text-align:right;font-weight:700;color:var(--green)" id="pp-gran-total">$0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+      <div class="field" style="margin:0"><label>Fecha de entrega esperada</label><input id="pp-fecha" type="date"></div>
+      <div class="field" style="margin:0"><label>Notas</label><input id="pp-notas" placeholder="Observaciones del pedido..."></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
       <button class="btn btn-outline btn-sm" onclick="closeModal('pedido-prov-modal')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="savePedidoProv()">Enviar solicitud</button>
     </div>
@@ -1435,7 +1631,7 @@ async function forgotPassword(){
 function _abrirPortal(tipo) {
   const nid = urlNegocio;
   if (!nid) { alert('No se encontró el ID del negocio'); return; }
-  const urls = { pos: `/pos-minimercado.html?n=${nid}` };
+  const urls = { pos: `/pos-minimercado.html?n=${nid}`, domicilios: `/domicilios?n=${nid}` };
   window.open(urls[tipo] || '/', '_blank');
 }
 function toggleNavGroup(seccion){
@@ -1579,6 +1775,11 @@ async function checkContrato(negocioId){
     const d=await r.json();
     window._negPlan = d.plan || 'free';
     updatePlanComCard(0);
+    // Idiomas del negocio → activar selector
+    try{
+      const idiomas=d.idiomas?(typeof d.idiomas==='string'?JSON.parse(d.idiomas):d.idiomas):['es'];
+      if(window.initLangSwitcher) window.initLangSwitcher(idiomas);
+    }catch(_){}
     if(!d.contrato){
       $('contrato-block-msg').innerHTML='No tienes un contrato activo.<br>Contacta al administrador del sistema.';
       $('contrato-block').style.display='flex';
@@ -1640,6 +1841,7 @@ function showApp(){
   if(me?.negocio_id) checkContrato(me.negocio_id);
   loadDashboard();
   startDashTimer();
+  startDomPolling();
 }
 
 function aplicarPermisosNav(){
@@ -1672,6 +1874,7 @@ const navLoaders = {
   facturas:    loadFacturas,
   proveedores: loadProveedores,
   'pedidos-prov': loadPedidosProv,
+  domicilios:  loadDomPedidos,
   personal:    loadPersonal,
   roles:       loadRoles,
   horarios:    loadHorarios,
@@ -1689,7 +1892,7 @@ function nav(p, btn){
   if(btn) btn.classList.add('active');
   expandNavGroupOf();
   const titles={dashboard:'Dashboard','mesas-admin':'Mesas','editar-menu':'Editar menú',inventario:'Inventario',caja:'Caja diaria',gastos:'Gastos',reportes:'Reportes',clientes:'Clientes',facturas:'Facturas',
-    proveedores:'Proveedores','pedidos-prov':'Solicitudes a proveedores',personal:'Usuarios',
+    proveedores:'Proveedores','pedidos-prov':'Solicitudes a proveedores',domicilios:'Domicilios',personal:'Usuarios',
     roles:'Roles y permisos',horarios:'Horarios de empleados',asistencia:'Asistencia',
     'cfg-factura':'Configuración de factura','cfg-impresora':'Configuración de impresora'};
   $('topbar-title').textContent = titles[p]||p;
@@ -2598,18 +2801,171 @@ async function loadPedidosProv(){
   $('pedidos-prov-tbody').innerHTML=data.map(p=>`<tr><td><b>${p.proveedor_nombre}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estadoBadge[p.estado]||'badge-gray'}">${p.estado}</span></td><td><select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option>—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('');
 }
 async function cambiarEstadoPedido(id,estado){ await api(`/admin/pedidos-proveedor/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})}); showToast('Estado actualizado'); loadPedidosProv(); }
+let _ppItems=[], _ppProductos=[];
+
 async function openPedidoProvModal(){
   const provs=await api('/admin/proveedores');
   $('pp-prov').innerHTML=provs.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
-  $('pp-fecha').value=''; $('pp-notas').value=''; $('pp-total').value='';
+  _ppItems=[]; _ppProductos=[];
+  $('pp-fecha').value=''; $('pp-notas').value='';
+  $('pp-qty').value='1'; $('pp-costo').value='';
+  $('pp-items-tbody').innerHTML='';
+  $('pp-items-wrap').style.display='none';
+  $('pp-new-form').style.display='none';
+  $('pp-iva-hint').style.display='none';
+  ['ppn-codigo','ppn-nombre','ppn-costo','ppn-cant'].forEach(f=>{if($(f))$(f).value='';});
+  if($('ppn-cat'))$('ppn-cat').value='General';
+  if($('ppn-unidad')){$('ppn-unidad').value='unidades'; ppnUnidadChange();}
+  const r0=document.querySelector('input[name="ppn-tax"][value="0"]');
+  if(r0){r0.checked=true; ppnTaxChange(0);}
+  ppCalcTotals();
   $('pedido-prov-modal').style.display='flex';
+  if(provs.length) await ppProvChange();
 }
+
+async function ppProvChange(){
+  const provId=$('pp-prov').value;
+  if(!provId){ _ppProductos=[]; $('pp-producto').innerHTML='<option value="">— Sin proveedor —</option>'; return; }
+  $('pp-producto').innerHTML='<option value="">Cargando...</option>';
+  try{
+    _ppProductos=await api(`/inventario?proveedor_id=${provId}`);
+    if(!_ppProductos.length){
+      $('pp-producto').innerHTML='<option value="">— Sin productos registrados —</option>';
+    } else {
+      $('pp-producto').innerHTML='<option value="">— Seleccionar producto —</option>'+
+        _ppProductos.map(p=>`<option value="${p.id}">${p.nombre}${p.iva_pct>0?' (IVA '+p.iva_pct+'%)':' (Exento)'}</option>`).join('');
+    }
+    ppProductoChange();
+  }catch(e){ $('pp-producto').innerHTML='<option value="">Error al cargar</option>'; }
+}
+
+function ppProductoChange(){
+  const pid=$('pp-producto').value;
+  const prod=_ppProductos.find(p=>p.id===pid);
+  if(prod){
+    $('pp-costo').value=prod.costo||'';
+    $('pp-iva-hint').textContent=prod.iva_pct>0?`IVA ${prod.iva_pct}% se desglosará en el total`:'Exento de IVA';
+    $('pp-iva-hint').style.display='block';
+  } else {
+    $('pp-costo').value='';
+    $('pp-iva-hint').style.display='none';
+  }
+}
+
+function ppAddItem(){
+  const pid=$('pp-producto').value;
+  const prod=_ppProductos.find(p=>p.id===pid);
+  if(!prod){ showToast('Selecciona un producto'); return; }
+  const qty=parseFloat($('pp-qty').value)||1;
+  const costo=parseFloat($('pp-costo').value)||0;
+  if(qty<=0){ showToast('Cantidad inválida'); return; }
+  const existing=_ppItems.find(i=>i.id===pid);
+  if(existing){ existing.qty=+(existing.qty+qty).toFixed(4); existing.costo=costo; }
+  else _ppItems.push({id:prod.id,nombre:prod.nombre,qty,costo,iva_pct:parseFloat(prod.iva_pct)||0});
+  $('pp-qty').value='1';
+  ppRenderItems();
+}
+
+function ppRemoveItem(idx){ _ppItems.splice(idx,1); ppRenderItems(); }
+
+function ppRenderItems(){
+  $('pp-items-wrap').style.display=_ppItems.length?'':'none';
+  $('pp-items-tbody').innerHTML=_ppItems.map((it,i)=>{
+    const sub=it.qty*it.costo;
+    const ivaAmt=sub*(it.iva_pct/100);
+    const tot=sub+ivaAmt;
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:5px 6px">${it.nombre}</td>
+      <td style="padding:5px 6px;text-align:right">${it.qty}</td>
+      <td style="padding:5px 6px;text-align:right">${fmt(it.costo)}</td>
+      <td style="padding:5px 6px;text-align:right">${it.iva_pct>0?it.iva_pct+'%':'Exento'}</td>
+      <td style="padding:5px 6px;text-align:right">${fmt(sub)}</td>
+      <td style="padding:5px 6px;text-align:right;font-weight:500">${fmt(tot)}</td>
+      <td style="padding:5px 6px;text-align:center"><button class="btn btn-outline btn-sm" style="padding:2px 7px;color:var(--red);border-color:var(--red)" onclick="ppRemoveItem(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+  ppCalcTotals();
+}
+
+function ppCalcTotals(){
+  let sub=0,ivaT=0;
+  _ppItems.forEach(it=>{const s=it.qty*it.costo;sub+=s;ivaT+=s*(it.iva_pct/100);});
+  if($('pp-subtotal'))  $('pp-subtotal').textContent=fmt(sub);
+  if($('pp-iva-total')) $('pp-iva-total').textContent=fmt(ivaT);
+  if($('pp-gran-total'))$('pp-gran-total').textContent=fmt(sub+ivaT);
+}
+
+function ppToggleNewProd(){
+  const f=$('pp-new-form');
+  f.style.display=f.style.display==='none'?'':'none';
+}
+
+function ppnUnidadChange(){
+  const u=$('ppn-unidad').value;
+  const show=['caja','paquete','bolsa'].includes(u);
+  $('ppn-cant-wrap').style.display=show?'':'none';
+  const labels={caja:'Cantidad por caja',paquete:'Cantidad por paquete',bolsa:'Cantidad por bolsa'};
+  if(show) $('ppn-cant-lbl').textContent=labels[u]||'Cantidad por unidad';
+  if(!show && $('ppn-cant')) $('ppn-cant').value='';
+}
+
+function ppnTaxChange(val){
+  [0,5,8,19].forEach(v=>{
+    const lbl=$('ppn-tax-lbl-'+v);
+    if(lbl) lbl.style.background=v===val?'var(--blue-l)':'var(--bg)';
+  });
+}
+
+function ppnGetTax(){
+  const r=document.querySelector('input[name="ppn-tax"]:checked');
+  return r?parseFloat(r.value):0;
+}
+
+async function ppCrearProducto(){
+  const nombre=$('ppn-nombre').value.trim();
+  if(!nombre){ showToast('El nombre es requerido'); return; }
+  const provId=$('pp-prov').value;
+  const iva_pct=ppnGetTax();
+  const unidad=$('ppn-unidad').value||'unidades';
+  const cantPaq=(['caja','paquete','bolsa'].includes(unidad)&&$('ppn-cant').value)?parseInt($('ppn-cant').value)||null:null;
+  try{
+    const res=await api('/inventario',{method:'POST',body:JSON.stringify({
+      codigo:$('ppn-codigo').value.trim()||null,
+      nombre, categoria:$('ppn-cat').value||'General',
+      unidad, unidad_compra:unidad,
+      costo:parseFloat($('ppn-costo').value)||0,
+      precio_venta:parseFloat($('ppn-costo').value)||0,
+      proveedor_id:provId||null, es_producto:true,
+      modulo:'minimercado', iva_pct,
+      es_paquete:cantPaq!=null, cantidad_paquete:cantPaq
+    })});
+    showToast('Producto creado ✓');
+    ['ppn-codigo','ppn-nombre','ppn-costo','ppn-cant'].forEach(f=>{if($(f))$(f).value='';});
+    $('ppn-cat').value='General'; $('ppn-unidad').value='unidades';
+    ppnUnidadChange();
+    const r0=document.querySelector('input[name="ppn-tax"][value="0"]');
+    if(r0){r0.checked=true; ppnTaxChange(0);}
+    await ppProvChange();
+    if(res.id){ $('pp-producto').value=res.id; ppProductoChange(); }
+    $('pp-new-form').style.display='none';
+  }catch(e){ showToast('Error: '+e.message); }
+}
+
 async function savePedidoProv(){
-  try {
-    const items=$('pp-notas').value.split('\n').filter(Boolean).map(l=>({descripcion:l}));
-    await api('/admin/pedidos-proveedor',{method:'POST',body:JSON.stringify({proveedor_id:$('pp-prov').value,items,total:+$('pp-total').value||0,notas:$('pp-notas').value,fecha_entrega:$('pp-fecha').value||null})});
+  if(!_ppItems.length){ showToast('Agrega al menos un producto'); return; }
+  try{
+    let sub=0,ivaT=0;
+    const items=_ppItems.map(it=>{
+      const s=it.qty*it.costo; const iv=s*(it.iva_pct/100);
+      sub+=s; ivaT+=iv;
+      return {id:it.id,nombre:it.nombre,cantidad:it.qty,costo_unitario:it.costo,iva_pct:it.iva_pct,subtotal:s,iva_monto:iv,total:s+iv};
+    });
+    await api('/admin/pedidos-proveedor',{method:'POST',body:JSON.stringify({
+      proveedor_id:$('pp-prov').value, items, total:sub+ivaT,
+      notas:$('pp-notas').value||null, fecha_entrega:$('pp-fecha').value||null
+    })});
     closeModal('pedido-prov-modal'); showToast('Solicitud enviada ✓'); loadPedidosProv();
-  } catch(e){ showToast('Error: '+e.message); }
+  }catch(e){ showToast('Error: '+e.message); }
 }
 
 // ─── PERSONAL ────────────────────────────────────────────────
@@ -3544,7 +3900,273 @@ async function importarExcel(input){
   } catch(e){ toast('Error importando: '+e.message); }
   input.value='';
 }
+
+// ══════════════════════════════════════════════════════════════
+// DOMICILIOS — panel admin
+// ══════════════════════════════════════════════════════════════
+let _domPollTimer = null;
+let _domLastCount = 0;
+let _domRiders    = [];
+
+const DOM_ESTADOS = {
+  pendiente:      { label:'Pendiente',       color:'var(--amber)',    bg:'var(--amber-l)' },
+  aceptado:       { label:'Aceptado',        color:'#0B8457',         bg:'var(--green-l)' },
+  en_preparacion: { label:'En preparación',  color:'#7c3aed',         bg:'#ede9fe' },
+  listo:          { label:'Listo',           color:'#0284c7',         bg:'#e0f2fe' },
+  en_camino:      { label:'En camino',       color:'#d97706',         bg:'#fef3c7' },
+  recogido:       { label:'Recogido',        color:'#d97706',         bg:'#fef3c7' },
+  entregado:      { label:'Entregado',       color:'#16a34a',         bg:'#dcfce7' },
+  cancelado:      { label:'Cancelado',       color:'var(--red)',      bg:'var(--red-l)' },
+};
+
+const DOM_SIGUIENTE = {
+  pendiente:      [{label:'✅ Aceptar',    estado:'aceptado',      cls:'btn-success'},
+                   {label:'❌ Cancelar',   estado:'cancelado',     cls:'btn-danger'}],
+  aceptado:       [{label:'👨‍🍳 Preparando', estado:'en_preparacion',cls:'btn-primary'}],
+  en_preparacion: [{label:'📦 Listo',     estado:'listo',         cls:'btn-primary'}],
+  listo:          [{label:'🛵 En camino', estado:'en_camino',     cls:'btn-primary'}],
+  en_camino:      [{label:'🎉 Entregado', estado:'entregado',     cls:'btn-success'}],
+};
+
+async function loadDomPedidos() {
+  const estado = document.getElementById('dom-fil-estado')?.value || 'pendiente';
+  const q      = document.getElementById('dom-fil-q')?.value || '';
+  try {
+    const d = await api(`/domicilios/pedidos?estado=${estado}&q=${encodeURIComponent(q)}`);
+    _domLastCount = d.pendientes || 0;
+    _updateDomBadge(_domLastCount);
+    renderDomPedidos(d.pedidos || []);
+    await loadDomRiders();
+  } catch(e) {
+    document.getElementById('dom-pedidos-list').innerHTML =
+      `<div class="card"><div class="card-body" style="color:var(--red)">Error: ${e.message}</div></div>`;
+  }
+}
+
+function _updateDomBadge(n) {
+  const badge = document.getElementById('dom-nav-badge');
+  if (!badge) return;
+  badge.textContent = n || '';
+  badge.style.display = n > 0 ? 'inline-block' : 'none';
+}
+
+function renderDomPedidos(pedidos) {
+  const el = document.getElementById('dom-pedidos-list');
+  if (!pedidos.length) {
+    el.innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--text3)">Sin pedidos para este filtro</div></div>`;
+    return;
+  }
+  el.innerHTML = pedidos.map(p => {
+    const st  = DOM_ESTADOS[p.estado] || DOM_ESTADOS.pendiente;
+    const items = p.items || [];
+    const ridersOpts = _domRiders.map(r => `<option value="${r.id}" ${p.rider_id===r.id?'selected':''}>${r.nombre}</option>`).join('');
+    const siguientes = DOM_SIGUIENTE[p.estado] || [];
+    const waLink = (() => {
+      const tel = (p.cliente_tel||'').replace(/\D/g,'');
+      const msg = encodeURIComponent(`Hola ${p.cliente_nombre}, su pedido por ${fmtCOP(p.total)} fue aceptado. Pronto se lo despachamos. ¡Gracias!`);
+      return tel ? `https://wa.me/${tel.startsWith('57')?'':57}${tel}?text=${msg}` : null;
+    })();
+    return `<div class="card" style="border-left:3px solid ${st.color}">
+      <div class="card-header" style="flex-wrap:wrap;gap:8px">
+        <div style="flex:1;min-width:180px">
+          <span style="font-weight:700">${p.cliente_nombre}</span>
+          <span style="font-size:11px;margin-left:8px;background:${st.bg};color:${st.color};border-radius:12px;padding:2px 8px">${st.label}</span><br>
+          <span style="font-size:12px;color:var(--text3)">#${p.id.slice(0,8).toUpperCase()} · ${new Date(p.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+        <strong style="font-size:16px;color:var(--blue)">${fmtCOP(p.total)}</strong>
+      </div>
+      <div class="card-body" style="padding-top:4px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:10px">
+          <div><span style="color:var(--text3)">📱</span> ${p.cliente_tel}</div>
+          <div style="grid-column:1/-1"><span style="color:var(--text3)">📍</span> ${p.cliente_dir}</div>
+          ${p.notas ? `<div style="grid-column:1/-1;color:var(--amber-d)">⚠️ ${p.notas}</div>` : ''}
+        </div>
+        <div style="font-size:13px;margin-bottom:10px">
+          ${items.map(it=>`<div style="display:flex;justify-content:space-between"><span>${it.nombre} x${it.qty}</span><span>${fmtCOP(it.subtotal)}</span></div>`).join('')}
+        </div>
+        ${_domRiders.length ? `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+          <label style="font-size:12px;color:var(--text2);white-space:nowrap">🛵 Domiciliario:</label>
+          <select onchange="assignDomRider('${p.id}',this.value)" style="flex:1;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+            <option value="">Sin asignar</option>${ridersOpts}
+          </select>
+        </div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${siguientes.map(s=>`<button class="btn btn-sm ${s.cls}" onclick="updateDomEstado('${p.id}','${s.estado}')">${s.label}</button>`).join('')}
+          ${waLink ? `<a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25d366;color:#fff">💬 WhatsApp</a>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateDomEstado(id, estado, riderId) {
+  try {
+    await api(`/domicilios/pedidos/${id}`, { method:'PUT', body:JSON.stringify({ estado, domiciliario_id: riderId||null }) });
+    showToast(`Estado → ${DOM_ESTADOS[estado]?.label || estado}`);
+    loadDomPedidos();
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+async function assignDomRider(pedidoId, riderId) {
+  try {
+    await api(`/domicilios/pedidos/${pedidoId}`, { method:'PUT', body:JSON.stringify({ domiciliario_id: riderId||null, estado: 'aceptado' }) });
+    showToast('Domiciliario asignado ✓');
+    loadDomPedidos();
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+// Riders
+async function loadDomRiders() {
+  try {
+    _domRiders = await api('/domicilios/riders');
+    renderDomRiders();
+  } catch(_) { _domRiders = []; }
+}
+
+function renderDomRiders() {
+  const tbody = document.getElementById('dom-riders-tbody');
+  if (!tbody) return;
+  if (!_domRiders.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Sin domiciliarios registrados</td></tr>`;
+    return;
+  }
+  const host = location.origin;
+  tbody.innerHTML = _domRiders.map(r => {
+    const link = `${host}/rider?t=${r.token}`;
+    return `<tr>
+      <td>${r.nombre}</td>
+      <td>${r.telefono||'—'}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${r.activo?'var(--green-l)':'var(--red-l)'};color:${r.activo?'var(--green)':'var(--red)'}">${r.activo?'Activo':'Inactivo'}</span></td>
+      <td><button class="btn btn-sm btn-outline" onclick="copyDomRiderLink('${link}')">📋 Copiar link</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm btn-outline" onclick="openRiderModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRider('${r.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function copyDomRiderLink(link) {
+  navigator.clipboard.writeText(link).then(() => showToast('Link del rider copiado ✓'));
+}
+
+function domShowRiders() {
+  loadDomRiders();
+  document.querySelector('#panel-domicilios > div:first-child').style.display = 'none';
+  document.getElementById('panel-dom-riders').style.display = 'block';
+}
+
+function domShowPedidos() {
+  document.querySelector('#panel-domicilios > div:first-child').style.display = 'flex';
+  document.getElementById('panel-dom-riders').style.display = 'none';
+}
+
+function domCopyLink() {
+  const nid = me?.negocio_id;
+  if (!nid) return;
+  const link = `${location.origin}/domicilios?n=${nid}`;
+  const box = document.getElementById('dom-link-box');
+  document.getElementById('dom-link-url').textContent = link;
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+// Rider modal
+let _editRiderId = null;
+function openRiderModal(rider) {
+  _editRiderId = rider?.id || null;
+  document.getElementById('dr-nombre').value = rider?.nombre || '';
+  document.getElementById('dr-tel').value    = rider?.telefono || '';
+  document.getElementById('dom-rider-modal').style.display = 'flex';
+}
+
+async function saveRider() {
+  const nombre = document.getElementById('dr-nombre').value.trim();
+  const tel    = document.getElementById('dr-tel').value.trim();
+  if (!nombre) { showToast('Ingresa el nombre'); return; }
+  try {
+    if (_editRiderId) {
+      await api(`/domicilios/riders/${_editRiderId}`, { method:'PUT', body:JSON.stringify({nombre,telefono:tel}) });
+    } else {
+      const d = await api('/domicilios/riders', { method:'POST', body:JSON.stringify({nombre,telefono:tel}) });
+      showToast(`Domiciliario creado. Token: ${d.token.slice(0,12)}…`);
+    }
+    closeModal('dom-rider-modal');
+    await loadDomRiders();
+    showToast(_editRiderId ? 'Domiciliario actualizado ✓' : 'Domiciliario creado ✓');
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+async function deleteRider(id) {
+  if (!confirm('¿Eliminar domiciliario?')) return;
+  await api(`/domicilios/riders/${id}`, { method:'DELETE' });
+  loadDomRiders();
+}
+
+// Polling: verificar pedidos nuevos cada 20s
+function startDomPolling() {
+  if (_domPollTimer) return;
+  _domPollTimer = setInterval(async () => {
+    if (currentPage !== 'domicilios') {
+      // Solo actualizar badge cuando estamos en otro panel
+      try {
+        const tok = localStorage.getItem('djpos_token');
+        if (!tok) return;
+        const r = await fetch('/api/domicilios/pendientes-count', { headers:{'Authorization':'Bearer '+tok} });
+        if (!r.ok) return;
+        const { n } = await r.json();
+        if (n > _domLastCount) {
+          _domLastCount = n;
+          _updateDomBadge(n);
+          _domBeep();
+          showToast(`🛵 Nuevo pedido de domicilio (${n} pendiente${n>1?'s':''})`);
+        } else {
+          _domLastCount = n;
+          _updateDomBadge(n);
+        }
+      } catch(_) {}
+    } else {
+      loadDomPedidos();
+    }
+  }, 20000);
+}
+
+function stopDomPolling() { clearInterval(_domPollTimer); _domPollTimer = null; }
+
+function _domBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 200, 400].forEach(delay => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.3, ctx.currentTime + delay/1000);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.25);
+      o.start(ctx.currentTime + delay/1000);
+      o.stop(ctx.currentTime + delay/1000 + 0.25);
+    });
+  } catch(_) {}
+}
+
+function fmtCOP(n) {
+  return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0);
+}
+
+// polling se inicia desde showApp()
 </script>
+
+<!-- Modal rider -->
+<div class="modal-overlay" id="dom-rider-modal" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><h3>Domiciliario</h3><button onclick="closeModal('dom-rider-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre *</label><input id="dr-nombre" placeholder="Juan Pérez"></div>
+      <div class="field"><label>Teléfono / WhatsApp</label><input id="dr-tel" type="tel" placeholder="300 123 4567"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('dom-rider-modal')">Cancelar</button><button class="btn btn-primary" onclick="saveRider()">Guardar</button></div>
+  </div>
+</div>
 <!-- Tooltip compartido para inventario y menú -->
 <div id="inv-tooltip" style="display:none;position:fixed;z-index:9999;pointer-events:none;background:var(--bg);border:1px solid var(--border2);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.15);padding:12px 16px;min-width:220px;max-width:300px;font-size:12px"></div>
 

@@ -96,13 +96,15 @@ router.get('/negocios', async (req, res) => {
 
 router.post('/negocios', async (req, res) => {
   try {
-    const { nombre, tipo='restaurante', nit, direccion, ciudad, telefono, email } = req.body;
+    const { nombre, tipo='restaurante', nit, direccion, ciudad, telefono, email, departamento, idiomas, color_primario } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
     const id = uuid();
+    const idiomasStr = Array.isArray(idiomas) ? JSON.stringify(idiomas) : (idiomas || '["es"]');
     await pool.query(
-      `INSERT INTO negocios (id,nombre,tipo,nit,direccion,ciudad,telefono,email)
-       VALUES (?,?,?,?,?,?,?,?)`,
-      [id, nombre, tipo, nit||null, direccion||null, ciudad||null, telefono||null, email||null]
+      `INSERT INTO negocios (id,nombre,tipo,nit,direccion,ciudad,telefono,email,departamento,idiomas,color_primario)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      [id, nombre, tipo, nit||null, direccion||null, ciudad||null, telefono||null, email||null,
+       departamento||null, idiomasStr, color_primario||null]
     );
     // Crear rol admin por defecto
     const rolId = uuid();
@@ -124,11 +126,13 @@ router.post('/negocios', async (req, res) => {
 
 router.put('/negocios/:id', async (req, res) => {
   try {
-    const { nombre, tipo, nit, direccion, ciudad, telefono, email, activo } = req.body;
+    const { nombre, tipo, nit, direccion, ciudad, telefono, email, activo, departamento, idiomas, color_primario } = req.body;
+    const idiomasStr = Array.isArray(idiomas) ? JSON.stringify(idiomas) : (idiomas || '["es"]');
     await pool.query(
-      `UPDATE negocios SET nombre=?,tipo=?,nit=?,direccion=?,ciudad=?,telefono=?,email=?,activo=?,actualizado=NOW()
+      `UPDATE negocios SET nombre=?,tipo=?,nit=?,direccion=?,ciudad=?,telefono=?,email=?,activo=?,departamento=?,idiomas=?,color_primario=?,actualizado=NOW()
        WHERE id=?`,
-      [nombre, tipo, nit, direccion, ciudad, telefono, email, activo?1:0, req.params.id]
+      [nombre, tipo, nit, direccion, ciudad, telefono, email, activo?1:0,
+       departamento||null, idiomasStr, color_primario||null, req.params.id]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

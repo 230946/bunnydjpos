@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Panel Domiciliario</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --pri:#6c4ff6;--bg:#0f0f1a;--card:#1c1c2e;--card2:#252538;--text:#f0f0ff;--text2:#aaa;--text3:#666;
+  --border:#2a2a40;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--yellow:#fbbf24;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+
+#header{
+  background:var(--card);padding:calc(14px + var(--safe-top)) 16px 14px;
+  display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10
+}
+.moto-icon{font-size:30px}
+#header-text h1{font-size:18px;font-weight:700}
+#header-text p{font-size:13px;color:var(--text2);margin-top:2px}
+
+#content{padding:16px;display:flex;flex-direction:column;gap:14px;padding-bottom:calc(40px + var(--safe-bot))}
+
+.pedido-card{background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--border)}
+.ped-header{
+  display:flex;align-items:center;justify-content:space-between;padding:14px 16px;
+  border-bottom:1px solid var(--border)
+}
+.ped-id{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.6px}
+.ped-badge{
+  font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px
+}
+.ped-badge.aceptado{background:#1d4ed820;color:#60a5fa}
+.ped-badge.en_camino,.ped-badge.recogido{background:#92400e20;color:var(--yellow)}
+.ped-cliente{padding:14px 16px}
+.ped-nombre{font-size:17px;font-weight:700;margin-bottom:4px}
+.ped-tel{font-size:14px;color:var(--text2);margin-bottom:10px}
+.ped-dir{
+  background:var(--card2);border-radius:10px;padding:11px 13px;
+  font-size:13px;color:var(--text);line-height:1.5;margin-bottom:10px
+}
+.ped-notas{font-size:13px;color:var(--orange);padding:0 0 6px}
+.ped-items{padding:0 16px 14px}
+.ped-item-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--text2)}
+.ped-total{display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:var(--text);border-top:1px solid var(--border);padding:10px 16px}
+.ped-actions{padding:12px 16px;display:flex;gap:8px;background:var(--card2)}
+.act-btn{
+  flex:1;padding:12px;border:none;border-radius:12px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:.12s
+}
+.act-btn:active{transform:scale(.97)}
+.act-btn.green{background:var(--green);color:#fff}
+.act-btn.blue{background:#3b82f6;color:#fff}
+.act-btn.wa{background:#25d366;color:#fff}
+
+/* Estado: listo/en camino */
+.entregado-card{
+  background:var(--card);border-radius:16px;border:1px solid #22c55e40;padding:20px 16px;text-align:center
+}
+.entregado-card .icon{font-size:48px;margin-bottom:8px}
+.entregado-card p{color:var(--text2);font-size:14px}
+
+#loader{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:99}
+.spinner{width:32px;height:32px;border:3px solid #2a2a40;border-top-color:var(--pri);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader p{color:var(--text3);font-size:14px}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty span{font-size:52px;display:block;margin-bottom:12px}
+
+#toast{
+  position:fixed;bottom:calc(30px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(20px);
+  background:#fff;color:#1a1a2e;padding:11px 20px;border-radius:30px;font-size:14px;font-weight:700;
+  opacity:0;transition:.25s;z-index:200;pointer-events:none;white-space:nowrap
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#refresh-btn{
+  position:fixed;bottom:calc(20px + var(--safe-bot));right:16px;
+  background:var(--pri);color:#fff;border:none;border-radius:50%;
+  width:52px;height:52px;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(108,79,246,.4)
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="spinner"></div><p>Cargando pedidos…</p></div>
+
+<div id="header">
+  <span class="moto-icon">🛵</span>
+  <div id="header-text">
+    <h1 id="rider-nombre">Panel Domiciliario</h1>
+    <p id="rider-sub">Cargando…</p>
+  </div>
+</div>
+
+<div id="content"></div>
+
+<button id="refresh-btn" onclick="loadPedidos()" title="Actualizar">↺</button>
+
+<div id="toast"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const TOKEN  = params.get('t');
+const API    = '/api/domicilios';
+
+let rider = null;
+let pedidos = [];
+let autoTimer = null;
+
+const BADGE_LABEL = {
+  aceptado:'Asignado', en_camino:'En camino', recogido:'Recogido', listo:'Listo'
+};
+
+async function init() {
+  if (!TOKEN) {
+    document.getElementById('loader').innerHTML = `<span style="font-size:48px">🔒</span><p style="color:#ef4444">Token inválido. Usa el link correcto.</p>`;
+    return;
+  }
+  await loadPedidos();
+  document.getElementById('loader').style.display = 'none';
+  autoTimer = setInterval(loadPedidos, 20000);
+}
+
+async function loadPedidos() {
+  try {
+    const r = await fetch(`${API}/rider/${TOKEN}`);
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
+    const data = await r.json();
+    rider   = data.rider;
+    pedidos = data.pedidos || [];
+
+    document.getElementById('rider-nombre').textContent = rider.nombre;
+    document.getElementById('rider-sub').textContent    = `${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''} activo${pedidos.length !== 1 ? 's' : ''}`;
+
+    renderPedidos();
+  } catch (e) {
+    document.getElementById('rider-sub').textContent = 'Error: ' + e.message;
+  }
+}
+
+function renderPedidos() {
+  const el = document.getElementById('content');
+  if (!pedidos.length) {
+    el.innerHTML = `<div class="empty"><span>🎉</span><p>No tienes pedidos activos ahora mismo.<br>¡Revisa en unos minutos!</p></div>`;
+    return;
+  }
+
+  el.innerHTML = pedidos.map(p => {
+    const items = p.items || [];
+    const badge = BADGE_LABEL[p.estado] || p.estado;
+    const waLink = `https://wa.me/57${p.cliente_tel.replace(/\D/g,'')}?text=${encodeURIComponent(`Hola ${p.cliente_nombre}, soy el domiciliario 🛵. Ya voy en camino con tu pedido de ${fmtCOP(p.total)}. ¿Confirmas la dirección: ${p.cliente_dir}?`)}`;
+    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.cliente_dir)}`;
+
+    const nextBtn = nextAction(p.estado);
+
+    return `<div class="pedido-card">
+      <div class="ped-header">
+        <span class="ped-id">PEDIDO #${p.id.slice(0,8).toUpperCase()}</span>
+        <span class="ped-badge ${p.estado}">${badge}</span>
+      </div>
+      <div class="ped-cliente">
+        <div class="ped-nombre">${p.cliente_nombre}</div>
+        <div class="ped-tel">📱 ${p.cliente_tel}</div>
+        <div class="ped-dir">📍 ${p.cliente_dir}</div>
+        ${p.notas ? `<div class="ped-notas">⚠️ ${p.notas}</div>` : ''}
+      </div>
+      <div class="ped-items">
+        ${items.map(it => `<div class="ped-item-row"><span>${it.nombre} x${it.qty}</span><span>${fmtCOP(it.subtotal)}</span></div>`).join('')}
+      </div>
+      <div class="ped-total"><span>Total</span><span>${fmtCOP(p.total)}</span></div>
+      <div class="ped-actions">
+        <button class="act-btn wa" onclick="window.open('${waLink}','_blank')">💬 WA</button>
+        <button class="act-btn blue" onclick="window.open('${mapsLink}','_blank')">🗺️ Mapa</button>
+        ${nextBtn ? `<button class="act-btn green" onclick="updateEstado('${p.id}','${nextBtn.estado}')">${nextBtn.label}</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function nextAction(estado) {
+  if (estado === 'listo' || estado === 'aceptado') return { estado: 'recogido', label: '✅ Recogí el pedido' };
+  if (estado === 'recogido' || estado === 'en_camino') return { estado: 'entregado', label: '🎉 Lo entregué' };
+  return null;
+}
+
+async function updateEstado(pedidoId, estado) {
+  try {
+    const r = await fetch(`${API}/rider/${TOKEN}/pedido/${pedidoId}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ estado })
+    });
+    if (!r.ok) throw new Error((await r.json()).error);
+    toast(estado === 'entregado' ? '🎉 ¡Pedido entregado!' : '✅ Estado actualizado');
+    await loadPedidos();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+function fmtCOP(n) {
+  return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0);
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+init();
+</script>
+</body>
+</html>
