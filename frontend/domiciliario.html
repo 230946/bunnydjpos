@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#f97316">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Domiciliario</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --pri:#f97316;--pri2:#ea6c0a;--pri-light:rgba(249,115,22,.1);
+  --bg:#f6f6f9;--card:#fff;--text:#1a1a2e;--text2:#555;--text3:#999;
+  --border:#e8e8f0;--green:#22c55e;--green-d:#16a34a;--red:#ef4444;
+  --blue:#3b82f6;--radius:14px;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body{display:flex;flex-direction:column;min-height:100vh}
+
+/* ── Login ── */
+#view-login{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px calc(32px + var(--safe-bot));
+}
+.login-logo{font-size:60px;margin-bottom:12px}
+.login-title{font-size:24px;font-weight:800;color:var(--text);margin-bottom:6px}
+.login-sub{font-size:14px;color:var(--text2);margin-bottom:32px;text-align:center;line-height:1.5}
+.login-card{background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.1);padding:28px 24px;width:100%;max-width:380px}
+.lf{margin-bottom:16px}
+.lf label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.lf input{
+  width:100%;border:1.5px solid var(--border);border-radius:10px;
+  padding:13px 14px;font-size:16px;color:var(--text);background:#fff;
+  outline:none;transition:.15s;-webkit-appearance:none
+}
+.lf input:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-light)}
+#btn-login{
+  width:100%;background:var(--pri);color:#fff;border:none;border-radius:12px;
+  padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px
+}
+#btn-login:active{background:var(--pri2)}
+.login-error{color:var(--red);font-size:13px;margin-top:10px;text-align:center;min-height:18px}
+
+/* ── App shell ── */
+#app{display:none;flex-direction:column;height:100vh}
+#header{
+  background:var(--pri);color:#fff;
+  padding:calc(10px + var(--safe-top)) 16px 10px;
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.18)
+}
+#header-logo{font-size:22px;flex-shrink:0}
+#header-text{flex:1;min-width:0}
+#header-neg{font-size:11px;opacity:.82;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#header-emp{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#btn-logout{
+  background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:10px;
+  padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0
+}
+
+/* ── Tabs ── */
+#tabs{
+  background:#fff;display:flex;border-bottom:1.5px solid var(--border);flex-shrink:0
+}
+.tab{
+  flex:1;padding:12px 8px;font-size:13px;font-weight:700;color:var(--text3);
+  border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-1.5px;transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px
+}
+.tab.active{color:var(--pri);border-bottom-color:var(--pri)}
+.tab-badge{
+  background:var(--red);color:#fff;font-size:10px;font-weight:800;
+  border-radius:10px;padding:1px 6px;min-width:18px;text-align:center
+}
+
+/* ── Content ── */
+#content{flex:1;overflow-y:auto;padding:14px 14px calc(20px + var(--safe-bot))}
+
+/* ── Order Card ── */
+.oc{
+  background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.07);
+  margin-bottom:14px;overflow:hidden
+}
+.oc-head{
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px
+}
+.oc-head-left{flex:1;min-width:0}
+.oc-dir{font-size:14px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:4px}
+.oc-cliente{font-size:12px;color:var(--text2)}
+.oc-tel{font-size:12px;color:var(--blue);font-weight:600;text-decoration:none;display:block;margin-top:2px}
+.oc-estado{
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  padding:4px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap
+}
+.estado-en_camino{background:rgba(249,115,22,.12);color:#c2410c}
+.estado-listo{background:rgba(34,197,94,.12);color:#16a34a}
+.estado-pendiente,.estado-aceptado,.estado-en_preparacion{background:rgba(59,130,246,.1);color:#1d4ed8}
+
+.oc-items{padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);line-height:1.7}
+.oc-item-row{display:flex;justify-content:space-between}
+.oc-footer{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.oc-total{font-size:16px;font-weight:800;color:var(--pri)}
+.oc-notas{font-size:11px;color:var(--text3);margin-top:2px;font-style:italic}
+
+/* ── Buttons ── */
+.btn-tomar{
+  background:var(--pri);color:#fff;border:none;border-radius:10px;
+  padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0
+}
+.btn-tomar:active{background:var(--pri2)}
+.btn-entregado{
+  background:var(--green);color:#fff;border:none;border-radius:10px;
+  padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0
+}
+.btn-entregado:active{background:var(--green-d)}
+.btn-encamino{
+  background:rgba(249,115,22,.12);color:#c2410c;border:1.5px solid rgba(249,115,22,.3);
+  border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0
+}
+
+/* ── Empty + Loader ── */
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-icon{font-size:52px;display:block;margin-bottom:12px}
+.empty p{font-size:14px}
+#refresh-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;font-size:12px;color:var(--text3)
+}
+#btn-refresh{
+  background:rgba(249,115,22,.1);color:var(--pri);border:none;border-radius:20px;
+  padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer
+}
+.spinner{width:28px;height:28px;border:3px solid #e8e8f0;border-top-color:var(--pri);border-radius:50%;animation:spin .7s linear infinite;margin:30px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:calc(24px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(20px);
+  background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:30px;
+  font-size:14px;font-weight:600;opacity:0;transition:.25s;z-index:999;pointer-events:none;white-space:nowrap
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Loader pantalla ── */
+#loader{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="spinner"></div><p style="color:#999;font-size:14px">Cargando…</p></div>
+
+<!-- ── Login ── -->
+<div id="view-login" style="display:none">
+  <div class="login-logo">🛵</div>
+  <div class="login-title">Domiciliario</div>
+  <div class="login-sub">Ingresa con tu documento y celular registrado</div>
+  <div class="login-card">
+    <div class="lf">
+      <label>Número de documento</label>
+      <input id="l-doc" type="text" inputmode="numeric" placeholder="1234567890" maxlength="20" autocomplete="off">
+    </div>
+    <div class="lf">
+      <label>Celular</label>
+      <input id="l-cel" type="tel" inputmode="numeric" placeholder="3001234567" maxlength="15" autocomplete="off">
+    </div>
+    <button id="btn-login" onclick="login()">Ingresar →</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app">
+  <div id="header">
+    <span id="header-logo">🛵</span>
+    <div id="header-text">
+      <div id="header-neg">Cargando…</div>
+      <div id="header-emp">—</div>
+    </div>
+    <span id="gps-badge" title="GPS" style="font-size:18px;flex-shrink:0;opacity:.5">📍</span>
+    <button id="btn-logout" onclick="logout()">🚪 Salir</button>
+  </div>
+
+  <div id="tabs">
+    <button class="tab active" id="tab-disp" onclick="switchTab('disponibles')">
+      📦 Disponibles <span class="tab-badge" id="badge-disp" style="display:none">0</span>
+    </button>
+    <button class="tab" id="tab-mias" onclick="switchTab('mis-entregas')">
+      🏍️ Mis entregas <span class="tab-badge" id="badge-mias" style="display:none">0</span>
+    </button>
+    <button class="tab" id="tab-hist" onclick="switchTab('historial')">
+      📋 Historial
+    </button>
+  </div>
+
+  <div id="content">
+    <div id="refresh-bar">
+      <span id="refresh-ts">Actualizado ahora</span>
+      <button id="btn-refresh" onclick="loadAll()">🔄 Actualizar</button>
+    </div>
+    <div id="list-disponibles"></div>
+    <div id="list-mias" style="display:none"></div>
+    <div id="list-historial" style="display:none"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API    = '/api/domicilios';
+const params = new URLSearchParams(location.search);
+const NEG_ID = params.get('n') || params.get('negocio');
+
+const SESS_KEY   = `djpos_rider_sess_${NEG_ID}`;
+let   session    = null;   // {token, id, nombre, rol, negocio_id}
+let   negocioNom = '';
+let   activeTab  = 'disponibles';
+let   autoTimer  = null;
+let   gpsWatcher = null;
+let   lastGpsPost = 0;
+const GPS_INTERVAL = 20000; // ms entre POSTs de ubicación
+
+// ── Utils ────────────────────────────────────────────────────────
+function fmt(n){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0); }
+let toastTimer;
+function toast(msg,dur=2500){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+const ESTADO_LABELS = {
+  pendiente:'Pendiente', aceptado:'Aceptado', en_preparacion:'Preparando',
+  listo:'Listo 🟢', en_camino:'En camino 🛵', entregado:'Entregado ✅', cancelado:'Cancelado'
+};
+
+function fmtHora(ts){
+  return new Date(ts).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Fetch helper ─────────────────────────────────────────────────
+async function riderFetch(path, opts={}){
+  const headers = {'Content-Type':'application/json'};
+  if(session?.token) headers['x-rider-token'] = session.token;
+  const r = await fetch(API+path, {...opts, headers:{...headers,...(opts.headers||{})}});
+  const data = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error||'Error');
+  return data;
+}
+
+// ── Auth ─────────────────────────────────────────────────────────
+async function login(){
+  const doc = document.getElementById('l-doc').value.trim();
+  const cel = document.getElementById('l-cel').value.trim().replace(/[\s\-()]/g,'');
+  const errEl = document.getElementById('login-error');
+  errEl.textContent='';
+  if(!doc){errEl.textContent='Ingresa tu documento'; return;}
+  if(!cel||cel.length<7){errEl.textContent='Ingresa tu celular'; return;}
+  if(!NEG_ID){errEl.textContent='Falta el ID del negocio en la URL'; return;}
+
+  const btn=document.getElementById('btn-login');
+  btn.disabled=true; btn.textContent='Verificando…';
+  try {
+    const data = await fetch(`${API}/empleado-login`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({negocio_id:NEG_ID, documento:doc, celular:cel})
+    }).then(r=>r.json());
+    if(data.error) throw new Error(data.error);
+    if(data.rol !== 'domiciliario') throw new Error('Tu cuenta no tiene el rol de domiciliario');
+    session = {token:data.token, id:data.id, nombre:data.nombre, rol:data.rol, negocio_id:data.negocio_id};
+    localStorage.setItem(SESS_KEY, JSON.stringify(session));
+    startApp();
+  } catch(e){
+    errEl.textContent = e.message;
+  } finally {
+    btn.disabled=false; btn.textContent='Ingresar →';
+  }
+}
+
+function logout(){
+  if(!confirm('¿Cerrar sesión?')) return;
+  stopGPS();
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
+  localStorage.removeItem(SESS_KEY);
+  session=null;
+  clearInterval(autoTimer);
+  document.getElementById('app').style.display='none';
+  document.getElementById('view-login').style.display='flex';
+  document.getElementById('l-doc').value='';
+  document.getElementById('l-cel').value='';
+  document.getElementById('login-error').textContent='';
+}
+
+// ── App init ─────────────────────────────────────────────────────
+async function startApp(){
+  document.getElementById('view-login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('header-emp').textContent = session.nombre;
+
+  // Cargar info del negocio para el header
+  try {
+    const r = await fetch(`/api/negocio-pub/${NEG_ID||session.negocio_id}`);
+    const d = await r.json();
+    negocioNom = d.nombre||'';
+    document.getElementById('header-neg').textContent = negocioNom;
+    document.title = `Domiciliario — ${negocioNom}`;
+    // Aplicar color
+    if(d.color_primario){
+      const hex=d.color_primario;
+      document.documentElement.style.setProperty('--pri',hex);
+      document.documentElement.style.setProperty('--pri2',hex);
+      const r2=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+      document.documentElement.style.setProperty('--pri-light',`rgba(${r2},${g},${b},.1)`);
+      document.querySelector('meta[name=theme-color]').content=hex;
+    }
+  } catch(_){}
+
+  await loadAll();
+  // Auto-refresh cada 30 s
+  if(autoTimer) clearInterval(autoTimer);
+  autoTimer = setInterval(loadAll, 30000);
+  // Iniciar GPS
+  startGPS();
+}
+
+// ── Tab ──────────────────────────────────────────────────────────
+function switchTab(t){
+  activeTab=t;
+  document.getElementById('tab-disp').classList.toggle('active', t==='disponibles');
+  document.getElementById('tab-mias').classList.toggle('active', t==='mis-entregas');
+  document.getElementById('tab-hist').classList.toggle('active', t==='historial');
+  document.getElementById('list-disponibles').style.display = t==='disponibles'?'block':'none';
+  document.getElementById('list-mias').style.display        = t==='mis-entregas'?'block':'none';
+  document.getElementById('list-historial').style.display   = t==='historial'?'block':'none';
+  if(t==='historial') loadHistorial();
+}
+
+// ── Load data ─────────────────────────────────────────────────────
+async function loadAll(){
+  document.getElementById('refresh-ts').textContent='Actualizando…';
+  try {
+    const [disp, mias] = await Promise.all([
+      riderFetch('/rider/disponibles').catch(()=>({pedidos:[]})),
+      riderFetch('/rider/mis-entregas').catch(()=>({pedidos:[]})),
+    ]);
+    renderDisponibles(disp.pedidos||[]);
+    renderMisEntregas(mias.pedidos||[]);
+    document.getElementById('refresh-ts').textContent='Actualizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  } catch(e){
+    document.getElementById('refresh-ts').textContent='Error al actualizar';
+  }
+}
+
+// ── Render disponibles ────────────────────────────────────────────
+function renderDisponibles(list){
+  const badge=document.getElementById('badge-disp');
+  badge.textContent=list.length; badge.style.display=list.length?'inline':'none';
+  const el=document.getElementById('list-disponibles');
+  if(!list.length){
+    el.innerHTML=`<div class="empty"><span class="empty-icon">📭</span><p>No hay pedidos listos para despacho</p><p style="font-size:12px;margin-top:8px;color:var(--text3)">Aparecen aquí cuando cocina marca "Listo 🟢"</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(p=>`
+    <div class="oc">
+      <div class="oc-head">
+        <div class="oc-head-left">
+          <div class="oc-dir">📍 ${p.cliente_dir}</div>
+          <div class="oc-cliente">👤 ${p.cliente_nombre}</div>
+          <a class="oc-tel" href="tel:${p.cliente_tel}">📱 ${p.cliente_tel}</a>
+        </div>
+        <span class="oc-estado estado-${p.estado}">${ESTADO_LABELS[p.estado]||p.estado}</span>
+      </div>
+      <div class="oc-items">
+        ${(p.items||[]).map(i=>`<div class="oc-item-row"><span>${i.nombre||i.name}</span><span>${i.qty||i.cantidad||1}×</span></div>`).join('')}
+        ${p.notas?`<div style="color:var(--text3);margin-top:4px;font-style:italic">📝 ${p.notas}</div>`:''}
+      </div>
+      <div class="oc-footer">
+        <div>
+          <div class="oc-total">${fmt(p.total)}</div>
+          <div style="font-size:10px;color:var(--text3)">${fmtHora(p.created_at)}</div>
+        </div>
+        <button class="btn-tomar" onclick="tomarPedido('${p.id}',this)">🛵 Tomar</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── Render mis entregas ───────────────────────────────────────────
+function renderMisEntregas(list){
+  const badge=document.getElementById('badge-mias');
+  badge.textContent=list.length; badge.style.display=list.length?'inline':'none';
+  const el=document.getElementById('list-mias');
+  if(!list.length){
+    el.innerHTML=`<div class="empty"><span class="empty-icon">✅</span><p>No tienes entregas activas</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(p=>`
+    <div class="oc">
+      <div class="oc-head">
+        <div class="oc-head-left">
+          <div class="oc-dir">📍 ${p.cliente_dir}</div>
+          <div class="oc-cliente">👤 ${p.cliente_nombre}</div>
+          <a class="oc-tel" href="tel:${p.cliente_tel}">📱 ${p.cliente_tel}</a>
+        </div>
+        <span class="oc-estado estado-${p.estado}">${ESTADO_LABELS[p.estado]||p.estado}</span>
+      </div>
+      <div class="oc-items">
+        ${(p.items||[]).map(i=>`<div class="oc-item-row"><span>${i.nombre||i.name}</span><span>${i.qty||i.cantidad||1}×</span></div>`).join('')}
+        ${p.notas?`<div style="color:var(--text3);margin-top:4px;font-style:italic">📝 ${p.notas}</div>`:''}
+      </div>
+      <div class="oc-footer">
+        <div>
+          <div class="oc-total">${fmt(p.total)}</div>
+          <div style="font-size:10px;color:var(--text3)">${fmtHora(p.created_at)}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-direction:column;align-items:flex-end">
+          ${p.estado!=='en_camino'
+            ? `<button class="btn-encamino" onclick="actualizarEstado('${p.id}','en_camino',this)">🛵 Salir a entregar</button>`
+            : ''}
+          <button class="btn-entregado" onclick="actualizarEstado('${p.id}','entregado',this)">✅ Entregar</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Historial ─────────────────────────────────────────────────────
+async function loadHistorial(){
+  const el=document.getElementById('list-historial');
+  el.innerHTML=`<div class="spinner"></div>`;
+  try {
+    const { pedidos } = await riderFetch('/rider/historial');
+    renderHistorial(pedidos||[]);
+  } catch(e){
+    el.innerHTML=`<div class="empty"><p>Error cargando historial</p></div>`;
+  }
+}
+
+function renderHistorial(list){
+  const el=document.getElementById('list-historial');
+  if(!list.length){
+    el.innerHTML=`<div class="empty"><span class="empty-icon">📋</span><p>Sin entregas registradas aún</p></div>`;
+    return;
+  }
+  el.innerHTML=list.map(p=>{
+    const fecha=new Date(p.actualizado||p.created_at).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const esEntregado=p.estado==='entregado';
+    return `<div class="oc">
+      <div class="oc-head">
+        <div class="oc-head-left">
+          <div class="oc-dir">${p.cliente_dir}</div>
+          <div class="oc-cliente">${p.cliente_nombre}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">${fecha}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="oc-total" style="font-size:14px">${fmt(p.total)}</div>
+          <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;
+            background:${esEntregado?'rgba(34,197,94,.12)':'rgba(239,68,68,.1)'};
+            color:${esEntregado?'#16a34a':'#dc2626'}">
+            ${esEntregado?'✅ Entregado':'❌ Cancelado'}
+          </span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Acciones ─────────────────────────────────────────────────────
+async function tomarPedido(id, btn){
+  btn.disabled=true; btn.textContent='Tomando…';
+  try {
+    await riderFetch(`/rider/disponibles/${id}/tomar`, {method:'POST'});
+    toast('✅ Pedido tomado — ya aparece en Mis entregas');
+    switchTab('mis-entregas');
+    await loadAll();
+  } catch(e){
+    toast('❌ '+e.message);
+    btn.disabled=false; btn.textContent='🛵 Tomar';
+  }
+}
+
+async function actualizarEstado(id, estado, btn){
+  const label = estado==='entregado'?'Entregando…':'Actualizando…';
+  btn.disabled=true; btn.textContent=label;
+  try {
+    const res = await riderFetch(`/rider/mis-entregas/${id}/estado`, {method:'PUT', body:JSON.stringify({estado})});
+    if(estado==='entregado'){
+      const numFac = res?.numero_factura ? ` · ${res.numero_factura}` : '';
+      toast(`🎉 Entregado — Pago confirmado${numFac} ✅`);
+    } else {
+      toast('🛵 Estado actualizado');
+    }
+    await loadAll();
+  } catch(e){
+    toast('❌ '+e.message);
+    btn.disabled=false;
+  }
+}
+
+// ── GPS ───────────────────────────────────────────────────────────
+function startGPS(){
+  const badge = document.getElementById('gps-badge');
+  if(!navigator.geolocation){ if(badge) badge.style.display='none'; return; }
+  gpsWatcher = navigator.geolocation.watchPosition(
+    pos => {
+      if(badge){ badge.style.opacity='1'; badge.title='GPS activo ✅'; }
+      const now = Date.now();
+      if(now - lastGpsPost < GPS_INTERVAL) return;
+      lastGpsPost = now;
+      riderFetch('/rider/ubicacion',{
+        method:'POST',
+        body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+      }).catch(()=>{});
+    },
+    _err => {
+      if(badge){ badge.style.opacity='.3'; badge.title='GPS no disponible'; }
+    },
+    { enableHighAccuracy:true, maximumAge:10000, timeout:15000 }
+  );
+}
+
+function stopGPS(){
+  if(gpsWatcher !== null){ navigator.geolocation.clearWatch(gpsWatcher); gpsWatcher=null; }
+}
+
+// ── Start ─────────────────────────────────────────────────────────
+(async function(){
+  document.getElementById('loader').style.display='none';
+  const saved = localStorage.getItem(SESS_KEY);
+  if(saved){
+    try {
+      session = JSON.parse(saved);
+      // Verificar que el token sigue activo
+      await riderFetch('/rider/disponibles');
+      startApp();
+    } catch(_){
+      localStorage.removeItem(SESS_KEY);
+      session=null;
+      document.getElementById('view-login').style.display='flex';
+    }
+  } else {
+    document.getElementById('view-login').style.display='flex';
+  }
+})();
+</script>
+</body>
+</html>

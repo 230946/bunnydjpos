@@ -7,6 +7,7 @@
 <title>DJPOS — Administrativo</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="/js/i18n.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -317,12 +318,14 @@ tr:hover td{background:var(--bg2)}
       <button class="nav-btn" data-permiso="personal" onclick="nav('editar-menu',this)" title="Editar menú"><span class="nav-icon">✏️</span><span class="nav-label"> Editar menú</span></button>
       <button class="nav-btn" data-permiso="proveedores" onclick="nav('proveedores',this)" title="Proveedores"><span class="nav-icon">🚚</span><span class="nav-label"> Proveedores</span></button>
       <button class="nav-btn" data-permiso="proveedores" onclick="nav('pedidos-prov',this)" title="Pedidos prov."><span class="nav-icon">🛒</span><span class="nav-label"> Pedidos prov.</span></button>
+      <button class="nav-btn" data-permiso="caja" onclick="nav('domicilios',this)" title="Domicilios"><span class="nav-icon">🛵</span><span id="dom-nav-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;flex-shrink:0;min-width:18px;text-align:center"></span><span class="nav-label"> Domicilios</span></button>
     </div>
 
     <div class="nav-section" data-seccion="rrhh" onclick="toggleNavGroup('rrhh')"><span class="nav-label">Personal</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-rrhh">
-      <button class="nav-btn" data-permiso="personal" onclick="nav('personal',this)" title="Usuarios"><span class="nav-icon">👥</span><span class="nav-label"> Usuarios</span></button>
+      <button class="nav-btn" data-permiso="personal" onclick="nav('personal',this)" title="Empleados"><span class="nav-icon">👥</span><span class="nav-label"> Empleados</span></button>
       <button class="nav-btn" data-permiso="personal" onclick="nav('roles',this)" title="Roles"><span class="nav-icon">🔐</span><span class="nav-label"> Roles</span></button>
+      <button class="nav-btn" data-permiso="personal" onclick="nav('domiciliarios',this)" title="Domiciliarios"><span class="nav-icon">🛵</span><span class="nav-label"> Domiciliarios</span></button>
       <button class="nav-btn" data-permiso="horarios" onclick="nav('horarios',this)" title="Horarios"><span class="nav-icon">🕐</span><span class="nav-label"> Horarios</span></button>
       <button class="nav-btn" data-permiso="horarios" onclick="nav('asistencia',this)" title="Asistencia"><span class="nav-icon">📅</span><span class="nav-label"> Asistencia</span></button>
     </div>
@@ -336,12 +339,18 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-section" data-seccion="portales" onclick="toggleNavGroup('portales')"><span class="nav-label">Accesos directos</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-portales">
       <button class="nav-btn" onclick="_abrirPortal('pos')" title="POS Restaurante"><span class="nav-icon">🍽</span><span class="nav-label"> POS Restaurante ↗</span></button>
+      <button class="nav-btn" onclick="_abrirPortal('domicilios')" title="App Domicilios"><span class="nav-icon">🛵</span><span class="nav-label"> App Domicilios ↗</span></button>
+      <button class="nav-btn" onclick="_abrirPortal('domiciliario')" title="App Repartidores"><span class="nav-icon">🏍️</span><span class="nav-label"> App Repartidores ↗</span></button>
     </div>
 
 <div style="margin-top:auto;padding-top:12px;border-top:0.5px solid var(--border)">
       <div style="padding:8px 12px" id="sb-user">
         <div style="font-size:13px;font-weight:600;color:var(--text)" id="sb-user-name"></div>
         <div style="font-size:10px;color:var(--accent);margin-top:2px" id="sb-user-rol"></div>
+      </div>
+      <div id="lang-switcher" style="display:none;padding:6px 10px;border-top:0.5px solid var(--border);margin:4px 0">
+        <div class="nav-label" style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;padding-bottom:5px">Idioma</div>
+        <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
       </div>
       <button class="nav-btn" onclick="doLogout()" title="Salir"><span class="nav-icon">🚪</span><span class="nav-label"> Salir</span></button>
     </div>
@@ -473,8 +482,8 @@ tr:hover td{background:var(--bg2)}
           </div>
           <div class="table-wrap">
             <table class="ventas-table">
-              <thead><tr><th>Hora</th><th>Mesa</th><th>Método</th><th>Total</th><th>Cajero</th></tr></thead>
-              <tbody id="dash-ventas-tbody"><tr><td colspan="5" style="color:var(--text2);text-align:center">Cargando...</td></tr></tbody>
+              <thead><tr><th>Hora</th><th>Canal</th><th>Lugar</th><th>Método</th><th>Total</th><th>Cajero</th></tr></thead>
+              <tbody id="dash-ventas-tbody"><tr><td colspan="6" style="color:var(--text2);text-align:center">Cargando...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -563,6 +572,11 @@ tr:hover td{background:var(--bg2)}
             <option value="tarjeta">Tarjeta</option>
             <option value="nequi">Nequi/QR</option>
           </select>
+          <select id="rep-tipo" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:30px;padding:5px 14px;font-size:12px;color:var(--text);outline:none;cursor:pointer;flex-shrink:0">
+            <option value="">Todos los canales</option>
+            <option value="pos">🍽️ Mesas / POS</option>
+            <option value="domicilio">🛵 Domicilio</option>
+          </select>
           <button onclick="loadReportes()" style="background:var(--accent,#0B8457);color:#fff;border:none;border-radius:30px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;box-shadow:0 2px 6px rgba(11,132,87,.3)">Consultar</button>
         </div>
 
@@ -595,6 +609,14 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
 
+        <!-- Por canal -->
+        <div class="card" style="margin-bottom:14px" id="rep-canales-card">
+          <div class="card-header"><h3>Por canal de venta</h3></div>
+          <div id="rep-canales" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0">
+            <div style="padding:14px 18px;text-align:center;color:var(--text2);font-size:13px">Consulta un período para ver resultados</div>
+          </div>
+        </div>
+
         <!-- Detalle de ventas -->
         <div class="card" style="margin-bottom:14px">
           <div class="card-header">
@@ -606,8 +628,8 @@ tr:hover td{background:var(--bg2)}
           </div>
           <div class="table-wrap">
             <table id="tbl-rep-ventas" style="font-size:12px">
-              <thead><tr><th></th><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Cliente</th><th>Método</th><th>Total</th><th>Cajero</th><th>Factura</th></tr></thead>
-              <tbody id="r-ventas-tbody"><tr><td colspan="9" style="color:var(--text2);text-align:center;padding:20px">Consulta un período para ver resultados</td></tr></tbody>
+              <thead><tr><th></th><th>Canal</th><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Cliente</th><th>Método</th><th>Total</th><th>Cajero</th><th>Factura</th></tr></thead>
+              <tbody id="r-ventas-tbody"><tr><td colspan="10" style="color:var(--text2);text-align:center;padding:20px">Consulta un período para ver resultados</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -633,6 +655,24 @@ tr:hover td{background:var(--bg2)}
           <div class="card-header">
             <h3>📦 Inventario actual</h3>
             <span id="r-inv-actualizado" style="font-size:11px;color:var(--text2)"></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:0.5px solid var(--border)">
+            <div style="padding:10px 14px;border-right:0.5px solid var(--border);text-align:center">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:2px">Total</div>
+              <div id="ri-total" style="font-size:20px;font-weight:700">—</div>
+            </div>
+            <div style="padding:10px 14px;border-right:0.5px solid var(--border);text-align:center">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:2px">✅ OK</div>
+              <div id="ri-ok" style="font-size:20px;font-weight:700;color:var(--green-d)">—</div>
+            </div>
+            <div style="padding:10px 14px;border-right:0.5px solid var(--border);text-align:center">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:2px">⚠️ Bajo stock</div>
+              <div id="ri-bajo" style="font-size:20px;font-weight:700;color:var(--amber-d)">—</div>
+            </div>
+            <div style="padding:10px 14px;text-align:center">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:2px">🔴 Agotado</div>
+              <div id="ri-ago" style="font-size:20px;font-weight:700;color:var(--red-d)">—</div>
+            </div>
           </div>
           <div class="table-wrap">
             <table id="tbl-rep-inv" style="font-size:12px">
@@ -733,7 +773,7 @@ tr:hover td{background:var(--bg2)}
       <!-- PERSONAL -->
       <div class="panel" id="panel-personal">
         <div class="card">
-          <div class="card-header"><h3>Usuarios</h3>
+          <div class="card-header"><h3>Empleados</h3>
             <button class="btn btn-primary btn-sm" onclick="openPersonalModal(null)">+ Nuevo</button></div>
           <div class="table-wrap">
             <table><thead><tr><th>#</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
@@ -777,6 +817,61 @@ tr:hover td{background:var(--bg2)}
           <div class="card-header"><h3>Distribución de horarios</h3>
             <button class="btn btn-primary btn-sm" onclick="openHorarioModal()">+ Turno</button></div>
           <div class="card-body" id="horarios-container"></div>
+        </div>
+      </div>
+
+      <!-- DOMICILIARIOS -->
+      <div class="panel" id="panel-domiciliarios">
+        <div class="card">
+          <div class="card-header">
+            <h3>🛵 Domiciliarios</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-sm btn-outline" id="btn-dom-link" onclick="copiarLinkDomiciliario()" title="Copiar link de la app">🔗 Link app</button>
+              <button class="btn btn-primary btn-sm" onclick="openDomiciliarioModal(null)">+ Agregar</button>
+            </div>
+          </div>
+          <div style="padding:10px 16px 0;font-size:12px;color:var(--text2);background:rgba(249,115,22,.06);border-bottom:1px solid var(--border)">
+            Los domiciliarios inician sesión en <b>/domiciliario?n=<span id="dom-neg-hint">…</span></b> con su documento y celular.
+          </div>
+          <div class="table-wrap">
+            <table id="tbl-domiciliarios" style="font-size:13px">
+              <thead><tr><th>#</th><th>Nombre</th><th>Documento</th><th>Celular</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="domiciliarios-tbody"><tr><td colspan="7" style="color:var(--text2);text-align:center;padding:20px">Cargando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal domiciliario -->
+      <div class="modal-bg" id="modal-domiciliario" style="display:none">
+        <div class="modal" style="max-width:480px">
+          <h3 id="dom-modal-title">Nuevo domiciliario</h3>
+          <input type="hidden" id="dom-id">
+          <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="field" style="grid-column:1/-1"><label>Nombre completo *</label><input id="dom-nombre" placeholder="Pedro López" maxlength="100"></div>
+            <div class="field"><label>Nº de documento *</label><input id="dom-doc" type="text" inputmode="numeric" placeholder="1234567890" maxlength="30"></div>
+            <div class="field"><label>Celular *</label><input id="dom-cel" type="tel" inputmode="numeric" placeholder="3001234567" maxlength="15"></div>
+            <div class="field">
+              <label>Rol</label>
+              <select id="dom-rol" style="width:100%;padding:9px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px">
+                <option value="domiciliario">🛵 Domiciliario</option>
+                <option value="cajero">💰 Cajero</option>
+                <option value="cocina">👨‍🍳 Cocina</option>
+                <option value="mesero">🍽️ Mesero</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Estado</label>
+              <select id="dom-activo" style="width:100%;padding:9px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px">
+                <option value="1">✅ Activo</option>
+                <option value="0">⛔ Inactivo</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-outline btn-sm" onclick="closeModal('modal-domiciliario')">Cancelar</button>
+            <button class="btn btn-primary btn-sm" onclick="saveDomiciliario()">Guardar</button>
+          </div>
         </div>
       </div>
 
@@ -892,6 +987,70 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
 
+      <!-- DOMICILIOS -->
+      <div class="panel" id="panel-domicilios">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-header">
+              <h3>🛵 Domicilios</h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-sm btn-outline" onclick="domCopyLink()" title="Copiar link de la tienda">🔗 Link tienda</button>
+                <button class="btn btn-sm btn-outline" onclick="domCopyLinkRider()" title="Copiar link para repartidores">🏍️ Link Repartidores</button>
+                <button class="btn btn-sm btn-outline" onclick="toggleDomMap()" title="Ver mapa de repartidores">🗺️ Mapa</button>
+                <button class="btn btn-sm btn-outline" onclick="domShowRiders()">👤 Domiciliarios</button>
+                <button class="btn btn-sm btn-primary" onclick="loadDomPedidos()">↺ Actualizar</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding-bottom:8px">
+              <div id="dom-link-box" style="display:none;background:var(--bg2);border-radius:var(--r);padding:10px 14px;font-size:13px;word-break:break-all;margin-bottom:8px">
+                <strong>Link para clientes:</strong><br>
+                <span id="dom-link-url" style="color:var(--blue)"></span>
+                <button class="btn btn-sm btn-outline" style="margin-top:6px;width:100%" onclick="navigator.clipboard.writeText(document.getElementById('dom-link-url').textContent).then(()=>showToast('Link copiado ✓'))">Copiar</button>
+              </div>
+              <div id="dom-rider-link-box" style="display:none;background:var(--bg2);border-radius:var(--r);padding:10px 14px;font-size:13px;word-break:break-all;margin-bottom:8px">
+                <strong>Link para repartidores:</strong><br>
+                <span id="dom-rider-link-url" style="color:#f97316"></span>
+                <button class="btn btn-sm btn-outline" style="margin-top:6px;width:100%" onclick="navigator.clipboard.writeText(document.getElementById('dom-rider-link-url').textContent).then(()=>showToast('Link copiado ✓'))">Copiar</button>
+              </div>
+              <!-- Mapa repartidores -->
+              <div id="dom-map-wrap" style="display:none;margin-bottom:10px">
+                <div id="dom-map" style="height:320px;border-radius:var(--r);overflow:hidden;border:0.5px solid var(--border2)"></div>
+                <div id="dom-map-legend" style="font-size:11px;color:var(--text3);padding:4px 2px;display:flex;gap:12px;flex-wrap:wrap"></div>
+              </div>
+
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <select id="dom-fil-estado" onchange="loadDomPedidos()" style="padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+                  <option value="todos">Todos los estados</option>
+                  <option value="pendiente" selected>Pendiente ⏳</option>
+                  <option value="aceptado">Aceptado ✅</option>
+                  <option value="en_preparacion">En preparación 👨‍🍳</option>
+                  <option value="listo">Listo 📦</option>
+                  <option value="en_camino">En camino 🛵</option>
+                  <option value="entregado">Entregado 🎉</option>
+                  <option value="cancelado">Cancelado ❌</option>
+                </select>
+                <input id="dom-fil-q" placeholder="Buscar cliente…" style="padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px;flex:1;min-width:140px" oninput="loadDomPedidos()">
+              </div>
+            </div>
+          </div>
+          <div id="dom-pedidos-list" style="display:flex;flex-direction:column;gap:12px">
+            <div style="text-align:center;padding:40px;color:var(--text3)">Cargando pedidos…</div>
+          </div>
+        </div>
+        <div id="panel-dom-riders" style="display:none">
+          <div class="card" style="margin-top:16px">
+            <div class="card-header"><h3>👤 Domiciliarios</h3><button class="btn btn-sm btn-primary" onclick="openRiderModal(null)">+ Agregar</button></div>
+            <div class="card-body">
+              <div class="table-wrap"><table>
+                <thead><tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Link rider</th><th></th></tr></thead>
+                <tbody id="dom-riders-tbody"></tbody>
+              </table></div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="domShowPedidos()">← Volver a pedidos</button>
+        </div>
+      </div>
+
       <!-- MESAS -->
       <div class="panel" id="panel-mesas-admin">
         <div class="card">
@@ -1003,7 +1162,9 @@ tr:hover td{background:var(--bg2)}
     </div>
     <div class="two-col">
       <div class="field" style="grid-column:1/-1"><label>Nombre *</label><input id="mi-nombre" placeholder="Bandeja paisa..."></div>
+      <div class="field" style="grid-column:1/-1"><label>Nombre en 中文 <span style="font-size:11px;color:var(--text2)">(opcional — para cocina y menú bilingüe)</span></label><input id="mi-nombre-zh" placeholder="红烧肉..."></div>
       <div class="field" style="grid-column:1/-1"><label>Descripción</label><input id="mi-desc" placeholder="Descripción breve..."></div>
+      <div class="field" style="grid-column:1/-1"><label>Descripción en 中文 <span style="font-size:11px;color:var(--text2)">(opcional)</span></label><input id="mi-desc-zh" placeholder="描述..."></div>
       <div class="field"><label>Precio</label><input id="mi-precio" type="number" min="0" placeholder="0"></div>
       <div class="field"><label>Categoría</label><select id="mi-cat"></select></div>
       <div class="field"><label>Tiempo preparación (min)</label><input id="mi-tiempo" type="number" min="1" placeholder="15"></div>
@@ -1389,6 +1550,7 @@ async function api(path, opts={}) {
 function fmt(n){ return '$'+(Math.round(n)||0).toLocaleString('es-CO'); }
 function fmtDate(s){ return s?new Date(s+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
 function fmtTime(s){ return s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—'; }
+function openModal(id){ document.getElementById(id).style.display='flex'; }
 function closeModal(id){ document.getElementById(id).style.display='none'; }
 function showToast(m,ok=true){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
 const toast = m => showToast(m);
@@ -1439,7 +1601,7 @@ async function forgotPassword(){
 function _abrirPortal(tipo) {
   const nid = urlNegocio;
   if (!nid) { alert('No se encontró el ID del negocio'); return; }
-  const urls = { pos: `/restaurante-pos.html?n=${nid}` };
+  const urls = { pos: `/restaurante-pos.html?n=${nid}`, domicilios: `/domicilios?n=${nid}`, domiciliario: `/domiciliario?n=${nid}` };
   window.open(urls[tipo] || '/', '_blank');
 }
 function toggleNavGroup(seccion){
@@ -1583,6 +1745,10 @@ async function checkContrato(negocioId){
     const d=await r.json();
     window._negPlan = d.plan || 'free';
     updatePlanComCard(0);
+    try{
+      const idiomas=d.idiomas?(typeof d.idiomas==='string'?JSON.parse(d.idiomas):d.idiomas):['es'];
+      if(window.initLangSwitcher) window.initLangSwitcher(idiomas);
+    }catch(_){}
     if(!d.contrato){
       $('contrato-block-msg').innerHTML='No tienes un contrato activo.<br>Contacta al administrador del sistema.';
       $('contrato-block').style.display='flex';
@@ -1645,6 +1811,7 @@ function showApp(){
   if(me?.negocio_id) checkContrato(me.negocio_id);
   loadDashboard();
   startDashTimer();
+  startDomPolling();
 }
 
 function aplicarPermisosNav(){
@@ -1677,10 +1844,12 @@ const navLoaders = {
   facturas:    loadFacturas,
   proveedores: loadProveedores,
   'pedidos-prov': loadPedidosProv,
+  domicilios:  loadDomPedidos,
   personal:    loadPersonal,
   roles:       loadRoles,
-  horarios:    loadHorarios,
-  asistencia:  loadAsistencia,
+  horarios:       loadHorarios,
+  asistencia:     loadAsistencia,
+  domiciliarios:  loadDomiciliarios,
   'cfg-factura':   loadCfgFactura,
   'cfg-impresora': loadCfgImpresora,
 };
@@ -1694,7 +1863,7 @@ function nav(p, btn){
   if(btn) btn.classList.add('active');
   expandNavGroupOf();
   const titles={dashboard:'Dashboard','mesas-admin':'Mesas','editar-menu':'Editar menú',inventario:'Inventario',caja:'Caja diaria',gastos:'Gastos',reportes:'Reportes',clientes:'Clientes',facturas:'Facturas',
-    proveedores:'Proveedores','pedidos-prov':'Solicitudes a proveedores',personal:'Usuarios',
+    proveedores:'Proveedores','pedidos-prov':'Solicitudes a proveedores',domicilios:'Domicilios',personal:'Usuarios',
     roles:'Roles y permisos',horarios:'Horarios de empleados',asistencia:'Asistencia',
     'cfg-factura':'Configuración de factura','cfg-impresora':'Configuración de impresora'};
   $('topbar-title').textContent = titles[p]||p;
@@ -1798,15 +1967,19 @@ async function loadDashboard(){
 
   // Últimas ventas
   const metodoBadge = m => `<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
+  const canalBadge  = t => t==='domicilio'
+    ? `<span style="font-size:10px;font-weight:700;color:#f97316">🛵</span>`
+    : `<span style="font-size:10px;font-weight:700;color:var(--blue,#3b82f6)">🍽️</span>`;
   $('dash-ventas-tbody').innerHTML = ventas.length
     ? ventas.map(v=>`<tr>
         <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</td>
-        <td>${v.mesa_nombre||(v.mesa_num?'Mesa '+v.mesa_num:'—')}</td>
+        <td style="text-align:center">${canalBadge(v.tipo)}</td>
+        <td>${v.lugar||(v.mesa_num?'Mesa '+v.mesa_num:'—')}</td>
         <td>${metodoBadge(v.metodo_pago)}</td>
         <td><b>${fmt(v.total)}</b></td>
         <td style="color:var(--text2)">${v.usuario_nombre||'—'}</td>
       </tr>`).join('')
-    : '<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sin ventas registradas hoy</td></tr>';
+    : '<tr><td colspan="6" style="color:var(--text2);text-align:center;padding:16px">Sin ventas registradas hoy</td></tr>';
 
   // Inventario: resumen + alertas
   if(inv && inv.length){
@@ -2198,14 +2371,16 @@ async function loadReportes(){
   try {
     const desde=$('rep-desde').value, hasta=$('rep-hasta').value;
     const metodo=$('rep-metodo').value;
+    const tipo=$('rep-tipo')?.value||'';
     const mq = metodo ? `&metodo_pago=${metodo}` : '';
+    const tq = tipo   ? `&tipo=${tipo}` : '';
 
     const [r, platos, horas, inv, ventasList] = await Promise.all([
       api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`),
-      api(`/pos/ventas/top-platos?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
-      api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
+      api(`/pos/ventas/top-platos?desde=${desde}&hasta=${hasta}${mq}${tq}`).catch(()=>[]),
+      api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}${mq}${tq}`).catch(()=>[]),
       api('/inventario/').catch(()=>[]),
-      api(`/admin/ventas?desde=${desde}&hasta=${hasta}${mq}`).catch(()=>[]),
+      api(`/admin/ventas?desde=${desde}&hasta=${hasta}${mq}${tq}`).catch(()=>[]),
     ]);
 
     // Stats
@@ -2221,8 +2396,24 @@ async function loadReportes(){
     $('rm-tarjeta').textContent =fmt(r.ventas.tarjeta);
     $('rm-nequi').textContent   =fmt(r.ventas.nequi);
 
+    // Breakdown por canal
+    const CANAL_LABELS = { pos:'🍽️ Mesas / POS', domicilio:'🛵 Domicilio' };
+    const CANAL_COLORS = { pos:'var(--blue,#3b82f6)', domicilio:'#f97316' };
+    const bk = r.breakdown || [];
+    $('rep-canales').innerHTML = bk.length
+      ? bk.map(b=>`
+          <div style="padding:14px 18px;border-right:0.5px solid var(--border);text-align:center;last-child:border:none">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:4px">${CANAL_LABELS[b.tipo]||b.tipo}</div>
+            <div style="font-size:17px;font-weight:700;color:${CANAL_COLORS[b.tipo]||'var(--text)'}">${fmt(b.total)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${b.pedidos} transacciones</div>
+          </div>`).join('')
+      : '<div style="padding:14px 18px;text-align:center;color:var(--text2);font-size:13px">Sin ventas en este período</div>';
+
     // Tabla detalle de ventas (filas expandibles)
-    const mb = m=>`<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
+    const mb  = m=>`<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
+    const mbc = t=>t==='domicilio'
+      ? `<span style="font-size:10px;font-weight:700;color:#f97316;white-space:nowrap">🛵 Dom.</span>`
+      : `<span style="font-size:10px;font-weight:700;color:var(--blue,#3b82f6);white-space:nowrap">🍽️ Mesa</span>`;
     const vc = $('r-ventas-count');
     if(vc) vc.textContent = ventasList.length ? `${ventasList.length} transacciones` : '';
     $('r-ventas-tbody').innerHTML = ventasList.length
@@ -2236,6 +2427,7 @@ async function loadReportes(){
           ].filter(Boolean).join('');
           return `<tr class="rep-venta-row" onclick="toggleRepVenta('${bid}')" style="cursor:pointer">
             <td style="width:18px;text-align:center"><span id="${bid}_ic" style="font-size:9px;color:var(--text3)">▸</span></td>
+            <td>${mbc(v.tipo)}</td>
             <td>${fmtDate(v.fecha||v.creado)}</td>
             <td>${v.hora||''}</td>
             <td>${v.lugar||'—'}</td>
@@ -2246,14 +2438,14 @@ async function loadReportes(){
             <td style="color:var(--text2);font-size:11px">${v.numero_factura||'—'}</td>
           </tr>
           <tr id="${bid}" style="display:none">
-            <td colspan="9" style="padding:8px 18px 10px;background:var(--bg2);border-bottom:1px solid var(--border)">
+            <td colspan="10" style="padding:8px 18px 10px;background:var(--bg2);border-bottom:1px solid var(--border)">
               <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--text2)">
                 ${desglose||mb(v.metodo_pago)+' <b>'+fmt(v.total)+'</b>'}
               </div>
             </td>
           </tr>`;
         }).join('')
-      : '<tr><td colspan="9" style="color:var(--text2);text-align:center;padding:20px">Sin ventas en este período</td></tr>';
+      : '<tr><td colspan="10" style="color:var(--text2);text-align:center;padding:20px">Sin ventas en este período</td></tr>';
 
     // Guardar datos para exportar
     window._repData = { desde, hasta, r, ventasList, inv };
@@ -2828,6 +3020,79 @@ async function saveRol(){
   } catch(e){ showToast('Error: '+e.message); }
 }
 
+// ─── DOMICILIARIOS (empleados con rol domiciliario) ──────────────
+async function loadDomiciliarios(){
+  // Mostrar negocio_id en el hint de URL
+  const nid = me?.negocio_id || '';
+  const hint = document.getElementById('dom-neg-hint');
+  if(hint) hint.textContent = nid;
+  const btnLink = document.getElementById('btn-dom-link');
+  if(btnLink) btnLink.dataset.link = `/domiciliario?n=${nid}`;
+
+  try {
+    const lista = await api('/admin/empleados');
+    const tbody = document.getElementById('domiciliarios-tbody');
+    const ROL_LABELS = { domiciliario:'🛵 Domiciliario', cajero:'💰 Cajero', cocina:'👨‍🍳 Cocina', mesero:'🍽️ Mesero' };
+    tbody.innerHTML = lista.length
+      ? lista.map((e,i)=>`<tr>
+          <td style="color:var(--text3)">${i+1}</td>
+          <td style="font-weight:600">${e.nombre}</td>
+          <td style="font-family:monospace">${e.documento}</td>
+          <td>${e.celular}</td>
+          <td>${ROL_LABELS[e.rol]||e.rol}</td>
+          <td><span class="badge ${e.activo?'badge-green':'badge-gray'}">${e.activo?'Activo':'Inactivo'}</span></td>
+          <td style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-outline" onclick='openDomiciliarioModal(${JSON.stringify(e)})'>✏️</button>
+            <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="deleteDomiciliario('${e.id}','${e.nombre}')">🗑</button>
+          </td>
+        </tr>`).join('')
+      : '<tr><td colspan="7" style="color:var(--text2);text-align:center;padding:20px">No hay domiciliarios registrados. Agrega el primero con el botón +</td></tr>';
+  } catch(e){ showToast('Error cargando domiciliarios: '+e.message); }
+}
+
+function openDomiciliarioModal(emp){
+  document.getElementById('dom-id').value     = emp?.id||'';
+  document.getElementById('dom-nombre').value = emp?.nombre||'';
+  document.getElementById('dom-doc').value    = emp?.documento||'';
+  document.getElementById('dom-cel').value    = emp?.celular||'';
+  document.getElementById('dom-rol').value    = emp?.rol||'domiciliario';
+  document.getElementById('dom-activo').value = emp?.activo!=null ? String(emp.activo) : '1';
+  document.getElementById('dom-modal-title').textContent = emp ? 'Editar empleado' : 'Nuevo domiciliario';
+  openModal('modal-domiciliario');
+}
+
+async function saveDomiciliario(){
+  const id      = document.getElementById('dom-id').value;
+  const nombre  = document.getElementById('dom-nombre').value.trim();
+  const doc     = document.getElementById('dom-doc').value.trim();
+  const cel     = document.getElementById('dom-cel').value.trim();
+  const rol     = document.getElementById('dom-rol').value;
+  const activo  = parseInt(document.getElementById('dom-activo').value);
+  if(!nombre||!doc||!cel){ showToast('Nombre, documento y celular son requeridos'); return; }
+  try {
+    if(id) await api(`/admin/empleados/${id}`,{method:'PUT',body:JSON.stringify({nombre,documento:doc,celular:cel,rol,activo})});
+    else   await api('/admin/empleados',{method:'POST',body:JSON.stringify({nombre,documento:doc,celular:cel,rol,activo})});
+    closeModal('modal-domiciliario');
+    showToast('✅ Guardado');
+    loadDomiciliarios();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+async function deleteDomiciliario(id, nombre){
+  if(!confirm(`¿Eliminar a ${nombre}?`)) return;
+  try {
+    await api(`/admin/empleados/${id}`,{method:'DELETE'});
+    showToast('Eliminado');
+    loadDomiciliarios();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+function copiarLinkDomiciliario(){
+  const nid = me?.negocio_id||'';
+  const link = `${location.origin}/domiciliario?n=${nid}`;
+  navigator.clipboard?.writeText(link).then(()=>showToast('🔗 Link copiado: '+link)).catch(()=>showToast(link));
+}
+
 // ─── HORARIOS ────────────────────────────────────────────────
 async function loadHorarios(){
   const [horarios,personal]=await Promise.all([api('/admin/horarios'),api('/admin/usuarios')]);
@@ -3154,7 +3419,7 @@ async function subirFotoMenu(id,input){
 async function openMenuItemModal(id){
   menuItemEditId=id; miRecetaLocal=[];
   $('mi-modal-title').textContent=id?'Editar artículo':'Nuevo artículo';
-  ['mi-nombre','mi-desc','mi-precio','mi-tiempo'].forEach(f=>$(f).value='');
+  ['mi-nombre','mi-nombre-zh','mi-desc','mi-desc-zh','mi-precio','mi-tiempo'].forEach(f=>$(f).value='');
   $('mi-foto-preview').style.display='none'; $('mi-foto-preview').src='';
   $('mi-foto-file').value=''; $('mi-receta-inv').value=''; $('mi-receta-cant').value='';
   renderRecetaList();
@@ -3167,7 +3432,8 @@ async function openMenuItemModal(id){
   if(id){
     try{
       const [item, receta]=await Promise.all([api(`/pos/menu/items/${id}`), api(`/pos/menu/items/${id}/receta`)]);
-      $('mi-nombre').value=item.nombre||''; $('mi-desc').value=item.descripcion||'';
+      $('mi-nombre').value=item.nombre||''; $('mi-nombre-zh').value=item.nombre_zh||'';
+      $('mi-desc').value=item.descripcion||''; $('mi-desc-zh').value=item.descripcion_zh||'';
       $('mi-precio').value=item.precio||0;
       $('mi-cat').value=item.categoria_id||''; $('mi-tiempo').value=item.tiempo_prep||15;
       $('mi-inventario').value=item.inventario_id||'';
@@ -3268,7 +3534,8 @@ function previewMenuFoto(input){
 async function saveMenuItem(){
   try {
     const b={nombre:$('mi-nombre').value,descripcion:$('mi-desc').value,precio:+$('mi-precio').value||0,
-             categoria_id:$('mi-cat').value,tiempo_prep:+$('mi-tiempo').value||15,inventario_id:$('mi-inventario').value||null};
+             categoria_id:$('mi-cat').value,tiempo_prep:+$('mi-tiempo').value||15,inventario_id:$('mi-inventario').value||null,
+             nombre_zh:$('mi-nombre-zh').value||null,descripcion_zh:$('mi-desc-zh').value||null};
     if(menuItemEditId) await api(`/pos/menu/items/${menuItemEditId}`,{method:'PUT',body:JSON.stringify(b)});
     else {
       const r=await api('/pos/menu/items',{method:'POST',body:JSON.stringify(b)}); menuItemEditId=r.id;
@@ -3654,7 +3921,410 @@ async function importarExcel(input){
   } catch(e){ toast('Error importando: '+e.message); }
   input.value='';
 }
+
+// ══════════════════════════════════════════════════════════════
+// DOMICILIOS — panel admin
+// ══════════════════════════════════════════════════════════════
+let _domPollTimer = null;
+let _domLastCount = 0;
+let _domRiders    = [];
+
+const DOM_ESTADOS = {
+  pendiente:      { label:'Pendiente',       color:'var(--amber)',    bg:'var(--amber-l)' },
+  aceptado:       { label:'Aceptado',        color:'#0B8457',         bg:'var(--green-l)' },
+  en_preparacion: { label:'En preparación',  color:'#7c3aed',         bg:'#ede9fe' },
+  listo:          { label:'Listo',           color:'#0284c7',         bg:'#e0f2fe' },
+  en_camino:      { label:'En camino',       color:'#d97706',         bg:'#fef3c7' },
+  recogido:       { label:'Recogido',        color:'#d97706',         bg:'#fef3c7' },
+  entregado:      { label:'Entregado',       color:'#16a34a',         bg:'#dcfce7' },
+  cancelado:      { label:'Cancelado',       color:'var(--red)',      bg:'var(--red-l)' },
+};
+
+const DOM_SIGUIENTE = {
+  pendiente:      [{label:'✅ Aceptar',    estado:'aceptado',      cls:'btn-success'},
+                   {label:'❌ Cancelar',   estado:'cancelado',     cls:'btn-danger'}],
+  aceptado:       [{label:'👨‍🍳 Preparando', estado:'en_preparacion',cls:'btn-primary'}],
+  en_preparacion: [{label:'📦 Listo',     estado:'listo',         cls:'btn-primary'}],
+  listo:          [{label:'🛵 En camino', estado:'en_camino',     cls:'btn-primary'}],
+  en_camino:      [{label:'🎉 Entregado', estado:'entregado',     cls:'btn-success'}],
+};
+
+async function loadDomPedidos() {
+  const estado = document.getElementById('dom-fil-estado')?.value || 'pendiente';
+  const q      = document.getElementById('dom-fil-q')?.value || '';
+  try {
+    const d = await api(`/domicilios/pedidos?estado=${estado}&q=${encodeURIComponent(q)}`);
+    _domLastCount = d.pendientes || 0;
+    _updateDomBadge(_domLastCount);
+    renderDomPedidos(d.pedidos || []);
+    await loadDomRiders();
+  } catch(e) {
+    document.getElementById('dom-pedidos-list').innerHTML =
+      `<div class="card"><div class="card-body" style="color:var(--red)">Error: ${e.message}</div></div>`;
+  }
+}
+
+function _updateDomBadge(n) {
+  const badge = document.getElementById('dom-nav-badge');
+  if (!badge) return;
+  badge.textContent = n || '';
+  badge.style.display = n > 0 ? 'inline-block' : 'none';
+}
+
+function renderDomPedidos(pedidos) {
+  const el = document.getElementById('dom-pedidos-list');
+  if (!pedidos.length) {
+    el.innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--text3)">Sin pedidos para este filtro</div></div>`;
+    return;
+  }
+  el.innerHTML = pedidos.map(p => {
+    const st  = DOM_ESTADOS[p.estado] || DOM_ESTADOS.pendiente;
+    const items = p.items || [];
+    const ridersOpts = _domRiders.map(r => `<option value="${r.id}" ${p.rider_id===r.id?'selected':''}>${r.nombre}</option>`).join('');
+    const siguientes = DOM_SIGUIENTE[p.estado] || [];
+    const waLink = (() => {
+      const tel = (p.cliente_tel||'').replace(/\D/g,'');
+      const msg = encodeURIComponent(`Hola ${p.cliente_nombre}, su pedido por ${fmtCOP(p.total)} fue aceptado. Pronto se lo despachamos. ¡Gracias!`);
+      return tel ? `https://wa.me/${tel.startsWith('57')?'':57}${tel}?text=${msg}` : null;
+    })();
+    return `<div class="card" style="border-left:3px solid ${st.color}">
+      <div class="card-header" style="flex-wrap:wrap;gap:8px">
+        <div style="flex:1;min-width:180px">
+          <span style="font-weight:700">${p.cliente_nombre}</span>
+          <span style="font-size:11px;margin-left:8px;background:${st.bg};color:${st.color};border-radius:12px;padding:2px 8px">${st.label}</span><br>
+          <span style="font-size:12px;color:var(--text3)">#${p.id.slice(0,8).toUpperCase()} · ${new Date(p.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+        <div style="text-align:right">
+          <strong style="font-size:16px;color:var(--blue)">${fmtCOP(p.total)}</strong><br>
+          ${p.pago_estado==='pagado'
+            ? `<span style="font-size:11px;background:#d1fae5;color:#065f46;border-radius:10px;padding:2px 8px">✅ Pagado</span>`
+            : `<span style="font-size:11px;background:#fef3c7;color:#92400e;border-radius:10px;padding:2px 8px">⏳ Pago pendiente</span>`}
+        </div>
+      </div>
+      <div class="card-body" style="padding-top:4px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:10px">
+          <div><span style="color:var(--text3)">📱</span> ${p.cliente_tel}</div>
+          <div style="grid-column:1/-1"><span style="color:var(--text3)">📍</span> ${p.cliente_dir}</div>
+          ${p.notas ? `<div style="grid-column:1/-1;color:var(--amber-d)">⚠️ ${p.notas}</div>` : ''}
+        </div>
+        <div style="font-size:13px;margin-bottom:10px">
+          ${items.map(it=>`<div style="display:flex;justify-content:space-between"><span>${it.nombre} x${it.qty}</span><span>${fmtCOP(it.subtotal)}</span></div>`).join('')}
+        </div>
+        ${_domRiders.length ? `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+          <label style="font-size:12px;color:var(--text2);white-space:nowrap">🛵 Domiciliario:</label>
+          <select onchange="assignDomRider('${p.id}',this.value)" style="flex:1;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+            <option value="">Sin asignar</option>${ridersOpts}
+          </select>
+        </div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${siguientes.map(s=>`<button class="btn btn-sm ${s.cls}" onclick="updateDomEstado('${p.id}','${s.estado}')">${s.label}</button>`).join('')}
+          ${waLink ? `<a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25d366;color:#fff">💬 WhatsApp</a>` : ''}
+          <button class="btn btn-sm btn-outline" onclick="printDomPrefactura('${p.id}')">🖨️ Pre-factura</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function printDomPrefactura(id) {
+  try {
+    const { pedido: p, negocio: neg } = await api(`/domicilios/pedidos/${id}/prefactura`);
+    const items = p.items || [];
+    const fecha = new Date(p.created_at).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' });
+    const numPed = p.id.slice(0,8).toUpperCase();
+    const fmtVal = v => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(v);
+    const iva = items.reduce((a,it)=>a+(parseFloat(it.subtotal)||0)*((parseFloat(it.iva_pct)||0)/100),0);
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Pre-factura ${numPed}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Courier New',monospace;font-size:13px;width:80mm;margin:0 auto;padding:6px}
+  .center{text-align:center} .right{text-align:right}
+  .big{font-size:18px;font-weight:700}
+  .sep{border:none;border-top:1px dashed #000;margin:6px 0}
+  table{width:100%;border-collapse:collapse}
+  td{padding:2px 0;vertical-align:top}
+  .pend{font-size:15px;font-weight:700;border:2px solid #000;padding:4px;text-align:center;margin:8px 0}
+  @media print{body{width:80mm} @page{margin:0;size:80mm auto}}
+</style></head><body>
+<div class="center"><div class="big">${neg.nombre || 'Negocio'}</div>
+${neg.telefono ? `<div>${neg.telefono}</div>` : ''}
+${neg.direccion ? `<div>${neg.direccion}${neg.ciudad?', '+neg.ciudad:''}</div>` : ''}
+</div>
+<hr class="sep">
+<div class="center big" style="font-size:20px;letter-spacing:2px">PRE-FACTURA</div>
+<hr class="sep">
+<table><tbody>
+<tr><td><b>Pedido #</b></td><td class="right">${numPed}</td></tr>
+<tr><td><b>Fecha</b></td><td class="right">${fecha}</td></tr>
+<tr><td><b>Cliente</b></td><td class="right">${p.cliente_nombre}</td></tr>
+<tr><td><b>Teléfono</b></td><td class="right">${p.cliente_tel}</td></tr>
+<tr><td><b>Dirección</b></td><td class="right" style="max-width:40mm">${p.cliente_dir}</td></tr>
+${p.notas ? `<tr><td><b>Notas</b></td><td class="right">${p.notas}</td></tr>` : ''}
+</tbody></table>
+<hr class="sep">
+<table><thead><tr><td><b>Producto</b></td><td class="right"><b>Cant</b></td><td class="right"><b>Total</b></td></tr></thead>
+<tbody>
+${items.map(it=>`<tr><td>${it.nombre}</td><td class="right">${it.qty}</td><td class="right">${fmtVal(it.subtotal)}</td></tr>`).join('')}
+</tbody></table>
+<hr class="sep">
+<table><tbody>
+<tr><td>Subtotal</td><td class="right">${fmtVal(p.subtotal)}</td></tr>
+${iva>0?`<tr><td>IVA</td><td class="right">${fmtVal(iva)}</td></tr>`:''}
+<tr><td><b>TOTAL</b></td><td class="right"><b>${fmtVal(p.total)}</b></td></tr>
+</tbody></table>
+<div class="pend">⏳ PAGO PENDIENTE</div>
+<div class="center" style="font-size:11px;margin-top:4px">Este documento NO es factura definitiva.<br>
+El pago se confirma al momento de la entrega.</div>
+</body></html>`;
+
+    const w = window.open('', '_blank', 'width=400,height=600');
+    w.document.write(html);
+    w.document.close();
+    w.onload = () => { w.focus(); w.print(); };
+  } catch(e) { showToast('Error al generar pre-factura: ' + e.message); }
+}
+
+async function updateDomEstado(id, estado) {
+  try {
+    await api(`/domicilios/pedidos/${id}`, { method:'PUT', body:JSON.stringify({ estado }) });
+    showToast(`Estado → ${DOM_ESTADOS[estado]?.label || estado}`);
+    loadDomPedidos();
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+async function assignDomRider(pedidoId, riderId) {
+  try {
+    await api(`/domicilios/pedidos/${pedidoId}`, { method:'PUT', body:JSON.stringify({ domiciliario_id: riderId||null, estado: 'aceptado' }) });
+    showToast('Domiciliario asignado ✓');
+    loadDomPedidos();
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+async function loadDomRiders() {
+  try { _domRiders = await api('/domicilios/riders'); renderDomRiders(); } catch(_) { _domRiders = []; }
+}
+
+function renderDomRiders() {
+  const tbody = document.getElementById('dom-riders-tbody');
+  if (!tbody) return;
+  if (!_domRiders.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Sin domiciliarios registrados</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _domRiders.map(r => {
+    const link = `${location.origin}/rider?t=${r.token}`;
+    return `<tr>
+      <td>${r.nombre}</td>
+      <td>${r.telefono||'—'}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${r.activo?'var(--green-l)':'var(--red-l)'};color:${r.activo?'var(--green)':'var(--red)'}">${r.activo?'Activo':'Inactivo'}</span></td>
+      <td><button class="btn btn-sm btn-outline" onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Link del rider copiado ✓'))">📋 Copiar link</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm btn-outline" onclick="openRiderModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRider('${r.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function domShowRiders() {
+  loadDomRiders();
+  document.querySelector('#panel-domicilios > div:first-child').style.display = 'none';
+  document.getElementById('panel-dom-riders').style.display = 'block';
+}
+
+function domShowPedidos() {
+  document.querySelector('#panel-domicilios > div:first-child').style.display = 'flex';
+  document.getElementById('panel-dom-riders').style.display = 'none';
+}
+
+function domCopyLink() {
+  const nid = me?.negocio_id;
+  if (!nid) return;
+  const link = `${location.origin}/domicilios?n=${nid}`;
+  const box = document.getElementById('dom-link-box');
+  document.getElementById('dom-link-url').textContent = link;
+  document.getElementById('dom-rider-link-box').style.display = 'none';
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function domCopyLinkRider() {
+  const nid = me?.negocio_id;
+  if (!nid) return;
+  const link = `${location.origin}/domiciliario?n=${nid}`;
+  const box = document.getElementById('dom-rider-link-box');
+  document.getElementById('dom-rider-link-url').textContent = link;
+  document.getElementById('dom-link-box').style.display = 'none';
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── Mapa de repartidores (Leaflet + OpenStreetMap) ────────────────
+let _riderMap = null;
+let _riderMapMarkers = {};
+let _riderMapTimer = null;
+
+function toggleDomMap() {
+  const wrap = document.getElementById('dom-map-wrap');
+  const visible = wrap.style.display !== 'none';
+  if (visible) {
+    wrap.style.display = 'none';
+    if (_riderMapTimer) { clearInterval(_riderMapTimer); _riderMapTimer = null; }
+  } else {
+    wrap.style.display = 'block';
+    _initRiderMap();
+  }
+}
+
+function _initRiderMap() {
+  if (_riderMap) { _loadRiderUbicaciones(); return; }
+  if (!window.L) {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    js.onload = () => _createRiderMap();
+    document.head.appendChild(js);
+  } else {
+    _createRiderMap();
+  }
+}
+
+function _createRiderMap() {
+  const el = document.getElementById('dom-map');
+  if (!el || _riderMap) return;
+  // Centro por defecto: Colombia
+  _riderMap = L.map(el).setView([4.6097, -74.0817], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom:19
+  }).addTo(_riderMap);
+  _loadRiderUbicaciones();
+  _riderMapTimer = setInterval(_loadRiderUbicaciones, 25000);
+}
+
+async function _loadRiderUbicaciones() {
+  try {
+    const { riders } = await api('/domicilios/rider/ubicaciones');
+    const legend = document.getElementById('dom-map-legend');
+    if (!riders.length) {
+      legend.innerHTML = '<span>Sin repartidores con GPS activo</span>';
+      return;
+    }
+    const bounds = [];
+    const COLORS = ['#f97316','#3b82f6','#22c55e','#a855f7','#ef4444','#eab308'];
+    riders.forEach((r, i) => {
+      const color = COLORS[i % COLORS.length];
+      const lat = parseFloat(r.lat), lng = parseFloat(r.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+      bounds.push([lat, lng]);
+      const icon = L.divIcon({
+        html: `<div style="background:${color};color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid #fff">🛵</div>`,
+        className:'',iconSize:[32,32],iconAnchor:[16,16]
+      });
+      if (_riderMapMarkers[r.id]) {
+        _riderMapMarkers[r.id].setLatLng([lat, lng]);
+      } else {
+        _riderMapMarkers[r.id] = L.marker([lat, lng], { icon })
+          .addTo(_riderMap)
+          .bindPopup(`<b>${r.nombre}</b><br>${r.pedidos_activos} entrega(s) activa(s)`);
+      }
+      // Leyenda
+      const mins = r.gps_at ? Math.round((Date.now()-new Date(r.gps_at))/60000) : '?';
+      legend.innerHTML = riders.map((rd,i2)=>`
+        <span style="display:flex;align-items:center;gap:4px">
+          <span style="background:${COLORS[i2%COLORS.length]};border-radius:50%;width:10px;height:10px;display:inline-block"></span>
+          ${rd.nombre} — hace ${rd.gps_at?Math.round((Date.now()-new Date(rd.gps_at))/60000)+'min':'?'}
+        </span>`).join('');
+    });
+    if (bounds.length) _riderMap.fitBounds(bounds, { padding:[30,30], maxZoom:16 });
+  } catch(e) { console.error('Mapa riders:', e.message); }
+}
+
+let _editRiderId = null;
+function openRiderModal(rider) {
+  _editRiderId = rider?.id || null;
+  document.getElementById('dr-nombre').value = rider?.nombre || '';
+  document.getElementById('dr-tel').value    = rider?.telefono || '';
+  document.getElementById('dom-rider-modal').style.display = 'flex';
+}
+
+async function saveRider() {
+  const nombre = document.getElementById('dr-nombre').value.trim();
+  const tel    = document.getElementById('dr-tel').value.trim();
+  if (!nombre) { showToast('Ingresa el nombre'); return; }
+  try {
+    if (_editRiderId) {
+      await api(`/domicilios/riders/${_editRiderId}`, { method:'PUT', body:JSON.stringify({nombre,telefono:tel}) });
+    } else {
+      await api('/domicilios/riders', { method:'POST', body:JSON.stringify({nombre,telefono:tel}) });
+    }
+    closeModal('dom-rider-modal');
+    await loadDomRiders();
+    showToast(_editRiderId ? 'Actualizado ✓' : 'Domiciliario creado ✓');
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+async function deleteRider(id) {
+  if (!confirm('¿Eliminar domiciliario?')) return;
+  await api(`/domicilios/riders/${id}`, { method:'DELETE' });
+  loadDomRiders();
+}
+
+function startDomPolling() {
+  if (_domPollTimer) return;
+  _domPollTimer = setInterval(async () => {
+    if (currentPage !== 'domicilios') {
+      try {
+        const tok = sessionStorage.getItem('bdj_adm_token');
+        if (!tok) return;
+        const r = await fetch('/api/domicilios/pendientes-count', { headers:{'Authorization':'Bearer '+tok} });
+        if (!r.ok) return;
+        const { n } = await r.json();
+        if (n > _domLastCount) {
+          _domLastCount = n; _updateDomBadge(n);
+          _domBeep();
+          showToast(`🛵 Nuevo pedido de domicilio (${n} pendiente${n>1?'s':''})`);
+        } else { _domLastCount = n; _updateDomBadge(n); }
+      } catch(_) {}
+    } else { loadDomPedidos(); }
+  }, 20000);
+}
+
+function _domBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 200, 400].forEach(delay => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.3, ctx.currentTime + delay/1000);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.25);
+      o.start(ctx.currentTime + delay/1000);
+      o.stop(ctx.currentTime + delay/1000 + 0.25);
+    });
+  } catch(_) {}
+}
+
+function fmtCOP(n) {
+  return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0);
+}
 </script>
+
+<!-- Modal rider -->
+<div class="modal-overlay" id="dom-rider-modal" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><h3>Domiciliario</h3><button onclick="closeModal('dom-rider-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre *</label><input id="dr-nombre" placeholder="Juan Pérez"></div>
+      <div class="field"><label>Teléfono / WhatsApp</label><input id="dr-tel" type="tel" placeholder="300 123 4567"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('dom-rider-modal')">Cancelar</button><button class="btn btn-primary" onclick="saveRider()">Guardar</button></div>
+  </div>
+</div>
 <!-- Tooltip compartido para inventario y menú -->
 <div id="inv-tooltip" style="display:none;position:fixed;z-index:9999;pointer-events:none;background:var(--bg);border:1px solid var(--border2);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.15);padding:12px 16px;min-width:220px;max-width:300px;font-size:12px"></div>
 

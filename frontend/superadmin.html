@@ -557,8 +557,51 @@ tr:hover td{background:var(--bg2)}
       <div class="field"><label>NIT</label><input id="neg-nit" placeholder="900.123.456-7"></div>
       <div class="field"><label>Ciudad</label><input id="neg-ciudad" placeholder="Bogotá"></div>
       <div class="field"><label>Teléfono</label><input id="neg-tel" placeholder="+57 300..."></div>
+      <div class="field" style="grid-column:1/-1"><label>Departamento / Región</label>
+        <select id="neg-depto" style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px">
+          <option value="">— Seleccionar —</option>
+          <option>Amazonas</option><option>Antioquia</option><option>Arauca</option>
+          <option>Atlántico</option><option>Bogotá D.C.</option><option>Bolívar</option>
+          <option>Boyacá</option><option>Caldas</option><option>Caquetá</option>
+          <option>Casanare</option><option>Cauca</option><option>Cesar</option>
+          <option>Chocó</option><option>Córdoba</option><option>Cundinamarca</option>
+          <option>Guainía</option><option>Guaviare</option><option>Huila</option>
+          <option>La Guajira</option><option>Magdalena</option><option>Meta</option>
+          <option>Nariño</option><option>Norte de Santander</option><option>Putumayo</option>
+          <option>Quindío</option><option>Risaralda</option><option>San Andrés y Providencia</option>
+          <option>Santander</option><option>Sucre</option><option>Tolima</option>
+          <option>Valle del Cauca</option><option>Vaupés</option><option>Vichada</option>
+        </select>
+      </div>
       <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="neg-dir" placeholder="Calle 123 # 45-67"></div>
       <div class="field" style="grid-column:1/-1"><label>Email</label><input id="neg-email" type="email" placeholder="info@negocio.com"></div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Color corporativo (app domicilios)</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <input type="color" id="neg-color" value="#6c4ff6" style="width:48px;height:36px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;padding:2px;background:none">
+          <span style="font-size:13px;color:var(--text2)">Color principal de la app de domicilios para clientes</span>
+        </div>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Idiomas del sistema</label>
+        <div id="neg-idiomas-wrap" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
+            <input type="checkbox" name="neg-idioma" value="es" checked> Español
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
+            <input type="checkbox" name="neg-idioma" value="en"> English
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
+            <input type="checkbox" name="neg-idioma" value="pt"> Português
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
+            <input type="checkbox" name="neg-idioma" value="fr"> Français
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
+            <input type="checkbox" name="neg-idioma" value="zh"> 中文 (Mandarín)
+          </label>
+        </div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('negocio-modal')">Cancelar</button>
@@ -726,22 +769,30 @@ function showQR(negocioId, nombre, tipo){
   const base = window.location.origin;
   const urls = {
     restaurante: [
-      { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
-      { label:'Portal Empleados', url:`${base}/portal-empleado.html?n=${negocioId}` },
+      { label:'🛵 App Domicilios (Clientes)',    url:`${base}/domicilios?n=${negocioId}` },
+      { label:'🏍️ App Domiciliario (Repartidor)', url:`${base}/domiciliario?n=${negocioId}` },
+      { label:'⚙️ Admin Restaurante',             url:`${base}/admin?n=${negocioId}` },
+      { label:'🖥️ POS Restaurante',               url:`${base}/pos?n=${negocioId}` },
     ],
     minimercado: [
-      { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
-      { label:'Portal Empleados', url:`${base}/portal-empleado.html?n=${negocioId}` },
+      { label:'🛵 App Domicilios (Clientes)',    url:`${base}/domicilios?n=${negocioId}` },
+      { label:'🏍️ App Domiciliario (Repartidor)', url:`${base}/domiciliario?n=${negocioId}` },
+      { label:'⚙️ Admin Minimercado',             url:`${base}/minimercado-admin.html?n=${negocioId}` },
+      { label:'🖥️ POS Minimercado',               url:`${base}/pos-minimercado.html?n=${negocioId}` },
     ],
     peluqueria: [
-      { label:'Reservar cita', url:`${base}/peluqueria-reservar.html?n=${negocioId}` },
-      { label:'Portal Empleados', url:`${base}/portal-empleado.html?n=${negocioId}` },
-      { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
+      { label:'📅 Reservar cita',     url:`${base}/peluqueria-reservar.html?n=${negocioId}` },
+      { label:'👤 Portal Empleados',  url:`${base}/portal-empleado.html?n=${negocioId}` },
+      { label:'⚙️ Admin Peluquería',  url:`${base}/peluqueria-admin.html?n=${negocioId}` },
+    ],
+    bar: [
+      { label:'🛵 App Domicilios (Clientes)',    url:`${base}/domicilios?n=${negocioId}` },
+      { label:'🏍️ App Domiciliario (Repartidor)', url:`${base}/domiciliario?n=${negocioId}` },
+      { label:'⚙️ Admin Bar',                     url:`${base}/bar-admin.html?n=${negocioId}` },
     ],
   };
   const items = urls[tipo] || [
-    { label:'Portal de acceso', url:`${base}/portal.html?n=${negocioId}` },
-    { label:'Portal Empleados', url:`${base}/portal-empleado.html?n=${negocioId}` },
+    { label:'⚙️ Panel Admin', url:`${base}/admin?n=${negocioId}` },
   ];
   document.getElementById('qr-modal-title').textContent = `QR — ${nombre}`;
   document.getElementById('qr-grid').innerHTML = items.map(item=>{
@@ -892,10 +943,10 @@ async function loadNegocios(){
     const base = window.location.origin;
     const _tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
     const _negLinks = {
-      restaurante: [['Admin','/admin'],['POS','/pos']],
-      minimercado: [['Admin','/minimercado-admin.html'],['POS','/pos-minimercado.html']],
+      restaurante: [['Admin','/admin'],['POS','/pos'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
+      minimercado: [['Admin','/minimercado-admin.html'],['POS','/pos-minimercado.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
       peluqueria:  [['Admin','/peluqueria-admin.html'],['POS','/pos-peluqueria.html'],['Reservas','/peluqueria-reservar.html'],['Portal','/portal-empleado.html']],
-      bar:         [['Admin','/bar-admin.html']],
+      bar:         [['Admin','/bar-admin.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
       veterinaria: [['Admin','/vet-admin.html']],
       taller:      [['Admin','/taller-admin.html']],
       lavanderia:  [['Admin','/lavanderia-admin.html']],
@@ -942,13 +993,24 @@ function openNegocioModal(id){
   editingNegocioId = id;
   document.getElementById('neg-modal-title').textContent = id ? 'Editar negocio' : 'Nuevo negocio';
   const n = id ? negociosCache.find(x => x.id === id) : null;
-  document.getElementById('neg-nombre').value  = n?.nombre    || '';
-  document.getElementById('neg-tipo').value    = n?.tipo      || 'restaurante';
-  document.getElementById('neg-nit').value     = n?.nit       || '';
-  document.getElementById('neg-ciudad').value  = n?.ciudad    || '';
-  document.getElementById('neg-tel').value     = n?.telefono  || '';
-  document.getElementById('neg-dir').value     = n?.direccion || '';
-  document.getElementById('neg-email').value   = n?.email     || '';
+  document.getElementById('neg-nombre').value  = n?.nombre       || '';
+  document.getElementById('neg-tipo').value    = n?.tipo         || 'restaurante';
+  document.getElementById('neg-nit').value     = n?.nit          || '';
+  document.getElementById('neg-ciudad').value  = n?.ciudad       || '';
+  document.getElementById('neg-tel').value     = n?.telefono     || '';
+  document.getElementById('neg-dir').value     = n?.direccion    || '';
+  document.getElementById('neg-email').value   = n?.email        || '';
+  document.getElementById('neg-depto').value   = n?.departamento || '';
+  const _colorTipo = { restaurante:'#e65c00', bar:'#7c1f3e', minimercado:'#0B8457',
+    peluqueria:'#0B8457', veterinaria:'#0ea5e9', farmacia:'#dc2626',
+    taller:'#374151', lavanderia:'#0284c7', gimnasio:'#7c3aed' };
+  document.getElementById('neg-color').value  = n?.color_primario || _colorTipo[n?.tipo] || '#6c4ff6';
+  // Idiomas checkboxes
+  let selIdiomas = ['es'];
+  try { selIdiomas = n?.idiomas ? JSON.parse(n.idiomas) : ['es']; } catch(_){}
+  document.querySelectorAll('input[name="neg-idioma"]').forEach(cb => {
+    cb.checked = selIdiomas.includes(cb.value);
+  });
   // Reset logo input
   document.getElementById('neg-logo-input').value = '';
   const prev = document.getElementById('neg-logo-preview');
@@ -984,14 +1046,18 @@ function previewLogoNeg(input) {
 }
 
 async function saveNegocio(){
+  const idiomas = [...document.querySelectorAll('input[name="neg-idioma"]:checked')].map(cb => cb.value);
   const body = {
-    nombre:   document.getElementById('neg-nombre').value.trim(),
-    tipo:     document.getElementById('neg-tipo').value,
-    nit:      document.getElementById('neg-nit').value,
-    ciudad:   document.getElementById('neg-ciudad').value,
-    telefono: document.getElementById('neg-tel').value,
-    direccion:document.getElementById('neg-dir').value,
-    email:    document.getElementById('neg-email').value,
+    nombre:       document.getElementById('neg-nombre').value.trim(),
+    tipo:         document.getElementById('neg-tipo').value,
+    nit:          document.getElementById('neg-nit').value,
+    ciudad:       document.getElementById('neg-ciudad').value,
+    telefono:     document.getElementById('neg-tel').value,
+    direccion:    document.getElementById('neg-dir').value,
+    email:        document.getElementById('neg-email').value,
+    departamento:   document.getElementById('neg-depto').value || null,
+    idiomas:        idiomas.length ? idiomas : ['es'],
+    color_primario: document.getElementById('neg-color').value || '#6c4ff6',
   };
   try {
     let negId = editingNegocioId;

@@ -22,6 +22,7 @@ const posRouter        = require('./routes/pos');
 const inventarioRouter = require('./routes/inventario');
 const clientesRouter    = require('./routes/clientes');
 const peluqueriaRouter  = require('./routes/peluqueria');
+const domiciliosRouter  = require('./routes/domicilios');
 
 const app    = express();
 const server = http.createServer(app);
@@ -42,6 +43,9 @@ app.get('/superadmin',   (_, res) => res.sendFile(path.join(frontendPath, 'super
 app.get('/admin',        (_, res) => res.sendFile(path.join(frontendPath, 'admin-restaurante.html')));
 app.get('/pos',          (_, res) => res.sendFile(path.join(frontendPath, 'restaurante-pos.html')));
 app.get('/app',          (_, res) => res.sendFile(path.join(frontendPath, 'app.html')));
+app.get('/domicilios',    (_, res) => res.sendFile(path.join(frontendPath, 'domicilios.html')));
+app.get('/domiciliario',  (_, res) => res.sendFile(path.join(frontendPath, 'domiciliario.html')));
+app.get('/rider',         (_, res) => res.sendFile(path.join(frontendPath, 'rider.html')));
 
 // ── Multer para logos ─────────────────────────────────────────────
 const storage = multer.diskStorage({
@@ -88,12 +92,13 @@ app.use('/api/admin',      clientesRouter);
 app.use('/api/pos',        posRouter);
 app.use('/api/inventario', inventarioRouter);
 app.use('/api/peluqueria', peluqueriaRouter);
+app.use('/api/domicilios', domiciliosRouter);
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT nombre, tipo, logo_url, nit, direccion, ciudad, telefono FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+      `SELECT nombre, tipo, logo_url, nit, direccion, ciudad, telefono, departamento, idiomas, color_primario FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
@@ -225,9 +230,99 @@ async function seedSuperadmin() {
   }
 }
 
+// ── Migraciones automáticas ───────────────────────────────────────
+async function runMigrations() {
+  const migrations = [
+    { table: 'inventario', column: 'iva_pct',      sql: `ALTER TABLE inventario ADD COLUMN iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0` },
+    { table: 'negocios',   column: 'departamento', sql: `ALTER TABLE negocios ADD COLUMN departamento VARCHAR(100) NULL` },
+    { table: 'negocios',   column: 'idiomas',      sql: `ALTER TABLE negocios ADD COLUMN idiomas VARCHAR(255) NULL DEFAULT '["es"]'` },
+    { table: 'negocios',   column: 'color_primario', sql: `ALTER TABLE negocios ADD COLUMN color_primario VARCHAR(20) NULL` },
+    { table: 'menu_items', column: 'nombre_zh',    sql: `ALTER TABLE menu_items ADD COLUMN nombre_zh VARCHAR(200) NULL` },
+    { table: 'menu_items', column: 'descripcion_zh', sql: `ALTER TABLE menu_items ADD COLUMN descripcion_zh TEXT NULL` },
+    { table: 'domicilios_pedidos', column: 'pago_estado', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente'` },
+    { table: 'domicilios_pedidos', column: 'venta_id',    sql: `ALTER TABLE domicilios_pedidos ADD COLUMN venta_id VARCHAR(36) NULL` },
+    { table: 'empleados', column: 'lat',    sql: `ALTER TABLE empleados ADD COLUMN lat DECIMAL(10,7) NULL` },
+    { table: 'empleados', column: 'lng',    sql: `ALTER TABLE empleados ADD COLUMN lng DECIMAL(10,7) NULL` },
+    { table: 'empleados', column: 'gps_at', sql: `ALTER TABLE empleados ADD COLUMN gps_at TIMESTAMP NULL` },
+    {
+      table: 'domicilios_pedidos', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS domicilios_pedidos (
+        id VARCHAR(36) PRIMARY KEY,
+        negocio_id VARCHAR(36) NOT NULL,
+        tipo VARCHAR(20) NOT NULL DEFAULT 'restaurante',
+        cliente_nombre VARCHAR(100) NOT NULL,
+        cliente_tel VARCHAR(30) NOT NULL,
+        cliente_dir TEXT NOT NULL,
+        items JSON NOT NULL,
+        notas TEXT,
+        estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+        domiciliario_id VARCHAR(36),
+        subtotal DECIMAL(12,2) DEFAULT 0,
+        total DECIMAL(12,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        actualizado TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_negocio (negocio_id),
+        INDEX idx_estado (estado)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    },
+    {
+      table: 'empleados', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS empleados (
+        id VARCHAR(36) PRIMARY KEY,
+        negocio_id VARCHAR(36) NOT NULL,
+        nombre VARCHAR(100) NOT NULL,
+        documento VARCHAR(30) NOT NULL,
+        celular VARCHAR(30) NOT NULL,
+        rol VARCHAR(30) NOT NULL DEFAULT 'domiciliario',
+        activo TINYINT(1) DEFAULT 1,
+        token VARCHAR(80) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_negocio (negocio_id),
+        UNIQUE KEY uk_neg_doc (negocio_id, documento)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    },
+    {
+      table: 'domicilios_riders', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS domicilios_riders (
+        id VARCHAR(36) PRIMARY KEY,
+        negocio_id VARCHAR(36) NOT NULL,
+        nombre VARCHAR(100) NOT NULL,
+        telefono VARCHAR(30),
+        token VARCHAR(80) UNIQUE NOT NULL,
+        activo TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_negocio (negocio_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    },
+  ];
+  for (const m of migrations) {
+    try {
+      if (m.createSql) {
+        // Migración tipo CREATE TABLE IF NOT EXISTS
+        await pool.query(m.createSql);
+        console.log(`✅ Tabla ${m.table} OK`);
+      } else {
+        // Migración tipo ADD COLUMN
+        const { rows } = await pool.query(
+          `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+          [m.table, m.column]
+        );
+        if (!rows[0] || parseInt(rows[0].cnt) === 0) {
+          await pool.query(m.sql);
+          console.log(`✅ Migración ${m.table}.${m.column} OK`);
+        }
+      }
+    } catch (e) {
+      console.error(`Error migración ${m.table}:`, e.message);
+    }
+  }
+}
+
 // ── Arrancar ──────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`\n🐰 BUNNYDJPOS API → http://localhost:${PORT}`);
   console.log(`   WebSocket   → ws://localhost:${PORT}?negocio_id=<id>`);
   await seedSuperadmin();
+  await runMigrations();
 });
