@@ -257,6 +257,8 @@ async function runMigrations() {
         notas TEXT,
         estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
         domiciliario_id VARCHAR(36),
+        pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+        venta_id VARCHAR(36) NULL,
         subtotal DECIMAL(12,2) DEFAULT 0,
         total DECIMAL(12,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

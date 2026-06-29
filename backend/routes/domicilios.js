@@ -503,7 +503,8 @@ router.get('/pedidos', verifyToken, async (req, res) => {
     const nid   = req.user.negocio_id;
     const { estado, desde, q } = req.query;
     let sql = `SELECT p.id, p.cliente_nombre, p.cliente_tel, p.cliente_dir,
-                      p.items, p.notas, p.subtotal, p.total, p.estado, p.pago_estado,
+                      p.items, p.notas, p.subtotal, p.total, p.estado,
+                      COALESCE(p.pago_estado,'pendiente') AS pago_estado,
                       p.created_at, p.actualizado,
                       COALESCE(r.nombre, e.nombre) AS rider_nombre,
                       COALESCE(r.id, e.id) AS rider_id

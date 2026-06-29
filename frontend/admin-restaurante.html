@@ -4274,7 +4274,13 @@ async function deleteRider(id) {
   loadDomRiders();
 }
 
+let _adminWS = null;
+
 function startDomPolling() {
+  // WebSocket para notificaciones instantáneas de domicilios
+  _connectAdminWS();
+
+  // Polling de respaldo cada 30s (por si WS falla)
   if (_domPollTimer) return;
   _domPollTimer = setInterval(async () => {
     if (currentPage !== 'domicilios') {
@@ -4291,7 +4297,28 @@ function startDomPolling() {
         } else { _domLastCount = n; _updateDomBadge(n); }
       } catch(_) {}
     } else { loadDomPedidos(); }
-  }, 20000);
+  }, 30000);
+}
+
+function _connectAdminWS() {
+  if (!me?.negocio_id) return;
+  try {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    _adminWS = new WebSocket(`${proto}://${location.host}?negocio_id=${me.negocio_id}`);
+    _adminWS.onmessage = e => {
+      try {
+        const { tipo, data } = JSON.parse(e.data);
+        if (tipo === 'domicilio_nuevo') {
+          _domLastCount++;
+          _updateDomBadge(_domLastCount);
+          _domBeep();
+          showToast(`🛵 Nuevo pedido: ${data?.cliente_nombre || 'Cliente'} — ${fmtCOP(data?.total || 0)}`);
+          if (currentPage === 'domicilios') loadDomPedidos();
+        }
+      } catch(_) {}
+    };
+    _adminWS.onclose = () => setTimeout(_connectAdminWS, 4000); // reconectar
+  } catch(_) {}
 }
 
 function _domBeep() {

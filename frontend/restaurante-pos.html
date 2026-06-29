@@ -320,8 +320,8 @@ table.inv tr:hover td{background:var(--bg2)}
     <button class="nav-icon active" title="Mesas" data-pos-perm="pos_mesas" onclick="nav('mesas',this)">🪑<span class="lbl">Mesas</span></button>
     <button class="nav-icon" title="Menú" data-pos-perm="pos_menu" onclick="nav('menu',this)">📋<span class="lbl">Menú</span></button>
     <button class="nav-icon" title="Cocina" data-pos-perm="pos_cocina" onclick="nav('cocina',this)">👨‍🍳<span class="badge" id="cocina-badge" style="display:none">0</span><span class="lbl">Cocina</span></button>
-    <button class="nav-icon" title="Cobro" data-pos-perm="pos_cobro" onclick="nav('cobro',this)">💳<span class="lbl">Cobro</span></button>
-    <button class="nav-icon" title="Caja diaria" data-pos-perm="pos_cobro" onclick="nav('caja',this)">💰<span class="lbl">Caja</span></button>
+    <button class="nav-icon" title="Cobro" data-pos-perm="pos_cobro" onclick="nav('cobro',this)">💳<span class="lbl">Caja</span></button>
+    <button class="nav-icon" title="Caja diaria" data-pos-perm="pos_cobro" onclick="nav('caja',this)">💰<span class="badge" id="dom-caja-badge" style="display:none;background:#f59e0b">0</span><span class="lbl">Caja diaria</span></button>
     <div style="margin-top:auto">
       <div id="pos-user" style="font-size:9px;color:var(--text2);text-align:center;padding:6px 4px 4px;word-break:break-word;line-height:1.3"></div>
       <button class="nav-icon" title="Ayuda" onclick="window.open('/manual-pos-restaurante.html','_blank')">❓<span class="lbl">Ayuda</span></button>
@@ -392,13 +392,33 @@ table.inv tr:hover td{background:var(--bg2)}
 
       <!-- COBRO -->
       <div class="panel" id="panel-cobro">
-        <div class="panel-topbar"><span class="panel-title">Cobro</span></div>
+        <div class="panel-topbar"><span class="panel-title">Caja — Cobro</span></div>
+        <div id="dom-caja-alert" style="display:none;background:#fef3c7;border-bottom:1.5px solid #f59e0b;padding:10px 16px;font-size:13px;font-weight:600;color:#92400e;cursor:pointer" onclick="nav('cocina',document.querySelector('.nav-icon[title=Cocina]'))">
+          🛵 <span id="dom-caja-alert-txt">Hay pedidos domicilio pendientes</span> — Ver en Cocina →
+        </div>
         <div class="panel-body">
           <div class="cobro-layout">
             <div class="cobro-left">
-              <div class="cobro-card">
-                <h3>Seleccionar mesa</h3>
-                <div class="mesas-cobro" id="mesas-cobro"></div>
+              <div class="cobro-card" style="padding-bottom:0">
+                <!-- Tabs -->
+                <div style="display:flex;gap:0;border-bottom:1.5px solid var(--border);margin:-14px -14px 12px">
+                  <button id="tab-mesas-cobro" onclick="switchCobroMode('mesas')"
+                    style="flex:1;padding:10px 6px;font-size:13px;font-weight:700;border:none;background:var(--blue-l,#eff6ff);color:var(--blue-d,#1d4ed8);border-bottom:2.5px solid var(--blue,#2563eb);cursor:pointer">
+                    🍽️ Mesas
+                  </button>
+                  <button id="tab-dom-cobro" onclick="switchCobroMode('domicilios')"
+                    style="flex:1;padding:10px 6px;font-size:13px;font-weight:700;border:none;background:transparent;color:var(--text2);border-bottom:2.5px solid transparent;cursor:pointer">
+                    🛵 Domicilios <span id="dom-cobro-badge" style="display:none;background:#f59e0b;color:#fff;border-radius:10px;font-size:11px;padding:1px 5px;margin-left:3px">0</span>
+                  </button>
+                </div>
+                <!-- Panel mesas -->
+                <div id="cobro-mesas-panel">
+                  <div class="mesas-cobro" id="mesas-cobro"></div>
+                </div>
+                <!-- Panel domicilios -->
+                <div id="cobro-dom-panel" style="display:none">
+                  <div id="dom-cobro-list" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto"></div>
+                </div>
               </div>
               <div class="cobro-card">
                 <h3>Resumen</h3>
@@ -754,13 +774,19 @@ function _askNotifPermission(){ if('Notification' in window && Notification.perm
 
 // ─── WebSocket ────────────────────────────────────────────────
 function connectWS(){
-  const wsUrl = `ws://${window.location.host}?negocio_id=${me.negocio_id}`;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const wsUrl = `${proto}://${window.location.host}?negocio_id=${me.negocio_id}`;
   wsConn = new WebSocket(wsUrl);
   wsConn.onmessage = e => {
     const { tipo, data } = JSON.parse(e.data);
     if(tipo==='nueva_comanda'){ loadCocina(); updateCocinaBadge(); Sound.notify(); _browserNotify('Nueva comanda 🍽️',`Mesa ${data?.mesa_num||'?'} — ${(data?.items||[]).length} ítem(s)`); }
     else if(tipo==='comanda_actualizada'){ loadCocina(); updateCocinaBadge(); }
     if(tipo==='mesa_actualizada'||tipo==='mesa_liberada') loadMesas();
+    if(tipo==='domicilio_nuevo'){
+      loadCocina(); Sound.notify();
+      _updateDomBadge(1);
+      _browserNotify('🛵 Pedido domicilio',`${data?.cliente_nombre||'Cliente'} — $${(data?.total||0).toLocaleString('es-CO')}`);
+    }
   };
   wsConn.onclose = () => setTimeout(connectWS, 3000); // reconectar
 }
@@ -787,14 +813,16 @@ function nav(p,btn){
   document.querySelectorAll('.nav-icon').forEach(el=>el.classList.remove('active'));
   $('panel-'+p).classList.add('active');
   if(btn) btn.classList.add('active');
-  const labels={mesas:'Mesas',menu:'Menú',cocina:'Cocina',cobro:'Cobro',caja:'Caja'};
+  const labels={mesas:'Mesas',menu:'Menú',cocina:'Cocina',cobro:'Caja',caja:'Caja Diaria'};
   const mt=$('mob-panel-title');if(mt)mt.textContent=labels[p]||p;
   if(p==='mesas') loadMesas();
   if(p==='menu') { loadMenuCats(); loadMenuItems(); }
   if(p==='cocina') loadCocina();
   if(p==='cobro'){
     if(!cajaAbierta){ toast('⚠️ Debes abrir tu caja antes de cobrar'); nav('caja', document.querySelector('.nav-icon[title="Caja diaria"]')); return; }
-    loadMesas(); api('/admin/config/factura').then(d=>{ configFact=d; renderCobro(); }).catch(()=>renderCobro());
+    loadMesas();
+    loadDomCobro();
+    api('/admin/config/factura').then(d=>{ configFact=d; renderCobro(); }).catch(()=>renderCobro());
   }
   if(p==='caja') loadCaja();
 }
@@ -927,7 +955,7 @@ function addToPedido(item){
     }
   }
   const ex=pedido.find(i=>i.id===item.id);
-  if(ex) ex.qty++; else pedido.push({id:item.id,nombre:item.nombre,emoji:item.emoji,precio:item.precio,qty:1});
+  if(ex) ex.qty++; else pedido.push({id:item.id,nombre:item.nombre,nombre_zh:item.nombre_zh||null,emoji:item.emoji,precio:item.precio,qty:1});
   Sound.add();
   renderPedido();
   // Guardar en backend
@@ -988,7 +1016,7 @@ async function enviarCocina(){
   if(!selMesaId){ toast('Selecciona una mesa'); return; }
   if(!pedido.length){ toast('Agrega artículos al pedido'); return; }
   try {
-    await api('/pos/comandas',{method:'POST',body:JSON.stringify({mesa_id:selMesaId,mesa_num:selMesaNum,mesa_nombre:selMesaNombre,items:pedido.map(i=>({nombre:i.nombre,qty:i.qty,emoji:i.emoji}))} )});
+    await api('/pos/comandas',{method:'POST',body:JSON.stringify({mesa_id:selMesaId,mesa_num:selMesaNum,mesa_nombre:selMesaNombre,items:pedido.map(i=>({nombre:i.nombre,nombre_zh:i.nombre_zh||null,qty:i.qty,emoji:i.emoji}))} )});
     toast(`✅ Comanda enviada — Mesa ${selMesaNum}`);
     updateCocinaBadge();
   } catch(e){ toast('Error: '+e.message); }
@@ -1007,18 +1035,53 @@ async function limpiarCocina(){
 
 async function loadCocina(){
   try {
-    const data=await api('/pos/comandas');
-    updateCocinaBadge(data.length);
+    // El endpoint /domicilios/pedidos devuelve {pedidos:[...], pendientes:N}
+    // Filtramos en cliente los estados relevantes para cocina
+    const [data, domRes] = await Promise.all([
+      api('/pos/comandas'),
+      api('/domicilios/pedidos').catch(()=>({ pedidos:[], pendientes:0 }))
+    ]);
+    const ESTADOS_COCINA = new Set(['pendiente','aceptado','en_preparacion','listo']);
+    const domData = (domRes.pedidos||[]).filter(p => ESTADOS_COCINA.has(p.estado));
+    const totalBadge = data.length + domData.length;
+    updateCocinaBadge(totalBadge);
     const g=$('cocina-grid'); g.innerHTML='';
-    if(!data.length){ g.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">Sin comandas pendientes</div>'; return; }
+    if(!data.length && !domData.length){ g.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">Sin comandas pendientes</div>'; return; }
+
+    // Tickets normales (mesas)
     data.forEach(c=>{
       const items=typeof c.items==='string'?JSON.parse(c.items):c.items;
       const mins=Math.floor((Date.now()-new Date(c.creado))/60000);
       const d=document.createElement('div'); d.className=`ticket ${c.estado}`;
-      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${c.estado==='nuevo'?'b-nuevo':c.estado==='cocinando'?'b-cocinando':'b-listo'}">${c.estado}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><span>${i.nombre}</span></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ Listo — Entregar</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ Entregado — Cerrar</button>`:``}`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${c.estado==='nuevo'?'b-nuevo':c.estado==='cocinando'?'b-cocinando':'b-listo'}">${c.estado}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 准备中 / Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ 完成 / Listo</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ 已送达 / Entregado</button>`:``}`;
+      g.appendChild(d);
+    });
+
+    // Tickets domicilio
+    domData.forEach(p=>{
+      const items=typeof p.items==='string'?JSON.parse(p.items):p.items;
+      const mins=Math.floor((Date.now()-new Date(p.created_at))/60000);
+      const d=document.createElement('div');
+      d.className=`ticket ${p.estado==='pendiente'||p.estado==='aceptado'?'nuevo':p.estado==='en_preparacion'?'cocinando':'listo'}`;
+      d.style.borderLeft='3px solid #f59e0b';
+      const DOM_BTN = p.estado==='pendiente'
+        ? `<button class="ticket-btn btn-cocinando" onclick="updDomicilio('${p.id}','en_preparacion')">👨‍🍳 Preparando</button>`
+        : p.estado==='aceptado'
+        ? `<button class="ticket-btn btn-cocinando" onclick="updDomicilio('${p.id}','en_preparacion')">👨‍🍳 Preparando</button>`
+        : p.estado==='en_preparacion'
+        ? `<button class="ticket-btn btn-listo" onclick="updDomicilio('${p.id}','listo')">✓ Listo para despacho</button>`
+        : '';
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge b-nuevo">domicilio</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
       g.appendChild(d);
     });
   } catch(e){ toast('Error cocina: '+e.message); }
+}
+async function updDomicilio(id, estado){
+  try {
+    await api(`/domicilios/pedidos/${id}`,{method:'PUT',body:JSON.stringify({estado})});
+    loadCocina();
+    toast(estado==='listo'?'📦 Listo para despacho':'👨‍🍳 En preparación');
+  } catch(e){ toast('Error: '+e.message); }
 }
 async function updComanda(id,estado){
   await api(`/pos/comandas/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})});
@@ -1026,11 +1089,119 @@ async function updComanda(id,estado){
   toast(estado==='entregado'?'✅ Entregado':estado==='listo'?'🛎️ Plato listo!':'👨‍🍳 Preparando...');
 }
 async function updateCocinaBadge(n){
-  if(n===undefined){ try{ const d=await api('/pos/comandas'); n=d.length; }catch{ return; } }
+  if(n===undefined){ try{
+    const ESTADOS_COCINA = new Set(['pendiente','aceptado','en_preparacion','listo']);
+    const [c,domRes]=await Promise.all([
+      api('/pos/comandas'),
+      api('/domicilios/pedidos').catch(()=>({ pedidos:[] }))
+    ]);
+    const domPend=(domRes.pedidos||[]).filter(p=>ESTADOS_COCINA.has(p.estado));
+    n=c.length+domPend.length;
+    // Actualizar badge caja con domicilios pendientes
+    _domPendCount=(domRes.pedidos||[]).filter(p=>p.estado==='pendiente').length;
+    _updateDomBadge(0);
+  }catch{ return; } }
   const b=$('cocina-badge'); b.style.display=n>0?'':'none'; b.textContent=n;
 }
+let _domPendCount=0;
+function _updateDomBadge(delta){
+  _domPendCount=Math.max(0,_domPendCount+delta);
+  const b=$('dom-caja-badge');
+  if(b){ b.style.display=_domPendCount>0?'':'none'; b.textContent=_domPendCount; }
+  const alert=$('dom-caja-alert');
+  if(alert){
+    alert.style.display=_domPendCount>0?'block':'none';
+    const txt=$('dom-caja-alert-txt');
+    if(txt) txt.textContent=`${_domPendCount} pedido${_domPendCount>1?'s':''} domicilio pendiente${_domPendCount>1?'s':''}`;
+  }
+}
+// El badge se actualiza dentro de updateCocinaBadge que ya corre cada 30s
 
 // ─── COBRO ────────────────────────────────────────────────────
+let cobroMode = 'mesas';
+let selCobroDomId = null;
+let _domPedidosCobro = [];
+
+function switchCobroMode(mode){
+  cobroMode = mode;
+  // Tabs visuales
+  $('tab-mesas-cobro').style.background = mode==='mesas'?'var(--blue-l,#eff6ff)':'transparent';
+  $('tab-mesas-cobro').style.color = mode==='mesas'?'var(--blue-d,#1d4ed8)':'var(--text2)';
+  $('tab-mesas-cobro').style.borderBottom = mode==='mesas'?'2.5px solid var(--blue,#2563eb)':'2.5px solid transparent';
+  $('tab-dom-cobro').style.background = mode==='domicilios'?'var(--blue-l,#eff6ff)':'transparent';
+  $('tab-dom-cobro').style.color = mode==='domicilios'?'var(--blue-d,#1d4ed8)':'var(--text2)';
+  $('tab-dom-cobro').style.borderBottom = mode==='domicilios'?'2.5px solid var(--blue,#2563eb)':'2.5px solid transparent';
+  $('cobro-mesas-panel').style.display = mode==='mesas'?'':'none';
+  $('cobro-dom-panel').style.display = mode==='domicilios'?'':'none';
+  // Reset selección
+  if(mode==='mesas'){ selCobroDomId=null; renderCobro(); }
+  else { selCobroMesaId=null; renderDomCobro(); }
+}
+
+async function loadDomCobro(){
+  try {
+    const res = await api('/domicilios/pedidos');
+    const ESTADOS = new Set(['pendiente','aceptado','en_preparacion','listo']);
+    _domPedidosCobro = (res.pedidos||[]).filter(p=>ESTADOS.has(p.estado));
+    renderDomCobro();
+    const badge = $('dom-cobro-badge');
+    if(badge){
+      badge.textContent = _domPedidosCobro.length;
+      badge.style.display = _domPedidosCobro.length ? 'inline' : 'none';
+    }
+  } catch(_){ _domPedidosCobro = []; }
+}
+
+function renderDomCobro(){
+  const el = $('dom-cobro-list'); if(!el) return;
+  if(!_domPedidosCobro.length){
+    el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">Sin domicilios pendientes</div>'; return;
+  }
+  el.innerHTML = _domPedidosCobro.map(p=>{
+    const items = typeof p.items==='string'?JSON.parse(p.items):p.items||[];
+    const sel = selCobroDomId===p.id;
+    const estadoColor = p.estado==='listo'?'var(--green-d)':p.estado==='en_preparacion'?'var(--blue)':'var(--amber-d)';
+    return `<button onclick="selDomCobro('${p.id}')"
+      style="text-align:left;width:100%;padding:10px 12px;border-radius:var(--r);border:1.5px solid ${sel?'var(--blue)':'var(--border2)'};
+             background:${sel?'var(--blue-l,#eff6ff)':'var(--bg)'};cursor:pointer;transition:.12s">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <span style="font-weight:700;font-size:13px">🛵 ${p.cliente_nombre}</span>
+        <span style="font-size:11px;font-weight:700;color:${estadoColor}">${p.estado}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text2)">${p.cliente_tel} · ${p.cliente_dir}</div>
+      <div style="font-size:12px;margin-top:3px">${items.map(i=>`${i.qty}× ${i.nombre}`).join(', ')}</div>
+      <div style="font-size:13px;font-weight:700;margin-top:4px;color:var(--text)">Total: ${fmt(parseFloat(p.total)||0)}</div>
+    </button>`;
+  }).join('');
+}
+
+function selDomCobro(id){
+  selCobroDomId = id;
+  renderDomCobro();
+  const p = _domPedidosCobro.find(x=>x.id===id);
+  const r = $('cobro-recibo'); r.innerHTML='';
+  if(!p){ r.innerHTML='<div style="color:var(--text2);font-size:13px">Domicilio no encontrado</div>'; return; }
+  const items = typeof p.items==='string'?JSON.parse(p.items):p.items||[];
+  const total = parseFloat(p.total)||0;
+  r.innerHTML = `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">📍 ${p.cliente_dir}${p.notas?'<br>📝 '+p.notas:''}</div>
+  `;
+  items.forEach(it=>{
+    const row=document.createElement('div'); row.className='recibo-row';
+    row.innerHTML=`<span>${it.qty}× ${it.nombre}</span><span>${fmt(it.subtotal||it.precio*it.qty)}</span>`;
+    r.appendChild(row);
+  });
+  const rt=document.createElement('div'); rt.className='recibo-total';
+  rt.innerHTML=`<span>Total</span><span>${fmt(total)}</span>`; r.appendChild(rt);
+  // Reset pago
+  ['efectivo','tarjeta','nequi'].forEach(m=>{ $('pago-'+m).value=''; });
+  $('valor-recibido').value='';
+  $('efectivo-sec').style.display=(!pagoMixtoActivo&&selPayMethod==='efectivo')?'block':'none';
+  $('pagos-resumen').style.display='none';
+  $('vueltas-box').style.display='none'; $('vueltas-err').style.display='none';
+  if(!pagoMixtoActivo&&selPayMethod==='efectivo') renderBilletes(total);
+}
+
 function renderMesasCobro(){
   const el=$('mesas-cobro'); el.innerHTML='';
   allMesas.forEach(m=>{
@@ -1129,6 +1300,10 @@ function completarPendiente(metodo){
 }
 
 function getTotal(){
+  if(selCobroDomId){
+    const dom=_domPedidosCobro.find(p=>p.id===selCobroDomId);
+    return parseFloat(dom?.total)||0;
+  }
   if(!selCobroMesaId) return 0;
   const mesa=allMesas.find(m=>m.id===selCobroMesaId);
   const items=typeof mesa?.pedido==='string'?JSON.parse(mesa.pedido||'[]'):(mesa?.pedido||[]);
@@ -1240,6 +1415,84 @@ document.addEventListener('click', e=>{
 // ── Paso 1: validar y mostrar vista previa (sin registrar aún) ──
 async function procesarPago(){
   if(!cajaAbierta){ toast('⚠️ La caja está cerrada — no se pueden procesar ventas'); return; }
+  // ── Modo domicilio ──
+  if(cobroMode==='domicilios'){
+    if(!selCobroDomId){ toast('Selecciona un domicilio'); return; }
+    if(!clienteSelId && !clienteSelNombre){ toast('⚠️ Selecciona o registra el cliente que paga antes de cobrar'); $('cli-pos-input')?.focus(); return; }
+    const dom=_domPedidosCobro.find(p=>p.id===selCobroDomId);
+    if(!dom){ toast('Domicilio no encontrado'); return; }
+    const items=typeof dom.items==='string'?JSON.parse(dom.items):dom.items||[];
+    if(!items.length){ toast('El domicilio no tiene ítems'); return; }
+    const total=parseFloat(dom.total)||0;
+    const sub=total; const iva=0;
+    let metodo,recibido,cambio,pagos;
+    if(pagoMixtoActivo){
+      pagos={efectivo:parseInt($('pago-efectivo').value)||0,tarjeta:parseInt($('pago-tarjeta').value)||0,nequi:parseInt($('pago-nequi').value)||0};
+      const totalAsig=pagos.efectivo+pagos.tarjeta+pagos.nequi;
+      if(totalAsig===0){ toast('⚠️ Ingresa al menos un método de pago'); return; }
+      if(totalAsig<total){ toast(`⚠️ Faltan ${fmt(total-totalAsig)} por asignar`); return; }
+      metodo=pagos.tarjeta===0&&pagos.nequi===0?'efectivo':pagos.efectivo===0&&pagos.nequi===0?'tarjeta':pagos.efectivo===0&&pagos.tarjeta===0?'nequi':'mixto';
+      recibido=pagos.efectivo>0?(parseInt($('valor-recibido').value)||pagos.efectivo):totalAsig;
+      cambio=pagos.efectivo>0?Math.max(0,recibido-pagos.efectivo):0;
+    } else {
+      pagos={efectivo:0,tarjeta:0,nequi:0}; pagos[selPayMethod]=total;
+      metodo=selPayMethod;
+      recibido=selPayMethod==='efectivo'?(parseInt($('valor-recibido').value)||total):total;
+      if(selPayMethod==='efectivo'&&recibido>0&&recibido<total){ toast('⚠️ Valor menor al total'); return; }
+      cambio=selPayMethod==='efectivo'?Math.max(0,recibido-total):0;
+    }
+    const cf=configFact;
+    const now=new Date();
+    const fecha=now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const hora=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    const tipoDoc=(cf.tipoDoc||'Factura').charAt(0).toUpperCase()+(cf.tipoDoc||'Factura').slice(1);
+    const _mLabels={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi'};
+    const _mActivos=Object.entries(pagos).filter(([,v])=>v>0);
+    const metStr=_mActivos.length===1?_mLabels[_mActivos[0][0]]:_mActivos.map(([k,v])=>`${_mLabels[k]}: ${fmt(v)}`).join(' / ');
+
+    // ── Recibo idéntico al de mesas ──
+    let h=`<div class="recibo">`;
+    h+=`<div class="recibo-center"><img src="/img/logo.png" alt="Logo" style="width:56px;height:56px;object-fit:cover;border-radius:10px;display:block;margin:0 auto 6px"></div>`;
+    if(cf.nombre) h+=`<div class="recibo-center" style="font-weight:700;font-size:13px">${cf.nombre}</div>`;
+    if(cf.togNit!==false&&cf.nit) h+=`<div class="recibo-center">NIT: ${cf.nit}</div>`;
+    if(cf.direccion) h+=`<div class="recibo-center">${cf.direccion}${cf.ciudad?', '+cf.ciudad:''}</div>`;
+    if(cf.telefono) h+=`<div class="recibo-center">Tel: ${cf.telefono}</div>`;
+    h+=`<hr class="recibo-hr">`;
+    // Info cliente POS (quien paga)
+    if(clienteSelData?.nombre){
+      h+=`<div class="recibo-row"><span>Cliente</span><span>${clienteSelData.nombre}</span></div>`;
+      if(clienteSelData.documento) h+=`<div class="recibo-row"><span>Doc.</span><span>${clienteSelData.documento}</span></div>`;
+      if(clienteSelData.telefono) h+=`<div class="recibo-row"><span>Tel.</span><span>${clienteSelData.telefono}</span></div>`;
+      if(clienteSelData.email) h+=`<div class="recibo-row"><span>Email</span><span>${clienteSelData.email}</span></div>`;
+      if(clienteSelData.direccion) h+=`<div class="recibo-row"><span>Dir.</span><span>${clienteSelData.direccion}</span></div>`;
+      const _loc=[clienteSelData.ciudad,clienteSelData.departamento].filter(Boolean).join(', ');
+      if(_loc) h+=`<div class="recibo-row"><span>Ciudad</span><span>${_loc}</span></div>`;
+    } else if(clienteSelNombre){ h+=`<div class="recibo-row"><span>Cliente</span><span>${clienteSelNombre}</span></div>`; }
+    h+=`<hr class="recibo-hr">`;
+    // Info pedido domicilio
+    h+=`<div class="recibo-row" style="font-weight:600"><span>🛵 Domicilio</span><span style="color:var(--text2);font-style:italic">pendiente</span></div>`;
+    if(cf.togFecha!==false) h+=`<div class="recibo-row"><span>${fecha}</span><span>${hora}</span></div>`;
+    h+=`<div class="recibo-row"><span>Solicitante</span><span>${dom.cliente_nombre}</span></div>`;
+    h+=`<div class="recibo-row"><span>Tel. entrega</span><span>${dom.cliente_tel}</span></div>`;
+    h+=`<div class="recibo-row"><span>Dirección</span><span>${dom.cliente_dir}</span></div>`;
+    if(cf.togMetodo!==false) h+=`<div class="recibo-row"><span>Pago</span><span>${metStr}</span></div>`;
+    h+=`<hr class="recibo-hr">`;
+    items.forEach(i=>{ h+=`<div class="recibo-row"><span>${i.nombre}</span><span>${fmt(i.subtotal||i.precio*i.qty)}</span></div>`; if(i.qty>1) h+=`<div style="color:var(--text2);padding-left:6px;font-size:11px">${i.qty} x ${fmt(i.precio)}</div>`; });
+    h+=`<hr class="recibo-hr">`;
+    h+=`<div class="recibo-row recibo-total" style="font-size:14px;margin-top:4px"><span>TOTAL</span><span>${fmt(total)}</span></div>`;
+    if(pagos.efectivo>0&&recibido>0){ h+=`<hr class="recibo-hr">`; h+=`<div class="recibo-row"><span>Recibido ef.</span><span>${fmt(recibido)}</span></div>`; h+=`<div class="recibo-row recibo-cambio" style="font-size:14px"><span>Cambio</span><span>${fmt(cambio)}</span></div>`; }
+    h+=`</div>`;
+    $('pay-recibo').innerHTML=h;
+    pendPago={ _esDomicilio:true, domId:selCobroDomId, dom, items, sub, iva:0, total, recibido, cambio, pagos, cf, mostrarIva:false, metodo,
+               clienteId:clienteSelId||null, clienteNombre:clienteSelNombre||dom.cliente_nombre, clienteData:clienteSelData||null };
+    $('pay-modal-icon').textContent='📋';
+    $('pay-modal-title').textContent='Vista previa — ¿Confirmar pago?';
+    $('pay-btns-preview').style.display='flex';
+    $('pay-btns-done').style.display='none';
+    $('pay-modal').style.display='flex';
+    return;
+  }
+  // ── Modo mesa ──
   if(!selCobroMesaId){ toast('Selecciona una mesa'); return; }
   if(!clienteSelId && !clienteSelNombre){ toast('⚠️ Debes seleccionar o registrar un cliente antes de cobrar'); $('cli-pos-input')?.focus(); return; }
   const mesa=allMesas.find(m=>m.id===selCobroMesaId);
@@ -1338,8 +1591,67 @@ async function procesarPago(){
 async function confirmarPago(){
   if(!cajaAbierta){ toast('⚠️ La caja está cerrada — no se puede confirmar el pago'); return; }
   if(!pendPago){ toast('Error: no hay pago pendiente'); return; }
+  $('pay-btns-preview').style.display='none';
+  // ── Caso domicilio ──
+  if(pendPago._esDomicilio){
+    const {domId,dom,items,sub,iva,total,recibido,cambio,pagos,cf,metodo,clienteId,clienteNombre,clienteData}=pendPago;
+    try {
+      const r=await api('/pos/ventas',{method:'POST',body:JSON.stringify({
+        tipo:'domicilio', lugar:`Domicilio — ${dom.cliente_dir}`,
+        items:items.map(i=>({item_id:i.id||null,nombre:i.nombre,qty:i.qty,precio:parseFloat(i.precio)||0,subtotal:parseFloat(i.subtotal)||i.precio*i.qty})),
+        subtotal:sub, iva:0, total, metodo_pago:metodo, recibido, cambio,
+        monto_efectivo:pagos?.efectivo||0, monto_tarjeta:pagos?.tarjeta||0, monto_nequi:pagos?.nequi||0,
+        cliente_id:clienteId||null, cliente_nombre:clienteNombre||dom.cliente_nombre
+      })});
+      await api(`/domicilios/pedidos/${domId}`,{method:'PUT',body:JSON.stringify({estado:'entregado'})});
+      selCobroDomId=null; pendPago=null;
+      loadCaja(); loadDomCobro();
+      // Recibo final completo
+      const now=new Date();
+      const fecha=now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const hora=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+      const tipoDoc2=(cf.tipoDoc||'Factura').charAt(0).toUpperCase()+(cf.tipoDoc||'Factura').slice(1);
+      const _mLabels2={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi'};
+      const _mActivos2=Object.entries(pagos).filter(([,v])=>v>0);
+      const metStr=_mActivos2.length===1?_mLabels2[_mActivos2[0][0]]:_mActivos2.map(([k,v])=>`${_mLabels2[k]}: ${fmt(v)}`).join(' / ');
+      let h=`<div class="recibo">`;
+      h+=`<div class="recibo-center"><img src="/img/logo.png" alt="Logo" style="width:56px;height:56px;object-fit:cover;border-radius:10px;display:block;margin:0 auto 6px"></div>`;
+      if(cf.nombre) h+=`<div class="recibo-center" style="font-weight:700;font-size:13px">${cf.nombre}</div>`;
+      if(cf.togNit!==false&&cf.nit) h+=`<div class="recibo-center">NIT: ${cf.nit}</div>`;
+      if(cf.direccion) h+=`<div class="recibo-center">${cf.direccion}${cf.ciudad?', '+cf.ciudad:''}</div>`;
+      if(cf.telefono) h+=`<div class="recibo-center">Tel: ${cf.telefono}</div>`;
+      h+=`<hr class="recibo-hr">`;
+      if(clienteData?.nombre){
+        h+=`<div class="recibo-row"><span>Cliente</span><span>${clienteData.nombre}</span></div>`;
+        if(clienteData.documento) h+=`<div class="recibo-row"><span>Doc.</span><span>${clienteData.documento}</span></div>`;
+        if(clienteData.telefono) h+=`<div class="recibo-row"><span>Tel.</span><span>${clienteData.telefono}</span></div>`;
+        if(clienteData.email) h+=`<div class="recibo-row"><span>Email</span><span>${clienteData.email}</span></div>`;
+        const _loc2=[clienteData.ciudad,clienteData.departamento].filter(Boolean).join(', ');
+        if(_loc2) h+=`<div class="recibo-row"><span>Ciudad</span><span>${_loc2}</span></div>`;
+      } else if(clienteNombre){ h+=`<div class="recibo-row"><span>Cliente</span><span>${clienteNombre}</span></div>`; }
+      h+=`<hr class="recibo-hr">`;
+      h+=`<div class="recibo-row recibo-total"><span>${tipoDoc2} 🛵</span><span>${r.numero_factura||'—'}</span></div>`;
+      if(cf.togFecha!==false) h+=`<div class="recibo-row"><span>${fecha}</span><span>${hora}</span></div>`;
+      h+=`<div class="recibo-row"><span>Solicitante</span><span>${dom.cliente_nombre}</span></div>`;
+      h+=`<div class="recibo-row"><span>Tel. entrega</span><span>${dom.cliente_tel}</span></div>`;
+      h+=`<div class="recibo-row"><span>Dirección</span><span>${dom.cliente_dir}</span></div>`;
+      if(cf.togMetodo!==false) h+=`<div class="recibo-row"><span>Pago</span><span>${metStr}</span></div>`;
+      h+=`<hr class="recibo-hr">`;
+      items.forEach(i=>{ h+=`<div class="recibo-row"><span>${i.nombre}</span><span>${fmt(parseFloat(i.subtotal)||i.precio*i.qty)}</span></div>`; if(i.qty>1) h+=`<div style="color:var(--text2);padding-left:6px;font-size:11px">${i.qty} x ${fmt(i.precio)}</div>`; });
+      h+=`<hr class="recibo-hr">`;
+      h+=`<div class="recibo-row recibo-total" style="font-size:14px;margin-top:4px"><span>TOTAL</span><span>${fmt(total)}</span></div>`;
+      if(pagos.efectivo>0&&recibido>0){ h+=`<hr class="recibo-hr">`; h+=`<div class="recibo-row"><span>Recibido ef.</span><span>${fmt(recibido)}</span></div>`; h+=`<div class="recibo-row recibo-cambio" style="font-size:14px"><span>Cambio</span><span>${fmt(cambio)}</span></div>`; }
+      h+=`</div>`;
+      $('pay-recibo').innerHTML=h;
+      $('pay-modal-icon').textContent='✅';
+      $('pay-modal-title').textContent='¡Pago registrado!';
+      $('pay-btns-preview').style.display='none';
+      $('pay-btns-done').style.display='flex';
+    } catch(e){ $('pay-btns-preview').style.display='flex'; toast('Error: '+e.message); }
+    return;
+  }
+  // ── Caso mesa ──
   const {mesa,items,sub,iva,total,recibido,cambio,pagos,cf,mostrarIva,mesaId,metodo,clienteId,clienteNombre,clienteData}=pendPago;
-  $('pay-btns-preview').style.display='none'; // evitar doble clic
   try {
     const r=await api('/pos/ventas',{method:'POST',body:JSON.stringify({
       mesa_id:mesaId, mesa_num:mesa.numero, tipo:'pos',
