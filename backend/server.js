@@ -38,14 +38,25 @@ const frontendPath = path.join(__dirname, '..', 'frontend');
 app.disable('etag');  // sin cache en desarrollo
 app.use(express.static(frontendPath, { etag: false, lastModified: false }));
 // Rutas directas para cada panel
-app.get('/',             (_, res) => res.sendFile(path.join(frontendPath, 'restaurante-pos.html')));
-app.get('/superadmin',   (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
-app.get('/admin',        (_, res) => res.sendFile(path.join(frontendPath, 'admin-restaurante.html')));
-app.get('/pos',          (_, res) => res.sendFile(path.join(frontendPath, 'restaurante-pos.html')));
-app.get('/app',          (_, res) => res.sendFile(path.join(frontendPath, 'app.html')));
-app.get('/domicilios',    (_, res) => res.sendFile(path.join(frontendPath, 'domicilios.html')));
-app.get('/domiciliario',  (_, res) => res.sendFile(path.join(frontendPath, 'domiciliario.html')));
-app.get('/rider',         (_, res) => res.sendFile(path.join(frontendPath, 'rider.html')));
+app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'hub.html')));
+app.get('/hub',              (_, res) => res.sendFile(path.join(frontendPath, 'hub.html')));
+// POS
+app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'restaurante-pos.html')));
+app.get('/minimercado',      (_, res) => res.sendFile(path.join(frontendPath, 'pos-minimercado.html')));
+app.get('/peluqueria',       (_, res) => res.sendFile(path.join(frontendPath, 'pos-peluqueria.html')));
+// Domicilios
+app.get('/domicilios',       (_, res) => res.sendFile(path.join(frontendPath, 'domicilios.html')));
+app.get('/domiciliario',     (_, res) => res.sendFile(path.join(frontendPath, 'domiciliario.html')));
+app.get('/rider',            (_, res) => res.sendFile(path.join(frontendPath, 'rider.html')));
+// Admin
+app.get('/admin',            (_, res) => res.sendFile(path.join(frontendPath, 'admin-restaurante.html')));
+app.get('/minimercado-admin',(_, res) => res.sendFile(path.join(frontendPath, 'minimercado-admin.html')));
+app.get('/peluqueria-admin', (_, res) => res.sendFile(path.join(frontendPath, 'peluqueria-admin.html')));
+app.get('/superadmin',       (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
+// Portales
+app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'portal.html')));
+app.get('/portal-empleado',  (_, res) => res.sendFile(path.join(frontendPath, 'portal-empleado.html')));
+app.get('/reservas',         (_, res) => res.sendFile(path.join(frontendPath, 'peluqueria-reservar.html')));
 
 // ── Multer para logos ─────────────────────────────────────────────
 const storage = multer.diskStorage({

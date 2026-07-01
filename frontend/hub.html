@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BunnyDJPOS — Panel central</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --pri:#6c3fc5;--pri2:#5530a8;--pri-light:#ede8fb;
+    --green:#22c55e;--orange:#f97316;--blue:#3b82f6;--pink:#ec4899;--teal:#14b8a6;
+    --bg:#f4f2fb;--card:#fff;--text:#1a1a2e;--text2:#64748b;--text3:#94a3b8;
+    --border:#e2e8f0;--radius:16px;--shadow:0 4px 20px rgba(108,63,197,.08)
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+  /* Header */
+  .hub-header{
+    background:var(--pri);color:#fff;
+    padding:24px 20px 28px;text-align:center;
+    background:linear-gradient(135deg,#6c3fc5 0%,#9c5ce8 100%);
+  }
+  .hub-logo{font-size:38px;margin-bottom:6px}
+  .hub-title{font-size:24px;font-weight:800;letter-spacing:-.3px}
+  .hub-sub{font-size:13px;opacity:.75;margin-top:4px}
+
+  /* Contenedor */
+  .hub-body{max-width:760px;margin:0 auto;padding:24px 16px 48px}
+
+  /* Sección */
+  .section{margin-bottom:28px}
+  .section-label{
+    font-size:11px;font-weight:800;color:var(--text3);letter-spacing:1px;
+    text-transform:uppercase;margin-bottom:12px;padding-left:2px
+  }
+
+  /* Grid de cards */
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+
+  /* Card */
+  .card{
+    background:var(--card);border-radius:var(--radius);padding:20px 18px;
+    box-shadow:var(--shadow);border:1.5px solid var(--border);
+    display:flex;flex-direction:column;gap:8px;
+    text-decoration:none;color:inherit;
+    transition:transform .14s,box-shadow .14s,border-color .14s;cursor:pointer
+  }
+  .card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(108,63,197,.14);border-color:var(--pri)}
+  .card:active{transform:translateY(0)}
+  .card-icon{font-size:32px;line-height:1}
+  .card-name{font-size:15px;font-weight:700;color:var(--text)}
+  .card-desc{font-size:12px;color:var(--text2);line-height:1.5;flex:1}
+  .card-btn{
+    display:inline-block;margin-top:6px;padding:7px 14px;
+    border-radius:8px;font-size:12px;font-weight:700;text-align:center;
+    background:var(--pri-light);color:var(--pri);border:none;cursor:pointer;
+    transition:background .12s
+  }
+  .card:hover .card-btn{background:var(--pri);color:#fff}
+
+  /* Variantes de color de acento */
+  .card.green .card-btn{background:#dcfce7;color:#16a34a}
+  .card.green:hover .card-btn{background:var(--green);color:#fff}
+  .card.green:hover{border-color:var(--green)}
+  .card.orange .card-btn{background:#ffedd5;color:#c2410c}
+  .card.orange:hover .card-btn{background:var(--orange);color:#fff}
+  .card.orange:hover{border-color:var(--orange)}
+  .card.blue .card-btn{background:#dbeafe;color:#1d4ed8}
+  .card.blue:hover .card-btn{background:var(--blue);color:#fff}
+  .card.blue:hover{border-color:var(--blue)}
+  .card.pink .card-btn{background:#fce7f3;color:#be185d}
+  .card.pink:hover .card-btn{background:var(--pink);color:#fff}
+  .card.pink:hover{border-color:var(--pink)}
+  .card.teal .card-btn{background:#ccfbf1;color:#0f766e}
+  .card.teal:hover .card-btn{background:var(--teal);color:#fff}
+  .card.teal:hover{border-color:var(--teal)}
+
+  /* Modal domicilios */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+    z-index:100;align-items:center;justify-content:center;padding:20px
+  }
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal-title{font-size:18px;font-weight:800;margin-bottom:6px}
+  .modal-sub{font-size:13px;color:var(--text2);margin-bottom:20px}
+  .modal label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px}
+  .modal input{
+    width:100%;border:1.5px solid var(--border);border-radius:10px;
+    padding:11px 14px;font-size:15px;outline:none;margin-bottom:14px;
+    transition:border-color .12s
+  }
+  .modal input:focus{border-color:var(--pri)}
+  .modal-btns{display:flex;gap:10px;margin-top:4px}
+  .modal-ok{flex:1;background:var(--pri);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
+  .modal-ok:hover{background:var(--pri2)}
+  .modal-cancel{background:#f1f5f9;color:var(--text2);border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer}
+  .modal-cancel:hover{background:var(--border)}
+
+  @media(max-width:420px){
+    .card-grid{grid-template-columns:1fr 1fr}
+    .hub-title{font-size:20px}
+  }
+  @media(max-width:300px){
+    .card-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="hub-header">
+  <div class="hub-logo">🐰</div>
+  <div class="hub-title">BunnyDJPOS</div>
+  <div class="hub-sub">Selecciona el módulo que necesitas</div>
+</div>
+
+<div class="hub-body">
+
+  <!-- PUNTO DE VENTA -->
+  <div class="section">
+    <div class="section-label">Punto de venta</div>
+    <div class="card-grid">
+      <a class="card" href="/pos">
+        <div class="card-icon">🍽️</div>
+        <div class="card-name">POS Restaurante</div>
+        <div class="card-desc">Gestión de mesas, órdenes y facturación para restaurantes.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+      <a class="card orange" href="/minimercado">
+        <div class="card-icon">🛒</div>
+        <div class="card-name">POS Minimercado</div>
+        <div class="card-desc">Caja rápida con código de barras para tiendas y minimercados.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+      <a class="card pink" href="/peluqueria">
+        <div class="card-icon">✂️</div>
+        <div class="card-name">POS Peluquería</div>
+        <div class="card-desc">Facturación y gestión de turnos para salones de belleza.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- DOMICILIOS -->
+  <div class="section">
+    <div class="section-label">Domicilios</div>
+    <div class="card-grid">
+      <div class="card green" onclick="abrirModalDomicilios()">
+        <div class="card-icon">📱</div>
+        <div class="card-name">App Cliente</div>
+        <div class="card-desc">Portal de pedidos en línea para clientes. Ingresa el ID del negocio para abrir.</div>
+        <div class="card-btn">Abrir</div>
+      </div>
+      <a class="card teal" href="/domiciliario">
+        <div class="card-icon">🛵</div>
+        <div class="card-name">App Repartidor</div>
+        <div class="card-desc">Gestión de entregas, GPS y estado de pedidos para domiciliarios.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ADMINISTRACIÓN -->
+  <div class="section">
+    <div class="section-label">Administración</div>
+    <div class="card-grid">
+      <a class="card" href="/admin">
+        <div class="card-icon">⚙️</div>
+        <div class="card-name">Admin Restaurante</div>
+        <div class="card-desc">Inventario, menú, empleados, reportes y domicilios del restaurante.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+      <a class="card orange" href="/minimercado-admin">
+        <div class="card-icon">🏪</div>
+        <div class="card-name">Admin Minimercado</div>
+        <div class="card-desc">Gestión de productos, stock, precios y reportes de la tienda.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+      <a class="card pink" href="/peluqueria-admin">
+        <div class="card-icon">💇</div>
+        <div class="card-name">Admin Peluquería</div>
+        <div class="card-desc">Servicios, agenda, clientes y reportes del salón de belleza.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+      <a class="card blue" href="/superadmin">
+        <div class="card-icon">👑</div>
+        <div class="card-name">Superadmin</div>
+        <div class="card-desc">Panel maestro: negocios, usuarios y configuración global del sistema.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- PORTALES -->
+  <div class="section">
+    <div class="section-label">Portales</div>
+    <div class="card-grid">
+      <a class="card teal" href="/portal-empleado">
+        <div class="card-icon">👤</div>
+        <div class="card-name">Portal Empleado</div>
+        <div class="card-desc">Acceso de empleados a sus turnos, funciones y datos propios.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+      <a class="card green" href="/portal">
+        <div class="card-icon">🌐</div>
+        <div class="card-name">Portal Público</div>
+        <div class="card-desc">Página pública del negocio visible para clientes y visitantes.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+      <a class="card pink" href="/reservas">
+        <div class="card-icon">📅</div>
+        <div class="card-name">Reservas Peluquería</div>
+        <div class="card-desc">Formulario público para que clientes agenden citas en el salón.</div>
+        <div class="card-btn">Abrir</div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: abrir domicilios con negocio_id -->
+<div class="modal-overlay" id="modal-dom" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-title">📱 App Cliente — Domicilios</div>
+    <div class="modal-sub">Ingresa el ID del negocio para abrir la tienda en línea.</div>
+    <label>ID del negocio</label>
+    <input id="modal-negocio-id" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+           onkeydown="if(event.key==='Enter')abrirDomicilios()">
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="modal-ok" onclick="abrirDomicilios()">Abrir →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirModalDomicilios() {
+  document.getElementById('modal-dom').classList.add('open');
+  setTimeout(() => document.getElementById('modal-negocio-id').focus(), 80);
+}
+function cerrarModal() {
+  document.getElementById('modal-dom').classList.remove('open');
+}
+function abrirDomicilios() {
+  const id = document.getElementById('modal-negocio-id').value.trim();
+  if (!id) { document.getElementById('modal-negocio-id').focus(); return; }
+  window.open(`/domicilios?n=${encodeURIComponent(id)}`, '_blank');
+  cerrarModal();
+}
+</script>
+</body>
+</html>
