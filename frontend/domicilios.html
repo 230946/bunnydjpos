@@ -224,6 +224,16 @@ body{display:flex;flex-direction:column;min-height:100vh}
 .empty-state span{font-size:50px;display:block;margin-bottom:14px}
 .empty-state p{font-size:15px}
 
+/* Vista calificación */
+#view-rating{display:none;padding:40px 20px calc(40px + var(--safe-bot));text-align:center}
+.rating-stars{display:flex;justify-content:center;gap:10px;margin:20px 0 24px;font-size:44px}
+.rating-star{cursor:pointer;opacity:.25;transition:opacity .12s,transform .12s;user-select:none}
+.rating-star.active{opacity:1;transform:scale(1.15)}
+.rating-nota{width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;
+  font-size:14px;min-height:72px;resize:none;font-family:inherit;color:var(--text);background:#fff;
+  outline:none;box-sizing:border-box;margin-bottom:14px}
+.rating-nota:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-light)}
+
 /* Gate de teléfono */
 #view-phone{display:none;padding:32px 20px calc(40px + var(--safe-bot));text-align:center}
 .phone-gate-icon{font-size:64px;margin-bottom:16px}
@@ -347,6 +357,23 @@ body{display:flex;flex-direction:column;min-height:100vh}
     <div id="phone-orders-list"></div>
     <button class="track-btn outline" onclick="irAlMenu()" style="margin-top:4px;font-size:14px;padding:12px">+ Hacer nuevo pedido</button>
   </div>
+</div>
+
+<!-- Vista: calificación del servicio -->
+<div id="view-rating">
+  <div style="font-size:64px;margin-bottom:12px">🎉</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;color:var(--text)">¡Pedido entregado!</h2>
+  <p style="font-size:15px;color:var(--text2);margin-bottom:4px">¿Cómo estuvo el servicio?</p>
+  <div class="rating-stars" id="rating-stars">
+    <span class="rating-star" onclick="setRating(1)">⭐</span>
+    <span class="rating-star" onclick="setRating(2)">⭐</span>
+    <span class="rating-star" onclick="setRating(3)">⭐</span>
+    <span class="rating-star" onclick="setRating(4)">⭐</span>
+    <span class="rating-star" onclick="setRating(5)">⭐</span>
+  </div>
+  <textarea class="rating-nota" id="rating-nota" placeholder="Comentario opcional..."></textarea>
+  <button class="track-btn" onclick="submitRating()">Enviar calificación</button>
+  <button class="track-btn outline" style="margin-top:4px" onclick="skipRating()">Saltar</button>
 </div>
 
 <!-- Cart drawer -->
@@ -630,6 +657,7 @@ function showView(v) {
   document.getElementById('view-form').style.display     = v === 'form'    ? 'block' : 'none';
   document.getElementById('view-track').style.display    = v === 'track'   ? 'block' : 'none';
   document.getElementById('view-phone').style.display    = v === 'phone'   ? 'block' : 'none';
+  document.getElementById('view-rating').style.display   = v === 'rating'  ? 'block' : 'none';
   document.getElementById('bottom-bar').style.display    = v === 'catalog' && Object.keys(cart).length ? 'block' : 'none';
   document.getElementById('tabs').style.display          = v === 'catalog' ? 'flex' : 'none';
 }
@@ -737,7 +765,7 @@ async function refreshTracking(idOverride) {
 
     if (p.estado === 'entregado') {
       clearInterval(trackInterval);
-      resetCiclo(6000);
+      showRating(p.id);
     } else if (p.estado === 'cancelado') {
       clearInterval(trackInterval);
       resetCiclo(5000);
@@ -792,6 +820,45 @@ function resetCiclo(delay) {
     if (clienteTel) checkMisPedidos(clienteTel);
     else showView('phone');
   }, delay);
+}
+
+let _ratingPedidoId = null;
+let _ratingVal = 0;
+
+function showRating(pedidoId) {
+  _ratingPedidoId = pedidoId;
+  _ratingVal = 0;
+  document.querySelectorAll('.rating-star').forEach(s => s.classList.remove('active'));
+  document.getElementById('rating-nota').value = '';
+  showView('rating');
+}
+
+function setRating(n) {
+  _ratingVal = n;
+  document.querySelectorAll('.rating-star').forEach((s, i) => s.classList.toggle('active', i < n));
+}
+
+async function submitRating() {
+  if (!_ratingVal) { toast('Selecciona una calificación'); return; }
+  const nota = document.getElementById('rating-nota').value.trim();
+  try {
+    await fetch(`${API}/pedido/${_ratingPedidoId}/calificar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ calificacion: _ratingVal, nota })
+    });
+  } catch (_) {}
+  _finalizarRating();
+}
+
+function skipRating() { _finalizarRating(); }
+
+function _finalizarRating() {
+  currentPedidoId = null;
+  localStorage.removeItem(`djpos_dom_pedido_${NEG_ID}`);
+  cart = {}; updateCartDrawer(); updateBottomBar();
+  if (clienteTel) checkMisPedidos(clienteTel);
+  else showView('phone');
 }
 
 function newOrder() {

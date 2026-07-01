@@ -247,6 +247,8 @@ async function runMigrations() {
     { table: 'ventas', column: 'monto_efectivo', sql: `ALTER TABLE ventas ADD COLUMN monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'ventas', column: 'monto_tarjeta',  sql: `ALTER TABLE ventas ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'ventas', column: 'monto_nequi',    sql: `ALTER TABLE ventas ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'domicilios_pedidos', column: 'calificacion',      sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion TINYINT NULL` },
+    { table: 'domicilios_pedidos', column: 'calificacion_nota', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion_nota VARCHAR(255) NULL` },
     {
       table: 'domicilios_pedidos', column: '__create__',
       createSql: `CREATE TABLE IF NOT EXISTS domicilios_pedidos (
@@ -262,6 +264,8 @@ async function runMigrations() {
         domiciliario_id VARCHAR(36),
         pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
         venta_id VARCHAR(36) NULL,
+        calificacion TINYINT NULL,
+        calificacion_nota VARCHAR(255) NULL,
         subtotal DECIMAL(12,2) DEFAULT 0,
         total DECIMAL(12,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -300,6 +304,19 @@ async function runMigrations() {
         activo TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_negocio (negocio_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    },
+    {
+      table: 'menu_item_recetas', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS menu_item_recetas (
+        id            INT AUTO_INCREMENT PRIMARY KEY,
+        menu_item_id  VARCHAR(36) NOT NULL,
+        negocio_id    VARCHAR(36) NOT NULL,
+        inventario_id VARCHAR(36) NOT NULL,
+        cantidad      DECIMAL(12,3) NOT NULL DEFAULT 1,
+        FOREIGN KEY (menu_item_id)  REFERENCES menu_items(id)  ON DELETE CASCADE,
+        FOREIGN KEY (negocio_id)    REFERENCES negocios(id)    ON DELETE CASCADE,
+        FOREIGN KEY (inventario_id) REFERENCES inventario(id)  ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
     },
   ];

@@ -16,34 +16,37 @@ function fmtMoney(n) {
 }
 
 // Confirma entrega y cierra el ciclo: marca pago_estado='pagado' e inserta en ventas.
-// No depende de affectedRows (el wrapper mysql2 lo descarta); usa SELECT para idempotencia.
+// Usa venta_id como cerrojo atómico (AND venta_id IS NULL en el UPDATE) para que solo
+// un llamado concurrente gane la carrera y cree la venta.
 async function confirmarPagoEntrega(pedidoId, negocioId) {
-  // Verificar estado actual
   const { rows: current } = await pool.query(
-    `SELECT pago_estado, cliente_nombre, items, subtotal, total
+    `SELECT pago_estado, venta_id, cliente_nombre, items, subtotal, total
      FROM domicilios_pedidos WHERE id=? AND negocio_id=? LIMIT 1`,
     [pedidoId, negocioId]
   );
   if (!current[0]) return null;
-  if (current[0].pago_estado === 'pagado') return null; // ya procesado
+  if (current[0].venta_id) return null; // ya tiene venta registrada
+  if (current[0].pago_estado === 'pagado') return null;
 
-  // Marcar como pagado
+  // Generar venta_id antes del UPDATE para usarlo como cerrojo atómico
+  const ventaId = uuid();
   await pool.query(
-    `UPDATE domicilios_pedidos SET pago_estado='pagado' WHERE id=? AND negocio_id=? AND pago_estado='pendiente'`,
+    `UPDATE domicilios_pedidos SET pago_estado='pagado', venta_id=?
+     WHERE id=? AND negocio_id=? AND pago_estado='pendiente' AND venta_id IS NULL`,
+    [ventaId, pedidoId, negocioId]
+  );
+
+  // Verificar que este llamado fue el que fijó el venta_id (ganó la carrera)
+  const { rows: verify } = await pool.query(
+    `SELECT venta_id FROM domicilios_pedidos WHERE id=? AND negocio_id=? LIMIT 1`,
     [pedidoId, negocioId]
   );
-
-  // Verificar que el UPDATE fue exitoso (protección contra concurrencia)
-  const { rows: verify } = await pool.query(
-    `SELECT pago_estado FROM domicilios_pedidos WHERE id=? AND pago_estado='pagado' LIMIT 1`, [pedidoId]
-  );
-  if (!verify[0]) return null; // otro proceso lo tomó primero
+  if (!verify[0] || verify[0].venta_id !== ventaId) return null;
 
   const ped = current[0];
   const items = typeof ped.items === 'string' ? JSON.parse(ped.items) : (ped.items || []);
   const iva = items.reduce((acc, it) => acc + (parseFloat(it.subtotal) || 0) * ((parseFloat(it.iva_pct) || 0) / 100), 0);
 
-  // Generar numero_factura
   const { rows: cfg } = await pool.query(
     `SELECT datos FROM config_factura WHERE negocio_id=? LIMIT 1`, [negocioId]
   );
@@ -55,10 +58,7 @@ async function confirmarPagoEntrega(pedidoId, negocioId) {
   }
   const numero_factura = `${prefijo}${String(consec).padStart(4, '0')}`;
 
-  // Insertar en ventas — wrapped en try/catch para no bloquear la entrega si hay error
-  let ventaId = null;
   try {
-    ventaId = uuid();
     await pool.query(
       `INSERT INTO ventas (id,negocio_id,tipo,mesa_id,mesa_num,cliente_nombre,items,
        subtotal,descuento,iva,total,metodo_pago,recibido,cambio,numero_factura,cajero_id,mesero_id,
@@ -68,7 +68,6 @@ async function confirmarPagoEntrega(pedidoId, negocioId) {
       [ventaId, negocioId, ped.cliente_nombre, JSON.stringify(items),
        ped.subtotal, iva, ped.total, ped.total, numero_factura, ped.total]
     );
-    await pool.query(`UPDATE domicilios_pedidos SET venta_id=? WHERE id=?`, [ventaId, pedidoId]);
     if (cfg[0]) {
       const d = typeof cfg[0].datos === 'string' ? JSON.parse(cfg[0].datos) : cfg[0].datos;
       d.consecutivo = consec + 1;
@@ -365,14 +364,16 @@ router.put('/rider/mis-entregas/:id/estado', requireEmpleado, async (req, res) =
   try {
     const { estado } = req.body;
     if (!['en_camino','entregado'].includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
-    const result = await pool.query(
+    const { rows: check } = await pool.query(
+      `SELECT id FROM domicilios_pedidos WHERE id=? AND domiciliario_id=? AND negocio_id=? LIMIT 1`,
+      [req.params.id, req.empleado.id, req.empleado.negocio_id]
+    );
+    if (!check[0]) return res.status(404).json({ error: 'Pedido no encontrado' });
+    await pool.query(
       `UPDATE domicilios_pedidos SET estado=?, actualizado=NOW()
        WHERE id=? AND domiciliario_id=? AND negocio_id=?`,
       [estado, req.params.id, req.empleado.id, req.empleado.negocio_id]
     );
-    if (!result.rows?.affectedRows && !result.affectedRows) {
-      return res.status(404).json({ error: 'Pedido no encontrado' });
-    }
     let ventaInfo = null;
     if (estado === 'entregado') {
       ventaInfo = await confirmarPagoEntrega(req.params.id, req.empleado.negocio_id);
@@ -645,6 +646,20 @@ router.get('/link/:negocioId', verifyToken, async (req, res) => {
     const proto = req.headers['x-forwarded-proto'] || 'http';
     const link = `${proto}://${host}/domicilios?n=${req.params.negocioId}`;
     res.json({ link });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/domicilios/pedido/:id/calificar — cliente califica el servicio (1-5 estrellas)
+router.post('/pedido/:id/calificar', async (req, res) => {
+  try {
+    const { calificacion, nota } = req.body;
+    const cal = parseInt(calificacion);
+    if (!cal || cal < 1 || cal > 5) return res.status(400).json({ error: 'Calificación inválida (1-5)' });
+    await pool.query(
+      `UPDATE domicilios_pedidos SET calificacion=?, calificacion_nota=? WHERE id=? LIMIT 1`,
+      [cal, nota?.trim() || null, req.params.id]
+    );
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

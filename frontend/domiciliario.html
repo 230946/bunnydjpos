@@ -526,7 +526,7 @@ function startGPS(){
     _err => {
       if(badge){ badge.style.opacity='.3'; badge.title='GPS no disponible'; }
       if(txt){  txt.textContent='SIN GPS'; txt.style.color='#ef4444'; }
-      showToast('⚠️ GPS no disponible. Verifica los permisos de ubicación.');
+      toast('⚠️ GPS no disponible. Verifica los permisos de ubicación.');
     },
     { enableHighAccuracy:true, maximumAge:10000, timeout:15000 }
   );
