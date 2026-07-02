@@ -101,9 +101,29 @@ body{display:flex;flex-direction:column;min-height:100vh}
 }
 .prod-desc{
   font-size:11px;color:var(--text3);margin-bottom:4px;
-  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
 }
+/* Modal detalle producto */
+#prod-detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center}
+#prod-detail-overlay.open{display:flex}
+#prod-detail-sheet{background:#fff;border-radius:22px 22px 0 0;width:100%;max-width:480px;padding:0 0 32px;max-height:80vh;overflow-y:auto}
+.detail-img{width:100%;height:200px;object-fit:cover;border-radius:22px 22px 0 0}
+.detail-img-placeholder{width:100%;height:160px;display:flex;align-items:center;justify-content:center;font-size:72px;background:var(--pri-light);border-radius:22px 22px 0 0}
+.detail-body{padding:20px 20px 8px}
+.detail-nombre{font-size:20px;font-weight:800;margin-bottom:8px}
+.detail-desc{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:16px;white-space:pre-line}
+.detail-precio{font-size:22px;font-weight:800;color:var(--pri);margin-bottom:20px}
+.detail-add{width:100%;background:var(--pri);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer}
 .prod-precio{font-size:14px;font-weight:800;color:var(--pri)}
+
+/* Botón ℹ️ info esquina superior derecha */
+.prod-info-btn{
+  position:absolute;top:8px;right:8px;
+  background:rgba(255,255,255,.85);border:none;border-radius:50%;
+  width:26px;height:26px;font-size:13px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.15);z-index:2
+}
 
 /* Botón + esquina inferior derecha */
 .prod-add-btn{
@@ -343,8 +363,11 @@ body{display:flex;flex-direction:column;min-height:100vh}
 
 <!-- Vista: gate de teléfono -->
 <div id="view-phone">
-  <div class="phone-gate-icon">📱</div>
-  <div class="phone-gate-title">Bienvenido</div>
+  <div class="phone-gate-icon" id="gate-logo-wrap">
+    <img id="gate-logo" src="" alt="" style="display:none;width:80px;height:80px;border-radius:16px;object-fit:cover;box-shadow:0 4px 16px rgba(0,0,0,.15)">
+    <span id="gate-emoji" style="font-size:64px">📱</span>
+  </div>
+  <div class="phone-gate-title" id="phone-gate-title">Bienvenido</div>
   <div class="phone-gate-sub">Ingresa tu número de celular para ver el menú y hacer seguimiento a tu pedido.</div>
   <div class="phone-input-wrap">
     <span class="phone-prefix">+57</span>
@@ -356,6 +379,19 @@ body{display:flex;flex-direction:column;min-height:100vh}
     <p class="phone-orders-title">📦 Tus pedidos activos</p>
     <div id="phone-orders-list"></div>
     <button class="track-btn outline" onclick="irAlMenu()" style="margin-top:4px;font-size:14px;padding:12px">+ Hacer nuevo pedido</button>
+  </div>
+</div>
+
+<!-- Modal: detalle del producto -->
+<div id="prod-detail-overlay" onclick="if(event.target===this)closeProdDetail()">
+  <div id="prod-detail-sheet">
+    <div id="detail-img-wrap"></div>
+    <div class="detail-body">
+      <div class="detail-nombre" id="detail-nombre"></div>
+      <div class="detail-desc" id="detail-desc"></div>
+      <div class="detail-precio" id="detail-precio"></div>
+      <button class="detail-add" id="detail-add-btn">+ Agregar al carrito</button>
+    </div>
   </div>
 </div>
 
@@ -474,6 +510,17 @@ async function init() {
     const logo = document.getElementById('logo');
     if (negocio.logo_url) { logo.src = negocio.logo_url; logo.onerror = () => logo.src = ''; }
 
+    // Gate: logo y nombre del negocio
+    document.getElementById('phone-gate-title').textContent = 'Bienvenido a ' + negocio.nombre;
+    if (negocio.logo_url) {
+      const gLogo = document.getElementById('gate-logo');
+      const gEmoji = document.getElementById('gate-emoji');
+      gLogo.src = negocio.logo_url;
+      gLogo.style.display = 'block';
+      gEmoji.style.display = 'none';
+      gLogo.onerror = () => { gLogo.style.display = 'none'; gEmoji.style.display = ''; };
+    }
+
     renderCatalog();
     document.getElementById('loader').style.display = 'none';
 
@@ -553,6 +600,7 @@ function renderProducts(list) {
              </div>`
           : `<button class="prod-add-btn" onclick="changeQty('${p.id}',1,event)" title="Agregar">+</button>`;
 
+      const infoBtn = !ago && descDisplay ? `<button class="prod-info-btn" onclick="openProdDetail('${p.id}',event)" title="Ver detalle">ℹ️</button>` : '';
       html += `<div class="prod-card${ago ? ' agotado' : ''}" ${ago ? '' : `onclick="changeQty('${p.id}',1,event)"`} data-id="${p.id}">
         ${imgHtml}
         <div class="prod-body">
@@ -560,7 +608,7 @@ function renderProducts(list) {
           ${descDisplay ? `<div class="prod-desc">${descDisplay}</div>` : ''}
           <div class="prod-precio">${ago ? '<span style="font-size:12px;color:var(--text3)">No disponible</span>' : fmtCOP(p.precio)}</div>
         </div>
-        ${ctrl}
+        ${ctrl}${infoBtn}
       </div>`;
     });
   });
@@ -820,6 +868,31 @@ function resetCiclo(delay) {
     if (clienteTel) checkMisPedidos(clienteTel);
     else showView('phone');
   }, delay);
+}
+
+// ── Detalle de producto ───────────────────────────────────────────
+function openProdDetail(id, e) {
+  e?.stopPropagation();
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  const nomDisplay = (lang === 'zh' && p.nombre_zh) ? p.nombre_zh : p.nombre;
+  const descDisplay = (lang === 'zh' && p.descripcion_zh) ? p.descripcion_zh : p.descripcion;
+  const isEmoji = p.imagen_url && !p.imagen_url.startsWith('/') && !p.imagen_url.startsWith('http');
+  const imgWrap = document.getElementById('detail-img-wrap');
+  if (p.imagen_url && !isEmoji) {
+    imgWrap.innerHTML = `<img class="detail-img" src="${p.imagen_url}" alt="" onerror="this.parentElement.innerHTML='<div class=detail-img-placeholder>${p.imagen_url||'🍽️'}</div>'">`;
+  } else {
+    imgWrap.innerHTML = `<div class="detail-img-placeholder">${isEmoji ? p.imagen_url : '🍽️'}</div>`;
+  }
+  document.getElementById('detail-nombre').textContent = nomDisplay;
+  document.getElementById('detail-desc').textContent = descDisplay || '';
+  document.getElementById('detail-precio').textContent = fmtCOP(p.precio);
+  const btn = document.getElementById('detail-add-btn');
+  btn.onclick = () => { changeQty(id, 1, null); closeProdDetail(); };
+  document.getElementById('prod-detail-overlay').classList.add('open');
+}
+function closeProdDetail() {
+  document.getElementById('prod-detail-overlay').classList.remove('open');
 }
 
 let _ratingPedidoId = null;

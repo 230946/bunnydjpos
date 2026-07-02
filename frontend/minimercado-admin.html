@@ -1110,14 +1110,7 @@ tr:hover td{background:var(--bg2)}
     <h3>Nueva categoría</h3>
     <div class="field"><label>Nombre</label><input id="cm-nombre" placeholder="Entradas, Platos fuertes..."></div>
     <div class="field"><label>Icono (emoji)</label><input id="cm-icono" placeholder="🍽️" maxlength="4"></div>
-    <div class="field"><label>Módulo</label>
-      <select id="cm-modulo">
-        <option value="">Todos los módulos (POS + Minimercado + Bar)</option>
-        <option value="pos">Solo POS (restaurante)</option>
-        <option value="minimercado">Solo Minimercado</option>
-        <option value="bar">Solo Bar</option>
-      </select>
-    </div>
+    <input type="hidden" id="cm-modulo" value="minimercado">
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('cat-menu-modal')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="saveCatMenu()">Guardar</button>

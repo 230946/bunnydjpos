@@ -128,7 +128,7 @@ router.get('/menu/:negocioId', async (req, res) => {
       // Restaurante/bar → menu_items con verificación de stock de receta e inventario
       const { rows } = await pool.query(
         `SELECT mi.id, mi.nombre, mi.nombre_zh, mi.descripcion, mi.descripcion_zh,
-                mi.precio, mi.emoji AS imagen_url,
+                mi.precio, COALESCE(mi.foto_url, mi.emoji) AS imagen_url,
                 COALESCE(mc.nombre, 'General') AS categoria, 0 AS iva_pct, NULL AS unidad,
                 mi.disponible, mi.stock AS item_stock,
                 inv.stock AS inv_stock,

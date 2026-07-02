@@ -258,6 +258,7 @@ async function runMigrations() {
     { table: 'ventas', column: 'monto_efectivo', sql: `ALTER TABLE ventas ADD COLUMN monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'ventas', column: 'monto_tarjeta',  sql: `ALTER TABLE ventas ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'ventas', column: 'monto_nequi',    sql: `ALTER TABLE ventas ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'menu_items', column: 'foto_url', sql: `ALTER TABLE menu_items ADD COLUMN foto_url VARCHAR(255) NULL` },
     { table: 'domicilios_pedidos', column: 'calificacion',      sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion TINYINT NULL` },
     { table: 'domicilios_pedidos', column: 'calificacion_nota', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion_nota VARCHAR(255) NULL` },
     {
