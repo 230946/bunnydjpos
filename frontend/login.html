@@ -6,58 +6,62 @@
 <title>BunnyDJPOS — Iniciar sesión</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:system-ui,-apple-system,sans-serif;min-height:100vh;
-  background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --blue:#0B8457;--blue-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --r:8px;--rl:12px;
 }
-.brand-header{text-align:center;margin-bottom:28px}
-.brand-logo{
-  width:80px;height:80px;border-radius:18px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,.4);
-  display:flex;align-items:center;justify-content:center;font-size:38px;background:#0B8457
-}
-.brand-nombre{font-size:1.6rem;font-weight:800;color:#f1f5f9;letter-spacing:-.02em}
-.brand-sub{font-size:.85rem;color:#94a3b8;margin-top:4px;font-weight:500}
-
-.login-card{background:#fff;border-radius:18px;padding:28px 26px 22px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.2)}
-.login-title{font-size:.98rem;font-weight:700;color:#0f172a;margin-bottom:16px;text-align:center}
-.login-input{width:100%;padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.92rem;margin-bottom:10px;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;color:#0f172a;background:#fff}
-.login-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
-.login-btn{width:100%;padding:11px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .15s;margin-top:2px;font-family:inherit}
-.login-btn:hover{background:#4f46e5}
-.login-btn:disabled{background:#a5b4fc;cursor:not-allowed}
-.login-err{color:#ef4444;font-size:.8rem;text-align:center;margin-top:8px;min-height:16px}
-.forgot{display:block;width:100%;text-align:center;margin-top:14px;font-size:.78rem;color:#94a3b8;background:none;border:none;cursor:pointer;font-family:inherit}
-.forgot:hover{color:#e2e8f0}
-.fp-box{display:none;margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0}
-.fp-msg{font-size:.78rem;color:#64748b;margin-top:8px;text-align:center}
-.portal-footer{margin-top:28px;color:#475569;font-size:.72rem;text-align:center}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
+.login-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:36px 32px;width:360px;max-width:calc(100% - 48px)}
+.login-logo{text-align:center;margin-bottom:8px}
+.field{margin-bottom:14px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.field input{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;outline:none;font-family:inherit}
+.field input:focus{border-color:var(--blue)}
+.btn{width:100%;padding:11px;border:none;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:500;font-family:inherit}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-d)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-sm{padding:6px 14px;font-size:12px;width:auto}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text)}
+.btn-outline:hover{background:var(--bg2)}
+.error-msg{background:var(--red-l);color:var(--red);padding:9px 12px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:none}
+.fp-box{display:none;margin-top:16px;padding-top:16px;border-top:0.5px solid var(--border)}
+.fp-msg{font-size:12px;color:var(--text2);margin-top:8px;text-align:center}
+.portal-footer{margin-top:20px;color:var(--text2);font-size:.72rem;text-align:center}
 </style>
 </head>
 <body>
 
-<div class="brand-header">
-  <div class="brand-logo">🐰</div>
-  <div class="brand-nombre">BunnyDJPOS</div>
-  <div class="brand-sub">Ingresa con tu usuario o correo para entrar a tu negocio</div>
-</div>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/img/logo.png" alt="Logo" style="width:100%;height:auto;max-height:200px;object-fit:contain;border-radius:14px;margin-bottom:10px">
+    </div>
+    <div class="error-msg" id="login-error"></div>
+    <div class="field"><label>Email o usuario</label><input id="l-login" type="text" placeholder="usuario o correo" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-primary" id="btn-login" onclick="doLogin()">Ingresar</button>
+    <div style="margin-top:10px;text-align:center"><button class="btn btn-outline btn-sm" onclick="toggleForgot()">¿Olvidaste tu contraseña?</button></div>
 
-<div class="login-card">
-  <div class="login-title">🔐 Acceso para personal</div>
-  <input class="login-input" id="l-login" type="text" placeholder="Usuario o correo" autocomplete="username">
-  <input class="login-input" id="l-pass" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-  <button class="login-btn" id="btn-login" onclick="doLogin()">Ingresar</button>
-  <div class="login-err" id="login-error"></div>
-  <button class="forgot" onclick="toggleForgot()">¿Olvidaste tu contraseña?</button>
-
-  <div class="fp-box" id="fp-box">
-    <input class="login-input" id="fp-login" placeholder="Usuario o correo">
-    <button class="login-btn" onclick="forgotPassword()">Enviar</button>
-    <div class="fp-msg" id="fp-msg"></div>
+    <div class="fp-box" id="fp-box">
+      <div class="field"><label>Email o usuario</label><input id="fp-login" placeholder="usuario o correo"></div>
+      <button class="btn btn-primary btn-sm" onclick="forgotPassword()">Enviar</button>
+      <div class="fp-msg" id="fp-msg"></div>
+    </div>
   </div>
-</div>
 
-<div class="portal-footer">Powered by BunnyDJPOS</div>
+  <div class="portal-footer">Powered by BunnyDJPOS</div>
+</div>
 
 <script>
 const API = '/api';
@@ -97,8 +101,8 @@ async function doLogin() {
   const login = document.getElementById('l-login').value.trim();
   const pass  = document.getElementById('l-pass').value;
   const errEl = document.getElementById('login-error');
-  errEl.textContent = '';
-  if (!login || !pass) { errEl.textContent = 'Completa todos los campos'; return; }
+  errEl.style.display = 'none'; errEl.textContent = '';
+  if (!login || !pass) { errEl.textContent = 'Completa todos los campos'; errEl.style.display = 'block'; return; }
 
   const btn = document.getElementById('btn-login');
   btn.disabled = true; btn.textContent = 'Verificando…';
@@ -130,6 +134,7 @@ async function doLogin() {
     location.href = `/portal.html?n=${user.negocio_id}`;
   } catch (e) {
     errEl.textContent = e.message;
+    errEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Ingresar';
   }
 }
