@@ -9,6 +9,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+/* Ancla html/body al alto real de pantalla: sin esto, cualquier desborde
+   interno estira la página completa y arrastra las barras fijas al hacer
+   scroll en celular (en vez de quedar solo el contenido interno scrolleable). */
+html,body{height:100%;height:100dvh;overflow:hidden}
 :root{
   --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
   --acc:#0B8457;--acc-d:#086644;--acc-l:#e0f7ec;--acc-ll:rgba(11,132,87,0.08);
@@ -67,7 +71,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cat-tabs::-webkit-scrollbar-thumb{background:var(--border)}
 .cat-tab{background:var(--bg);border:0.5px solid var(--border2);border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;white-space:nowrap;color:var(--text2);transition:.12s;flex-shrink:0}
 .cat-tab.active{background:var(--acc);color:#fff;border-color:var(--acc)}
-.prod-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-content:start}
+.prod-grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-content:start}
 .prod-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:12px;cursor:pointer;transition:.12s;user-select:none;position:relative;display:flex;flex-direction:column;min-height:110px}
 .prod-card:hover:not(.sin-stock){border-color:var(--acc);background:var(--acc-l);transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.08)}
 .prod-card:active:not(.sin-stock){transform:scale(.95)!important}
@@ -88,7 +92,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cart-header{padding:14px 16px 10px;border-bottom:0.5px solid var(--border);font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:center}
 .cart-clear{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px}
 .cart-clear:hover{color:var(--red)}
-.cart-items{flex:1;overflow-y:auto;padding:8px}
+.cart-items{flex:1;min-height:0;overflow-y:auto;padding:8px}
 .cart-item{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .ci-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;flex-shrink:0}
 .ci-del:hover{color:var(--red)}
@@ -116,7 +120,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .stat-c{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:12px 14px}
 .stat-c .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
 .stat-c .val{font-size:20px;font-weight:700;color:var(--acc-d)}
-.caja-tbl-wrap{flex:1;overflow-y:auto;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl)}
+.caja-tbl-wrap{flex:1;min-height:0;overflow-y:auto;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl)}
 .caja-charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex-shrink:0}
 .caja-chart-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px}
 .caja-chart-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
@@ -321,7 +325,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
         </div>
         <button class="btn" onclick="loadCaja()">↺ Actualizar</button>
       </div>
-      <div id="caja-body" style="flex:1;overflow-y:auto">
+      <div id="caja-body" style="flex:1;min-height:0;overflow-y:auto">
         <div style="text-align:center;padding:40px;color:var(--text2)">Cargando...</div>
       </div>
     </div>
