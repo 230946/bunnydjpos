@@ -27,15 +27,30 @@
     .card-reservar{--cc:#f59e0b}
     .card-empleado{--cc:#3b82f6}
 
-    /* ── Login card ── */
-    .login-card{background:#fff;border-radius:18px;padding:28px 26px 22px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.2)}
-    .login-title{font-size:.98rem;font-weight:700;color:#0f172a;margin-bottom:16px;text-align:center}
-    .login-input{width:100%;padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.92rem;margin-bottom:10px;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;color:#0f172a;background:#fff}
-    .login-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
-    .login-btn{width:100%;padding:11px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .15s;margin-top:2px;font-family:inherit}
-    .login-btn:hover{background:#4f46e5}
-    .login-btn:disabled{background:#a5b4fc;cursor:not-allowed}
-    .login-err{color:#ef4444;font-size:.8rem;text-align:center;margin-top:8px;min-height:16px}
+    /* ── Login card (mismo estilo que superadmin.html/login.html) ── */
+    :root{
+      --bg:#fff;--bg2:#f0faf5;--text:#102A24;--text2:#2a5040;
+      --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+      --blue:#0B8457;--blue-d:#086644;--red:#E24B4A;--red-l:#FCEBEB;--r:8px;--rl:12px;
+    }
+    .login-card{background:var(--bg);border-radius:var(--rl);padding:36px 32px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.2)}
+    .login-logo{text-align:center;margin-bottom:18px}
+    .login-logo img{width:100px;height:100px;object-fit:cover;border-radius:16px;margin-bottom:10px}
+    .login-title{font-size:20px;font-weight:700;color:var(--text);text-align:center;margin-bottom:20px}
+    .field{margin-bottom:14px}
+    .field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+    .field input{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;outline:none;font-family:inherit}
+    .field input:focus{border-color:var(--blue)}
+    .btn{width:100%;padding:11px;border:none;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:500;font-family:inherit}
+    .btn-primary{background:var(--blue);color:#fff}
+    .btn-primary:hover{background:var(--blue-d)}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed}
+    .btn-sm{padding:6px 14px;font-size:12px;width:auto}
+    .btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text)}
+    .btn-outline:hover{background:var(--bg2)}
+    .error-msg{background:var(--red-l);color:var(--red);padding:9px 12px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:none}
+    .fp-box{display:none;margin-top:16px;padding-top:16px;border-top:0.5px solid var(--border)}
+    .fp-msg{font-size:12px;color:var(--text2);margin-top:8px;text-align:center}
 
     /* ── Barra de usuario (post-login) ── */
     .user-bar{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.28);border-radius:12px;padding:10px 16px;max-width:680px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
@@ -119,11 +134,19 @@
 
     <!-- Formulario de login (default) -->
     <div id="login-card" class="login-card">
-      <div class="login-title">🔐 Acceso para personal</div>
-      <input class="login-input" id="inp-user" type="text" placeholder="Usuario o correo" autocomplete="username">
-      <input class="login-input" id="inp-pass" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-      <button class="login-btn" id="btn-login" onclick="doLogin()">Ingresar</button>
-      <div class="login-err" id="login-err"></div>
+      <div class="login-logo"><img id="login-logo-img" src="/img/logo.png" alt="Logo" onerror="this.src='/img/logo.png'"></div>
+      <div class="login-title">Login</div>
+      <div class="error-msg" id="login-err"></div>
+      <div class="field"><label>Usuario o correo</label><input id="inp-user" type="text" placeholder="Usuario o correo" autocomplete="username"></div>
+      <div class="field"><label>Contraseña</label><input id="inp-pass" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary" id="btn-login" onclick="doLogin()">Ingresar</button>
+      <div style="margin-top:10px;text-align:center"><button class="btn btn-outline btn-sm" onclick="toggleForgotPortal()">¿Olvidaste tu contraseña?</button></div>
+
+      <div class="fp-box" id="fp-box-portal">
+        <div class="field"><label>Usuario o correo</label><input id="fp-login-portal" placeholder="usuario o correo"></div>
+        <button class="btn btn-primary btn-sm" onclick="forgotPasswordPortal()">Enviar</button>
+        <div class="fp-msg" id="fp-msg-portal"></div>
+      </div>
     </div>
   </div>
 
@@ -181,11 +204,16 @@ function showError(titulo, msg){
   $('error-wrap').style.display = 'block';
 }
 
-// Determina si el usuario puede acceder al panel admin (no solo POS)
+// Determina si el usuario puede acceder al panel admin (no solo POS).
+// Se basa en los permisos reales del usuario, no en el nombre del rol:
+// un rol sin ninguno de estos permisos (ej. Mesero) no debe entrar al admin,
+// aunque su nombre no coincida con una lista negra de roles "obvios".
+const ADMIN_ACCESS_KEYS = ['personal','inventario','inventario_borrar','proveedores',
+  'gastos','reportes','facturacion','clientes','horarios'];
 function puedeAdmin(user){
   if(user.es_superadmin) return true;
-  const rol = (user.rol_nombre||'').toLowerCase();
-  return !['cajero','caja','vendedor'].some(r => rol.includes(r));
+  const p = user.permisos||{};
+  return ADMIN_ACCESS_KEYS.some(k => p[k]);
 }
 
 // Guarda las claves de sessionStorage que cada portal espera encontrar
@@ -272,16 +300,17 @@ function cerrarSesion(){
   $('login-card').style.display = 'block';
   $('inp-user').value = '';
   $('inp-pass').value = '';
-  $('login-err').textContent = '';
+  $('login-err').style.display = 'none'; $('login-err').textContent = '';
 }
 
 async function doLogin(){
   const login = $('inp-user').value.trim();
   const pass  = $('inp-pass').value;
-  if(!login||!pass){ $('login-err').textContent='Completa todos los campos'; return; }
+  const errEl = $('login-err');
+  errEl.style.display='none'; errEl.textContent = '';
+  if(!login||!pass){ errEl.textContent='Completa todos los campos'; errEl.style.display='block'; return; }
   const btn = $('btn-login');
   btn.disabled = true; btn.textContent = 'Verificando…';
-  $('login-err').textContent = '';
   try{
     const r = await fetch('/api/auth/login',{
       method:'POST',
@@ -293,8 +322,31 @@ async function doLogin(){
     guardarSesion(d.token, d.user);
     mostrarTarjetasAdmin(d.user);
   } catch(e){
-    $('login-err').textContent = e.message;
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+function toggleForgotPortal(){
+  const box = $('fp-box-portal');
+  box.style.display = box.style.display === 'block' ? 'none' : 'block';
+}
+
+async function forgotPasswordPortal(){
+  const login = $('fp-login-portal').value.trim();
+  const msgEl = $('fp-msg-portal');
+  if(!login){ msgEl.textContent = 'Ingresa tu usuario o correo'; return; }
+  msgEl.textContent = 'Enviando…';
+  try{
+    const r = await fetch('/api/auth/forgot-password',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ login })
+    });
+    const d = await r.json();
+    msgEl.textContent = d.message || 'Si el usuario existe, se generó una contraseña temporal.';
+  } catch(e){
+    msgEl.textContent = 'Error: ' + e.message;
   }
 }
 
@@ -329,7 +381,7 @@ async function init(){
     $('p-nombre').textContent = d.nombre;
     document.title = d.nombre + ' — Acceso';
     $('p-tipo').textContent = TIPOS[d.tipo]||d.tipo||'';
-    if(d.logo_url) $('p-logo').src = d.logo_url;
+    if(d.logo_url){ $('p-logo').src = d.logo_url; $('login-logo-img').src = d.logo_url; }
     _tipo = d.tipo || 'restaurante';
 
     $('loading').style.display = 'none';
