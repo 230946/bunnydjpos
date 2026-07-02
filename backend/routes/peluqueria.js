@@ -4,7 +4,7 @@
 const router = require('express').Router();
 const { v4: uuid } = require('uuid');
 const { pool, ph } = require('../db');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requirePermiso } = require('../middleware/auth');
 
 // ── Ruta pública: portal del empleado (sin auth) ─────────────────
 router.get('/portal-empleado/:id', async (req, res) => {
@@ -1852,7 +1852,7 @@ router.post('/cajas/movimiento', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.get('/cajas/historial', async (req, res) => {
+router.get('/cajas/historial', requirePermiso('pos_cobro'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM pel_cajas WHERE negocio_id=? ORDER BY fecha_apertura DESC LIMIT 30`,
@@ -2325,7 +2325,8 @@ router.post('/clientes/:id/paquetes', async (req, res) => {
 // DASHBOARD
 // ════════════════════════════════════════════════════════════════
 
-router.get('/dashboard', async (req, res) => {
+const ADMIN_ACCESS_PERMS = ['personal','inventario','gastos','proveedores','reportes','clientes','facturacion','horarios'];
+router.get('/dashboard', requirePermiso(ADMIN_ACCESS_PERMS), async (req, res) => {
   try {
     const hoy = localDate(req.user.zona_horaria);
     const [citasHoy, proximas, ingresosMes, stockAlerta, cajaActual] = await Promise.all([
@@ -2527,7 +2528,7 @@ router.get('/reportes/servicios-por-empleado', async (req, res) => {
 // CAJA DEL DÍA (resumen)
 // ════════════════════════════════════════════════════════════════
 
-router.get('/caja', async (req, res) => {
+router.get('/caja', requirePermiso('pos_cobro'), async (req, res) => {
   try {
     const fecha = req.query.fecha || localDate(req.user.zona_horaria);
     const { rows: ventas } = await pool.query(

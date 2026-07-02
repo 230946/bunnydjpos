@@ -771,8 +771,8 @@ function tieneAccesoAdmin(permisos, esSuperAdmin, rolNombre){
   const rol=(rolNombre||'').toLowerCase();
   if(['cajero','caja'].some(r=>rol.includes(r))) return false;
   const p=permisos||{};
-  // Sin permisos explícitos y sin rol de cajero → admin con rol sin configurar, permitir
-  if(Object.keys(p).length===0) return true;
+  // Sin permisos explícitos → sin acceso por defecto (deny), aunque el rol no sea cajero
+  if(Object.keys(p).length===0) return false;
   return ADMIN_ACCESS_KEYS.some(k=>p[k]);
 }
 function perm(keys){return IS_SUPERADMIN||keys.some(k=>PERMISOS[k]);}

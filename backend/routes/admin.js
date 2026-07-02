@@ -66,7 +66,7 @@ router.delete('/gastos/categorias/:id', requirePermiso('gastos'), async (req, re
 });
 
 // Gastos
-router.get('/gastos', async (req, res) => {
+router.get('/gastos', requirePermiso('gastos'), async (req, res) => {
   try {
     const { desde, hasta, categoria_id } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
@@ -129,7 +129,7 @@ router.delete('/gastos/:id', requirePermiso('gastos'), async (req, res) => {
 });
 
 // Resumen de gastos por categoría
-router.get('/gastos/resumen', async (req, res) => {
+router.get('/gastos/resumen', requirePermiso('gastos'), async (req, res) => {
   try {
     const { desde, hasta } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
@@ -149,6 +149,8 @@ router.get('/gastos/resumen', async (req, res) => {
 // CAJA DIARIA
 // ════════════════════════════════════════════════════════════════
 
+// Nota: sin requirePermiso — cualquier usuario autenticado consulta SU PROPIA
+// caja (filtrada por usuario_id) como parte de la inicialización normal del POS.
 router.get('/caja', async (req, res) => {
   try {
     const { fecha } = req.query;
@@ -172,7 +174,7 @@ router.get('/caja', async (req, res) => {
 });
 
 // Resumen de todas las cajas del día (para panel admin)
-router.get('/caja/resumen', async (req, res) => {
+router.get('/caja/resumen', requirePermiso('pos_cobro'), async (req, res) => {
   try {
     const { fecha } = req.query;
     const f = fecha || localDate(req.user.zona_horaria);
@@ -187,7 +189,7 @@ router.get('/caja/resumen', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.get('/caja/historial', async (req, res) => {
+router.get('/caja/historial', requirePermiso('pos_cobro'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT c.*, u.nombre AS usuario_nombre
@@ -421,7 +423,7 @@ router.put('/pedidos-proveedor/:id/estado', requirePermiso('proveedores'), async
 // REPORTES ADMINISTRATIVOS
 // ════════════════════════════════════════════════════════════════
 
-router.get('/reportes/resumen', async (req, res) => {
+router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => {
   try {
     const { desde, hasta, tipo } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
@@ -478,7 +480,7 @@ router.get('/reportes/resumen', async (req, res) => {
 });
 
 // Ventas por hora del día
-router.get('/reportes/ventas-por-hora', async (req, res) => {
+router.get('/reportes/ventas-por-hora', requirePermiso('reportes'), async (req, res) => {
   try {
     const { desde, hasta, metodo_pago, tipo } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
@@ -500,7 +502,7 @@ router.get('/reportes/ventas-por-hora', async (req, res) => {
 });
 
 // Ventas por día (gráfica de tendencia últimos N días)
-router.get('/reportes/ventas-por-dia', async (req, res) => {
+router.get('/reportes/ventas-por-dia', requirePermiso('reportes'), async (req, res) => {
   try {
     const { desde, hasta } = req.query;
     const h = hasta || localDate(req.user.zona_horaria);
@@ -521,6 +523,8 @@ router.get('/reportes/ventas-por-dia', async (req, res) => {
 });
 
 // Ventas recientes del período (últimas 30)
+// Nota: sin requirePermiso — también lo usa la pestaña "Caja diaria" del POS
+// (cualquier usuario cierra su turno viendo las ventas recientes del negocio).
 router.get('/ventas/recientes', async (req, res) => {
   try {
     const { tipo, desde, hasta } = req.query;
@@ -547,7 +551,7 @@ router.get('/ventas/recientes', async (req, res) => {
 });
 
 // Lista completa de ventas por período (para exportar)
-router.get('/ventas', async (req, res) => {
+router.get('/ventas', requirePermiso('reportes'), async (req, res) => {
   try {
     const { desde, hasta, metodo_pago, tipo } = req.query;
     const d = desde || localDate(req.user.zona_horaria);

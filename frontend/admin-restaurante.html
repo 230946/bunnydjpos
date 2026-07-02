@@ -1569,6 +1569,15 @@ const CATEGORIAS_PERMISOS = [
   ]},
 ];
 const MODULOS_PERMISOS = CATEGORIAS_PERMISOS.flatMap(c => c.permisos);
+// Claves de permiso que dan acceso al panel admin (excluye permisos solo de POS:
+// pos_mesas, pos_menu, pos_cocina, pos_cobro no bastan para entrar al admin).
+const ADMIN_ACCESS_KEYS = ['personal','inventario','inventario_borrar','proveedores',
+  'gastos','reportes','facturacion','clientes','horarios'];
+function puedeAdmin(permisos, esSuperadmin){
+  if(esSuperadmin) return true;
+  const p = permisos||{};
+  return ADMIN_ACCESS_KEYS.some(k=>p[k]);
+}
 
 // ─── API helpers ────────────────────────────────────────────
 async function api(path, opts={}) {
@@ -1607,8 +1616,7 @@ async function doLogin(){
     if(!r.ok) throw new Error(d.error||'Error');
     if(!d.user.negocio_id && !d.user.es_superadmin) throw new Error('Este usuario no tiene negocio asignado. Contacta al superadmin.');
     const p = d.user.permisos || {};
-    const tieneAcceso = d.user.es_superadmin || p.personal || p.inventario || p.gastos || p.proveedores || p.reportes || p.roles || p.pos_cobro || p.clientes;
-    if(!tieneAcceso) throw new Error('No tienes permisos para acceder al panel administrativo.');
+    if(!puedeAdmin(p, d.user.es_superadmin)) throw new Error('No tienes permisos para acceder al panel administrativo.');
     token = d.token;
     me = d.user;
     sessionStorage.setItem('bdj_adm_token',token);
@@ -3388,7 +3396,7 @@ if(token){
     const p=JSON.parse(atob(token.split('.')[1]));
     const tokenValido = p.exp > Date.now()/1000 && (p.negocio_id || p.es_superadmin);
     const negocioOk = !urlNegocio || p.negocio_id === urlNegocio || p.es_superadmin;
-    if(tokenValido && negocioOk){ me=p; showApp(); }
+    if(tokenValido && negocioOk && puedeAdmin(p.permisos, p.es_superadmin)){ me=p; showApp(); }
     else { sessionStorage.removeItem('bdj_adm_token'); token=null; }
   } catch{ sessionStorage.removeItem('bdj_adm_token'); token=null; }
 }
