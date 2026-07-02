@@ -68,6 +68,17 @@ const API = '/api';
 
 document.getElementById('l-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
+// Al volver con el botón "atrás" del navegador, Chrome restaura la página
+// congelada desde el bfcache (botón en "Verificando…"). La reseteamos.
+window.addEventListener('pageshow', e => {
+  if (e.persisted) {
+    const btn = document.getElementById('btn-login');
+    btn.disabled = false;
+    btn.textContent = 'Ingresar';
+    document.getElementById('login-error').style.display = 'none';
+  }
+});
+
 // Mismas claves de sessionStorage que espera cada portal (igual que portal.html)
 const SS_KEYS = {
   peluqueria:  { admin: 'pel_token',     pos: 'pos_pel_token' },
