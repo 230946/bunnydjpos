@@ -666,6 +666,7 @@ let allMesas = [];
 // ─── Utils ────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 let NEG_MONEDA = 'COP';
+let NEG_IDIOMAS = ['es'];
 const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
 const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
 const fmt = n => (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO');
@@ -694,6 +695,7 @@ async function api(path, opts={}) {
       .then(info => {
         if (!info) return;
         if (info.moneda) NEG_MONEDA = info.moneda;
+        if (info.idiomas) NEG_IDIOMAS = typeof info.idiomas==='string' ? JSON.parse(info.idiomas) : info.idiomas;
         if (!info.nombre) return;
         const el = document.getElementById('login-neg-nombre');
         if (el) { el.textContent = info.nombre; el.style.display = 'block'; }
@@ -751,6 +753,7 @@ async function checkContrato(negId){
     if(!r.ok) return;
     const d=await r.json();
     if(d?.moneda) NEG_MONEDA=d.moneda;
+    if(d?.idiomas) NEG_IDIOMAS = typeof d.idiomas==='string' ? JSON.parse(d.idiomas) : d.idiomas;
     const blk=msg=>{ $('contrato-block-msg').innerHTML=msg; $('contrato-block').style.display='flex'; };
     if(!d.contrato){ blk('No tienes un contrato activo.<br>Contacta al administrador del sistema.'); return; }
     const {estado,dias_para_vencer}=d.contrato;
@@ -828,6 +831,7 @@ function connectWS(){
     if(tipo==='nueva_comanda'){ loadCocina(); updateCocinaBadge(); Sound.notify(); _browserNotify('Nueva comanda 🍽️',`Mesa ${data?.mesa_num||'?'} — ${(data?.items||[]).length} ítem(s)`); }
     else if(tipo==='comanda_actualizada'){ loadCocina(); updateCocinaBadge(); }
     if(tipo==='mesa_actualizada'||tipo==='mesa_liberada') loadMesas();
+    if(tipo==='cocina_limpiada'){ loadCocina(); loadMesas(); updateCocinaBadge(0); }
     if(tipo==='domicilio_nuevo'){
       loadCocina(); Sound.notify();
       _updateDomBadge(1);
@@ -1032,7 +1036,7 @@ function addToPedido(item){
     }
   }
   const ex=pedido.find(i=>i.id===item.id);
-  if(ex) ex.qty++; else pedido.push({id:item.id,nombre:item.nombre,nombre_zh:item.nombre_zh||null,emoji:item.emoji,precio:item.precio,qty:1});
+  if(ex) ex.qty++; else pedido.push({id:item.id,nombre:item.nombre,nombre_zh:item.nombre_zh||null,emoji:item.emoji,precio:item.precio,qty:1,enviado:0});
   Sound.add();
   renderPedido();
   // Guardar en backend
@@ -1081,20 +1085,47 @@ function changeQty(i,d){
       }
     }
   }
+  const nombre=pedido[i].nombre;
   pedido[i].qty+=d;
-  if(pedido[i].qty<=0) pedido.splice(i,1);
+  let cancelar=0;
+  if(pedido[i].qty<=0){ cancelar=pedido[i].enviado||0; pedido.splice(i,1); }
+  else if((pedido[i].enviado||0)>pedido[i].qty){ cancelar=(pedido[i].enviado||0)-pedido[i].qty; pedido[i].enviado=pedido[i].qty; }
   renderPedido();
-  if(selMesaId) api(`/pos/mesas/${selMesaId}/pedido`,{method:'PUT',body:JSON.stringify({pedido,ocupada:pedido.length>0})}).catch(e=>toast('⚠️ Error guardando pedido: '+e.message));
+  if(selMesaId){
+    api(`/pos/mesas/${selMesaId}/pedido`,{method:'PUT',body:JSON.stringify({pedido,ocupada:pedido.length>0})}).catch(e=>toast('⚠️ Error guardando pedido: '+e.message));
+    if(cancelar>0) notificarQuitadoCocina(nombre,cancelar);
+  }
 }
-function removeItem(i){ pedido.splice(i,1); renderPedido(); if(selMesaId) api(`/pos/mesas/${selMesaId}/pedido`,{method:'PUT',body:JSON.stringify({pedido,ocupada:pedido.length>0})}).catch(e=>toast('⚠️ Error guardando pedido: '+e.message)); }
+// Avisa a cocina que se quitaron artículos que ya se habían enviado (ej. el
+// cliente ya no los quiso) — simétrico a enviarCocina(), que solo manda lo nuevo.
+function notificarQuitadoCocina(nombre,cantidad){
+  api('/pos/comandas/reducir',{method:'PUT',body:JSON.stringify({mesa_id:selMesaId,nombre,cantidad})})
+    .then(()=>updateCocinaBadge())
+    .catch(e=>toast('⚠️ Error avisando a cocina: '+e.message));
+}
+function removeItem(i){
+  const nombre=pedido[i].nombre, cancelar=pedido[i].enviado||0;
+  pedido.splice(i,1);
+  renderPedido();
+  if(selMesaId){
+    api(`/pos/mesas/${selMesaId}/pedido`,{method:'PUT',body:JSON.stringify({pedido,ocupada:pedido.length>0})}).catch(e=>toast('⚠️ Error guardando pedido: '+e.message));
+    if(cancelar>0) notificarQuitadoCocina(nombre,cancelar);
+  }
+}
 function cerrarPedido(){ selMesaId=null; selMesaNum=null; pedido=[]; nav('mesas',document.querySelectorAll('.nav-icon')[0]); actualizarPedidoMini(0); }
 
 async function enviarCocina(){
   if(!cajaAbierta){ toast('⚠️ La caja está cerrada — no se puede enviar a cocina'); return; }
   if(!selMesaId){ toast('Selecciona una mesa'); return; }
   if(!pedido.length){ toast('Agrega artículos al pedido'); return; }
+  // Solo se envía lo que aún no se ha mandado a cocina (evita duplicar tickets
+  // cuando se agregan más artículos a una mesa que ya envió parte del pedido).
+  const nuevos = pedido.map(i=>({...i, delta:i.qty-(i.enviado||0)})).filter(i=>i.delta>0);
+  if(!nuevos.length){ toast('No hay artículos nuevos para enviar a cocina'); return; }
   try {
-    await api('/pos/comandas',{method:'POST',body:JSON.stringify({mesa_id:selMesaId,mesa_num:selMesaNum,mesa_nombre:selMesaNombre,items:pedido.map(i=>({nombre:i.nombre,nombre_zh:i.nombre_zh||null,qty:i.qty,emoji:i.emoji}))} )});
+    await api('/pos/comandas',{method:'POST',body:JSON.stringify({mesa_id:selMesaId,mesa_num:selMesaNum,mesa_nombre:selMesaNombre,items:nuevos.map(i=>({nombre:i.nombre,nombre_zh:i.nombre_zh||null,qty:i.delta,emoji:i.emoji}))} )});
+    pedido.forEach(i=>{ i.enviado=i.qty; });
+    await api(`/pos/mesas/${selMesaId}/pedido`,{method:'PUT',body:JSON.stringify({pedido,ocupada:pedido.length>0})});
     toast(`✅ Comanda enviada — Mesa ${selMesaNum}`);
     updateCocinaBadge();
     cerrarPedido();
@@ -1103,11 +1134,12 @@ async function enviarCocina(){
 
 // ─── COCINA ───────────────────────────────────────────────────
 async function limpiarCocina(){
-  if(!confirm('¿Marcar todas las comandas como entregadas y limpiar la cocina?')) return;
+  if(!confirm('¿Limpiar toda la cocina? Esto marca todas las comandas como entregadas y libera las mesas que tenían pedidos pendientes (úsalo cuando esas cuentas se cancelaron, ej. el cliente no pidió nada).')) return;
   try {
     await api('/pos/comandas/limpiar/todo', {method:'PUT'});
-    toast('✅ Cocina limpiada');
+    toast('✅ Cocina limpiada y mesas liberadas');
     loadCocina();
+    loadMesas();
     updateCocinaBadge(0);
   } catch(e){ toast('Error: '+e.message); }
 }
@@ -1138,7 +1170,7 @@ async function loadCocina(){
       else if(c.estado==='listo'){ cls='listo'; label='Preparando'; badgeCls='b-listo'; }
       else { cls='entregado'; label='Listo para mesa'; badgeCls='b-entregado'; }
       const d=document.createElement('div'); d.className=`ticket ${cls}`;
-      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 准备中 / Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ 完成 / Listo</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ 已送达 / Entregado</button>`:``}`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh&&NEG_IDIOMAS.includes('zh')?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 准备中 / Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ 完成 / Listo</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ 已送达 / Entregado</button>`:``}`;
       g.appendChild(d);
     });
 
@@ -1161,7 +1193,7 @@ async function loadCocina(){
         : p.estado==='en_preparacion'
         ? `<button class="ticket-btn btn-listo" onclick="updDomicilio('${p.id}','listo')">✓ Listo para despacho</button>`
         : '';
-      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh&&NEG_IDIOMAS.includes('zh')?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
       g.appendChild(d);
     });
   } catch(e){ toast('Error cocina: '+e.message); }

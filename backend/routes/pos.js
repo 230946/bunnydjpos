@@ -420,6 +420,40 @@ router.post('/comandas', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Quita/reduce artículos de la(s) comanda(s) activa(s) de una mesa (ej. el
+// mesero borró del pedido algo que ya se había enviado a cocina porque el
+// cliente ya no lo quiso). Simétrico al merge de POST /comandas.
+router.put('/comandas/reducir', async (req, res) => {
+  try {
+    const { mesa_id, nombre, cantidad } = req.body;
+    if (!mesa_id || !nombre || !cantidad) return res.status(400).json({ error: 'mesa_id, nombre y cantidad requeridos' });
+    const { rows: activas } = await pool.query(
+      `SELECT id, items FROM comandas WHERE negocio_id=${ph(1)} AND mesa_id=${ph(2)} AND estado != 'entregado' ORDER BY creado DESC`,
+      [nid(req), mesa_id]
+    );
+    let restante = cantidad;
+    for (const c of activas) {
+      if (restante <= 0) break;
+      let items = typeof c.items === 'string' ? JSON.parse(c.items) : (c.items || []);
+      items = items.map(it => {
+        if (restante > 0 && it.nombre === nombre) {
+          const quitar = Math.min(it.qty, restante);
+          restante -= quitar;
+          return { ...it, qty: it.qty - quitar };
+        }
+        return it;
+      }).filter(it => it.qty > 0);
+      if (!items.length) {
+        await pool.query(`UPDATE comandas SET estado='entregado', actualizado=NOW() WHERE id=${ph(1)}`, [c.id]);
+      } else {
+        await pool.query(`UPDATE comandas SET items=${ph(1)}, actualizado=NOW() WHERE id=${ph(2)}`, [JSON.stringify(items), c.id]);
+      }
+    }
+    req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { mesa_id });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.put('/comandas/:id/estado', async (req, res) => {
   try {
     const { estado } = req.body;
@@ -433,12 +467,25 @@ router.put('/comandas/:id/estado', async (req, res) => {
 });
 
 // Marcar todas las comandas activas como entregadas (limpiar cocina)
+// También libera las mesas que tenían esas comandas pendientes: si se limpia
+// la cocina es porque esas cuentas se cancelaron (ej. el cliente no pidió
+// nada), así que no deben quedar "ocupadas" sin nada real detrás.
 router.put('/comandas/limpiar/todo', async (req, res) => {
   try {
+    const { rows: afectadas } = await pool.query(
+      `SELECT DISTINCT mesa_id FROM comandas WHERE negocio_id=${ph(1)} AND estado != 'entregado' AND mesa_id IS NOT NULL`,
+      [nid(req)]
+    );
     await pool.query(
       `UPDATE comandas SET estado='entregado', actualizado=NOW() WHERE negocio_id=${ph(1)} AND estado != 'entregado'`,
       [nid(req)]
     );
+    for (const { mesa_id } of afectadas) {
+      await pool.query(
+        `UPDATE mesa_estado SET ocupada=0, pedido='[]', actualizado=NOW() WHERE mesa_id=${ph(1)}`,
+        [mesa_id]
+      );
+    }
     req.app.locals.broadcast?.(nid(req), 'cocina_limpiada', {});
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
