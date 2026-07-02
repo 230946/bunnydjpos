@@ -474,6 +474,12 @@ tr:hover td{background:var(--bg2)}
           <div class="card-body" id="dash-caja"></div>
         </div>
 
+        <!-- Domicilios y calificaciones -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-header"><h3>🛵 Domicilios y calificaciones</h3></div>
+          <div class="card-body" id="dash-domicilios"></div>
+        </div>
+
         <!-- Últimas ventas del día -->
         <div class="card" style="margin-top:14px">
           <div class="card-header">
@@ -1737,6 +1743,19 @@ function updatePlanComCard(totalVenta){
   });
 }
 
+// La comisión siempre se calcula sobre el mes calendario en curso
+// (reinicia el día 1), sin importar los filtros de fecha/canal/método
+// que el usuario aplique en la pantalla de Reportes.
+async function loadComisionMes(){
+  try{
+    const d = new Date();
+    const desde = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+    const hasta = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const r = await api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`);
+    updatePlanComCard(+r.ventas.total_ventas || 0);
+  }catch(_){}
+}
+
 async function checkContrato(negocioId){
   if(me?.es_superadmin) return;
   try{
@@ -1839,7 +1858,7 @@ const navLoaders = {
   inventario:  () => { loadInventario(); checkInvAlertas(); },
   caja:        loadCaja,
   gastos:      () => { loadGastos(); loadCategorias(); },
-  reportes:    loadReportes,
+  reportes:    () => { loadReportes(); loadComisionMes(); },
   clientes:    loadClientes,
   facturas:    loadFacturas,
   proveedores: loadProveedores,
@@ -1915,7 +1934,7 @@ async function loadDashboard(){
   const hoy7  = today();
   const hace7 = fmtUTC(new Date(new Date(hoy7+'T12:00:00Z').getTime() - 6*86400000));
 
-  const [r, cajas_hoy, gr, ventas, inv, horas, dias, rPrev, dias7, rTotal] = await Promise.all([
+  const [r, cajas_hoy, gr, ventas, inv, horas, dias, rPrev, dias7, rTotal, dom] = await Promise.all([
     api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
     api(`/admin/caja/resumen?fecha=${desde}`).catch(()=>[]),
     api(`/admin/gastos/resumen?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
@@ -1926,6 +1945,7 @@ async function loadDashboard(){
     api(`/admin/reportes/resumen?desde=${prevD}&hasta=${prevH}`).catch(()=>null),
     api(`/admin/reportes/ventas-por-dia?desde=${hace7}&hasta=${hoy7}`).catch(()=>[]),
     api(`/admin/reportes/resumen?desde=2000-01-01&hasta=${hoy7}`).catch(()=>null),
+    api(`/domicilios/reportes/resumen?desde=${desde}&hasta=${hasta}`).catch(()=>null),
   ]);
 
   // Totales con animación de contador
@@ -1961,6 +1981,26 @@ async function loadDashboard(){
     const tot_g = cajas_hoy.reduce((a,c)=>a+(+c.total_gastos||0),0);
     dc.innerHTML=`<div style="font-size:12px;color:var(--text2);margin-bottom:6px">${abiertas>0?`🟢 ${abiertas} caja${abiertas>1?'s':''} abierta${abiertas>1?'s':''}`:'🔴 Sin cajas abiertas'} · ${cajas_hoy.length} usuario${cajas_hoy.length>1?'s':''}</div><div class="caja-row"><span>Ventas totales</span><span>${fmt(tot_v)}</span></div><div class="caja-row"><span>Gastos totales</span><span>${fmt(tot_g)}</span></div>`;
   } else { dc.innerHTML='<div style="color:var(--text2);font-size:13px">Sin cajas abiertas hoy</div>'; }
+
+  // Domicilios y calificaciones
+  const dd = $('dash-domicilios');
+  if(dd){
+    if(dom && dom.entregados > 0){
+      const promStr = dom.promedio_calificacion!=null ? `⭐ ${dom.promedio_calificacion.toFixed(1)}` : 'Sin calificar';
+      let html = `<div class="caja-row"><span>Domicilios entregados</span><span>${dom.entregados}</span></div>`;
+      html += `<div class="caja-row"><span>Calificación promedio</span><span>${promStr}${dom.calificados?` <span style="color:var(--text2);font-size:11px">(${dom.calificados} calif.)</span>`:''}</span></div>`;
+      if(dom.por_domiciliario?.length){
+        html += `<div style="margin-top:10px;margin-bottom:2px;font-size:12px;font-weight:600;color:var(--text2)">Por domiciliario</div>`;
+        html += dom.por_domiciliario.map(rd=>{
+          const rp = rd.promedio_calificacion!=null ? `⭐ ${rd.promedio_calificacion.toFixed(1)}` : 'Sin calificar';
+          return `<div class="caja-row"><span>🛵 ${rd.nombre}</span><span>${rd.entregas} entrega${rd.entregas===1?'':'s'} · ${rp}</span></div>`;
+        }).join('');
+      }
+      dd.innerHTML = html;
+    } else {
+      dd.innerHTML = '<div style="color:var(--text2);font-size:13px">Sin domicilios entregados en el período</div>';
+    }
+  }
 
   // Gráficas Chart.js
   renderCharts(r, gr, horas, dias7, hace7, hoy7);
@@ -2389,7 +2429,6 @@ async function loadReportes(){
     $('r-pedidos').textContent=r.ventas.pedidos;
     const util=r.utilidad; const ru=$('r-utilidad');
     ru.textContent=fmt(util); ru.style.color=util>=0?'var(--green-d)':'var(--red)';
-    updatePlanComCard(+r.ventas.total_ventas || 0);
 
     // Métodos (nuevos IDs planos)
     $('rm-efectivo').textContent=fmt(r.ventas.efectivo);

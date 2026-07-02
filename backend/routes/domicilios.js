@@ -20,7 +20,8 @@ function fmtMoney(n) {
 // un llamado concurrente gane la carrera y cree la venta.
 async function confirmarPagoEntrega(pedidoId, negocioId) {
   const { rows: current } = await pool.query(
-    `SELECT pago_estado, venta_id, cliente_nombre, items, subtotal, total
+    `SELECT pago_estado, venta_id, cliente_nombre, items, subtotal, total,
+            metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi
      FROM domicilios_pedidos WHERE id=? AND negocio_id=? LIMIT 1`,
     [pedidoId, negocioId]
   );
@@ -64,9 +65,10 @@ async function confirmarPagoEntrega(pedidoId, negocioId) {
        subtotal,descuento,iva,total,metodo_pago,recibido,cambio,numero_factura,cajero_id,mesero_id,
        monto_efectivo,monto_tarjeta,monto_nequi)
        VALUES (${ph(1)},${ph(2)},'domicilio',NULL,NULL,${ph(3)},${ph(4)},
-       ${ph(5)},0,${ph(6)},${ph(7)},'efectivo',${ph(8)},0,${ph(9)},NULL,NULL,${ph(10)},0,0)`,
+       ${ph(5)},0,${ph(6)},${ph(7)},${ph(8)},${ph(9)},0,${ph(10)},NULL,NULL,${ph(11)},${ph(12)},${ph(13)})`,
       [ventaId, negocioId, ped.cliente_nombre, JSON.stringify(items),
-       ped.subtotal, iva, ped.total, ped.total, numero_factura, ped.total]
+       ped.subtotal, iva, ped.total, ped.metodo_pago || 'efectivo', ped.total, numero_factura,
+       ped.monto_efectivo || 0, ped.monto_tarjeta || 0, ped.monto_nequi || 0]
     );
     if (cfg[0]) {
       const d = typeof cfg[0].datos === 'string' ? JSON.parse(cfg[0].datos) : cfg[0].datos;
@@ -175,9 +177,15 @@ router.get('/menu/:negocioId', async (req, res) => {
 router.post('/pedido', async (req, res) => {
   try {
     const { negocio_id, cliente_nombre, cliente_tel, cliente_dir, items, notas } = req.body;
+    let { metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi } = req.body;
 
     if (!negocio_id || !cliente_nombre || !cliente_tel || !cliente_dir || !items?.length)
       return res.status(400).json({ error: 'Faltan datos requeridos' });
+
+    if (!['efectivo', 'tarjeta', 'nequi', 'mixto'].includes(metodo_pago)) metodo_pago = 'efectivo';
+    monto_efectivo = parseFloat(monto_efectivo) || 0;
+    monto_tarjeta  = parseFloat(monto_tarjeta) || 0;
+    monto_nequi    = parseFloat(monto_nequi) || 0;
 
     // Verificar negocio existe
     const { rows: neg } = await pool.query(
@@ -223,11 +231,21 @@ router.post('/pedido', async (req, res) => {
     const id    = uuid();
     const tipo  = neg[0].tipo || 'restaurante';
 
+    if (metodo_pago === 'mixto') {
+      if (Math.round((monto_efectivo + monto_tarjeta + monto_nequi) * 100) !== Math.round(total * 100))
+        return res.status(400).json({ error: 'El pago mixto debe sumar el total del pedido' });
+    } else {
+      monto_efectivo = metodo_pago === 'efectivo' ? total : 0;
+      monto_tarjeta  = metodo_pago === 'tarjeta'  ? total : 0;
+      monto_nequi    = metodo_pago === 'nequi'    ? total : 0;
+    }
+
     await pool.query(
-      `INSERT INTO domicilios_pedidos (id, negocio_id, tipo, cliente_nombre, cliente_tel, cliente_dir, items, notas, subtotal, total, estado)
-       VALUES (?,?,?,?,?,?,?,?,?,?,'pendiente')`,
+      `INSERT INTO domicilios_pedidos (id, negocio_id, tipo, cliente_nombre, cliente_tel, cliente_dir, items, notas, subtotal, total, estado, metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi)
+       VALUES (?,?,?,?,?,?,?,?,?,?,'pendiente',?,?,?,?)`,
       [id, negocio_id, tipo, cliente_nombre.trim(), cliente_tel.trim(), cliente_dir.trim(),
-       JSON.stringify(itemsValidados), notas?.trim() || null, subtotal, total]
+       JSON.stringify(itemsValidados), notas?.trim() || null, subtotal, total,
+       metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi]
     );
 
     // Construir link WhatsApp para el negocio (se usará en el panel admin)
@@ -412,17 +430,35 @@ router.get('/rider/ubicaciones', verifyToken, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET /api/domicilios/rider/historial — últimas entregas del domiciliario
+// GET /api/domicilios/rider/historial?desde=&hasta= — entregas del domiciliario
+// en el rango de fechas, más la tendencia diaria para la gráfica
 router.get('/rider/historial', requireEmpleado, async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT id, cliente_nombre, cliente_dir, cliente_tel, total, estado, created_at, actualizado
-       FROM domicilios_pedidos
-       WHERE negocio_id=? AND domiciliario_id=? AND estado IN ('entregado','cancelado')
-       ORDER BY actualizado DESC LIMIT 50`,
-      [req.empleado.negocio_id, req.empleado.id]
-    );
-    res.json({ pedidos: rows });
+    const hoy = new Date(Date.now() - 5*60*60*1000).toISOString().slice(0,10);
+    const hace6 = new Date(Date.now() - 5*60*60*1000 - 6*86400000).toISOString().slice(0,10);
+    const desde = req.query.desde || hace6;
+    const hasta = req.query.hasta || hoy;
+
+    const [{ rows: pedidos }, { rows: tendencia }] = await Promise.all([
+      pool.query(
+        `SELECT id, cliente_nombre, cliente_dir, cliente_tel, total, estado, created_at, actualizado
+         FROM domicilios_pedidos
+         WHERE negocio_id=? AND domiciliario_id=? AND estado IN ('entregado','cancelado')
+           AND DATE(actualizado) BETWEEN ? AND ?
+         ORDER BY actualizado DESC LIMIT 200`,
+        [req.empleado.negocio_id, req.empleado.id, desde, hasta]
+      ),
+      pool.query(
+        `SELECT DATE(actualizado) AS fecha, COUNT(*) AS entregas
+         FROM domicilios_pedidos
+         WHERE negocio_id=? AND domiciliario_id=? AND estado='entregado'
+           AND DATE(actualizado) BETWEEN ? AND ?
+         GROUP BY DATE(actualizado)
+         ORDER BY fecha`,
+        [req.empleado.negocio_id, req.empleado.id, desde, hasta]
+      ),
+    ]);
+    res.json({ pedidos, tendencia });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -506,6 +542,7 @@ router.get('/pedidos', verifyToken, async (req, res) => {
     let sql = `SELECT p.id, p.cliente_nombre, p.cliente_tel, p.cliente_dir,
                       p.items, p.notas, p.subtotal, p.total, p.estado,
                       COALESCE(p.pago_estado,'pendiente') AS pago_estado,
+                      p.metodo_pago, p.monto_efectivo, p.monto_tarjeta, p.monto_nequi,
                       p.created_at, p.actualizado,
                       COALESCE(r.nombre, e.nombre) AS rider_nombre,
                       COALESCE(r.id, e.id) AS rider_id
@@ -533,13 +570,68 @@ router.get('/pedidos', verifyToken, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/domicilios/reportes/resumen?desde=&hasta= — para la card del dashboard:
+// total de domicilios entregados, calificación promedio y desglose por domiciliario
+router.get('/reportes/resumen', verifyToken, async (req, res) => {
+  try {
+    const nid = req.user.negocio_id;
+    const hoy = new Date(Date.now() - 5*60*60*1000).toISOString().slice(0,10);
+    const d = req.query.desde || hoy;
+    const h = req.query.hasta || d;
+
+    const [{ rows: totales }, { rows: enCurso }, { rows: porRider }] = await Promise.all([
+      pool.query(
+        `SELECT COUNT(*) AS entregados,
+                AVG(calificacion) AS promedio_calificacion,
+                SUM(CASE WHEN calificacion IS NOT NULL THEN 1 ELSE 0 END) AS calificados
+         FROM domicilios_pedidos
+         WHERE negocio_id=? AND estado='entregado' AND DATE(actualizado) BETWEEN ? AND ?`,
+        [nid, d, h]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS en_curso
+         FROM domicilios_pedidos
+         WHERE negocio_id=? AND estado NOT IN ('entregado','cancelado') AND DATE(created_at) BETWEEN ? AND ?`,
+        [nid, d, h]
+      ),
+      pool.query(
+        `SELECT COALESCE(r.nombre, e.nombre, 'Sin asignar') AS domiciliario,
+                COUNT(*) AS entregas,
+                AVG(p.calificacion) AS promedio_calificacion,
+                SUM(CASE WHEN p.calificacion IS NOT NULL THEN 1 ELSE 0 END) AS calificados
+         FROM domicilios_pedidos p
+         LEFT JOIN domicilios_riders r ON r.id = p.domiciliario_id
+         LEFT JOIN empleados e ON e.id = p.domiciliario_id AND r.id IS NULL
+         WHERE p.negocio_id=? AND p.estado='entregado' AND DATE(p.actualizado) BETWEEN ? AND ?
+         GROUP BY COALESCE(r.id, e.id, 'sin_asignar'), domiciliario
+         ORDER BY entregas DESC`,
+        [nid, d, h]
+      ),
+    ]);
+
+    res.json({
+      entregados: parseInt(totales[0]?.entregados) || 0,
+      en_curso: parseInt(enCurso[0]?.en_curso) || 0,
+      promedio_calificacion: totales[0]?.promedio_calificacion ? parseFloat(totales[0].promedio_calificacion) : null,
+      calificados: parseInt(totales[0]?.calificados) || 0,
+      por_domiciliario: porRider.map(r => ({
+        nombre: r.domiciliario,
+        entregas: parseInt(r.entregas) || 0,
+        promedio_calificacion: r.promedio_calificacion ? parseFloat(r.promedio_calificacion) : null,
+        calificados: parseInt(r.calificados) || 0,
+      })),
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET /api/domicilios/pedidos/:id/prefactura — datos para imprimir pre-factura
 router.get('/pedidos/:id/prefactura', verifyToken, async (req, res) => {
   try {
     const nid = req.user.negocio_id;
     const [{ rows: pRows }, { rows: negRows }] = await Promise.all([
       pool.query(
-        `SELECT id, cliente_nombre, cliente_tel, cliente_dir, items, notas, subtotal, total, estado, pago_estado, created_at
+        `SELECT id, cliente_nombre, cliente_tel, cliente_dir, items, notas, subtotal, total, estado, pago_estado,
+                metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi, created_at
          FROM domicilios_pedidos WHERE id=? AND negocio_id=? LIMIT 1`,
         [req.params.id, nid]
       ),

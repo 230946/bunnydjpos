@@ -424,7 +424,20 @@ router.post('/ventas', async (req, res) => {
   try {
     const { mesa_id, mesa_num, tipo='pos', items, subtotal, iva=0, total,
             metodo_pago, recibido, cambio, cliente_nombre, cliente_id, descuento,
-            monto_efectivo=0, monto_tarjeta=0, monto_nequi=0 } = req.body;
+            monto_efectivo=0, monto_tarjeta=0, monto_nequi=0, dom_id } = req.body;
+
+    // Si es cobro de un domicilio, evitar cobrarlo dos veces (p.ej. si el
+    // domiciliario ya marcó "Entregado" y eso ya generó la venta, o si la
+    // caja ya lo cobró antes).
+    if (tipo === 'domicilio' && dom_id) {
+      const { rows: domCheck } = await pool.query(
+        `SELECT pago_estado, venta_id FROM domicilios_pedidos WHERE id=${ph(1)} AND negocio_id=${ph(2)} LIMIT 1`,
+        [dom_id, nid(req)]
+      );
+      if (!domCheck[0]) return res.status(404).json({ error: 'Pedido de domicilio no encontrado' });
+      if (domCheck[0].pago_estado === 'pagado' || domCheck[0].venta_id)
+        return res.status(409).json({ error: 'Este domicilio ya fue cobrado' });
+    }
 
     // Generar número de factura
     const { rows: cfg } = await pool.query(
@@ -582,14 +595,30 @@ router.post('/ventas', async (req, res) => {
       }
     }
 
-    // Actualizar la caja del cajero que procesa el pago
+    // Actualizar la caja del cajero que procesa el pago.
+    // Se usan los montos por método (ya calculados por el cliente, incluido
+    // el caso 'mixto') en vez de un CASE sobre metodo_pago, que dejaba el
+    // pago mixto sin sumar a ningún método aunque sí sumara a total_ventas.
+    const _montoEf = metodo_pago === 'mixto' ? (monto_efectivo || 0) : (metodo_pago === 'efectivo' ? total : 0);
+    const _montoTa = metodo_pago === 'mixto' ? (monto_tarjeta  || 0) : (metodo_pago === 'tarjeta'  ? total : 0);
+    const _montoNe = metodo_pago === 'mixto' ? (monto_nequi    || 0) : (metodo_pago === 'nequi'    ? total : 0);
     await pool.query(`
       UPDATE cajas SET total_ventas=total_ventas+${ph(1)},
-        total_efectivo=total_efectivo+(CASE WHEN ${ph(2)}='efectivo' THEN ${ph(3)} ELSE 0 END),
-        total_tarjeta=total_tarjeta+(CASE WHEN ${ph(4)}='tarjeta'   THEN ${ph(5)} ELSE 0 END),
-        total_nequi=total_nequi+(CASE WHEN ${ph(6)}='nequi'         THEN ${ph(7)} ELSE 0 END)
-      WHERE negocio_id=${ph(8)} AND usuario_id=${ph(9)} AND estado='abierta' AND fecha=CURRENT_DATE
-    `, [total, metodo_pago, total, metodo_pago, total, metodo_pago, total, nid(req), req.user.id]);
+        total_efectivo=total_efectivo+${ph(2)},
+        total_tarjeta=total_tarjeta+${ph(3)},
+        total_nequi=total_nequi+${ph(4)}
+      WHERE negocio_id=${ph(5)} AND usuario_id=${ph(6)} AND estado='abierta' AND fecha=CURRENT_DATE
+    `, [total, _montoEf, _montoTa, _montoNe, nid(req), req.user.id]);
+
+    // Enlazar el pedido de domicilio con esta venta (cerrojo atómico:
+    // solo si sigue pendiente, para que un cobro concurrente no duplique).
+    if (tipo === 'domicilio' && dom_id) {
+      await pool.query(
+        `UPDATE domicilios_pedidos SET pago_estado='pagado', venta_id=${ph(1)}
+         WHERE id=${ph(2)} AND negocio_id=${ph(3)} AND pago_estado='pendiente' AND venta_id IS NULL`,
+        [id, dom_id, nid(req)]
+      );
+    }
 
     res.status(201).json({ id, numero_factura });
   } catch (e) { res.status(500).json({ error: e.message }); }

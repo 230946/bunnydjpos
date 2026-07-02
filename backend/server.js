@@ -261,6 +261,10 @@ async function runMigrations() {
     { table: 'menu_items', column: 'foto_url', sql: `ALTER TABLE menu_items ADD COLUMN foto_url VARCHAR(255) NULL` },
     { table: 'domicilios_pedidos', column: 'calificacion',      sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion TINYINT NULL` },
     { table: 'domicilios_pedidos', column: 'calificacion_nota', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion_nota VARCHAR(255) NULL` },
+    { table: 'domicilios_pedidos', column: 'metodo_pago',    sql: `ALTER TABLE domicilios_pedidos ADD COLUMN metodo_pago VARCHAR(20) NOT NULL DEFAULT 'efectivo'` },
+    { table: 'domicilios_pedidos', column: 'monto_efectivo', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'domicilios_pedidos', column: 'monto_tarjeta',  sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'domicilios_pedidos', column: 'monto_nequi',    sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
     {
       table: 'domicilios_pedidos', column: '__create__',
       createSql: `CREATE TABLE IF NOT EXISTS domicilios_pedidos (
@@ -278,6 +282,10 @@ async function runMigrations() {
         venta_id VARCHAR(36) NULL,
         calificacion TINYINT NULL,
         calificacion_nota VARCHAR(255) NULL,
+        metodo_pago VARCHAR(20) NOT NULL DEFAULT 'efectivo',
+        monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0,
+        monto_tarjeta DECIMAL(10,2) NOT NULL DEFAULT 0,
+        monto_nequi DECIMAL(10,2) NOT NULL DEFAULT 0,
         subtotal DECIMAL(12,2) DEFAULT 0,
         total DECIMAL(12,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

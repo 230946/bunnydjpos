@@ -40,8 +40,17 @@ if (DB_TYPE === 'mysql' || DB_TYPE === 'mariadb') {
   pool = {
     query: async (sql, params, { silent = false } = {}) => {
       try {
-        const [rows] = await _pool.query(sql, params || []);
-        return { rows: Array.isArray(rows) ? rows : [] };
+        const [result] = await _pool.query(sql, params || []);
+        if (Array.isArray(result)) return { rows: result };
+        // INSERT/UPDATE/DELETE devuelven un ResultSetHeader (no un array).
+        // Se exponen affectedRows/insertId como props del array vacío para
+        // que `const { rows } = await pool.query(...); rows.affectedRows`
+        // siga funcionando en los call sites existentes.
+        const rows = [];
+        rows.affectedRows = result.affectedRows;
+        rows.insertId = result.insertId;
+        rows.changedRows = result.changedRows;
+        return { rows };
       } catch (e) {
         if (!silent) console.error('DB Error:', e.message, '\nSQL:', sql.slice(0,120));
         throw e;

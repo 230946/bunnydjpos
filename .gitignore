@@ -3,3 +3,4 @@ backend/.env
 backend/uploads/
 *.log
 .env
+.claude/

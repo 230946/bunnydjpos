@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Domiciliario</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -136,6 +137,23 @@ body{display:flex;flex-direction:column;min-height:100vh}
 .spinner{width:28px;height:28px;border:3px solid #e8e8f0;border-top-color:var(--pri);border-radius:50%;animation:spin .7s linear infinite;margin:30px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ── Historial: filtro + gráfica ── */
+.hist-filtro{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.hist-filtro input[type=date]{
+  flex:1;min-width:130px;border:1.5px solid var(--border);border-radius:10px;
+  padding:9px 10px;font-size:13px;color:var(--text);background:#fff;outline:none;-webkit-appearance:none
+}
+.hist-filtro input[type=date]:focus{border-color:var(--pri)}
+.hist-filtro button{
+  background:var(--pri);color:#fff;border:none;border-radius:10px;
+  padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0
+}
+.hist-filtro button:active{background:var(--pri2)}
+.hist-chart-card{background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:14px 16px;margin-bottom:14px}
+.hist-chart-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hist-chart-title span:first-child{font-size:13px;font-weight:700;color:var(--text)}
+.hist-chart-total{font-size:12px;color:var(--text2);font-weight:600}
+
 /* ── Toast ── */
 #toast{
   position:fixed;bottom:calc(24px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(20px);
@@ -205,7 +223,19 @@ body{display:flex;flex-direction:column;min-height:100vh}
     </div>
     <div id="list-disponibles"></div>
     <div id="list-mias" style="display:none"></div>
-    <div id="list-historial" style="display:none"></div>
+    <div id="list-historial" style="display:none">
+      <div class="hist-filtro">
+        <input type="date" id="hist-desde" onchange="loadHistorial()">
+        <span style="color:var(--text3);font-size:12px">a</span>
+        <input type="date" id="hist-hasta" onchange="loadHistorial()">
+        <button onclick="loadHistorial()">Filtrar</button>
+      </div>
+      <div class="hist-chart-card">
+        <div class="hist-chart-title"><span>📈 Tendencia de domicilios</span><span class="hist-chart-total" id="hist-chart-total"></span></div>
+        <div style="height:180px"><canvas id="hist-chart"></canvas></div>
+      </div>
+      <div id="hist-items"></div>
+    </div>
   </div>
 </div>
 
@@ -430,19 +460,68 @@ function renderMisEntregas(list){
 }
 
 // ── Historial ─────────────────────────────────────────────────────
+let _histChart = null;
+
+function _fechaISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+function _initHistFiltro(){
+  const dDesde=document.getElementById('hist-desde'), dHasta=document.getElementById('hist-hasta');
+  if(dDesde.value || dHasta.value) return; // ya inicializado
+  const hoy=new Date();
+  const hace6=new Date(); hace6.setDate(hoy.getDate()-6);
+  dHasta.value=_fechaISO(hoy);
+  dDesde.value=_fechaISO(hace6);
+}
+
 async function loadHistorial(){
-  const el=document.getElementById('list-historial');
+  _initHistFiltro();
+  const desde=document.getElementById('hist-desde').value;
+  const hasta=document.getElementById('hist-hasta').value;
+  const el=document.getElementById('hist-items');
   el.innerHTML=`<div class="spinner"></div>`;
   try {
-    const { pedidos } = await riderFetch('/rider/historial');
+    const { pedidos, tendencia } = await riderFetch(`/rider/historial?desde=${desde}&hasta=${hasta}`);
     renderHistorial(pedidos||[]);
+    renderHistChart(tendencia||[], desde, hasta);
   } catch(e){
     el.innerHTML=`<div class="empty"><p>Error cargando historial</p></div>`;
   }
 }
 
+function renderHistChart(tendencia, desde, hasta){
+  const dias=[];
+  for(let d=new Date(desde+'T12:00:00'); d<=new Date(hasta+'T12:00:00'); d.setDate(d.getDate()+1)){
+    dias.push(_fechaISO(d));
+  }
+  const labels=dias.map(f=>new Date(f+'T12:00:00').toLocaleDateString('es-CO',{weekday:'short'}).replace('.','').toUpperCase());
+  const data=dias.map(f=>{ const row=(tendencia||[]).find(x=>String(x.fecha||'').slice(0,10)===f); return row?+row.entregas:0; });
+  const total=data.reduce((a,v)=>a+v,0);
+  document.getElementById('hist-chart-total').textContent=`Total: ${total}`;
+
+  if(_histChart){ _histChart.destroy(); _histChart=null; }
+  const ctx=document.getElementById('hist-chart').getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0,'rgba(249,115,22,.30)'); grad.addColorStop(1,'rgba(249,115,22,.02)');
+  _histChart=new Chart(ctx,{
+    type:'line',
+    data:{ labels, datasets:[{
+      data, borderColor:'#f97316', backgroundColor:grad,
+      borderWidth:2.5, pointBackgroundColor:'#f97316',
+      pointRadius:4, pointHoverRadius:6, tension:0.4, fill:true,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.raw} domicilio${ctx.raw===1?'':'s'}`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#999',font:{size:11}}},
+        y:{beginAtZero:true,ticks:{stepSize:1,color:'#999',font:{size:11}},grid:{color:'#eee'}}
+      }
+    }
+  });
+}
+
 function renderHistorial(list){
-  const el=document.getElementById('list-historial');
+  const el=document.getElementById('hist-items');
   if(!list.length){
     el.innerHTML=`<div class="empty"><span class="empty-icon">📋</span><p>Sin entregas registradas aún</p></div>`;
     return;
