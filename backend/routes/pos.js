@@ -90,12 +90,13 @@ router.put('/mesas/:id/pedido', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Limpiar mesa al cobrar
+// Limpiar mesa al cobrar (o para liberarla manualmente si quedó desincronizada)
 router.post('/mesas/:id/liberar', async (req, res) => {
   try {
     await pool.query(`
-      UPDATE mesa_estado SET ocupada=0, pedido='[]', actualizado=NOW()
-      WHERE mesa_id=${ph(1)}
+      INSERT INTO mesa_estado (mesa_id, ocupada, pedido, actualizado)
+      VALUES (${ph(1)}, 0, '[]', NOW())
+      ON DUPLICATE KEY UPDATE ocupada=0, pedido='[]', actualizado=NOW()
     `, [req.params.id]);
     await pool.query(`
       UPDATE comandas SET estado='entregado', actualizado=NOW()

@@ -375,6 +375,7 @@ table.inv tr:hover td{background:var(--bg2)}
               <div class="pedido-total-main"><span>Total</span><span id="p-total">$0</span></div>
               <button class="btn btn-success btn-block" onclick="enviarCocina()">🍳 Enviar a cocina</button>
               <button class="btn btn-outline btn-block" style="margin-top:6px" onclick="cerrarPedido()">Cerrar</button>
+              <button class="btn btn-outline btn-block" style="margin-top:6px;color:var(--red-d)" onclick="liberarMesaManual()">🔓 Liberar mesa (ya cobrada)</button>
             </div>
           </div>
         </div>
@@ -869,6 +870,20 @@ function selectMesa(m){
   renderPedido();
 }
 function renderMesas(){ loadMesas(); }
+
+// Libera manualmente una mesa que quedó marcada como ocupada por error
+// (ej. después de un cobro que sí se registró pero la mesa no se liberó).
+// No toca ninguna venta ya registrada, solo resetea el estado visual de la mesa.
+async function liberarMesaManual(){
+  if(!selMesaId) return;
+  if(!confirm(`¿Liberar Mesa ${selMesaNum}? Úsalo solo si esa cuenta ya fue cobrada y la mesa se quedó marcada como ocupada por error. Esto NO cobra ni cancela ninguna venta ya registrada.`)) return;
+  try{
+    await api(`/pos/mesas/${selMesaId}/liberar`,{method:'POST'});
+    cerrarPedido();
+    await loadMesas();
+    toast('Mesa liberada ✓');
+  }catch(e){ toast('Error: '+e.message); }
+}
 
 // ─── MENÚ ─────────────────────────────────────────────────────
 let cats=[], menuItems=[], selCatId=null;
