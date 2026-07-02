@@ -1725,8 +1725,7 @@ function doLogout(){
   fetch(`${API}/auth/logout`,{method:'POST',headers:{'Authorization':`Bearer ${token}`}}).catch(()=>{});
   sessionStorage.removeItem('bdj_adm_token');
   token=null; me=null;
-  $('app-screen').style.display='none';
-  $('login-screen').style.display='flex';
+  location.href='/login';
 }
 
 // ─── Contrato ────────────────────────────────────────────────
