@@ -11,7 +11,7 @@ const path    = require('path');
 
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
-const localDate = () => { const d = new Date(Date.now() - 5*60*60*1000); return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; };
+const localDate = (tz = 'America/Bogota') => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 
 // Multer para fotos de menú
 const storage = multer.diskStorage({
@@ -379,6 +379,33 @@ router.get('/comandas', async (req, res) => {
 router.post('/comandas', async (req, res) => {
   try {
     const { mesa_id, mesa_num, mesa_nombre, items, notas, prioridad } = req.body;
+
+    // Si la mesa ya tiene una comanda activa (no entregada), fusionar los
+    // nuevos artículos ahí en vez de crear una tarjeta duplicada. Si la
+    // cocina ya la estaba preparando (o ya la dio por lista), se marca
+    // como "adición" para que la vean de inmediato.
+    if (mesa_id) {
+      const { rows: existentes } = await pool.query(
+        `SELECT id, items, estado FROM comandas
+         WHERE negocio_id=${ph(1)} AND mesa_id=${ph(2)} AND estado != 'entregado'
+         ORDER BY creado DESC LIMIT 1`,
+        [nid(req), mesa_id]
+      );
+      if (existentes[0]) {
+        const actual = existentes[0];
+        const itemsPrevios = typeof actual.items === 'string' ? JSON.parse(actual.items) : (actual.items || []);
+        const itemsMerge = [...itemsPrevios, ...(items || [])];
+        const esAdicion = ['cocinando', 'listo'].includes(actual.estado);
+        await pool.query(
+          `UPDATE comandas SET items=${ph(1)}, es_adicion=${ph(2)}, actualizado=NOW() WHERE id=${ph(3)}`,
+          [JSON.stringify(itemsMerge), esAdicion ? 1 : 0, actual.id]
+        );
+        const comanda = { id: actual.id, mesa_num, mesa_nombre, items: itemsMerge, notas, estado: actual.estado, es_adicion: esAdicion };
+        req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', comanda);
+        return res.status(200).json({ id: actual.id, fusionada: true });
+      }
+    }
+
     const id = uuid();
     await pool.query(
       `INSERT INTO comandas (id,negocio_id,mesa_id,mesa_num,mesa_nombre,mesero_id,items,notas,prioridad)
@@ -396,7 +423,7 @@ router.put('/comandas/:id/estado', async (req, res) => {
   try {
     const { estado } = req.body;
     await pool.query(
-      `UPDATE comandas SET estado=${ph(1)}, actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+      `UPDATE comandas SET estado=${ph(1)}, es_adicion=0, actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
       [estado, req.params.id, nid(req)]
     );
     req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { id: req.params.id, estado });
@@ -607,8 +634,8 @@ router.post('/ventas', async (req, res) => {
         total_efectivo=total_efectivo+${ph(2)},
         total_tarjeta=total_tarjeta+${ph(3)},
         total_nequi=total_nequi+${ph(4)}
-      WHERE negocio_id=${ph(5)} AND usuario_id=${ph(6)} AND estado='abierta' AND fecha=CURRENT_DATE
-    `, [total, _montoEf, _montoTa, _montoNe, nid(req), req.user.id]);
+      WHERE negocio_id=${ph(5)} AND usuario_id=${ph(6)} AND estado='abierta' AND fecha=${ph(7)}
+    `, [total, _montoEf, _montoTa, _montoNe, nid(req), req.user.id, localDate(req.user.zona_horaria)]);
 
     // Enlazar el pedido de domicilio con esta venta (cerrojo atómico:
     // solo si sigue pendiente, para que un cobro concurrente no duplique).
@@ -658,7 +685,7 @@ router.post('/clientes', async (req, res) => {
 router.get('/ventas', async (req, res) => {
   try {
     const { desde, hasta, tipo } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     let sql = `SELECT * FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
     const params = [nid(req), d, h];
@@ -673,7 +700,7 @@ router.get('/ventas', async (req, res) => {
 router.get('/ventas/top-platos', async (req, res) => {
   try {
     const { desde, hasta, metodo_pago, tipo } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     let sql = `
       SELECT vi.nombre, CAST(SUM(vi.cantidad) AS UNSIGNED) AS vendidos, SUM(vi.subtotal_item) AS total

@@ -419,7 +419,9 @@ if (_urlNeg) {
   fetch(`/api/negocio-pub/${_urlNeg}`)
     .then(r => r.ok ? r.json() : null)
     .then(info => {
-      if (!info || !info.nombre) return;
+      if (!info) return;
+      if (info.moneda) NEG_MONEDA = info.moneda;
+      if (!info.nombre) return;
       _negInfo = info;
       const el = document.getElementById('login-neg-nombre');
       if (el) { el.textContent = info.nombre; el.style.display = 'block'; }
@@ -432,7 +434,9 @@ let _lastVenta = null, _selectedCliente = null, _negInfo = null, _pendingVenta =
 let cajaAbierta = false, cajaActual = null, _cajaTimer = null;
 
 const $ = id => document.getElementById(id);
-const fmt = n => new Intl.NumberFormat('es-CO', {style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0);
+let NEG_MONEDA = 'COP';
+const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
+const fmt = n => new Intl.NumberFormat(MONEDA_LOCALE[NEG_MONEDA]||'es-CO', {style:'currency',currency:NEG_MONEDA,minimumFractionDigits:0}).format(n||0);
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 // Prellenar negocio desde URL
@@ -489,6 +493,7 @@ async function checkContrato(negId){
     if(!r.ok) return;
     const d=await r.json();
     if(d?.nombre) _negInfo=d;
+    if(d?.moneda) NEG_MONEDA=d.moneda;
     const blk=msg=>{ $('contrato-block-msg').innerHTML=msg; $('contrato-block').style.display='flex'; };
     if(!d.contrato){ blk('No tienes un contrato activo.<br>Contacta al administrador del sistema.'); return; }
     const {estado,dias_para_vencer}=d.contrato;
@@ -993,7 +998,7 @@ function renderCajaPanel(ventasRec=[]){
       <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px;overflow:hidden">
         <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">
           Últimas ventas de hoy
-          <span style="font-size:11px;color:var(--text3);margin-left:6px">Actualizado ${ahora}</span>
+          <span style="display:none;font-size:11px;color:var(--text3);margin-left:6px">Actualizado ${ahora}</span>
         </div>
         <div style="overflow-y:auto;max-height:420px">${ventasHtml}</div>
       </div>
@@ -1207,7 +1212,7 @@ document.addEventListener('DOMContentLoaded',function(){
   if(!s) return;
   function vis(){var a=document.querySelector('#app,#app-screen');return a&&(a.style.display==='flex'||a.style.display==='block'||a.classList.contains('visible'));}
   var sec=30;
-  setInterval(function(){s.style.display=vis()?'inline':'none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
+  setInterval(function(){s.style.display='none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
   window._arReset=function(){sec=30;s.style.background='var(--green-l,#d1fae5)';s.style.color='var(--green-d,#065f46)';s.style.borderColor='var(--green,#0B8457)';s.textContent='↺ actualizado';setTimeout(function(){s.style.background='';s.style.color='';s.style.borderColor='';s.textContent='↺ 30s';},900);};
 })();
 </script>

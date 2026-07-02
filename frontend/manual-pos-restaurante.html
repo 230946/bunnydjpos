@@ -223,15 +223,17 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="section-icon">👨‍🍳</div>
         <div><h2>Cocina</h2><p>Seguimiento de comandas en tiempo real</p></div>
       </div>
-      <p style="color:var(--text2);margin-bottom:12px">Cada comanda enviada aparece como una tarjeta con el número de mesa, los platos y el tiempo transcurrido.</p>
+      <p style="color:var(--text2);margin-bottom:12px">Cada comanda enviada aparece como una tarjeta con el número de mesa, los platos y el tiempo transcurrido. El color del borde y la etiqueta indican el estado:</p>
       <table>
-        <thead><tr><th>Estado</th><th>Qué significa</th><th>Acción</th></tr></thead>
+        <thead><tr><th>Estado</th><th>Color</th><th>Qué significa</th><th>Acción</th></tr></thead>
         <tbody>
-          <tr><td><span class="tag tag-green">nuevo</span></td><td>Comanda recibida en cocina, aún no iniciada</td><td>Botón <span class="btn-demo amber">👨‍🍳 Preparando</span></td></tr>
-          <tr><td><span class="tag tag-amber">cocinando</span></td><td>El cocinero la está preparando</td><td>Botón <span class="btn-demo" style="background:var(--green)">✓ Listo</span></td></tr>
-          <tr><td><span class="tag tag-blue">listo</span></td><td>Platos listos para llevar a la mesa</td><td>Botón <span class="btn-demo">🛎️ Entregado</span></td></tr>
+          <tr><td><span class="tag" style="background:#fce8e8;color:#c0392b">Pedido</span></td><td>🔴 Rojo</td><td>Comanda recibida, aún no iniciada</td><td>Botón <span class="btn-demo amber">👨‍🍳 Preparando</span></td></tr>
+          <tr><td><span class="tag tag-amber">Cocinando</span></td><td>🟠 Ámbar</td><td>El cocinero la está preparando</td><td>Botón <span class="btn-demo" style="background:var(--green)">✓ Listo</span></td></tr>
+          <tr><td><span class="tag" style="background:#fff8db;color:#8a6d00">Preparando</span></td><td>🟡 Amarillo</td><td>Platos casi listos / en plateo final</td><td>Botón <span class="btn-demo">🛎️ Entregado</span></td></tr>
+          <tr><td><span class="tag tag-green">Listo para mesa / Domicilio</span></td><td>🟢 Verde</td><td>Plato listo para servir o despachar</td><td>Sin acción — informativo</td></tr>
         </tbody>
       </table>
+      <div class="alert alert-warn" style="margin-top:12px">⚠️ <span><strong>⚠️ Adición</strong> (tarjeta en rojo): si un cliente pide más productos para una mesa que ya está en cocina, el pedido nuevo <strong>se fusiona en la misma tarjeta</strong> (no se duplica) y se marca como "Adición" para que el cocinero la note de inmediato.</span></div>
       <h3 class="sub">Limpiar cocina</h3>
       <p style="color:var(--text2);font-size:13px;margin-top:6px">Si hay comandas antiguas acumuladas que ya fueron atendidas, usa el botón <span class="btn-demo red">🗑 Limpiar todo</span> en la barra superior para marcarlas todas como entregadas y limpiar la pantalla.</p>
       <div class="alert alert-tip" style="margin-top:10px">💡 <span>La cocina se actualiza en tiempo real. No necesitas recargar la página — las nuevas comandas aparecen automáticamente.</span></div>
@@ -266,6 +268,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Cerrar caja"</strong><p>El sistema guarda el resumen completo del turno. El administrador puede consultarlo en el historial.</p></div></div>
       </div>
       <div class="alert alert-info">ℹ️ <span>Si hay una diferencia entre el efectivo esperado y el contado, el sistema la mostrará en el resumen de cierre para que el administrador la revise.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>En la misma pantalla de caja aparece la tarjeta <strong>🛵 Domicilios de hoy</strong> con dos contadores: <strong>En camino / Pendiente</strong> y <strong>Entregados</strong>. Cobrar un domicilio en Caja <strong>no</strong> lo marca como entregado — ese paso lo hace el domiciliario desde su propia app.</span></div>
     </div>
 
     <!-- PAGO EFECTIVO -->

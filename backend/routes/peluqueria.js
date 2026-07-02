@@ -643,14 +643,11 @@ const toISO = v => {
   }
   return String(v).replace(' ', 'T');
 };
-const localDate = () => {
-  const d = new Date(Date.now() - 5*60*60*1000);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-};
-const localDateTime = () => {
-  const d = new Date(Date.now() - 5*60*60*1000);
-  const p = n => String(n).padStart(2,'0');
-  return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
+const localDate = (tz = 'America/Bogota') => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+const localDateTime = (tz = 'America/Bogota') => {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }).formatToParts(new Date());
+  const get = t => parts.find(p => p.type === t).value;
+  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
 };
 
 // ── Auto-migración ────────────────────────────────────────────────
@@ -1531,7 +1528,7 @@ router.patch('/citas/:id/completar', async (req, res) => {
     await pool.query(
       `INSERT INTO pel_ventas (id,negocio_id,caja_id,cliente_id,empleado_id,subtotal,descuento,total,fecha)
        VALUES (?,?,?,?,?,?,?,?,?)`,
-      [ventaId, nid(req), cajaId, cita.cliente_id||null, cita.empleado_id||null, subtotal, desc, total, localDateTime()]
+      [ventaId, nid(req), cajaId, cita.cliente_id||null, cita.empleado_id||null, subtotal, desc, total, localDateTime(req.user.zona_horaria)]
     );
 
     // Insertar pagos
@@ -1616,7 +1613,7 @@ router.post('/ventas', async (req, res) => {
     const subtotal = items.reduce((a, i) => a + parseFloat(i.precio||0)*parseFloat(i.cantidad||1), 0);
     const desc = parseFloat(descuento||0);
     const total = subtotal - desc;
-    const fechaVenta = fecha ? String(fecha).replace('T',' ').replace('Z','').split('.')[0] : localDateTime();
+    const fechaVenta = fecha ? String(fecha).replace('T',' ').replace('Z','').split('.')[0] : localDateTime(req.user.zona_horaria);
 
     const ventaId = uuid();
     await pool.query(
@@ -2268,7 +2265,7 @@ router.get('/clientes/:id/paquetes', async (req, res) => {
       [nid(req), req.params.id]
     );
     // Actualizar vencidos
-    const hoy = localDate();
+    const hoy = localDate(req.user.zona_horaria);
     for (const cp of rows) {
       if (cp.estado === 'activo' && cp.fecha_vencimiento < hoy) {
         await pool.query(`UPDATE pel_cliente_paquetes SET estado='vencido' WHERE id=?`, [cp.id]);
@@ -2303,9 +2300,9 @@ router.post('/clientes/:id/paquetes', async (req, res) => {
     const { rows: svcs } = await pool.query(
       `SELECT * FROM pel_paquete_servicios WHERE paquete_id=?`, [paqueteId]
     );
-    const hoy = new Date(Date.now() - 5*60*60*1000);
-    const vencimiento = new Date(hoy.getTime() + paq.vigencia_dias * 86400000);
-    const vencStr = `${vencimiento.getUTCFullYear()}-${String(vencimiento.getUTCMonth()+1).padStart(2,'0')}-${String(vencimiento.getUTCDate()).padStart(2,'0')}`;
+    const tz = req.user.zona_horaria || 'America/Bogota';
+    const hoyStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+    const vencStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(new Date(hoyStr+'T12:00:00Z').getTime() + paq.vigencia_dias * 86400000));
     const cpId = uuid();
     await pool.query(
       `INSERT INTO pel_cliente_paquetes (id,negocio_id,cliente_id,paquete_id,venta_id,fecha_vencimiento)
@@ -2330,7 +2327,7 @@ router.post('/clientes/:id/paquetes', async (req, res) => {
 
 router.get('/dashboard', async (req, res) => {
   try {
-    const hoy = localDate();
+    const hoy = localDate(req.user.zona_horaria);
     const [citasHoy, proximas, ingresosMes, stockAlerta, cajaActual] = await Promise.all([
       pool.query(
         `SELECT
@@ -2399,7 +2396,7 @@ router.get('/dashboard', async (req, res) => {
 
 router.get('/reportes/resumen', async (req, res) => {
   try {
-    const d = req.query.desde || localDate();
+    const d = req.query.desde || localDate(req.user.zona_horaria);
     const h = req.query.hasta  || d;
     const nid_ = nid(req);
 
@@ -2472,7 +2469,7 @@ router.get('/reportes/resumen', async (req, res) => {
 
 router.get('/reportes/top-servicios', async (req, res) => {
   try {
-    const d = req.query.desde || localDate();
+    const d = req.query.desde || localDate(req.user.zona_horaria);
     const h = req.query.hasta  || d;
     const { rows } = await pool.query(
       `SELECT d.descripcion AS nombre,
@@ -2490,7 +2487,7 @@ router.get('/reportes/top-servicios', async (req, res) => {
 
 router.get('/reportes/ventas-por-hora', async (req, res) => {
   try {
-    const d = req.query.desde || localDate();
+    const d = req.query.desde || localDate(req.user.zona_horaria);
     const h = req.query.hasta  || d;
     const { rows } = await pool.query(
       `SELECT HOUR(fecha) AS hora, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
@@ -2504,7 +2501,7 @@ router.get('/reportes/ventas-por-hora', async (req, res) => {
 
 router.get('/reportes/servicios-por-empleado', async (req, res) => {
   try {
-    const d = req.query.desde || localDate();
+    const d = req.query.desde || localDate(req.user.zona_horaria);
     const h = req.query.hasta  || d;
     const { rows } = await pool.query(
       `SELECT
@@ -2532,7 +2529,7 @@ router.get('/reportes/servicios-por-empleado', async (req, res) => {
 
 router.get('/caja', async (req, res) => {
   try {
-    const fecha = req.query.fecha || localDate();
+    const fecha = req.query.fecha || localDate(req.user.zona_horaria);
     const { rows: ventas } = await pool.query(
       `SELECT v.id, c.nombre AS clienteNombre, e.nombre AS empleadoNombre,
        v.total AS precio, v.fecha AS fechaHora, v.descuento
@@ -2601,7 +2598,7 @@ setInterval(autoCancelarCitasPasadas, 5 * 60 * 1000);
 router.get('/facturas', async (req, res) => {
   try {
     const { desde, hasta, q } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     const params = [nid(req), d, h];
     let where = `v.negocio_id=${ph(1)} AND v.estado='completada' AND DATE(v.fecha) BETWEEN ${ph(2)} AND ${ph(3)}`;

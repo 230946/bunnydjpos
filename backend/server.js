@@ -38,10 +38,10 @@ const frontendPath = path.join(__dirname, '..', 'frontend');
 app.disable('etag');  // sin cache en desarrollo
 app.use(express.static(frontendPath, { etag: false, lastModified: false }));
 // Rutas directas para cada panel
-app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'hub.html')));
-app.get('/hub',              (_, res) => res.sendFile(path.join(frontendPath, 'hub.html')));
+app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
+app.get('/login',            (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
 // POS
-app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'restaurante-pos.html')));
+app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'pos-restaurante.html')));
 app.get('/minimercado',      (_, res) => res.sendFile(path.join(frontendPath, 'pos-minimercado.html')));
 app.get('/peluqueria',       (_, res) => res.sendFile(path.join(frontendPath, 'pos-peluqueria.html')));
 // Domicilios
@@ -50,13 +50,13 @@ app.get('/domiciliario',     (_, res) => res.sendFile(path.join(frontendPath, 'd
 app.get('/rider',            (_, res) => res.sendFile(path.join(frontendPath, 'rider.html')));
 // Admin
 app.get('/admin',            (_, res) => res.sendFile(path.join(frontendPath, 'admin-restaurante.html')));
-app.get('/minimercado-admin',(_, res) => res.sendFile(path.join(frontendPath, 'minimercado-admin.html')));
-app.get('/peluqueria-admin', (_, res) => res.sendFile(path.join(frontendPath, 'peluqueria-admin.html')));
+app.get('/minimercado-admin',(_, res) => res.sendFile(path.join(frontendPath, 'admin-minimercado.html')));
+app.get('/peluqueria-admin', (_, res) => res.sendFile(path.join(frontendPath, 'admin-peluqueria.html')));
 app.get('/superadmin',       (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
 // Portales
 app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'portal.html')));
 app.get('/portal-empleado',  (_, res) => res.sendFile(path.join(frontendPath, 'portal-empleado.html')));
-app.get('/reservas',         (_, res) => res.sendFile(path.join(frontendPath, 'peluqueria-reservar.html')));
+app.get('/reservas',         (_, res) => res.sendFile(path.join(frontendPath, 'reservas-peluqueria.html')));
 
 // ── Multer para logos ─────────────────────────────────────────────
 const storage = multer.diskStorage({
@@ -109,7 +109,7 @@ app.use('/api/domicilios', domiciliosRouter);
 app.get('/api/negocio-pub/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT nombre, tipo, logo_url, nit, direccion, ciudad, telefono, departamento, idiomas, color_primario FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+      `SELECT nombre, tipo, logo_url, nit, direccion, ciudad, telefono, departamento, idiomas, color_primario, moneda, zona_horaria FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
@@ -248,6 +248,9 @@ async function runMigrations() {
     { table: 'negocios',   column: 'departamento', sql: `ALTER TABLE negocios ADD COLUMN departamento VARCHAR(100) NULL` },
     { table: 'negocios',   column: 'idiomas',      sql: `ALTER TABLE negocios ADD COLUMN idiomas VARCHAR(255) NULL DEFAULT '["es"]'` },
     { table: 'negocios',   column: 'color_primario', sql: `ALTER TABLE negocios ADD COLUMN color_primario VARCHAR(20) NULL` },
+    { table: 'negocios',   column: 'moneda',       sql: `ALTER TABLE negocios ADD COLUMN moneda VARCHAR(3) NOT NULL DEFAULT 'COP'` },
+    { table: 'negocios',   column: 'zona_horaria', sql: `ALTER TABLE negocios ADD COLUMN zona_horaria VARCHAR(50) NOT NULL DEFAULT 'America/Bogota'` },
+    { table: 'comandas',   column: 'es_adicion',   sql: `ALTER TABLE comandas ADD COLUMN es_adicion TINYINT(1) NOT NULL DEFAULT 0` },
     { table: 'menu_items', column: 'nombre_zh',    sql: `ALTER TABLE menu_items ADD COLUMN nombre_zh VARCHAR(200) NULL` },
     { table: 'menu_items', column: 'descripcion_zh', sql: `ALTER TABLE menu_items ADD COLUMN descripcion_zh TEXT NULL` },
     { table: 'domicilios_pedidos', column: 'pago_estado', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente'` },
@@ -255,6 +258,10 @@ async function runMigrations() {
     { table: 'empleados', column: 'lat',    sql: `ALTER TABLE empleados ADD COLUMN lat DECIMAL(10,7) NULL` },
     { table: 'empleados', column: 'lng',    sql: `ALTER TABLE empleados ADD COLUMN lng DECIMAL(10,7) NULL` },
     { table: 'empleados', column: 'gps_at', sql: `ALTER TABLE empleados ADD COLUMN gps_at TIMESTAMP NULL` },
+    { table: 'empleados', column: 'foto_url', sql: `ALTER TABLE empleados ADD COLUMN foto_url VARCHAR(300) NULL` },
+    { table: 'empleados', column: 'vehiculo', sql: `ALTER TABLE empleados ADD COLUMN vehiculo VARCHAR(20) NULL` },
+    { table: 'empleados', column: 'placa',    sql: `ALTER TABLE empleados ADD COLUMN placa VARCHAR(20) NULL` },
+    { table: 'empleados', column: 'color_vehiculo', sql: `ALTER TABLE empleados ADD COLUMN color_vehiculo VARCHAR(40) NULL` },
     { table: 'ventas', column: 'monto_efectivo', sql: `ALTER TABLE ventas ADD COLUMN monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'ventas', column: 'monto_tarjeta',  sql: `ALTER TABLE ventas ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'ventas', column: 'monto_nequi',    sql: `ALTER TABLE ventas ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
@@ -308,6 +315,10 @@ async function runMigrations() {
         lat DECIMAL(10,7) NULL,
         lng DECIMAL(10,7) NULL,
         gps_at TIMESTAMP NULL,
+        foto_url VARCHAR(300) NULL,
+        vehiculo VARCHAR(20) NULL,
+        placa VARCHAR(20) NULL,
+        color_vehiculo VARCHAR(40) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_negocio (negocio_id),
         UNIQUE KEY uk_neg_doc (negocio_id, documento)

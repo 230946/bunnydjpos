@@ -102,6 +102,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <a href="#menu" onclick="setActive(this)">✏️ Editar menú</a>
     <a href="#proveedores" onclick="setActive(this)">🚚 Proveedores</a>
     <a href="#pedidos-prov" onclick="setActive(this)">🛒 Pedidos proveedores</a>
+    <a href="#domiciliarios" onclick="setActive(this)">🛵 Domiciliarios</a>
     <div class="toc-section">Usuarios</div>
     <a href="#personal" onclick="setActive(this)">👥 Personal</a>
     <a href="#roles" onclick="setActive(this)">🔐 Roles</a>
@@ -133,6 +134,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona tu rol</strong><p>Si tienes permisos de administrador, verás todos los módulos. Los roles restringidos solo ven lo que tienen autorizado.</p></div></div>
       </div>
       <div class="alert alert-tip">💡 <span>El panel Admin es diferente al POS (punto de venta). El Admin es para gestión; el POS es para los meseros y cajeros.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>También puedes entrar por la página principal del dominio (sin <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">?n=</code> en la URL): ingresa tu usuario o correo y contraseña, y el sistema te lleva automáticamente al portal de tu negocio.</span></div>
     </div>
 
     <!-- DASHBOARD -->
@@ -149,7 +151,9 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="card"><div class="card-icon">📦</div><h4>Estado inventario</h4><p>Productos con stock bajo o agotados</p></div>
         <div class="card"><div class="card-icon">💰</div><h4>Estado de caja</h4><p>Si la caja está abierta, monto de apertura y ventas acumuladas</p></div>
         <div class="card"><div class="card-icon">📈</div><h4>Ventas semana</h4><p>Gráfica de ventas de los últimos 7 días</p></div>
+        <div class="card"><div class="card-icon">🛵</div><h4>Domicilios y calificaciones</h4><p>Domicilios entregados, calificación promedio y desglose por domiciliario</p></div>
       </div>
+      <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>La tarjeta <strong>Comisión total ventas</strong> (en Reportes) siempre se calcula sobre el mes calendario en curso — se reinicia en $0 el día 1 de cada mes, sin importar el filtro de fechas que uses en la pantalla.</span></div>
     </div>
 
     <!-- CAJA -->
@@ -185,6 +189,9 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         </tbody>
       </table>
       <div class="alert alert-warn" style="margin-top:12px">⚠️ <span>Solo puede haber <strong>una caja abierta por cajero</strong> por día. Si cerraste la caja y necesitas reabrir, usa el botón <strong>Reabrir caja</strong>.</span></div>
+
+      <h3 class="sub">Domicilios de hoy</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Debajo del resumen de caja se muestra una tarjeta con dos contadores: <strong>🕐 En camino / Pendiente</strong> (domicilios aún no entregados) y <strong>✅ Entregados</strong> (domicilios entregados hoy). Se actualiza sola cada 30 segundos.</p>
     </div>
 
     <!-- GASTOS -->
@@ -216,7 +223,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="card"><div class="card-icon">📊</div><h4>Gráfica de ventas</h4><p>Evolución visual del volumen de ventas diario</p></div>
         <div class="card"><div class="card-icon">⬇️</div><h4>Exportar</h4><p>Descarga el reporte en Excel para análisis externo</p></div>
       </div>
-      <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>Los reportes usan la <strong>hora Colombia (UTC-5)</strong>. Las ventas del día se calculan de medianoche a medianoche hora local.</span></div>
+      <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>Los reportes usan la <strong>zona horaria y moneda configuradas para tu negocio</strong> (las define el superadministrador). Las ventas del día se calculan de medianoche a medianoche hora local de tu negocio.</span></div>
     </div>
 
     <!-- CLIENTES -->
@@ -344,6 +351,22 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         </tbody>
       </table>
       <div class="alert alert-tip" style="margin-top:10px">💡 <span>Al marcar un pedido como <strong>recibido</strong>, las cantidades se suman automáticamente al inventario de cada ítem.</span></div>
+    </div>
+
+    <!-- DOMICILIARIOS -->
+    <div class="section" id="domiciliarios">
+      <div class="section-header">
+        <div class="section-icon">🛵</div>
+        <div><h2>Domiciliarios</h2><p>Repartidores y seguimiento de entregas</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Registra a tus domiciliarios para que puedan tomar y entregar pedidos desde su propia app, y que el cliente los vea en su seguimiento.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo domiciliario</strong><p>Nombre, número de documento y celular (con esos dos datos inicia sesión en su app).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Foto (opcional)</strong><p>Sube su foto — aparece en su propia app y para el cliente en cuanto toma el domicilio.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Vehículo</strong><p>Elige Moto (registra la <strong>placa</strong>), Bicicleta (registra el <strong>color</strong>) o A pie.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Compartir acceso</strong><p>Usa el botón <span class="btn-demo">Link app</span> para copiar el enlace de la app del domiciliario.</p></div></div>
+      </div>
+      <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>En <strong>Caja diaria</strong> se muestran los domicilios <strong>en camino / pendientes</strong> y los <strong>entregados</strong>. El domiciliario controla el paso a "Entregado" desde su propia app — cobrar en Caja no cambia ese estado.</span></div>
     </div>
 
     <!-- PERSONAL -->

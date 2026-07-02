@@ -96,15 +96,15 @@ router.get('/negocios', async (req, res) => {
 
 router.post('/negocios', async (req, res) => {
   try {
-    const { nombre, tipo='restaurante', nit, direccion, ciudad, telefono, email, departamento, idiomas, color_primario } = req.body;
+    const { nombre, tipo='restaurante', nit, direccion, ciudad, telefono, email, departamento, idiomas, color_primario, moneda, zona_horaria } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
     const id = uuid();
     const idiomasStr = Array.isArray(idiomas) ? JSON.stringify(idiomas) : (idiomas || '["es"]');
     await pool.query(
-      `INSERT INTO negocios (id,nombre,tipo,nit,direccion,ciudad,telefono,email,departamento,idiomas,color_primario)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO negocios (id,nombre,tipo,nit,direccion,ciudad,telefono,email,departamento,idiomas,color_primario,moneda,zona_horaria)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [id, nombre, tipo, nit||null, direccion||null, ciudad||null, telefono||null, email||null,
-       departamento||null, idiomasStr, color_primario||null]
+       departamento||null, idiomasStr, color_primario||null, moneda||'COP', zona_horaria||'America/Bogota']
     );
     // Crear rol admin por defecto
     const rolId = uuid();
@@ -126,13 +126,13 @@ router.post('/negocios', async (req, res) => {
 
 router.put('/negocios/:id', async (req, res) => {
   try {
-    const { nombre, tipo, nit, direccion, ciudad, telefono, email, activo, departamento, idiomas, color_primario } = req.body;
+    const { nombre, tipo, nit, direccion, ciudad, telefono, email, activo, departamento, idiomas, color_primario, moneda, zona_horaria } = req.body;
     const idiomasStr = Array.isArray(idiomas) ? JSON.stringify(idiomas) : (idiomas || '["es"]');
     await pool.query(
-      `UPDATE negocios SET nombre=?,tipo=?,nit=?,direccion=?,ciudad=?,telefono=?,email=?,activo=?,departamento=?,idiomas=?,color_primario=?,actualizado=NOW()
+      `UPDATE negocios SET nombre=?,tipo=?,nit=?,direccion=?,ciudad=?,telefono=?,email=?,activo=?,departamento=?,idiomas=?,color_primario=?,moneda=?,zona_horaria=?,actualizado=NOW()
        WHERE id=?`,
       [nombre, tipo, nit, direccion, ciudad, telefono, email, activo?1:0,
-       departamento||null, idiomasStr, color_primario||null, req.params.id]
+       departamento||null, idiomasStr, color_primario||null, moneda||'COP', zona_horaria||'America/Bogota', req.params.id]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -301,13 +301,13 @@ router.get('/reportes', async (req, res) => {
       ORDER BY ingresos DESC
     `, [desde, hasta]);
 
-    const rate = { basic:0.05, plus:0.07, premium:0.09, personalizado:0.07 };
+    const rate = { basic:0.09, plus:0.07, premium:0.05, personalizado:0.07 };
     const totalIngresos = rows.reduce((s,r) => s + parseFloat(r.ingresos||0), 0);
     const totalVentas   = rows.reduce((s,r) => s + parseInt(r.total_ventas||0), 0);
     const conVentas     = rows.filter(r => parseInt(r.total_ventas||0) > 0).length;
-    const comBasic      = rows.filter(r=>r.plan==='basic').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.05,0);
+    const comBasic      = rows.filter(r=>r.plan==='basic').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.09,0);
     const comPlus       = rows.filter(r=>r.plan==='plus'||r.plan==='personalizado').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.07,0);
-    const comPremium    = rows.filter(r=>r.plan==='premium').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.09,0);
+    const comPremium    = rows.filter(r=>r.plan==='premium').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.05,0);
     const totalComision = comBasic + comPlus + comPremium;
     res.json({ rows, totalIngresos, totalVentas, conVentas, comBasic, comPlus, comPremium, totalComision, desde, hasta });
   } catch(e) { res.status(500).json({ error: e.message }); }

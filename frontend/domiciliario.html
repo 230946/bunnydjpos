@@ -53,6 +53,7 @@ body{display:flex;flex-direction:column;min-height:100vh}
   box-shadow:0 2px 8px rgba(0,0,0,.18)
 }
 #header-logo{font-size:22px;flex-shrink:0}
+#header-foto{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(255,255,255,.6);display:none}
 #header-text{flex:1;min-width:0}
 #header-neg{font-size:11px;opacity:.82;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #header-emp{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -193,9 +194,11 @@ body{display:flex;flex-direction:column;min-height:100vh}
 <div id="app">
   <div id="header">
     <span id="header-logo">🛵</span>
+    <img id="header-foto" alt="">
     <div id="header-text">
       <div id="header-neg">Cargando…</div>
       <div id="header-emp">—</div>
+      <div id="header-vehiculo" style="font-size:11px;opacity:.85;display:none"></div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:2px">
       <span id="gps-badge" title="GPS" style="font-size:18px;opacity:.5">📍</span>
@@ -256,7 +259,9 @@ let   lastGpsPost = 0;
 const GPS_INTERVAL = 20000; // ms entre POSTs de ubicación
 
 // ── Utils ────────────────────────────────────────────────────────
-function fmt(n){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0); }
+let NEG_MONEDA = 'COP';
+const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
+function fmt(n){ return new Intl.NumberFormat(MONEDA_LOCALE[NEG_MONEDA]||'es-CO',{style:'currency',currency:NEG_MONEDA,minimumFractionDigits:0}).format(n||0); }
 let toastTimer;
 function toast(msg,dur=2500){
   const el=document.getElementById('toast');
@@ -304,7 +309,8 @@ async function login(){
     }).then(r=>r.json());
     if(data.error) throw new Error(data.error);
     if(data.rol !== 'domiciliario') throw new Error('Tu cuenta no tiene el rol de domiciliario');
-    session = {token:data.token, id:data.id, nombre:data.nombre, rol:data.rol, negocio_id:data.negocio_id};
+    session = {token:data.token, id:data.id, nombre:data.nombre, rol:data.rol, negocio_id:data.negocio_id,
+      foto_url:data.foto_url||null, vehiculo:data.vehiculo||null, placa:data.placa||null, color_vehiculo:data.color_vehiculo||null};
     localStorage.setItem(SESS_KEY, JSON.stringify(session));
     startApp();
   } catch(e){
@@ -333,12 +339,25 @@ async function startApp(){
   document.getElementById('view-login').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('header-emp').textContent = session.nombre;
+  if(session.foto_url){
+    const img = document.getElementById('header-foto');
+    img.src = session.foto_url;
+    img.style.display = 'block';
+    document.getElementById('header-logo').style.display = 'none';
+  }
+  const VEH_LABELS = { moto: `🏍️ Placa: ${session.placa||'—'}`, bicicleta: `🚲 Bici ${session.color_vehiculo||''}`, a_pie: '🚶 A pie' };
+  if(session.vehiculo && VEH_LABELS[session.vehiculo]){
+    const vEl = document.getElementById('header-vehiculo');
+    vEl.textContent = VEH_LABELS[session.vehiculo];
+    vEl.style.display = 'block';
+  }
 
   // Cargar info del negocio para el header
   try {
     const r = await fetch(`/api/negocio-pub/${NEG_ID||session.negocio_id}`);
     const d = await r.json();
     negocioNom = d.nombre||'';
+    NEG_MONEDA = d.moneda||'COP';
     document.getElementById('header-neg').textContent = negocioNom;
     document.title = `Domiciliario — ${negocioNom}`;
     // Aplicar color

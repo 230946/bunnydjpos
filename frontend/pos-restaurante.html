@@ -16,13 +16,14 @@
   --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
   --red:#E24B4A;--red-l:#FCEBEB;--red-d:#A32D2D;
   --amber:#C6F135;--amber-l:#f5ffd6;--amber-d:#8aad00;
+  --yellow:#F5C400;--yellow-l:#FFF7D6;--yellow-d:#8a6d00;
   --r:8px;--rl:12px;
 }
 @media(prefers-color-scheme:dark){:root{
   --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
   --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
   --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
-  --blue-l:#3a0f0f;--green-l:#04342c;--red-l:#3a1010;--amber-l:#2a1a00;
+  --blue-l:#3a0f0f;--green-l:#04342c;--red-l:#3a1010;--amber-l:#2a1a00;--yellow-l:#332800;
 }}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh}
 
@@ -118,8 +119,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 /* ── COCINA ── */
 .cocina-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 .ticket{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px}
-.ticket.nuevo{border-color:var(--green);border-width:2px}
+.ticket.nuevo{border-color:var(--red);border-width:2px}
 .ticket.cocinando{border-color:var(--amber);border-width:2px}
+.ticket.listo{border-color:var(--yellow);border-width:2px}
+.ticket.entregado{border-color:var(--green);border-width:2px}
 .ticket-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:0.5px solid var(--border)}
 .ticket-mesa{font-weight:700;font-size:18px}
 .ticket-time{font-size:13px;color:var(--text2)}
@@ -130,9 +133,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .btn-cocinando{background:var(--amber-l);color:var(--amber-d)}
 .btn-listo{background:var(--green-l);color:var(--green-d)}
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500}
-.b-nuevo{background:var(--green-l);color:var(--green-d)}
+.b-nuevo{background:var(--red-l);color:var(--red-d)}
 .b-cocinando{background:var(--amber-l);color:var(--amber-d)}
-.b-listo{background:var(--blue-l);color:var(--blue-d)}
+.b-listo{background:var(--yellow-l);color:var(--yellow-d)}
+.b-entregado{background:var(--green-l);color:var(--green-d)}
 
 /* ── COBRO ── */
 .cobro-layout{display:flex;gap:14px;height:100%}
@@ -625,7 +629,10 @@ let allMesas = [];
 
 // ─── Utils ────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const fmt = n => '$'+(Math.round(n)||0).toLocaleString('es-CO');
+let NEG_MONEDA = 'COP';
+const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
+const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
+const fmt = n => (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO');
 const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
 function closeModal(id){ $(id).style.display='none'; }
@@ -649,7 +656,9 @@ async function api(path, opts={}) {
     fetch(`/api/negocio-pub/${urlNegocio}`)
       .then(r => r.ok ? r.json() : null)
       .then(info => {
-        if (!info || !info.nombre) return;
+        if (!info) return;
+        if (info.moneda) NEG_MONEDA = info.moneda;
+        if (!info.nombre) return;
         const el = document.getElementById('login-neg-nombre');
         if (el) { el.textContent = info.nombre; el.style.display = 'block'; }
         document.title = `${info.nombre} — POS`;
@@ -705,6 +714,7 @@ async function checkContrato(negId){
     const r=await fetch(`/api/negocio-pub/${negId}`);
     if(!r.ok) return;
     const d=await r.json();
+    if(d?.moneda) NEG_MONEDA=d.moneda;
     const blk=msg=>{ $('contrato-block-msg').innerHTML=msg; $('contrato-block').style.display='flex'; };
     if(!d.contrato){ blk('No tienes un contrato activo.<br>Contacta al administrador del sistema.'); return; }
     const {estado,dias_para_vencer}=d.contrato;
@@ -1053,8 +1063,14 @@ async function loadCocina(){
     data.forEach(c=>{
       const items=typeof c.items==='string'?JSON.parse(c.items):c.items;
       const mins=Math.floor((Date.now()-new Date(c.creado))/60000);
-      const d=document.createElement('div'); d.className=`ticket ${c.estado}`;
-      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${c.estado==='nuevo'?'b-nuevo':c.estado==='cocinando'?'b-cocinando':'b-listo'}">${c.estado}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 准备中 / Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ 完成 / Listo</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ 已送达 / Entregado</button>`:``}`;
+      let cls, label, badgeCls;
+      if(c.es_adicion){ cls='nuevo'; label='⚠️ Adición'; badgeCls='b-nuevo'; }
+      else if(c.estado==='nuevo'){ cls='nuevo'; label='Pedido'; badgeCls='b-nuevo'; }
+      else if(c.estado==='cocinando'){ cls='cocinando'; label='Cocinando'; badgeCls='b-cocinando'; }
+      else if(c.estado==='listo'){ cls='listo'; label='Preparando'; badgeCls='b-listo'; }
+      else { cls='entregado'; label='Listo para mesa'; badgeCls='b-entregado'; }
+      const d=document.createElement('div'); d.className=`ticket ${cls}`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 准备中 / Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ 完成 / Listo</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ 已送达 / Entregado</button>`:``}`;
       g.appendChild(d);
     });
 
@@ -1062,8 +1078,13 @@ async function loadCocina(){
     domData.forEach(p=>{
       const items=typeof p.items==='string'?JSON.parse(p.items):p.items;
       const mins=Math.floor((Date.now()-new Date(p.created_at))/60000);
+      let cls, label;
+      if(p.estado==='pendiente'||p.estado==='aceptado'){ cls='nuevo'; label='Pedido'; }
+      else if(p.estado==='en_preparacion'){ cls='cocinando'; label='Cocinando'; }
+      else { cls='entregado'; label='Listo para Domicilio'; }
+      const badgeCls = cls==='nuevo'?'b-nuevo':cls==='cocinando'?'b-cocinando':'b-entregado';
       const d=document.createElement('div');
-      d.className=`ticket ${p.estado==='pendiente'||p.estado==='aceptado'?'nuevo':p.estado==='en_preparacion'?'cocinando':'listo'}`;
+      d.className=`ticket ${cls}`;
       d.style.borderLeft='3px solid #f59e0b';
       const DOM_BTN = p.estado==='pendiente'
         ? `<button class="ticket-btn btn-cocinando" onclick="updDomicilio('${p.id}','en_preparacion')">👨‍🍳 Preparando</button>`
@@ -1072,7 +1093,7 @@ async function loadCocina(){
         : p.estado==='en_preparacion'
         ? `<button class="ticket-btn btn-listo" onclick="updDomicilio('${p.id}','listo')">✓ Listo para despacho</button>`
         : '';
-      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge b-nuevo">domicilio</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
       g.appendChild(d);
     });
   } catch(e){ toast('Error cocina: '+e.message); }
@@ -1865,8 +1886,8 @@ function renderCajaPanel(ventasRec=[], dom=null){
   body.innerHTML = `
     <div style="max-width:960px;margin:0 auto">
 
-      <!-- Indicador en vivo -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <!-- Indicador en vivo (oculto; el refresco automático sigue activo) -->
+      <div style="display:none;align-items:center;gap:8px;margin-bottom:12px">
         <span class="live-badge"><span class="live-dot"></span>En vivo</span>
         <span style="font-size:11px;color:var(--text3)">Actualizado ${ahora}</span>
       </div>
@@ -2051,7 +2072,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.body.appendChild(s);
   function vis(){var a=document.querySelector('#app,#app-screen');return a&&(a.style.display==='flex'||a.style.display==='block'||a.classList.contains('visible'));}
   var sec=30;
-  setInterval(function(){s.style.display=vis()?'inline':'none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
+  setInterval(function(){s.style.display='none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
   window._arReset=function(){sec=30;s.style.background='var(--green-l,#d1fae5)';s.style.color='var(--green-d,#065f46)';s.style.borderColor='var(--green,#0B8457)';s.textContent='↺ actualizado';setTimeout(function(){s.style.background='';s.style.color='';s.style.borderColor='';s.textContent='↺ 30s';},900);};
 })();
 </script>

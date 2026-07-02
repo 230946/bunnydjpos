@@ -15,6 +15,15 @@ function fmtMoney(n) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
 }
 
+// "Hoy" / "hace N días" en la zona horaria del negocio (default Bogotá)
+function localDate(tz = 'America/Bogota') {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+function localDateHaceDias(dias, tz = 'America/Bogota') {
+  const d = new Date(Date.now() - dias * 86400000);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+
 // Confirma entrega y cierra el ciclo: marca pago_estado='pagado' e inserta en ventas.
 // Usa venta_id como cerrojo atómico (AND venta_id IS NULL en el UPDATE) para que solo
 // un llamado concurrente gane la carrera y cree la venta.
@@ -110,7 +119,7 @@ router.get('/menu/:negocioId', async (req, res) => {
 
     // Info del negocio
     const { rows: neg } = await pool.query(
-      `SELECT id, nombre, tipo, logo_url, telefono, direccion, ciudad, color_primario FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+      `SELECT id, nombre, tipo, logo_url, telefono, direccion, ciudad, color_primario, moneda FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
       [nid]
     );
     if (!neg[0]) return res.status(404).json({ error: 'Negocio no encontrado' });
@@ -279,7 +288,9 @@ router.get('/pedido/:id', async (req, res) => {
       `SELECT p.id, p.estado, p.negocio_id, p.cliente_nombre, p.items, p.subtotal, p.total, p.created_at,
               COALESCE(r.nombre, e.nombre) AS rider_nombre,
               COALESCE(r.telefono, e.celular) AS rider_tel,
-              e.lat AS rider_lat, e.lng AS rider_lng, e.gps_at AS rider_gps_at
+              e.lat AS rider_lat, e.lng AS rider_lng, e.gps_at AS rider_gps_at,
+              e.foto_url AS rider_foto, e.vehiculo AS rider_vehiculo,
+              e.placa AS rider_placa, e.color_vehiculo AS rider_color_vehiculo
        FROM domicilios_pedidos p
        LEFT JOIN domicilios_riders r ON r.id = p.domiciliario_id
        LEFT JOIN empleados e ON e.id = p.domiciliario_id AND r.id IS NULL
@@ -303,13 +314,13 @@ router.post('/empleado-login', async (req, res) => {
     const cel = String(celular).replace(/[\s\-()]/g, '');
     const doc = String(documento).trim();
     const { rows } = await pool.query(
-      `SELECT id, nombre, rol, token, negocio_id FROM empleados
+      `SELECT id, nombre, rol, token, negocio_id, foto_url, vehiculo, placa, color_vehiculo FROM empleados
        WHERE negocio_id=? AND documento=? AND celular=? AND activo=1 LIMIT 1`,
       [negocio_id, doc, cel]
     );
     if (!rows[0]) return res.status(401).json({ error: 'Credenciales incorrectas o cuenta inactiva' });
-    const { id, nombre, rol, token } = rows[0];
-    res.json({ ok: true, token, id, nombre, rol, negocio_id: rows[0].negocio_id });
+    const { id, nombre, rol, token, foto_url, vehiculo, placa, color_vehiculo } = rows[0];
+    res.json({ ok: true, token, id, nombre, rol, negocio_id: rows[0].negocio_id, foto_url, vehiculo, placa, color_vehiculo });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -319,7 +330,9 @@ async function requireEmpleado(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Token requerido' });
   try {
     const { rows } = await pool.query(
-      `SELECT id, nombre, rol, negocio_id FROM empleados WHERE token=? AND activo=1 LIMIT 1`,
+      `SELECT e.id, e.nombre, e.rol, e.negocio_id, COALESCE(n.zona_horaria,'America/Bogota') AS zona_horaria
+       FROM empleados e LEFT JOIN negocios n ON n.id = e.negocio_id
+       WHERE e.token=? AND e.activo=1 LIMIT 1`,
       [token]
     );
     if (!rows[0]) return res.status(401).json({ error: 'Token inválido o cuenta inactiva' });
@@ -434,8 +447,9 @@ router.get('/rider/ubicaciones', verifyToken, async (req, res) => {
 // en el rango de fechas, más la tendencia diaria para la gráfica
 router.get('/rider/historial', requireEmpleado, async (req, res) => {
   try {
-    const hoy = new Date(Date.now() - 5*60*60*1000).toISOString().slice(0,10);
-    const hace6 = new Date(Date.now() - 5*60*60*1000 - 6*86400000).toISOString().slice(0,10);
+    const tz = req.empleado.zona_horaria || 'America/Bogota';
+    const hoy = localDate(tz);
+    const hace6 = localDateHaceDias(6, tz);
     const desde = req.query.desde || hace6;
     const hasta = req.query.hasta || hoy;
 
@@ -575,7 +589,7 @@ router.get('/pedidos', verifyToken, async (req, res) => {
 router.get('/reportes/resumen', verifyToken, async (req, res) => {
   try {
     const nid = req.user.negocio_id;
-    const hoy = new Date(Date.now() - 5*60*60*1000).toISOString().slice(0,10);
+    const hoy = localDate(req.user.zona_horaria);
     const d = req.query.desde || hoy;
     const h = req.query.hasta || d;
 

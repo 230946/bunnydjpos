@@ -358,9 +358,9 @@ tr:hover td{background:var(--bg2)}
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap" id="rep-comisiones">
               <span style="font-size:11px;color:var(--text2)">Comisión:</span>
               <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px;color:var(--text3)">0% Free (demo)</span>
-              <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px"><b id="rep-com5">—</b> <span style="color:var(--text3)">5% Basic</span></span>
+              <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px"><b id="rep-com5">—</b> <span style="color:var(--text3)">9% Basic</span></span>
               <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px"><b id="rep-com7">—</b> <span style="color:var(--text3)">7% Plus</span></span>
-              <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px"><b id="rep-com9">—</b> <span style="color:var(--text3)">9% Premium</span></span>
+              <span style="font-size:11px;background:var(--bg2);border-radius:6px;padding:2px 8px"><b id="rep-com9">—</b> <span style="color:var(--text3)">5% Premium</span></span>
             </div>
           </div>
           <div class="stat-card"><div class="stat-label">Ventas totales</div><div class="stat-val" id="rep-total-ven">—</div></div>
@@ -461,9 +461,9 @@ tr:hover td{background:var(--bg2)}
         <label>Plan</label>
         <select id="ctr-plan">
           <option value="free">Free — Demo (sin comisión)</option>
-          <option value="basic" selected>Basic (5%)</option>
+          <option value="basic" selected>Basic (9%)</option>
           <option value="plus">Plus (7%)</option>
-          <option value="premium">Premium (9%)</option>
+          <option value="premium">Premium (5%)</option>
         </select>
       </div>
     </div>
@@ -576,6 +576,15 @@ tr:hover td{background:var(--bg2)}
       <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="neg-dir" placeholder="Calle 123 # 45-67"></div>
       <div class="field" style="grid-column:1/-1"><label>Email</label><input id="neg-email" type="email" placeholder="info@negocio.com"></div>
       <div class="field" style="grid-column:1/-1">
+        <label>País (moneda y zona horaria)</label>
+        <select id="neg-pais" onchange="aplicarPaisNegocio()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px">
+          <option value="CO">🇨🇴 Colombia — Peso (COP)</option>
+          <option value="CR">🇨🇷 Costa Rica — Colón (CRC)</option>
+        </select>
+        <input type="hidden" id="neg-moneda" value="COP">
+        <input type="hidden" id="neg-zona-horaria" value="America/Bogota">
+      </div>
+      <div class="field" style="grid-column:1/-1">
         <label>Color corporativo (app domicilios)</label>
         <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
           <input type="color" id="neg-color" value="#6c4ff6" style="width:48px;height:36px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;padding:2px;background:none">
@@ -583,23 +592,12 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
       <div class="field" style="grid-column:1/-1">
-        <label>Idiomas del sistema</label>
-        <div id="neg-idiomas-wrap" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
-            <input type="checkbox" name="neg-idioma" value="es" checked> Español
+        <label>Idioma adicional</label>
+        <div style="margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);width:fit-content">
+            <input type="checkbox" id="neg-idioma-zh"> Habilitar 中文 (Mandarín) para este negocio
           </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
-            <input type="checkbox" name="neg-idioma" value="en"> English
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
-            <input type="checkbox" name="neg-idioma" value="pt"> Português
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
-            <input type="checkbox" name="neg-idioma" value="fr"> Français
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg)">
-            <input type="checkbox" name="neg-idioma" value="zh"> 中文 (Mandarín)
-          </label>
+          <div style="font-size:11px;color:var(--text2);margin-top:5px">El negocio siempre usa español. Actívalo solo si necesita menú/interfaz también en mandarín.</div>
         </div>
       </div>
     </div>
@@ -634,9 +632,9 @@ tr:hover td{background:var(--bg2)}
     <div class="field"><label>Plan</label>
       <select id="plan-tipo" style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px">
         <option value="free">Free — Demo (0%)</option>
-        <option value="basic">Basic (5%)</option>
+        <option value="basic">Basic (9%)</option>
         <option value="plus">Plus (7%)</option>
-        <option value="premium">Premium (9%)</option>
+        <option value="premium">Premium (5%)</option>
       </select>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -777,13 +775,13 @@ function showQR(negocioId, nombre, tipo){
     minimercado: [
       { label:'🛵 App Domicilios (Clientes)',    url:`${base}/domicilios?n=${negocioId}` },
       { label:'🏍️ App Domiciliario (Repartidor)', url:`${base}/domiciliario?n=${negocioId}` },
-      { label:'⚙️ Admin Minimercado',             url:`${base}/minimercado-admin.html?n=${negocioId}` },
+      { label:'⚙️ Admin Minimercado',             url:`${base}/admin-minimercado.html?n=${negocioId}` },
       { label:'🖥️ POS Minimercado',               url:`${base}/pos-minimercado.html?n=${negocioId}` },
     ],
     peluqueria: [
-      { label:'📅 Reservar cita',     url:`${base}/peluqueria-reservar.html?n=${negocioId}` },
+      { label:'📅 Reservar cita',     url:`${base}/reservas-peluqueria.html?n=${negocioId}` },
       { label:'👤 Portal Empleados',  url:`${base}/portal-empleado.html?n=${negocioId}` },
-      { label:'⚙️ Admin Peluquería',  url:`${base}/peluqueria-admin.html?n=${negocioId}` },
+      { label:'⚙️ Admin Peluquería',  url:`${base}/admin-peluqueria.html?n=${negocioId}` },
     ],
     bar: [
       { label:'🛵 App Domicilios (Clientes)',    url:`${base}/domicilios?n=${negocioId}` },
@@ -830,9 +828,9 @@ async function loadDashboard(){
       document.getElementById('s-ingresos').textContent = fmt(ti);
       document.getElementById('s-comision').textContent = fmt(tc);
       const pills = [
-        rep.comBasic   > 0 ? `<span style="font-size:10px;background:#1976d21a;color:#1976d2;border-radius:10px;padding:2px 8px;white-space:nowrap">5% Basic: ${fmt(rep.comBasic)}</span>` : '',
+        rep.comBasic   > 0 ? `<span style="font-size:10px;background:#1976d21a;color:#1976d2;border-radius:10px;padding:2px 8px;white-space:nowrap">9% Basic: ${fmt(rep.comBasic)}</span>` : '',
         rep.comPlus    > 0 ? `<span style="font-size:10px;background:#e65c001a;color:#e65c00;border-radius:10px;padding:2px 8px;white-space:nowrap">7% Plus: ${fmt(rep.comPlus)}</span>` : '',
-        rep.comPremium > 0 ? `<span style="font-size:10px;background:#7b1fa21a;color:#7b1fa2;border-radius:10px;padding:2px 8px;white-space:nowrap">9% Premium: ${fmt(rep.comPremium)}</span>` : '',
+        rep.comPremium > 0 ? `<span style="font-size:10px;background:#7b1fa21a;color:#7b1fa2;border-radius:10px;padding:2px 8px;white-space:nowrap">5% Premium: ${fmt(rep.comPremium)}</span>` : '',
       ].filter(Boolean).join('');
       document.getElementById('s-com-pills').innerHTML = pills || `<span style="font-size:10px;color:var(--text3)">Sin comisiones este período</span>`;
     }
@@ -875,11 +873,13 @@ async function loadDashboard(){
     }
     // ── Comisión por negocio ──────────────────────────────────
     if(rep && rep.rows && rep.rows.length){
-      const _R = {free:0,basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
+      const _R = {free:0,basic:0.09,plus:0.07,premium:0.05,personalizado:0.07};
       const _L = {free:'Free',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
       const _C = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
 
-      const rows = rep.rows.filter(r => parseFloat(r.ingresos||0) > 0 || _R[r.plan] > 0);
+      // Se muestran TODOS los negocios activos que devuelve el backend
+      // (antes se ocultaban los de plan free sin ventas en el período).
+      const rows = rep.rows;
       const coms = rows.map(r => parseFloat(r.ingresos||0) * (_R[r.plan]??0));
       const maxCom = Math.max(...coms, 1);
 
@@ -944,8 +944,8 @@ async function loadNegocios(){
     const _tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
     const _negLinks = {
       restaurante: [['Admin','/admin'],['POS','/pos'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
-      minimercado: [['Admin','/minimercado-admin.html'],['POS','/pos-minimercado.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
-      peluqueria:  [['Admin','/peluqueria-admin.html'],['POS','/pos-peluqueria.html'],['Reservas','/peluqueria-reservar.html'],['Portal','/portal-empleado.html']],
+      minimercado: [['Admin','/admin-minimercado.html'],['POS','/pos-minimercado.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
+      peluqueria:  [['Admin','/admin-peluqueria.html'],['POS','/pos-peluqueria.html'],['Reservas','/reservas-peluqueria.html'],['Portal','/portal-empleado.html']],
       bar:         [['Admin','/bar-admin.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
       veterinaria: [['Admin','/vet-admin.html']],
       taller:      [['Admin','/taller-admin.html']],
@@ -989,6 +989,16 @@ function toggleNegAcc(btn){
 }
 
 let editingNegocioId = null;
+const PAISES = {
+  CO: { moneda: 'COP', zona_horaria: 'America/Bogota' },
+  CR: { moneda: 'CRC', zona_horaria: 'America/Costa_Rica' },
+};
+function aplicarPaisNegocio(){
+  const p = PAISES[document.getElementById('neg-pais').value] || PAISES.CO;
+  document.getElementById('neg-moneda').value = p.moneda;
+  document.getElementById('neg-zona-horaria').value = p.zona_horaria;
+}
+
 function openNegocioModal(id){
   editingNegocioId = id;
   document.getElementById('neg-modal-title').textContent = id ? 'Editar negocio' : 'Nuevo negocio';
@@ -1001,16 +1011,17 @@ function openNegocioModal(id){
   document.getElementById('neg-dir').value     = n?.direccion    || '';
   document.getElementById('neg-email').value   = n?.email        || '';
   document.getElementById('neg-depto').value   = n?.departamento || '';
+  const paisPorMoneda = Object.keys(PAISES).find(k => PAISES[k].moneda === n?.moneda) || 'CO';
+  document.getElementById('neg-pais').value = paisPorMoneda;
+  aplicarPaisNegocio();
   const _colorTipo = { restaurante:'#e65c00', bar:'#7c1f3e', minimercado:'#0B8457',
     peluqueria:'#0B8457', veterinaria:'#0ea5e9', farmacia:'#dc2626',
     taller:'#374151', lavanderia:'#0284c7', gimnasio:'#7c3aed' };
   document.getElementById('neg-color').value  = n?.color_primario || _colorTipo[n?.tipo] || '#6c4ff6';
-  // Idiomas checkboxes
+  // Idioma mandarín (único adicional configurable)
   let selIdiomas = ['es'];
   try { selIdiomas = n?.idiomas ? JSON.parse(n.idiomas) : ['es']; } catch(_){}
-  document.querySelectorAll('input[name="neg-idioma"]').forEach(cb => {
-    cb.checked = selIdiomas.includes(cb.value);
-  });
+  document.getElementById('neg-idioma-zh').checked = selIdiomas.includes('zh');
   // Reset logo input
   document.getElementById('neg-logo-input').value = '';
   const prev = document.getElementById('neg-logo-preview');
@@ -1046,7 +1057,7 @@ function previewLogoNeg(input) {
 }
 
 async function saveNegocio(){
-  const idiomas = [...document.querySelectorAll('input[name="neg-idioma"]:checked')].map(cb => cb.value);
+  const idiomas = document.getElementById('neg-idioma-zh').checked ? ['es','zh'] : ['es'];
   const body = {
     nombre:       document.getElementById('neg-nombre').value.trim(),
     tipo:         document.getElementById('neg-tipo').value,
@@ -1058,6 +1069,8 @@ async function saveNegocio(){
     departamento:   document.getElementById('neg-depto').value || null,
     idiomas:        idiomas.length ? idiomas : ['es'],
     color_primario: document.getElementById('neg-color').value || '#6c4ff6',
+    moneda:         document.getElementById('neg-moneda').value || 'COP',
+    zona_horaria:   document.getElementById('neg-zona-horaria').value || 'America/Bogota',
   };
   try {
     let negId = editingNegocioId;
@@ -1210,7 +1223,7 @@ async function loadReportes(){
     document.getElementById('rep-comisiones').style.display = (d.totalIngresos||0) > 0 ? 'flex' : 'none';
     document.getElementById('rep-total-ven').textContent = d.totalVentas;
     document.getElementById('rep-con-ven').textContent   = d.conVentas;
-    const _rate={basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
+    const _rate={basic:0.09,plus:0.07,premium:0.05,personalizado:0.07};
     document.getElementById('rep-tbody').innerHTML = d.rows.map(r=>{
       const ing = parseFloat(r.ingresos)||0;
       const tasa = _rate[r.plan]||0;
@@ -1510,7 +1523,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.body.appendChild(s);
   function vis(){var a=document.querySelector('#app,#app-screen');return a&&(a.style.display==='flex'||a.style.display==='block'||a.classList.contains('visible'));}
   var sec=30;
-  setInterval(function(){s.style.display=vis()?'inline':'none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
+  setInterval(function(){s.style.display='none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
   window._arReset=function(){sec=30;s.style.background='var(--green-l,#d1fae5)';s.style.color='var(--green-d,#065f46)';s.style.borderColor='var(--green,#0B8457)';s.textContent='↺ actualizado';setTimeout(function(){s.style.background='';s.style.color='';s.style.borderColor='';s.textContent='↺ 30s';},900);};
 })();
 </script>

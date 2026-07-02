@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BunnyDJPOS — Iniciar sesión</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:system-ui,-apple-system,sans-serif;min-height:100vh;
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px
+}
+.brand-header{text-align:center;margin-bottom:28px}
+.brand-logo{
+  width:80px;height:80px;border-radius:18px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;font-size:38px;background:#0B8457
+}
+.brand-nombre{font-size:1.6rem;font-weight:800;color:#f1f5f9;letter-spacing:-.02em}
+.brand-sub{font-size:.85rem;color:#94a3b8;margin-top:4px;font-weight:500}
+
+.login-card{background:#fff;border-radius:18px;padding:28px 26px 22px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.2)}
+.login-title{font-size:.98rem;font-weight:700;color:#0f172a;margin-bottom:16px;text-align:center}
+.login-input{width:100%;padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.92rem;margin-bottom:10px;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;color:#0f172a;background:#fff}
+.login-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.login-btn{width:100%;padding:11px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .15s;margin-top:2px;font-family:inherit}
+.login-btn:hover{background:#4f46e5}
+.login-btn:disabled{background:#a5b4fc;cursor:not-allowed}
+.login-err{color:#ef4444;font-size:.8rem;text-align:center;margin-top:8px;min-height:16px}
+.forgot{display:block;width:100%;text-align:center;margin-top:14px;font-size:.78rem;color:#94a3b8;background:none;border:none;cursor:pointer;font-family:inherit}
+.forgot:hover{color:#e2e8f0}
+.fp-box{display:none;margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0}
+.fp-msg{font-size:.78rem;color:#64748b;margin-top:8px;text-align:center}
+.portal-footer{margin-top:28px;color:#475569;font-size:.72rem;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="brand-header">
+  <div class="brand-logo">🐰</div>
+  <div class="brand-nombre">BunnyDJPOS</div>
+  <div class="brand-sub">Ingresa con tu usuario o correo para entrar a tu negocio</div>
+</div>
+
+<div class="login-card">
+  <div class="login-title">🔐 Acceso para personal</div>
+  <input class="login-input" id="l-login" type="text" placeholder="Usuario o correo" autocomplete="username">
+  <input class="login-input" id="l-pass" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+  <button class="login-btn" id="btn-login" onclick="doLogin()">Ingresar</button>
+  <div class="login-err" id="login-error"></div>
+  <button class="forgot" onclick="toggleForgot()">¿Olvidaste tu contraseña?</button>
+
+  <div class="fp-box" id="fp-box">
+    <input class="login-input" id="fp-login" placeholder="Usuario o correo">
+    <button class="login-btn" onclick="forgotPassword()">Enviar</button>
+    <div class="fp-msg" id="fp-msg"></div>
+  </div>
+</div>
+
+<div class="portal-footer">Powered by BunnyDJPOS</div>
+
+<script>
+const API = '/api';
+
+document.getElementById('l-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// Mismas claves de sessionStorage que espera cada portal (igual que portal.html)
+const SS_KEYS = {
+  peluqueria:  { admin: 'pel_token',     pos: 'pos_pel_token' },
+  minimercado: { admin: 'bdj_adm_token', pos: 'mini_pos_tok'  },
+};
+function getKeys(t){ return SS_KEYS[t] || { admin: 'bdj_adm_token', pos: 'bdj_pos_token' }; }
+
+function guardarSesion(tipo, token, user){
+  if (tipo === 'peluqueria') {
+    sessionStorage.setItem('pel_token', token);
+    sessionStorage.setItem('pel_nombre', user.nombre || '');
+    sessionStorage.setItem('pel_rol', user.rol_nombre || '');
+    sessionStorage.setItem('pel_permisos', JSON.stringify(user.permisos || {}));
+    sessionStorage.setItem('pel_superadmin', user.es_superadmin ? '1' : '0');
+    sessionStorage.setItem('pel_negocio_id', user.negocio_id || '');
+    sessionStorage.setItem('pos_pel_token', token);
+    sessionStorage.setItem('pos_pel_user', user.nombre || '');
+    sessionStorage.setItem('pos_pel_rol', user.rol_nombre || '');
+  } else if (tipo === 'minimercado') {
+    sessionStorage.setItem('bdj_adm_token', token);
+    sessionStorage.setItem('mini_pos_tok', token);
+    sessionStorage.setItem('mini_pos_nombre', user.nombre || '');
+    sessionStorage.setItem('mini_pos_rol', user.rol_nombre || '');
+  } else {
+    sessionStorage.setItem('bdj_adm_token', token);
+    sessionStorage.setItem('bdj_pos_token', token);
+  }
+}
+
+async function doLogin() {
+  const login = document.getElementById('l-login').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!login || !pass) { errEl.textContent = 'Completa todos los campos'; return; }
+
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  try {
+    const r = await fetch(`${API}/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login, password: pass })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Credenciales incorrectas');
+
+    const { token, user } = d;
+
+    // Superadmin sin negocio propio → panel de superadministración
+    if (user.es_superadmin && !user.negocio_id) {
+      sessionStorage.setItem('bdj_token', token);
+      location.href = '/superadmin';
+      return;
+    }
+    if (!user.negocio_id) throw new Error('Tu usuario no tiene un negocio asignado');
+
+    // Determinar el tipo de negocio para guardar la sesión con las claves correctas
+    const neg = await fetch(`${API}/negocio-pub/${user.negocio_id}`).then(r => r.ok ? r.json() : null);
+    const tipo = neg?.tipo || 'restaurante';
+    guardarSesion(tipo, token, user);
+
+    // Redirige al portal propio del negocio (ya autenticado: portal.html detecta
+    // la sesión guardada y muestra directamente las tarjetas de Admin/POS)
+    location.href = `/portal.html?n=${user.negocio_id}`;
+  } catch (e) {
+    errEl.textContent = e.message;
+    btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+function toggleForgot() {
+  const box = document.getElementById('fp-box');
+  box.style.display = box.style.display === 'block' ? 'none' : 'block';
+}
+
+async function forgotPassword() {
+  const login = document.getElementById('fp-login').value.trim();
+  const msgEl = document.getElementById('fp-msg');
+  if (!login) { msgEl.textContent = 'Ingresa tu usuario o correo'; return; }
+  msgEl.textContent = 'Enviando…';
+  try {
+    const r = await fetch(`${API}/auth/forgot-password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login })
+    });
+    const d = await r.json();
+    msgEl.textContent = d.message || 'Si el usuario existe, se generó una contraseña temporal.';
+  } catch (e) {
+    msgEl.textContent = 'Error: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>

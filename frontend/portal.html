@@ -146,18 +146,18 @@ const TIPOS = {
   taller:'Taller', lavanderia:'Lavandería', gimnasio:'Gimnasio', farmacia:'Farmacia',
 };
 const ADMIN_URL = {
-  restaurante:'admin-restaurante.html', peluqueria:'peluqueria-admin.html',
-  minimercado:'minimercado-admin.html', bar:'admin-restaurante.html',
+  restaurante:'admin-restaurante.html', peluqueria:'admin-peluqueria.html',
+  minimercado:'admin-minimercado.html', bar:'admin-restaurante.html',
   veterinaria:'admin-restaurante.html', taller:'admin-restaurante.html',
   lavanderia:'admin-restaurante.html', gimnasio:'admin-restaurante.html',
   farmacia:'admin-restaurante.html',
 };
 const POS_URL = {
-  restaurante:'restaurante-pos.html', peluqueria:'pos-peluqueria.html',
-  minimercado:'pos-minimercado.html', bar:'restaurante-pos.html',
-  veterinaria:'restaurante-pos.html', taller:'restaurante-pos.html',
-  lavanderia:'restaurante-pos.html', gimnasio:'restaurante-pos.html',
-  farmacia:'restaurante-pos.html',
+  restaurante:'pos-restaurante.html', peluqueria:'pos-peluqueria.html',
+  minimercado:'pos-minimercado.html', bar:'pos-restaurante.html',
+  veterinaria:'pos-restaurante.html', taller:'pos-restaurante.html',
+  lavanderia:'pos-restaurante.html', gimnasio:'pos-restaurante.html',
+  farmacia:'pos-restaurante.html',
 };
 
 // Claves de sessionStorage que usa cada portal
@@ -246,7 +246,7 @@ function mostrarTarjetasAdmin(user){
   }
 
   accesos.push({
-    url:   (POS_URL[tipo]||'restaurante-pos.html')+'?n='+nid,
+    url:   (POS_URL[tipo]||'pos-restaurante.html')+'?n='+nid,
     clase: 'pos', icon:'🛒',
     title: 'Punto de Venta',
     desc:  'Registrar ventas y cobros',
@@ -371,7 +371,7 @@ async function init(){
     if(_tipo === 'peluqueria'){
       $('public-section').style.display = 'flex';
       $('public-cards').innerHTML = `
-        <a href="peluqueria-reservar.html?n=${nid}" class="card card-reservar">
+        <a href="reservas-peluqueria.html?n=${nid}" class="card card-reservar">
           <div class="card-icon">📅</div>
           <div class="card-title">Reservas en línea</div>
           <div class="card-desc">Agenda de citas para clientes</div>

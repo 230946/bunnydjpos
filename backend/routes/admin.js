@@ -7,10 +7,18 @@ const { v4: uuid } = require('uuid');
 const { pool, ph } = require('../db');
 const { authMiddleware, requirePermiso } = require('../middleware/auth');
 const { enviarFactura } = require('../mailer');
+const multer = require('multer');
+const path = require('path');
+
+const empFotoStorage = multer.diskStorage({
+  destination: process.env.UPLOADS_DIR || './uploads',
+  filename: (_, file, cb) => cb(null, 'empleado-' + uuid() + path.extname(file.originalname))
+});
+const uploadEmpFoto = multer({ storage: empFotoStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
-const localDate = () => { const d = new Date(Date.now() - 5*60*60*1000); return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; };
+const localDate = (tz = 'America/Bogota') => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 
 // Todos los endpoints de admin requieren negocio_id en el token
 router.use((req, res, next) => {
@@ -61,8 +69,8 @@ router.delete('/gastos/categorias/:id', requirePermiso('gastos'), async (req, re
 router.get('/gastos', async (req, res) => {
   try {
     const { desde, hasta, categoria_id } = req.query;
-    const d = desde || localDate();
-    const h = hasta  || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
+    const h = hasta  || localDate(req.user.zona_horaria);
     let sql = `
       SELECT g.*, gc.nombre AS categoria_nombre, gc.color AS categoria_color,
              u.nombre AS usuario_nombre
@@ -88,13 +96,13 @@ router.post('/gastos', requirePermiso('gastos'), async (req, res) => {
       `INSERT INTO gastos (id,negocio_id,usuario_id,categoria_id,descripcion,monto,metodo_pago,fecha,comprobante)
        VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)})`,
       [id, nid(req), req.user.id, categoria_id||null, descripcion, monto,
-       metodo_pago||'efectivo', fecha||localDate(), comprobante||null]
+       metodo_pago||'efectivo', fecha||localDate(req.user.zona_horaria), comprobante||null]
     );
     // Actualizar total_gastos de la caja del usuario que registra el gasto
     await pool.query(
       `UPDATE cajas SET total_gastos = total_gastos + ${ph(1)}
-       WHERE negocio_id=${ph(2)} AND usuario_id=${ph(3)} AND estado='abierta' AND fecha=CURRENT_DATE`,
-      [monto, nid(req), req.user.id]
+       WHERE negocio_id=${ph(2)} AND usuario_id=${ph(3)} AND estado='abierta' AND fecha=${ph(4)}`,
+      [monto, nid(req), req.user.id, localDate(req.user.zona_horaria)]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -124,7 +132,7 @@ router.delete('/gastos/:id', requirePermiso('gastos'), async (req, res) => {
 router.get('/gastos/resumen', async (req, res) => {
   try {
     const { desde, hasta } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     const { rows } = await pool.query(`
       SELECT gc.nombre AS categoria, gc.color, SUM(g.monto) AS total, COUNT(*) AS cantidad
@@ -144,7 +152,7 @@ router.get('/gastos/resumen', async (req, res) => {
 router.get('/caja', async (req, res) => {
   try {
     const { fecha } = req.query;
-    const f = fecha || localDate();
+    const f = fecha || localDate(req.user.zona_horaria);
     // Cerrar cajas de días anteriores que quedaron abiertas
     if (!fecha) {
       await pool.query(
@@ -167,7 +175,7 @@ router.get('/caja', async (req, res) => {
 router.get('/caja/resumen', async (req, res) => {
   try {
     const { fecha } = req.query;
-    const f = fecha || localDate();
+    const f = fecha || localDate(req.user.zona_horaria);
     const { rows } = await pool.query(
       `SELECT c.*, u.nombre AS usuario_nombre
        FROM cajas c LEFT JOIN usuarios u ON u.id = c.usuario_id
@@ -195,7 +203,7 @@ router.get('/caja/historial', async (req, res) => {
 router.post('/caja/abrir', async (req, res) => {
   try {
     const { monto_apertura } = req.body;
-    const fecha = localDate();
+    const fecha = localDate(req.user.zona_horaria);
     // Cerrar automáticamente cajas de días anteriores que quedaron abiertas
     await pool.query(
       `UPDATE cajas SET estado='cerrada', cierre_en=NOW()
@@ -224,7 +232,7 @@ router.post('/caja/abrir', async (req, res) => {
 // Reabrir caja cerrada del mismo usuario (cambio de turno)
 router.post('/caja/reabrir', async (req, res) => {
   try {
-    const fecha = localDate();
+    const fecha = localDate(req.user.zona_horaria);
     const { monto_apertura } = req.body || {};
     const { rows } = await pool.query(
       `SELECT id FROM cajas WHERE negocio_id=${ph(1)} AND fecha=${ph(2)} AND usuario_id=${ph(3)} AND estado='cerrada'`,
@@ -245,7 +253,7 @@ router.post('/caja/reabrir', async (req, res) => {
 router.post('/caja/cerrar', async (req, res) => {
   try {
     const { monto_cierre, notas } = req.body;
-    const fecha = localDate();
+    const fecha = localDate(req.user.zona_horaria);
     // Solo ventas procesadas por este cajero
     const { rows: ventas } = await pool.query(`
       SELECT
@@ -416,7 +424,7 @@ router.put('/pedidos-proveedor/:id/estado', requirePermiso('proveedores'), async
 router.get('/reportes/resumen', async (req, res) => {
   try {
     const { desde, hasta, tipo } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     let vSql = `
         SELECT COUNT(v.id) AS pedidos,
@@ -473,7 +481,7 @@ router.get('/reportes/resumen', async (req, res) => {
 router.get('/reportes/ventas-por-hora', async (req, res) => {
   try {
     const { desde, hasta, metodo_pago, tipo } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta || d;
     let sql = `SELECT HOUR(v.creado) AS hora, COUNT(*) AS pedidos, COALESCE(SUM(v.total),0) AS total
                FROM (
@@ -495,12 +503,8 @@ router.get('/reportes/ventas-por-hora', async (req, res) => {
 router.get('/reportes/ventas-por-dia', async (req, res) => {
   try {
     const { desde, hasta } = req.query;
-    const h = hasta || localDate();
-    const d = desde || (() => {
-      const dd = new Date(Date.now() - 5*60*60*1000);
-      dd.setUTCDate(dd.getUTCDate() - 6);
-      return `${dd.getUTCFullYear()}-${String(dd.getUTCMonth()+1).padStart(2,'0')}-${String(dd.getUTCDate()).padStart(2,'0')}`;
-    })();
+    const h = hasta || localDate(req.user.zona_horaria);
+    const d = desde || new Intl.DateTimeFormat('en-CA', { timeZone: req.user.zona_horaria, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(Date.now() - 6*86400000));
     const { rows } = await pool.query(
       `SELECT DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(v.total),0) AS total
        FROM (
@@ -520,7 +524,7 @@ router.get('/reportes/ventas-por-dia', async (req, res) => {
 router.get('/ventas/recientes', async (req, res) => {
   try {
     const { tipo, desde, hasta } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     let sql = `
       SELECT v.id, v.tipo, v.mesa_id, v.mesa_num,
@@ -546,7 +550,7 @@ router.get('/ventas/recientes', async (req, res) => {
 router.get('/ventas', async (req, res) => {
   try {
     const { desde, hasta, metodo_pago, tipo } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     let sql = `
       SELECT v.id, DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') AS fecha,
@@ -579,7 +583,7 @@ router.get('/ventas', async (req, res) => {
 router.get('/empleados', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, nombre, documento, celular, rol, activo, created_at FROM empleados
+      `SELECT id, nombre, documento, celular, rol, activo, created_at, foto_url, vehiculo, placa, color_vehiculo FROM empleados
        WHERE negocio_id=? ORDER BY nombre`,
       [nid(req)]
     );
@@ -589,15 +593,15 @@ router.get('/empleados', async (req, res) => {
 
 router.post('/empleados', async (req, res) => {
   try {
-    const { nombre, documento, celular, rol = 'domiciliario' } = req.body;
+    const { nombre, documento, celular, rol = 'domiciliario', vehiculo, placa, color_vehiculo } = req.body;
     if (!nombre || !documento || !celular) return res.status(400).json({ error: 'Nombre, documento y celular son requeridos' });
     const id    = uuid();
     const token = uuid().replace(/-/g,'') + uuid().replace(/-/g,'').slice(0,8);
     const cel   = String(celular).replace(/[\s\-()]/g, '');
     await pool.query(
-      `INSERT INTO empleados (id, negocio_id, nombre, documento, celular, rol, token)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)})`,
-      [id, nid(req), nombre.trim(), documento.trim(), cel, rol, token]
+      `INSERT INTO empleados (id, negocio_id, nombre, documento, celular, rol, token, vehiculo, placa, color_vehiculo)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)})`,
+      [id, nid(req), nombre.trim(), documento.trim(), cel, rol, token, vehiculo||null, placa||null, color_vehiculo||null]
     );
     res.status(201).json({ ok: true, id });
   } catch (e) {
@@ -608,15 +612,26 @@ router.post('/empleados', async (req, res) => {
 
 router.put('/empleados/:id', async (req, res) => {
   try {
-    const { nombre, documento, celular, rol, activo } = req.body;
+    const { nombre, documento, celular, rol, activo, vehiculo, placa, color_vehiculo } = req.body;
     const cel = celular ? String(celular).replace(/[\s\-()]/g, '') : null;
     await pool.query(
       `UPDATE empleados SET nombre=COALESCE(?,nombre), documento=COALESCE(?,documento),
-       celular=COALESCE(?,celular), rol=COALESCE(?,rol), activo=COALESCE(?,activo)
+       celular=COALESCE(?,celular), rol=COALESCE(?,rol), activo=COALESCE(?,activo),
+       vehiculo=?, placa=?, color_vehiculo=?
        WHERE id=? AND negocio_id=?`,
-      [nombre||null, documento||null, cel||null, rol||null, activo!=null?activo:null, req.params.id, nid(req)]
+      [nombre||null, documento||null, cel||null, rol||null, activo!=null?activo:null,
+       vehiculo||null, placa||null, color_vehiculo||null, req.params.id, nid(req)]
     );
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/empleados/:id/foto', uploadEmpFoto.single('foto'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+    const url = `/uploads/${req.file.filename}`;
+    await pool.query(`UPDATE empleados SET foto_url=? WHERE id=? AND negocio_id=?`, [url, req.params.id, nid(req)]);
+    res.json({ url });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -699,7 +714,7 @@ router.post('/menu/auto-link-inventario', requirePermiso('inventario'), async (r
 router.get('/facturas', async (req, res) => {
   try {
     const { desde, hasta, q } = req.query;
-    const d = desde || localDate();
+    const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     const params = [nid(req), d, h];
     let where = `v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
@@ -772,7 +787,7 @@ router.post('/facturas/:id/email', async (req, res) => {
     );
     const cf = cfRows[0] ? (typeof cfRows[0].datos === 'string' ? JSON.parse(cfRows[0].datos) : cfRows[0].datos) : {};
 
-    await enviarFactura({ to: email, v, cf });
+    await enviarFactura({ to: email, v, cf, moneda: req.user.moneda });
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

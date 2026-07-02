@@ -134,15 +134,16 @@ Para editar: `nano ~/bunnydjpos/backend/.env`
 
 | Página | URL |
 |--------|-----|
+| Login principal | `http://34.63.16.136/` |
 | Portal de acceso | `http://34.63.16.136/portal.html?n=ID_NEGOCIO` |
 | Superadmin | `http://34.63.16.136/superadmin.html` |
 | Admin restaurante | `http://34.63.16.136/admin-restaurante.html?n=ID` |
-| POS restaurante | `http://34.63.16.136/restaurante-pos.html?n=ID` |
-| Admin peluquería | `http://34.63.16.136/peluqueria-admin.html?n=ID` |
+| POS restaurante | `http://34.63.16.136/pos-restaurante.html?n=ID` |
+| Admin peluquería | `http://34.63.16.136/admin-peluqueria.html?n=ID` |
 | POS peluquería | `http://34.63.16.136/pos-peluqueria.html?n=ID` |
-| Admin minimercado | `http://34.63.16.136/minimercado-admin.html?n=ID` |
+| Admin minimercado | `http://34.63.16.136/admin-minimercado.html?n=ID` |
 | POS minimercado | `http://34.63.16.136/pos-minimercado.html?n=ID` |
-| Reservas peluquería | `http://34.63.16.136/peluqueria-reservar.html?n=ID` |
+| Reservas peluquería | `http://34.63.16.136/reservas-peluqueria.html?n=ID` |
 | Portal empleado | `http://34.63.16.136/portal-empleado.html?n=ID` |
 | Health check | `http://34.63.16.136/api/health` |
 

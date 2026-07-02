@@ -377,6 +377,15 @@ body{display:flex;flex-direction:column;min-height:100vh}
   <div class="track-id" id="tr-id"></div>
   <div class="track-title" id="tr-title">Pedido recibido</div>
   <div class="track-sub" id="tr-sub">Estamos procesando tu pedido</div>
+  <div id="rider-card" style="display:none;margin:14px 0;background:var(--bg2);border-radius:14px;padding:12px 14px;text-align:left;align-items:center;gap:12px">
+    <img id="rider-card-foto" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;display:none">
+    <span id="rider-card-emoji" style="font-size:40px;flex-shrink:0">🛵</span>
+    <div style="min-width:0">
+      <div style="font-size:11px;color:var(--text2)">Tu domiciliario</div>
+      <div id="rider-card-nombre" style="font-size:15px;font-weight:700"></div>
+      <div id="rider-card-vehiculo" style="font-size:12px;color:var(--text2);margin-top:2px"></div>
+    </div>
+  </div>
   <div id="rider-map-wrap" style="display:none;margin:14px 0">
     <div style="font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600">📍 Ubicación de tu repartidor</div>
     <div id="rider-map" style="height:200px;border-radius:14px;overflow:hidden;border:1.5px solid var(--border)"></div>
@@ -467,6 +476,8 @@ const params = new URLSearchParams(location.search);
 const NEG_ID = params.get('n') || params.get('negocio');
 
 let negocio = null;
+let NEG_MONEDA = 'COP';
+const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
 let productos = [];
 let cart = {}; // id → {item, qty}
 let metodoPago = 'efectivo';
@@ -529,6 +540,7 @@ async function init() {
     const data = await r.json();
     negocio = data.negocio;
     productos = data.productos || [];
+    NEG_MONEDA = negocio.moneda || 'COP';
 
     applyColor(negocio.color_primario);
     document.title = negocio.nombre + ' — Domicilios';
@@ -855,8 +867,23 @@ async function refreshTracking(idOverride) {
     const info = ESTADOS[p.estado] || ESTADOS.pendiente;
     document.getElementById('tr-icon').textContent  = info.icon;
     document.getElementById('tr-title').textContent = info.title;
-    document.getElementById('tr-sub').textContent   = info.sub + (p.rider_nombre ? ` Domiciliario: ${p.rider_nombre}.` : '');
+    document.getElementById('tr-sub').textContent   = info.sub;
     document.getElementById('tr-id').textContent    = 'Pedido #' + id.slice(0,8).toUpperCase();
+
+    // Tarjeta del domiciliario asignado
+    const riderCard = document.getElementById('rider-card');
+    if (p.rider_nombre) {
+      riderCard.style.display = 'flex';
+      document.getElementById('rider-card-nombre').textContent = p.rider_nombre;
+      const fotoEl = document.getElementById('rider-card-foto');
+      const emojiEl = document.getElementById('rider-card-emoji');
+      if (p.rider_foto) { fotoEl.src = p.rider_foto; fotoEl.style.display = 'block'; emojiEl.style.display = 'none'; }
+      else { fotoEl.style.display = 'none'; emojiEl.style.display = 'block'; }
+      const VEH_LABELS = { moto: `🏍️ Placa: ${p.rider_placa||'—'}`, bicicleta: `🚲 Bicicleta ${p.rider_color_vehiculo||''}`, a_pie: '🚶 A pie' };
+      document.getElementById('rider-card-vehiculo').textContent = VEH_LABELS[p.rider_vehiculo] || '';
+    } else {
+      riderCard.style.display = 'none';
+    }
 
     // Stepper
     const stepIdx = PASOS.indexOf(p.estado);
@@ -1085,7 +1112,7 @@ function cambiarNumero() {
 
 // ── Utils ─────────────────────────────────────────────────────────
 function fmtCOP(n) {
-  return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n);
+  return new Intl.NumberFormat(MONEDA_LOCALE[NEG_MONEDA]||'es-CO',{style:'currency',currency:NEG_MONEDA,minimumFractionDigits:0}).format(n);
 }
 
 let toastTimer;

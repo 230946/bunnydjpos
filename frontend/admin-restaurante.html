@@ -391,7 +391,7 @@ tr:hover td{background:var(--bg2)}
             <input type="date" id="dash-hasta" style="border:none;background:transparent;color:var(--text);font-size:12px;outline:none;cursor:pointer;font-family:inherit">
           </div>
           <button onclick="loadDashboard()" style="background:var(--accent,#0B8457);color:#fff;border:none;border-radius:30px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;box-shadow:0 2px 6px rgba(11,132,87,.3)">Consultar</button>
-          <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <div style="margin-left:auto;display:none;align-items:center;gap:10px">
             <span class="live-badge"><span class="live-dot"></span><span id="dash-live-lbl">En vivo</span></span>
             <span class="live-update" id="dash-updated"></span>
           </div>
@@ -660,7 +660,7 @@ tr:hover td{background:var(--bg2)}
         <div class="card">
           <div class="card-header">
             <h3>📦 Inventario actual</h3>
-            <span id="r-inv-actualizado" style="font-size:11px;color:var(--text2)"></span>
+            <span id="r-inv-actualizado" style="display:none;font-size:11px;color:var(--text2)"></span>
           </div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:0.5px solid var(--border)">
             <div style="padding:10px 14px;border-right:0.5px solid var(--border);text-align:center">
@@ -859,7 +859,7 @@ tr:hover td{background:var(--bg2)}
             <div class="field"><label>Celular *</label><input id="dom-cel" type="tel" inputmode="numeric" placeholder="3001234567" maxlength="15"></div>
             <div class="field">
               <label>Rol</label>
-              <select id="dom-rol" style="width:100%;padding:9px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px">
+              <select id="dom-rol" onchange="toggleDomRolFields()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px">
                 <option value="domiciliario">🛵 Domiciliario</option>
                 <option value="cajero">💰 Cajero</option>
                 <option value="cocina">👨‍🍳 Cocina</option>
@@ -872,6 +872,34 @@ tr:hover td{background:var(--bg2)}
                 <option value="1">✅ Activo</option>
                 <option value="0">⛔ Inactivo</option>
               </select>
+            </div>
+            <div class="field" style="grid-column:1/-1" id="dom-foto-wrap">
+              <label>Foto</label>
+              <div style="display:flex;align-items:center;gap:14px">
+                <div id="dom-foto-preview" onclick="document.getElementById('dom-foto-input').click()" title="Clic para subir foto"
+                  style="width:64px;height:64px;border-radius:50%;border:1.5px dashed var(--border2);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0">
+                  <span id="dom-foto-placeholder" style="font-size:22px;color:var(--text3)">🧑</span>
+                </div>
+                <div style="font-size:12px;color:var(--text2)">Clic en el círculo para subir una foto (JPG/PNG, máx. 5MB). Aparece en su app y para el cliente cuando toma el domicilio.</div>
+              </div>
+              <input type="file" id="dom-foto-input" accept="image/*" style="display:none" onchange="previewFotoDom(this)">
+            </div>
+            <div class="field" id="dom-vehiculo-wrap">
+              <label>Vehículo</label>
+              <select id="dom-vehiculo" onchange="toggleVehiculoField()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px">
+                <option value="">Sin especificar</option>
+                <option value="moto">🏍️ Moto</option>
+                <option value="bicicleta">🚲 Bicicleta</option>
+                <option value="a_pie">🚶 A pie</option>
+              </select>
+            </div>
+            <div class="field" id="dom-placa-wrap" style="display:none">
+              <label>Placa</label>
+              <input id="dom-placa" placeholder="ABC-123" maxlength="20">
+            </div>
+            <div class="field" id="dom-color-wrap" style="display:none">
+              <label>Color de la bicicleta</label>
+              <input id="dom-color" placeholder="Azul" maxlength="40">
             </div>
           </div>
           <div class="modal-actions">
@@ -1553,7 +1581,10 @@ async function api(path, opts={}) {
   if (!r.ok) throw new Error(d.error||'Error');
   return d;
 }
-function fmt(n){ return '$'+(Math.round(n)||0).toLocaleString('es-CO'); }
+let NEG_MONEDA = 'COP';
+const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
+const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
+function fmt(n){ return (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO'); }
 function fmtDate(s){ return s?new Date(s+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
 function fmtTime(s){ return s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—'; }
 function openModal(id){ document.getElementById(id).style.display='flex'; }
@@ -1607,7 +1638,7 @@ async function forgotPassword(){
 function _abrirPortal(tipo) {
   const nid = urlNegocio;
   if (!nid) { alert('No se encontró el ID del negocio'); return; }
-  const urls = { pos: `/restaurante-pos.html?n=${nid}`, domicilios: `/domicilios?n=${nid}`, domiciliario: `/domiciliario?n=${nid}` };
+  const urls = { pos: `/pos-restaurante.html?n=${nid}`, domicilios: `/domicilios?n=${nid}`, domiciliario: `/domiciliario?n=${nid}` };
   window.open(urls[tipo] || '/', '_blank');
 }
 function toggleNavGroup(seccion){
@@ -1702,7 +1733,7 @@ function doLogout(){
 }
 
 // ─── Contrato ────────────────────────────────────────────────
-const _PLAN_RATES  = {free:0,basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
+const _PLAN_RATES  = {free:0,basic:0.09,plus:0.07,premium:0.05,personalizado:0.07};
 const _PLAN_LABELS = {free:'Free (demo)',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
 const _PLAN_COLORS = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
 let _comChart = null;
@@ -1763,6 +1794,7 @@ async function checkContrato(negocioId){
     if(!r.ok) return;
     const d=await r.json();
     window._negPlan = d.plan || 'free';
+    NEG_MONEDA = d.moneda || 'COP';
     updatePlanComCard(0);
     try{
       const idiomas=d.idiomas?(typeof d.idiomas==='string'?JSON.parse(d.idiomas):d.idiomas):['es'];
@@ -3089,6 +3121,38 @@ async function loadDomiciliarios(){
   } catch(e){ showToast('Error cargando domiciliarios: '+e.message); }
 }
 
+function toggleVehiculoField(){
+  const v = document.getElementById('dom-vehiculo').value;
+  document.getElementById('dom-placa-wrap').style.display = v==='moto' ? '' : 'none';
+  document.getElementById('dom-color-wrap').style.display = v==='bicicleta' ? '' : 'none';
+}
+
+function toggleDomRolFields(){
+  const esRider = document.getElementById('dom-rol').value === 'domiciliario';
+  document.getElementById('dom-foto-wrap').style.display = esRider ? '' : 'none';
+  document.getElementById('dom-vehiculo-wrap').style.display = esRider ? '' : 'none';
+  if(!esRider){
+    document.getElementById('dom-placa-wrap').style.display = 'none';
+    document.getElementById('dom-color-wrap').style.display = 'none';
+  } else {
+    toggleVehiculoField();
+  }
+}
+
+function previewFotoDom(input){
+  if(!input.files?.[0]) return;
+  const prev = document.getElementById('dom-foto-preview');
+  const ph   = document.getElementById('dom-foto-placeholder');
+  ph.style.display = 'none';
+  const existImg = prev.querySelector('img.dom-foto-img');
+  if(existImg) existImg.remove();
+  const img = document.createElement('img');
+  img.className = 'dom-foto-img';
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+  img.src = URL.createObjectURL(input.files[0]);
+  prev.appendChild(img);
+}
+
 function openDomiciliarioModal(emp){
   document.getElementById('dom-id').value     = emp?.id||'';
   document.getElementById('dom-nombre').value = emp?.nombre||'';
@@ -3096,21 +3160,58 @@ function openDomiciliarioModal(emp){
   document.getElementById('dom-cel').value    = emp?.celular||'';
   document.getElementById('dom-rol').value    = emp?.rol||'domiciliario';
   document.getElementById('dom-activo').value = emp?.activo!=null ? String(emp.activo) : '1';
+  document.getElementById('dom-vehiculo').value = emp?.vehiculo||'';
+  document.getElementById('dom-placa').value    = emp?.placa||'';
+  document.getElementById('dom-color').value    = emp?.color_vehiculo||'';
+  document.getElementById('dom-foto-input').value = '';
+  const prev = document.getElementById('dom-foto-preview');
+  const ph   = document.getElementById('dom-foto-placeholder');
+  const existImg = prev.querySelector('img.dom-foto-img');
+  if(existImg) existImg.remove();
+  if(emp?.foto_url){
+    ph.style.display = 'none';
+    const img = document.createElement('img');
+    img.className = 'dom-foto-img';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    img.src = emp.foto_url;
+    prev.appendChild(img);
+  } else {
+    ph.style.display = '';
+  }
+  toggleDomRolFields();
   document.getElementById('dom-modal-title').textContent = emp ? 'Editar empleado' : 'Nuevo domiciliario';
   openModal('modal-domiciliario');
 }
 
 async function saveDomiciliario(){
-  const id      = document.getElementById('dom-id').value;
-  const nombre  = document.getElementById('dom-nombre').value.trim();
-  const doc     = document.getElementById('dom-doc').value.trim();
-  const cel     = document.getElementById('dom-cel').value.trim();
-  const rol     = document.getElementById('dom-rol').value;
-  const activo  = parseInt(document.getElementById('dom-activo').value);
+  const id       = document.getElementById('dom-id').value;
+  const nombre   = document.getElementById('dom-nombre').value.trim();
+  const doc      = document.getElementById('dom-doc').value.trim();
+  const cel      = document.getElementById('dom-cel').value.trim();
+  const rol      = document.getElementById('dom-rol').value;
+  const activo   = parseInt(document.getElementById('dom-activo').value);
+  const vehiculo = document.getElementById('dom-vehiculo').value || null;
+  const placa    = vehiculo==='moto' ? document.getElementById('dom-placa').value.trim() || null : null;
+  const color_vehiculo = vehiculo==='bicicleta' ? document.getElementById('dom-color').value.trim() || null : null;
   if(!nombre||!doc||!cel){ showToast('Nombre, documento y celular son requeridos'); return; }
   try {
-    if(id) await api(`/admin/empleados/${id}`,{method:'PUT',body:JSON.stringify({nombre,documento:doc,celular:cel,rol,activo})});
-    else   await api('/admin/empleados',{method:'POST',body:JSON.stringify({nombre,documento:doc,celular:cel,rol,activo})});
+    const body = { nombre, documento:doc, celular:cel, rol, activo, vehiculo, placa, color_vehiculo };
+    let empId = id;
+    if(id) await api(`/admin/empleados/${id}`,{method:'PUT',body:JSON.stringify(body)});
+    else { const res = await api('/admin/empleados',{method:'POST',body:JSON.stringify(body)}); empId = res.id; }
+
+    const fotoFile = document.getElementById('dom-foto-input').files?.[0];
+    if(fotoFile && empId){
+      const fd = new FormData();
+      fd.append('foto', fotoFile);
+      const uploadRes = await fetch(`/api/admin/empleados/${empId}/foto`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd
+      });
+      if(!uploadRes.ok) console.warn('Foto upload failed', await uploadRes.text());
+    }
+
     closeModal('modal-domiciliario');
     showToast('✅ Guardado');
     loadDomiciliarios();
@@ -4428,7 +4529,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.body.appendChild(s);
   function vis(){var a=document.querySelector('#app,#app-screen');return a&&(a.style.display==='flex'||a.style.display==='block'||a.classList.contains('visible'));}
   var sec=30;
-  setInterval(function(){s.style.display=vis()?'inline':'none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
+  setInterval(function(){s.style.display='none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
   window._arReset=function(){sec=30;s.style.background='var(--green-l,#d1fae5)';s.style.color='var(--green-d,#065f46)';s.style.borderColor='var(--green,#0B8457)';s.textContent='↺ actualizado';setTimeout(function(){s.style.background='';s.style.color='';s.style.borderColor='';s.textContent='↺ 30s';},900);};
 })();
 </script>

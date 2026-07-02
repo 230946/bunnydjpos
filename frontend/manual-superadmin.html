@@ -167,10 +167,11 @@ tr:hover td{background:var(--bg2)}
       <div class="cards">
         <div class="card"><div class="card-icon">🏪</div><h4>Total negocios</h4><p>Cantidad de negocios registrados en el sistema</p></div>
         <div class="card"><div class="card-icon">✅</div><h4>Negocios activos</h4><p>Negocios con contrato vigente y acceso habilitado</p></div>
-        <div class="card"><div class="card-icon">💰</div><h4>Ingresos del mes</h4><p>Suma de ventas de todos los negocios en el mes actual</p></div>
+        <div class="card"><div class="card-icon">💰</div><h4>Ingresos plataforma</h4><p>Suma de ventas de todos los negocios activos en el mes actual (no es lo que gana BunnyDJPOS, sino el total vendido por tus clientes)</p></div>
         <div class="card"><div class="card-icon">📄</div><h4>Contratos próximos</h4><p>Contratos que vencen en los próximos 30 días</p></div>
       </div>
       <div class="alert alert-tip" style="margin-top:16px">💡 <span>Los contratos por vencer aparecen en la parte inferior del dashboard. Haz clic en <strong>Ver todos</strong> para ir al módulo de Contratos.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Debajo del monto de "Ingresos plataforma" se muestra la <strong>Comisión BunnyDJ</strong> — esa sí es tu ingreso real como plataforma, calculado según el plan de cada negocio (ver sección <strong>Planes</strong>). La tarjeta <strong>Comisión por negocio</strong> lista a <strong>todos</strong> los negocios activos, tengan o no ventas en el período.</span></div>
     </div>
 
     <!-- NEGOCIOS -->
@@ -189,6 +190,8 @@ tr:hover td{background:var(--bg2)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "＋ Nuevo negocio"</strong><p>Botón ubicado en la parte superior derecha del panel.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Completa los datos</strong><p>Nombre del negocio, tipo (restaurante, peluquería, minimercado), dirección y teléfono.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el tipo</strong><p>El tipo determina qué módulos POS tendrá disponibles el negocio.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>País (moneda y zona horaria)</strong><p>Elige el país del negocio — fija automáticamente su moneda (ej. COP, CRC) y zona horaria para que caja y reportes calculen "hoy" correctamente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Idioma mandarín (opcional)</strong><p>El negocio siempre usa español. Activa la casilla "Habilitar 中文 (Mandarín)" solo si ese negocio necesita menú/interfaz también en mandarín.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Guardar</strong><p>El negocio queda creado con estado <span class="tag tag-amber">pendiente</span> hasta que se le asigne un contrato.</p></div></div>
       </div>
 
@@ -291,6 +294,18 @@ tr:hover td{background:var(--bg2)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar a contrato</strong><p>Al crear un contrato, selecciona el plan correspondiente.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Actualizar precio</strong><p>Puedes editar el precio del plan — los contratos existentes no se modifican automáticamente.</p></div></div>
       </div>
+      <h3 style="font-size:14px;margin:16px 0 10px">Comisión de BunnyDJPOS por plan</h3>
+      <p style="color:var(--text2);margin-bottom:10px">Además del precio fijo del plan, el sistema calcula una comisión sobre las ventas del negocio, según su plan:</p>
+      <table>
+        <thead><tr><th>Plan</th><th>Comisión sobre ventas</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag" style="background:#9e9e9e1a;color:#9e9e9e">Free (demo)</span></td><td>0% — sin comisión, solo para pruebas</td></tr>
+          <tr><td><span class="tag" style="background:#1976d21a;color:#1976d2">Basic</span></td><td>9%</td></tr>
+          <tr><td><span class="tag" style="background:#e65c001a;color:#e65c00">Plus</span></td><td>7%</td></tr>
+          <tr><td><span class="tag" style="background:#7b1fa21a;color:#7b1fa2">Premium</span></td><td>5%</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Esta comisión es la que se muestra como <strong>Comisión BunnyDJ</strong> en el Dashboard y en Facturación — se calcula automáticamente, no requiere configuración adicional.</span></div>
     </div>
 
     <!-- CONTRATOS -->

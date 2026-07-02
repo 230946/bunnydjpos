@@ -390,7 +390,7 @@ tr:hover td{background:var(--bg2)}
             <input type="date" id="dash-hasta" style="border:none;background:transparent;color:var(--text);font-size:12px;outline:none;cursor:pointer;font-family:inherit">
           </div>
           <button onclick="loadDashboard()" style="background:var(--accent,#0B8457);color:#fff;border:none;border-radius:30px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;box-shadow:0 2px 6px rgba(11,132,87,.3)">Consultar</button>
-          <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <div style="margin-left:auto;display:none;align-items:center;gap:10px">
             <span class="live-badge"><span class="live-dot"></span><span id="dash-live-lbl">En vivo</span></span>
             <span class="live-update" id="dash-updated"></span>
           </div>
@@ -626,7 +626,7 @@ tr:hover td{background:var(--bg2)}
           <div class="card-header">
             <h3>📦 Inventario actual</h3>
             <div class="card-header-actions">
-              <span id="r-inv-actualizado" style="font-size:11px;color:var(--text2)"></span>
+              <span id="r-inv-actualizado" style="display:none;font-size:11px;color:var(--text2)"></span>
             </div>
           </div>
           <!-- Mini stats -->
@@ -1571,7 +1571,10 @@ async function api(path, opts={}) {
   if (!r.ok) throw new Error(d.error||'Error');
   return d;
 }
-function fmt(n){ return '$'+(Math.round(n)||0).toLocaleString('es-CO'); }
+let NEG_MONEDA = 'COP';
+const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
+const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
+function fmt(n){ return (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO'); }
 function fmtDate(s){ return s?new Date(s+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
 function fmtTime(s){ return s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—'; }
 function closeModal(id){ document.getElementById(id).style.display='none'; }
@@ -1719,7 +1722,7 @@ function doLogout(){
 }
 
 // ─── Contrato ────────────────────────────────────────────────
-const _PLAN_RATES  = {free:0,basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
+const _PLAN_RATES  = {free:0,basic:0.09,plus:0.07,premium:0.05,personalizado:0.07};
 const _PLAN_LABELS = {free:'Free (demo)',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
 const _PLAN_COLORS = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
 let _comChart = null;
@@ -1767,6 +1770,7 @@ async function checkContrato(negocioId){
     if(!r.ok) return;
     const d=await r.json();
     window._negPlan = d.plan || 'free';
+    NEG_MONEDA = d.moneda || 'COP';
     updatePlanComCard(0);
     // Idiomas del negocio → activar selector
     try{
@@ -4197,7 +4201,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.body.appendChild(s);
   function vis(){var a=document.querySelector('#app,#app-screen');return a&&(a.style.display==='flex'||a.style.display==='block'||a.classList.contains('visible'));}
   var sec=30;
-  setInterval(function(){s.style.display=vis()?'inline':'none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
+  setInterval(function(){s.style.display='none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
   window._arReset=function(){sec=30;s.style.background='var(--green-l,#d1fae5)';s.style.color='var(--green-d,#065f46)';s.style.borderColor='var(--green,#0B8457)';s.textContent='↺ actualizado';setTimeout(function(){s.style.background='';s.style.color='';s.style.borderColor='';s.textContent='↺ 30s';},900);};
 })();
 </script>

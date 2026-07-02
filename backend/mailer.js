@@ -13,8 +13,10 @@ function getTransporter() {
   });
 }
 
-function buildReciboHtml(v, cf) {
-  const fmt = n => '$' + (Math.round(+n) || 0).toLocaleString('es-CO');
+const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
+
+function buildReciboHtml(v, cf, moneda = 'COP') {
+  const fmt = n => new Intl.NumberFormat(MONEDA_LOCALE[moneda] || 'es-CO', { style: 'currency', currency: moneda, minimumFractionDigits: 0 }).format(Math.round(+n) || 0);
   const items = Array.isArray(v.items) ? v.items : [];
   const ef = +v.monto_efectivo || 0, ta = +v.monto_tarjeta || 0, ne = +v.monto_nequi || 0;
   const labels = { efectivo: '💵 Efectivo', tarjeta: '💳 Tarjeta', nequi: '📱 QR/Nequi' };
@@ -93,11 +95,11 @@ function buildReciboHtml(v, cf) {
 </table></body></html>`;
 }
 
-async function enviarFactura({ to, v, cf }) {
+async function enviarFactura({ to, v, cf, moneda }) {
   const transporter = getTransporter();
   if (!transporter) throw new Error('SMTP no configurado. Completa las variables SMTP_HOST, SMTP_USER y SMTP_PASS en el archivo .env');
 
-  const html = buildReciboHtml(v, cf || {});
+  const html = buildReciboHtml(v, cf || {}, moneda);
   const subject = `${cf?.nombre || 'Factura'} — ${v.numero_factura || ''}`;
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
