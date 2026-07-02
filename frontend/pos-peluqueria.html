@@ -11,7 +11,11 @@
 /* Ancla html/body al alto real de pantalla: sin esto, cualquier desborde
    interno estira la página completa y arrastra las barras fijas al hacer
    scroll en celular (en vez de quedar solo el contenido interno scrolleable). */
-html,body{height:100%;height:100dvh;overflow:hidden}
+html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+/* Evita que el scroll de una lista interna "se filtre" hacia la página
+   completa (rebote/overscroll de iOS y Chrome), que es lo que arrastra
+   las barras fijas al hacer scroll dentro de la agenda, cobro, etc. */
+.citas-list,.cobro-body,.caja-view,.pool-view,.prod-panel-items{overscroll-behavior:contain}
 :root{
   --acc:#0B8457;--acc-d:#086644;--acc-l:#e0f7ec;--acc-ll:rgba(11,132,87,0.08);
   --lime:#C6F135;--dark:#102A24;
@@ -508,7 +512,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
           style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:6px;font-size:13px;background:var(--bg2);color:var(--text);flex:1;min-width:120px">
         <span id="prod-count" style="font-size:12px;color:var(--text3);flex-shrink:0"></span>
       </div>
-      <div id="prod-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;overflow-y:auto;flex:1"></div>
+      <div id="prod-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain"></div>
     </div>
     <!-- Carrito -->
     <div class="prod-panel">

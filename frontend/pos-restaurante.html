@@ -11,7 +11,11 @@
 /* Ancla html/body al alto real de pantalla: sin esto, cualquier desborde
    interno estira la página completa y arrastra las barras fijas al hacer
    scroll en celular (en vez de quedar solo el contenido interno scrolleable). */
-html,body{height:100%;height:100dvh;overflow:hidden}
+html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+/* Evita que el scroll de una lista interna "se filtre" hacia la página
+   completa (rebote/overscroll de iOS y Chrome), que es lo que arrastra
+   las barras fijas cuando se hace scroll dentro del menú, cobro, etc. */
+.content-area,.panel-body,.menu-items-grid,.menu-cats,.pedido-items,.cobro-left,.cobro-right{overscroll-behavior:contain}
 :root{
   --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
   --text:#102A24;--text2:#2a5040;--text3:#4a7060;

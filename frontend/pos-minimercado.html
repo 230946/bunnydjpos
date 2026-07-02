@@ -12,7 +12,11 @@
 /* Ancla html/body al alto real de pantalla: sin esto, cualquier desborde
    interno estira la página completa y arrastra las barras fijas al hacer
    scroll en celular (en vez de quedar solo el contenido interno scrolleable). */
-html,body{height:100%;height:100dvh;overflow:hidden}
+html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+/* Evita que el scroll de una lista interna "se filtre" hacia la página
+   completa (rebote/overscroll de iOS y Chrome), que es lo que arrastra
+   las barras fijas cuando se hace scroll dentro del catálogo, carrito, etc. */
+.prod-grid,.cart-items,.caja-tbl-wrap{overscroll-behavior:contain}
 :root{
   --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
   --acc:#0B8457;--acc-d:#086644;--acc-l:#e0f7ec;--acc-ll:rgba(11,132,87,0.08);
@@ -325,7 +329,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
         </div>
         <button class="btn" onclick="loadCaja()">↺ Actualizar</button>
       </div>
-      <div id="caja-body" style="flex:1;min-height:0;overflow-y:auto">
+      <div id="caja-body" style="flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain">
         <div style="text-align:center;padding:40px;color:var(--text2)">Cargando...</div>
       </div>
     </div>
