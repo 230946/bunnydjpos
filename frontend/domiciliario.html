@@ -428,24 +428,27 @@ function switchTab(t){
 // ── Load data ─────────────────────────────────────────────────────
 async function loadAll(){
   document.getElementById('refresh-ts').textContent='Actualizando…';
-  try {
-    const [disp, mias] = await Promise.all([
-      riderFetch('/rider/disponibles').catch(()=>({pedidos:[]})),
-      riderFetch('/rider/mis-entregas').catch(()=>({pedidos:[]})),
-    ]);
-    renderDisponibles(disp.pedidos||[]);
-    renderMisEntregas(mias.pedidos||[]);
-    document.getElementById('refresh-ts').textContent='Actualizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-  } catch(e){
-    document.getElementById('refresh-ts').textContent='Error al actualizar';
-  }
+  let dispErr=null, miasErr=null;
+  const [disp, mias] = await Promise.all([
+    riderFetch('/rider/disponibles').catch(e=>{ dispErr=e.message; return {pedidos:[]}; }),
+    riderFetch('/rider/mis-entregas').catch(e=>{ miasErr=e.message; return {pedidos:[]}; }),
+  ]);
+  renderDisponibles(disp.pedidos||[], dispErr);
+  renderMisEntregas(mias.pedidos||[], miasErr);
+  document.getElementById('refresh-ts').textContent = (dispErr||miasErr)
+    ? 'Error al actualizar'
+    : 'Actualizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 }
 
 // ── Render disponibles ────────────────────────────────────────────
-function renderDisponibles(list){
+function renderDisponibles(list, error){
   const badge=document.getElementById('badge-disp');
   badge.textContent=list.length; badge.style.display=list.length?'inline':'none';
   const el=document.getElementById('list-disponibles');
+  if(error){
+    el.innerHTML=`<div class="empty"><span class="empty-icon">⚠️</span><p>Error cargando pedidos disponibles</p><p style="font-size:12px;margin-top:8px;color:var(--text3)">${error}</p></div>`;
+    return;
+  }
   if(!list.length){
     el.innerHTML=`<div class="empty"><span class="empty-icon">📭</span><p>No hay pedidos listos para despacho</p><p style="font-size:12px;margin-top:8px;color:var(--text3)">Aparecen aquí cuando cocina marca "Listo 🟢"</p></div>`;
     return;
@@ -475,10 +478,14 @@ function renderDisponibles(list){
 }
 
 // ── Render mis entregas ───────────────────────────────────────────
-function renderMisEntregas(list){
+function renderMisEntregas(list, error){
   const badge=document.getElementById('badge-mias');
   badge.textContent=list.length; badge.style.display=list.length?'inline':'none';
   const el=document.getElementById('list-mias');
+  if(error){
+    el.innerHTML=`<div class="empty"><span class="empty-icon">⚠️</span><p>Error cargando tus entregas</p><p style="font-size:12px;margin-top:8px;color:var(--text3)">${error}</p></div>`;
+    return;
+  }
   if(!list.length){
     el.innerHTML=`<div class="empty"><span class="empty-icon">✅</span><p>No tienes entregas activas</p></div>`;
     return;

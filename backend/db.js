@@ -58,13 +58,17 @@ if (DB_TYPE === 'mysql' || DB_TYPE === 'mariadb') {
     }
   };
 
-  // Migración de collation: convierte tablas con utf8mb4_0900_ai_ci → utf8mb4_unicode_ci
-  // MySQL 8 usa 0900_ai_ci por defecto; nuestras tablas esperan unicode_ci.
+  // Migración de collation: convierte cualquier tabla que no esté en utf8mb4_unicode_ci
+  // (ej. utf8mb4_0900_ai_ci de MySQL 8, o utf8mb4_uca1400_ai_ci de MariaDB 10.10+)
+  // a utf8mb4_unicode_ci, que es lo que esperan todas las comparaciones del código.
+  // Mezclar collations entre tablas (ej. empleados vs domicilios_pedidos creadas en
+  // momentos distintos) rompe cualquier WHERE que compare esas columnas con
+  // "Illegal mix of collations".
   ;(async () => {
     try {
       const [tables] = await _pool.query(
         `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
-         WHERE TABLE_SCHEMA=DATABASE() AND TABLE_COLLATION='utf8mb4_0900_ai_ci'`
+         WHERE TABLE_SCHEMA=DATABASE() AND TABLE_COLLATION LIKE 'utf8mb4%' AND TABLE_COLLATION != 'utf8mb4_unicode_ci'`
       );
       for (const t of tables) {
         await _pool.query(
