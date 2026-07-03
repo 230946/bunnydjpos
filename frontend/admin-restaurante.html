@@ -1592,6 +1592,7 @@ function puedeAdmin(permisos, esSuperadmin){
 let _domPollTimer = null;
 let _domLastCount = 0;
 let _domRiders    = [];
+let _adminWS = null;
 
 // ─── API helpers ────────────────────────────────────────────
 let _loggingOut = false;
@@ -4436,8 +4437,6 @@ async function deleteRider(id) {
   await api(`/domicilios/riders/${id}`, { method:'DELETE' });
   loadDomRiders();
 }
-
-let _adminWS = null;
 
 function startDomPolling() {
   // WebSocket para notificaciones instantáneas de domicilios
