@@ -1580,15 +1580,21 @@ function puedeAdmin(permisos, esSuperadmin){
 }
 
 // ─── API helpers ────────────────────────────────────────────
+let _loggingOut = false;
 async function api(path, opts={}) {
+  const _tokenEnviado = token;
   const r = await fetch(`${API}${path}`, {
     ...opts,
-    headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`, ...(opts.headers||{})}
+    headers: {'Content-Type':'application/json','Authorization':`Bearer ${_tokenEnviado}`, ...(opts.headers||{})}
   });
   if(r.status===401){
-    let detalle=''; try{ detalle=(await r.json()).error||''; }catch{}
-    alert(`DEBUG 401\nRuta: ${path}\nDetalle: ${detalle||'sin detalle'}`);
-    doLogout(); throw new Error('Sesión expirada');
+    if(!_loggingOut){
+      _loggingOut = true;
+      let detalle=''; try{ detalle=(await r.json()).error||''; }catch{}
+      alert(`DEBUG 401\nRuta: ${path}\nDetalle: ${detalle||'sin detalle'}\nToken enviado (${_tokenEnviado?.length||0} chars): ${JSON.stringify(_tokenEnviado)}`);
+      doLogout();
+    }
+    throw new Error('Sesión expirada');
   }
   const d = await r.json();
   if (!r.ok) throw new Error(d.error||'Error');
