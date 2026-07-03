@@ -678,6 +678,20 @@ router.put('/pedidos/:id', verifyToken, async (req, res) => {
       await confirmarPagoEntrega(req.params.id, nid);
     }
 
+    // Avisar a los domiciliarios conectados que hay un pedido nuevo listo para recoger
+    if (estado === 'listo' && req.app?.locals?.broadcast) {
+      const { rows: pRows } = await pool.query(
+        `SELECT cliente_nombre, cliente_dir, total FROM domicilios_pedidos WHERE id=? AND negocio_id=?`,
+        [req.params.id, nid]
+      );
+      req.app.locals.broadcast(nid, 'pedido_listo_domicilio', {
+        id: req.params.id,
+        cliente_nombre: pRows[0]?.cliente_nombre,
+        cliente_dir: pRows[0]?.cliente_dir,
+        total: pRows[0]?.total,
+      });
+    }
+
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

@@ -257,6 +257,37 @@ let   autoTimer  = null;
 let   gpsWatcher = null;
 let   lastGpsPost = 0;
 const GPS_INTERVAL = 20000; // ms entre POSTs de ubicación
+let   wsConn = null;
+
+// ── Sonido / notificación de nuevo pedido listo ─────────────────
+const Sound = {
+  _c: null,
+  ctx(){ if(!this._c) try{this._c=new(window.AudioContext||window.webkitAudioContext)()}catch{} return this._c; },
+  _n(c,f,t,d,v=0.12,tp='sine'){ const o=c.createOscillator(),g=c.createGain(); o.type=tp; o.frequency.value=f; g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(0.001,t+d); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+d); },
+  play(notes){ const c=this.ctx(); if(!c) return; let t=c.currentTime; notes.forEach(([f,d,v=0.12,tp='sine'])=>{ this._n(c,f,t,d,v,tp); t+=d*.75; }); },
+  notify(){ this.play([[440,0.1,0.12],[550,0.18,0.12]]); }
+};
+function _askNotifPermission(){ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }
+function _browserNotify(title, body){
+  if('Notification' in window && Notification.permission==='granted' && !document.hasFocus()){
+    new Notification(title, { body, icon: '/favicon.ico' });
+  }
+}
+function connectWS(){
+  if(!session?.negocio_id) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const wsUrl = `${proto}://${window.location.host}?negocio_id=${session.negocio_id}`;
+  wsConn = new WebSocket(wsUrl);
+  wsConn.onmessage = e => {
+    const { tipo, data } = JSON.parse(e.data);
+    if(tipo==='pedido_listo_domicilio'){
+      loadAll();
+      Sound.notify();
+      _browserNotify('🛵 Pedido listo para recoger', `${data?.cliente_nombre||'Cliente'} — $${(data?.total||0).toLocaleString('es-CO')}`);
+    }
+  };
+  wsConn.onclose = () => setTimeout(connectWS, 3000); // reconectar
+}
 
 // ── Utils ────────────────────────────────────────────────────────
 let NEG_MONEDA = 'COP';
@@ -372,9 +403,12 @@ async function startApp(){
   } catch(_){}
 
   await loadAll();
-  // Auto-refresh cada 30 s
+  // Auto-refresh cada 30 s (respaldo si el WebSocket se desconecta)
   if(autoTimer) clearInterval(autoTimer);
   autoTimer = setInterval(loadAll, 30000);
+  // Notificación en tiempo real cuando un pedido queda listo para recoger
+  _askNotifPermission();
+  connectWS();
   // Iniciar GPS
   startGPS();
 }
