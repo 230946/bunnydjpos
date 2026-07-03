@@ -1509,6 +1509,7 @@ router.patch('/citas/:id/completar', async (req, res) => {
     );
     if (!citas.length) return res.status(404).json({ error: 'Cita no encontrada' });
     const cita = citas[0];
+    if (cita.venta_id) return res.status(400).json({ error: 'Esta cita ya fue facturada.' });
     const { rows: det } = await pool.query(
       `SELECT * FROM pel_cita_detalle WHERE cita_id=?`, [req.params.id]
     );

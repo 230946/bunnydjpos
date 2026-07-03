@@ -957,18 +957,19 @@ function renderCitasResumen() {
     <div class="resumen-label">Citas del día — toca una <span style="color:var(--green);font-weight:700">Completada</span> para facturar</div>
     <div class="resumen-scroll">
       ${todas.map(c => {
-        const esComp = c.estado === 'Completada';
+        const yaFacturada = !!c.venta_id;
+        const esComp = c.estado === 'Completada' && !yaFacturada;
         const esSel  = _citaSel?.id === c.id;
         const svcs   = (c.servicios||[]).length ? c.servicios.map(s=>esc(s.nombre)).join(' · ') : esc(c.servicioNombre||c.servicio_nombre||'Sin servicio');
         const precio  = (c.servicios||[]).length ? c.servicios.reduce((a,s)=>a+parseFloat(s.precio||0),0) : parseFloat(c.precio||0);
         const col    = colMap[c.estado] || 'var(--border)';
         const clases = 'resumen-card' + (esComp?' completada':' muted') + (esSel?' sel-cobro':'');
-        const onclick= esComp ? `onclick="selCitaDesdeResumen('${c.id}')"` : `title="Completa la cita para poder facturarla"`;
+        const onclick= esComp ? `onclick="selCitaDesdeResumen('${c.id}')"` : (yaFacturada ? 'title="Esta cita ya fue facturada"' : `title="Completa la cita para poder facturarla"`);
         const emp = c.empleadoNombre||c.empleado_nombre||'';
         return `<div class="${clases}" ${onclick} style="border-left-color:${col}">
           <div class="resumen-top">
             <span class="resumen-name">${esc(c.clienteNombre||c.cliente_nombre||'—')}</span>
-            <span class="resumen-badge" style="background:${col}">${estadoLabel(c.estado)}</span>
+            <span class="resumen-badge" style="background:${col}">${yaFacturada ? 'Facturada ✓' : estadoLabel(c.estado)}</span>
           </div>
           <div class="resumen-svc">${svcs}</div>
           <div class="resumen-foot">
@@ -1041,6 +1042,14 @@ function renderCobroPanel() {
     $('cobroEmptyTit').textContent = 'Sin cita seleccionada';
     $('cobroEmptyMsg').innerHTML = 'Selecciona una cita <span style="color:var(--green);font-weight:700">Completada</span> para procesar el pago';
     $('cobroSub').textContent = 'Selecciona una cita para procesar el pago';
+    return;
+  }
+  if (_citaSel.venta_id) {
+    $('cobroEmpty').style.display = 'flex';
+    $('cobroContent').style.display = 'none';
+    $('cobroEmptyTit').textContent = _citaSel.clienteNombre || _citaSel.cliente_nombre || 'Cita seleccionada';
+    $('cobroEmptyMsg').innerHTML = `<span style="color:var(--green);font-weight:700">✓ Esta cita ya fue facturada</span>`;
+    $('cobroSub').textContent = '';
     return;
   }
   if (_citaSel.estado !== 'Completada') {
@@ -1255,6 +1264,7 @@ function getTotal() {
 function abrirCobro() {
   if (!requireCaja()) return;
   if (!_citaSel) return;
+  if (_citaSel.venta_id) { alert('Esta cita ya fue facturada.'); return; }
   if (_citaSel.estado !== 'Completada') { alert('Solo se pueden facturar citas en estado "Completada".'); return; }
   const { subtotal, descuento, total } = getTotal();
   const citaItems = (_citaSel.servicios||[]).length ? _citaSel.servicios : (_citaSel.precio?[{nombre:'Servicio',precio:_citaSel.precio}]:[]);
