@@ -28,8 +28,16 @@ async function authMiddleware(req, res, next) {
       } catch { /* negocio sin fila / columnas aún no migradas: se mantienen los defaults */ }
     }
     next();
-  } catch {
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+  } catch (e) {
+    // Solo un JWT realmente inválido/expirado debe dar 401. Cualquier otro
+    // error (ej. de la consulta a negocios, que ya tiene su propio try/catch
+    // pero por si acaso) se reporta como 500 en vez de disfrazarse de sesión
+    // inválida — así no se cierra sesión al usuario por un error que no es suyo.
+    if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError' || e.name === 'NotBeforeError') {
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+    console.error('[authMiddleware] Error inesperado (no de JWT):', e.message, e.stack);
+    return res.status(500).json({ error: 'Error interno de autenticación' });
   }
 }
 
