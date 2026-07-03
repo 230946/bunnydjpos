@@ -342,13 +342,16 @@ async function requireEmpleado(req, res, next) {
 }
 
 // GET /api/domicilios/rider/disponibles — pedidos sin domiciliario asignado
+// Solo se muestran los que ya están facturados: el ciclo es cocina→listo,
+// caja lo factura (pago_estado='pagado'), y recién ahí se habilita para
+// que un domiciliario lo tome — así no sale a la calle nada sin cobrar.
 router.get('/rider/disponibles', requireEmpleado, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, cliente_nombre, cliente_dir, cliente_tel, total, estado, items, notas, created_at
        FROM domicilios_pedidos
        WHERE negocio_id=? AND domiciliario_id IS NULL
-         AND estado='listo'
+         AND estado='listo' AND pago_estado='pagado'
        ORDER BY created_at ASC`,
       [req.empleado.negocio_id]
     );
@@ -678,19 +681,10 @@ router.put('/pedidos/:id', verifyToken, async (req, res) => {
       await confirmarPagoEntrega(req.params.id, nid);
     }
 
-    // Avisar a los domiciliarios conectados que hay un pedido nuevo listo para recoger
-    if (estado === 'listo' && req.app?.locals?.broadcast) {
-      const { rows: pRows } = await pool.query(
-        `SELECT cliente_nombre, cliente_dir, total FROM domicilios_pedidos WHERE id=? AND negocio_id=?`,
-        [req.params.id, nid]
-      );
-      req.app.locals.broadcast(nid, 'pedido_listo_domicilio', {
-        id: req.params.id,
-        cliente_nombre: pRows[0]?.cliente_nombre,
-        cliente_dir: pRows[0]?.cliente_dir,
-        total: pRows[0]?.total,
-      });
-    }
+    // Nota: el aviso al domiciliario NO se dispara aquí — el pedido "listo"
+    // todavía debe pasar por caja (facturarse) antes de estar disponible
+    // para que un domiciliario lo tome. Ver POST /pos/ventas, que es donde
+    // se marca pago_estado='pagado' y se notifica.
 
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -704,11 +698,12 @@ router.post('/pedidos/:id/reenviar-aviso', verifyToken, async (req, res) => {
   try {
     const nid = req.user.negocio_id;
     const { rows } = await pool.query(
-      `SELECT cliente_nombre, cliente_dir, total, estado, domiciliario_id FROM domicilios_pedidos WHERE id=? AND negocio_id=?`,
+      `SELECT cliente_nombre, cliente_dir, total, estado, pago_estado, domiciliario_id FROM domicilios_pedidos WHERE id=? AND negocio_id=?`,
       [req.params.id, nid]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Pedido no encontrado' });
     if (rows[0].estado !== 'listo') return res.status(400).json({ error: 'El pedido no está en estado "listo"' });
+    if (rows[0].pago_estado !== 'pagado') return res.status(400).json({ error: 'El pedido aún no se ha facturado en caja' });
     if (rows[0].domiciliario_id) return res.status(400).json({ error: 'Este pedido ya fue tomado por un domiciliario' });
     req.app.locals.broadcast?.(nid, 'pedido_listo_domicilio', {
       id: req.params.id,

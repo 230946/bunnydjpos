@@ -16,6 +16,12 @@ if (DB_TYPE === 'mysql' || DB_TYPE === 'mariadb') {
     database: process.env.DB_NAME     || 'bunnydjpos',
     waitForConnections: true,
     connectionLimit: 10,
+    // Sin esto, mysql2 interpreta las fechas que MySQL ya devuelve en -05:00
+    // (por el SET time_zone de abajo) como si fueran hora LOCAL DEL SERVIDOR
+    // NODE (normalmente UTC en la nube) y les resta 5 horas de más al
+    // convertirlas a objeto Date — dejando todas las horas mostradas
+    // desfasadas. Debe coincidir con el SET time_zone de la conexión.
+    timezone: '-05:00',
     // MariaDB/MySQL: parsear JSON automáticamente
     typeCast: function(field, next) {
       // Convertir TINYINT(1) a boolean JS

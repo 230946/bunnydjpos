@@ -688,11 +688,28 @@ router.post('/ventas', async (req, res) => {
     // Enlazar el pedido de domicilio con esta venta (cerrojo atómico:
     // solo si sigue pendiente, para que un cobro concurrente no duplique).
     if (tipo === 'domicilio' && dom_id) {
-      await pool.query(
+      const { rows: domUpd } = await pool.query(
         `UPDATE domicilios_pedidos SET pago_estado='pagado', venta_id=${ph(1)}
          WHERE id=${ph(2)} AND negocio_id=${ph(3)} AND pago_estado='pendiente' AND venta_id IS NULL`,
         [id, dom_id, nid(req)]
       );
+      // Recién facturado (y ya "listo" desde cocina) es cuando el pedido
+      // queda disponible para que un domiciliario lo tome — se avisa aquí,
+      // no cuando cocina lo marca "listo" (ver PUT /domicilios/pedidos/:id).
+      if (domUpd.affectedRows > 0) {
+        const { rows: domInfo } = await pool.query(
+          `SELECT cliente_nombre, cliente_dir, total, estado FROM domicilios_pedidos WHERE id=${ph(1)}`,
+          [dom_id]
+        );
+        if (domInfo[0]?.estado === 'listo') {
+          req.app.locals.broadcast?.(nid(req), 'pedido_listo_domicilio', {
+            id: dom_id,
+            cliente_nombre: domInfo[0].cliente_nombre,
+            cliente_dir: domInfo[0].cliente_dir,
+            total: domInfo[0].total,
+          });
+        }
+      }
     }
 
     res.status(201).json({ id, numero_factura });
