@@ -34,6 +34,13 @@ async function authMiddleware(req, res, next) {
     // pero por si acaso) se reporta como 500 en vez de disfrazarse de sesión
     // inválida — así no se cierra sesión al usuario por un error que no es suyo.
     if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError' || e.name === 'NotBeforeError') {
+      let claims = null;
+      try { claims = jwt.decode(token); } catch {}
+      console.error(
+        `[authMiddleware] ${e.name}: ${e.message} | ruta=${req.method} ${req.originalUrl} | ` +
+        `ahora=${Math.floor(Date.now()/1000)} | exp=${claims?.exp} | iat=${claims?.iat} | ` +
+        `usuario=${claims?.id||'?'} negocio=${claims?.negocio_id||'?'}`
+      );
       return res.status(401).json({ error: 'Token inválido o expirado' });
     }
     console.error('[authMiddleware] Error inesperado (no de JWT):', e.message, e.stack);
