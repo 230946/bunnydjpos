@@ -94,6 +94,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     <a href="#pantalla" onclick="setActive(this)">🖥️ Pantalla principal</a>
     <div class="toc-section">Operación diaria</div>
     <a href="#caja" onclick="setActive(this)">💰 Abrir caja</a>
+    <a href="#pool" onclick="setActive(this)">🔄 Pool y mi horario</a>
     <a href="#citas" onclick="setActive(this)">📋 Citas del día</a>
     <a href="#estados" onclick="setActive(this)">🔄 Estados de cita</a>
     <a href="#cobro" onclick="setActive(this)">💳 Cobrar cita</a>
@@ -145,6 +146,21 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Abrir caja"</strong><p>Ingresa el monto de apertura. Si no tienes efectivo inicial, escribe 0.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar</strong><p>La caja queda abierta y ya puedes cobrar citas y productos.</p></div></div>
       </div>
+    </div>
+
+    <div class="section" id="pool">
+      <div class="section-header"><div class="section-icon">🔄</div><div><h2>Pool y mi horario</h2><p>Cola de servicios sin asignar y tu horario semanal</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">En la pestaña <strong>🔄 Pool</strong> aparecen los servicios de citas de hoy que aún no tienen empleado asignado. Haz clic en <strong>↻ Actualizar</strong> para refrescar la lista.</p>
+      <div class="alert alert-tip">💡 <span>Es equivalente al Portal del Empleado: puedes tomar servicios de la cola desde aquí sin salir del POS.</span></div>
+
+      <h3 class="sub">⏰ Mi horario semanal</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Debajo de la cola, cada empleado puede gestionar su propio horario de trabajo, día por día.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Activa el día</strong><p>Marca la casilla junto al día de la semana que vas a trabajar.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Define las horas</strong><p>Ajusta la hora de entrada y de salida para ese día (por defecto 08:00 → 17:00).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Guarda</strong><p>Haz clic en <strong>+ Agregar</strong> (día nuevo) o <strong>✓ Guardar</strong> (día ya activo) para registrar el cambio.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>Desmarcar la casilla de un día lo quita de tu horario semanal.</span></div>
     </div>
 
     <div class="section" id="citas">

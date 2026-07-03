@@ -185,6 +185,10 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a 📋 Menú</strong><p>Con la mesa seleccionada, navega al Menú para agregar los platos del pedido.</p></div></div>
       </div>
       <div class="alert alert-tip">💡 <span>La mesa seleccionada se mantiene activa mientras navegas entre Menú, Cocina y Cobro. Se indica en la parte superior del pedido.</span></div>
+
+      <h3 class="sub">Liberar mesa manualmente</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Si una mesa se quedó marcada como ocupada por error (por ejemplo, la cuenta ya se cobró pero la mesa no volvió a quedar libre), usa <span class="btn-demo outline" style="color:var(--red)">🔓 Liberar mesa (ya cobrada)</span>.</p>
+      <div class="alert alert-warn">⚠️ <span>Úsalo <strong>solo</strong> si esa cuenta ya fue cobrada. Esta acción no cobra ni cancela ninguna venta — solo libera visualmente la mesa.</span></div>
     </div>
 
     <!-- PEDIDO -->
@@ -215,6 +219,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
 
       <div class="alert alert-warn">⚠️ <span>Si un plato aparece en gris con la etiqueta <strong>Agotado</strong>, no tiene stock disponible y no se puede agregar al pedido.</span></div>
       <div class="alert alert-tip">💡 <span>El pedido se guarda automáticamente en la mesa. Si cierras el POS y vuelves, el pedido sigue ahí.</span></div>
+      <div class="alert alert-tip">💡 <span>En celular, el botón <strong>▼</strong> minimiza el panel del pedido a una barra angosta para ver más del menú — vuelve a tocarla para expandirlo.</span></div>
     </div>
 
     <!-- COCINA -->
@@ -224,6 +229,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div><h2>Cocina</h2><p>Seguimiento de comandas en tiempo real</p></div>
       </div>
       <p style="color:var(--text2);margin-bottom:12px">Cada comanda enviada aparece como una tarjeta con el número de mesa, los platos y el tiempo transcurrido. El color del borde y la etiqueta indican el estado:</p>
+      <div class="alert alert-info">ℹ️ <span>Esta pantalla fusiona en la misma grilla las comandas de <strong>mesas</strong> y los pedidos de <strong>domicilio</strong> (marcados con 🛵 y borde ámbar) — no hay que cambiar de pestaña para ver unas u otras.</span></div>
       <table>
         <thead><tr><th>Estado</th><th>Color</th><th>Qué significa</th><th>Acción</th></tr></thead>
         <tbody>
@@ -234,6 +240,8 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         </tbody>
       </table>
       <div class="alert alert-warn" style="margin-top:12px">⚠️ <span><strong>⚠️ Adición</strong> (tarjeta en rojo): si un cliente pide más productos para una mesa que ya está en cocina, el pedido nuevo <strong>se fusiona en la misma tarjeta</strong> (no se duplica) y se marca como "Adición" para que el cocinero la note de inmediato.</span></div>
+      <h3 class="sub">Pedidos de domicilio en cocina</h3>
+      <p style="color:var(--text2);font-size:13px;margin-top:6px">Las tarjetas 🛵 avanzan igual que las de mesa (Preparando → Listo para despacho). Una vez en <strong>Listo para despacho</strong>, si el domiciliario aún no lo ha tomado (por ejemplo, tiene la app cerrada o sin conexión), aparece el botón <span class="btn-demo" style="background:var(--green)">🔔 Reenviar aviso a domiciliario</span> para volver a notificar a todos los domiciliarios disponibles.</p>
       <h3 class="sub">Limpiar cocina</h3>
       <p style="color:var(--text2);font-size:13px;margin-top:6px">Si hay comandas antiguas acumuladas que ya fueron atendidas, usa el botón <span class="btn-demo red">🗑 Limpiar todo</span> en la barra superior para marcarlas todas como entregadas y limpiar la pantalla.</p>
       <div class="alert alert-tip" style="margin-top:10px">💡 <span>La cocina se actualiza en tiempo real. No necesitas recargar la página — las nuevas comandas aparecen automáticamente.</span></div>

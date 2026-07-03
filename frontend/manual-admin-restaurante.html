@@ -102,6 +102,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <a href="#menu" onclick="setActive(this)">✏️ Editar menú</a>
     <a href="#proveedores" onclick="setActive(this)">🚚 Proveedores</a>
     <a href="#pedidos-prov" onclick="setActive(this)">🛒 Pedidos proveedores</a>
+    <a href="#domicilios" onclick="setActive(this)">🛵 Domicilios</a>
     <a href="#domiciliarios" onclick="setActive(this)">🛵 Domiciliarios</a>
     <div class="toc-section">Usuarios</div>
     <a href="#personal" onclick="setActive(this)">👥 Personal</a>
@@ -154,6 +155,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="card"><div class="card-icon">🛵</div><h4>Domicilios y calificaciones</h4><p>Domicilios entregados, calificación promedio y desglose por domiciliario</p></div>
       </div>
       <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>La tarjeta <strong>Comisión total ventas</strong> (en Reportes) siempre se calcula sobre el mes calendario en curso — se reinicia en $0 el día 1 de cada mes, sin importar el filtro de fechas que uses en la pantalla.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>La calificación (⭐ 1 a 5) la pone el <strong>cliente</strong> desde su página de seguimiento del pedido, una vez el domicilio queda marcado como entregado. Si aún no ha calificado nadie, la tarjeta muestra "Sin calificar".</span></div>
     </div>
 
     <!-- CAJA -->
@@ -351,6 +353,33 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         </tbody>
       </table>
       <div class="alert alert-tip" style="margin-top:10px">💡 <span>Al marcar un pedido como <strong>recibido</strong>, las cantidades se suman automáticamente al inventario de cada ítem.</span></div>
+    </div>
+
+    <!-- DOMICILIOS -->
+    <div class="section" id="domicilios">
+      <div class="section-header">
+        <div class="section-icon">🛵</div>
+        <div><h2>Domicilios</h2><p>Panel en vivo de pedidos hechos por clientes</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Muestra los pedidos hechos por clientes desde el link público de la tienda, con su estado actualizado en tiempo real.</p>
+      <table>
+        <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td>⏳ Pendiente</td><td>Pedido nuevo, sin aceptar (filtro seleccionado por defecto)</td></tr>
+          <tr><td>✅ Aceptado</td><td>El negocio confirmó el pedido</td></tr>
+          <tr><td>👨‍🍳 En preparación</td><td>Se está preparando en cocina</td></tr>
+          <tr><td>📦 Listo</td><td>Listo para que el domiciliario lo recoja</td></tr>
+          <tr><td>🛵 En camino</td><td>El domiciliario ya lo recogió y va hacia el cliente</td></tr>
+          <tr><td>🎉 Entregado</td><td>Entregado — el cliente ya puede calificar el servicio</td></tr>
+          <tr><td>❌ Cancelado</td><td>Pedido anulado</td></tr>
+        </tbody>
+      </table>
+      <div class="steps" style="margin-top:14px">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🔗 Link tienda</strong><p>Copia el enlace público para compartir con clientes por WhatsApp o redes.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar domiciliario</strong><p>En cada pedido, elige quién lo va a entregar desde el selector de domiciliarios.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Avanzar estado</strong><p>Usa los botones de acción del pedido para moverlo al siguiente estado del flujo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>👤 Domiciliarios</strong><p>Accede al listado rápido de repartidores sin salir de este panel — ver sección <strong>Domiciliarios</strong> más abajo.</p></div></div>
+      </div>
     </div>
 
     <!-- DOMICILIARIOS -->

@@ -136,10 +136,19 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li>Aplica descuento si corresponde.</li>
     <li>Haz clic en <strong>Cobrar</strong> (botón verde grande).</li>
     <li>Se abre el modal de cobro con el resumen de la venta.</li>
+    <li><strong>Selecciona o crea un cliente</strong> — es obligatorio para toda venta (ver abajo).</li>
     <li>Selecciona el método de pago e ingresa el monto.</li>
     <li>Confirma el pago — el sistema registra la venta y genera el recibo.</li>
   </ol>
   <div class="warn">Si la caja está cerrada, el botón Cobrar no funciona. Debes abrir la caja primero desde la pestaña Caja del día.</div>
+
+  <h3>Cliente de la venta</h3>
+  <p>El modal de cobro exige asociar un cliente antes de poder confirmar el pago.</p>
+  <ul>
+    <li>Escribe en <strong>Buscar cliente...</strong> para encontrar uno ya registrado y selecciónalo de las sugerencias.</li>
+    <li>Si es un cliente nuevo, haz clic en <strong>+ Nuevo</strong>, llena nombre y número de documento (obligatorios), teléfono y email opcionales, y haz clic en <strong>Guardar cliente</strong>.</li>
+  </ul>
+  <div class="warn">Si intentas confirmar el pago sin cliente seleccionado, aparece el aviso "Debe seleccionar o crear un cliente para continuar" y el cobro no procede.</div>
 
   <h2 id="pagos">Métodos de pago</h2>
   <p>En el modal de cobro selecciona uno de los siguientes métodos:</p>
@@ -183,6 +192,10 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   </ol>
   <div class="tip">Cierra la caja al final de cada jornada para que el administrador pueda ver los reportes correctamente.</div>
 
+  <h3>Reabrir caja (nuevo turno)</h3>
+  <p>Si ya cerraste la caja pero necesitas seguir vendiendo (por ejemplo, empieza un nuevo turno el mismo día), usa <strong>🔓 Reabrir caja (nuevo turno)</strong> en la pestaña Caja del día.</p>
+  <div class="tip">Reabrir caja inicia un turno nuevo — no continúa el turno cerrado anterior.</div>
+
   <h2 id="alertas">Alertas y errores comunes</h2>
   <ul>
     <li><span class="badge b-amber">⚠️ Caja cerrada</span> — abre la caja antes de registrar ventas.</li>
@@ -190,6 +203,7 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li><span class="badge b-amber">Contrato suspendido</span> — el administrador debe renovar la suscripción.</li>
     <li><span class="badge b-gray">Error de conexión</span> — verifica tu red y recarga la página.</li>
   </ul>
+  <p>Junto a la barra de búsqueda aparece un contador <span class="badge b-amber">⚠ N</span> cuando hay productos agotados o con stock bajo. Haz clic en él para ver el listado de los artículos afectados.</p>
 </main>
 
 <script>
