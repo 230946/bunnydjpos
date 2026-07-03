@@ -1584,6 +1584,15 @@ function puedeAdmin(permisos, esSuperadmin){
   return ADMIN_ACCESS_KEYS.some(k=>p[k]);
 }
 
+// Declaradas aquí (antes del bloque de Init que llama showApp() de forma
+// síncrona) porque con `let`, referenciarlas antes de su línea de
+// declaración lanza "Cannot access before initialization" — eso rompía
+// silenciosamente el login: el catch del Init trataba esa excepción como
+// token inválido y borraba la sesión recién creada.
+let _domPollTimer = null;
+let _domLastCount = 0;
+let _domRiders    = [];
+
 // ─── API helpers ────────────────────────────────────────────
 let _loggingOut = false;
 async function api(path, opts={}) {
@@ -4083,10 +4092,6 @@ async function importarExcel(input){
 // ══════════════════════════════════════════════════════════════
 // DOMICILIOS — panel admin
 // ══════════════════════════════════════════════════════════════
-let _domPollTimer = null;
-let _domLastCount = 0;
-let _domRiders    = [];
-
 const DOM_ESTADOS = {
   pendiente:      { label:'Pendiente',       color:'var(--amber)',    bg:'var(--amber-l)' },
   aceptado:       { label:'Aceptado',        color:'#0B8457',         bg:'var(--green-l)' },
