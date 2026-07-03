@@ -1519,6 +1519,11 @@ tr:hover td{background:var(--bg2)}
 
 <script>
 // ─────────────────────────────────────────────────────────────
+// Si el navegador restaura esta página desde el bfcache (ej. botón
+// "atrás"), el estado de JS queda congelado tal como estaba en ese
+// momento — incluido un token ya en null si esa pestaña había cerrado
+// sesión. Se fuerza una recarga completa para re-validar todo desde cero.
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 const API = window.location.origin + '/api';
 let token = sessionStorage.getItem('bdj_adm_token');
 const urlNegocio = new URLSearchParams(window.location.search).get('n') || '';
@@ -1582,18 +1587,12 @@ function puedeAdmin(permisos, esSuperadmin){
 // ─── API helpers ────────────────────────────────────────────
 let _loggingOut = false;
 async function api(path, opts={}) {
-  const _tokenEnviado = token;
   const r = await fetch(`${API}${path}`, {
     ...opts,
-    headers: {'Content-Type':'application/json','Authorization':`Bearer ${_tokenEnviado}`, ...(opts.headers||{})}
+    headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`, ...(opts.headers||{})}
   });
   if(r.status===401){
-    if(!_loggingOut){
-      _loggingOut = true;
-      let detalle=''; try{ detalle=(await r.json()).error||''; }catch{}
-      alert(`DEBUG 401\nRuta: ${path}\nDetalle: ${detalle||'sin detalle'}\nToken enviado (${_tokenEnviado?.length||0} chars): ${JSON.stringify(_tokenEnviado)}`);
-      doLogout();
-    }
+    if(!_loggingOut){ _loggingOut = true; doLogout(); }
     throw new Error('Sesión expirada');
   }
   const d = await r.json();
@@ -1743,16 +1742,12 @@ function closeMobileSidebar(){
 }
 
 function doLogout(){
-  if(window._DEBUG_LOGOUT_TRACE){
-    alert('DEBUG doLogout() llamado desde:\n' + new Error().stack);
-  }
   stopDashTimer();
   fetch(`${API}/auth/logout`,{method:'POST',headers:{'Authorization':`Bearer ${token}`}}).catch(()=>{});
   sessionStorage.removeItem('bdj_adm_token');
   token=null; me=null;
   location.href='/login';
 }
-window._DEBUG_LOGOUT_TRACE = true;
 
 // ─── Contrato ────────────────────────────────────────────────
 const _PLAN_RATES  = {free:0,basic:0.09,plus:0.07,premium:0.05,personalizado:0.07};

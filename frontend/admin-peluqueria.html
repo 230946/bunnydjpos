@@ -746,6 +746,11 @@
 </div>
 
 <script>
+// Si el navegador restaura esta página desde el bfcache (ej. botón
+// "atrás"), el estado de JS queda congelado tal como estaba en ese
+// momento — incluido un token ya vacío si esa pestaña había cerrado
+// sesión. Se fuerza una recarga completa para re-validar todo desde cero.
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 const API='/api';
 const urlNegocio=new URLSearchParams(window.location.search).get('n')||'';
 let TOKEN=sessionStorage.getItem('pel_token')||'';

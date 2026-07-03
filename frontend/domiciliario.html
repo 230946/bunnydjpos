@@ -245,6 +245,10 @@ body{display:flex;flex-direction:column;min-height:100vh}
 <div id="toast"></div>
 
 <script>
+// Si el navegador restaura esta página desde el bfcache (ej. botón
+// "atrás"), el estado de JS queda congelado tal como estaba en ese
+// momento. Se fuerza una recarga completa para re-validar todo desde cero.
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 const API    = '/api/domicilios';
 const params = new URLSearchParams(location.search);
 const NEG_ID = params.get('n') || params.get('negocio');
