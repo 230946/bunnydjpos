@@ -1587,7 +1587,7 @@ async function api(path, opts={}) {
   });
   if(r.status===401){
     let detalle=''; try{ detalle=(await r.json()).error||''; }catch{}
-    console.error(`[401] ${path} → ${detalle||'sin detalle'} — cerrando sesión`);
+    alert(`DEBUG 401\nRuta: ${path}\nDetalle: ${detalle||'sin detalle'}`);
     doLogout(); throw new Error('Sesión expirada');
   }
   const d = await r.json();
