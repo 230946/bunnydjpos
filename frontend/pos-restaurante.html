@@ -1192,6 +1192,8 @@ async function loadCocina(){
         ? `<button class="ticket-btn btn-cocinando" onclick="updDomicilio('${p.id}','en_preparacion')">👨‍🍳 Preparando</button>`
         : p.estado==='en_preparacion'
         ? `<button class="ticket-btn btn-listo" onclick="updDomicilio('${p.id}','listo')">✓ Listo para despacho</button>`
+        : p.estado==='listo'
+        ? `<button class="ticket-btn btn-listo" onclick="reenviarAvisoDomicilio('${p.id}')">🔔 Reenviar aviso a domiciliario</button>`
         : '';
       d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh&&NEG_IDIOMAS.includes('zh')?`<span style="font-size:12px;color:var(--text2);font-weight:500">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
       g.appendChild(d);
@@ -1203,6 +1205,15 @@ async function updDomicilio(id, estado){
     await api(`/domicilios/pedidos/${id}`,{method:'PUT',body:JSON.stringify({estado})});
     loadCocina();
     toast(estado==='listo'?'📦 Listo para despacho':'👨‍🍳 En preparación');
+  } catch(e){ toast('Error: '+e.message); }
+}
+// Reenvía el aviso a domiciliarios de un pedido que ya está "listo" pero
+// nadie lo ha tomado — útil si el domiciliario no vio la notificación
+// (app cerrada, sin conexión) y el pedido quedó esperando.
+async function reenviarAvisoDomicilio(id){
+  try {
+    await api(`/domicilios/pedidos/${id}/reenviar-aviso`,{method:'POST'});
+    toast('🔔 Aviso reenviado a los domiciliarios');
   } catch(e){ toast('Error: '+e.message); }
 }
 async function updComanda(id,estado){

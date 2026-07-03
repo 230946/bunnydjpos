@@ -532,13 +532,17 @@ async function loadHistorial(){
   const hasta=document.getElementById('hist-hasta').value;
   const el=document.getElementById('hist-items');
   el.innerHTML=`<div class="spinner"></div>`;
+  let pedidos, tendencia;
   try {
-    const { pedidos, tendencia } = await riderFetch(`/rider/historial?desde=${desde}&hasta=${hasta}`);
-    renderHistorial(pedidos||[]);
-    renderHistChart(tendencia||[], desde, hasta);
+    ({ pedidos, tendencia } = await riderFetch(`/rider/historial?desde=${desde}&hasta=${hasta}`));
   } catch(e){
-    el.innerHTML=`<div class="empty"><p>Error cargando historial</p></div>`;
+    el.innerHTML=`<div class="empty"><p>Error cargando historial${e.message?': '+e.message:''}</p></div>`;
+    return;
   }
+  // La lista de entregas se muestra aunque falle la gráfica (ej. sin
+  // conexión al CDN de chart.js) — antes un error ahí tapaba todo el historial.
+  renderHistorial(pedidos||[]);
+  try { renderHistChart(tendencia||[], desde, hasta); } catch(e){ console.warn('Gráfica de historial no disponible:', e); }
 }
 
 function renderHistChart(tendencia, desde, hasta){

@@ -696,6 +696,30 @@ router.put('/pedidos/:id', verifyToken, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// POST /api/domicilios/pedidos/:id/reenviar-aviso — vuelve a avisar a los
+// domiciliarios de un pedido que ya está "listo" (ej. quedó pendiente porque
+// el domiciliario no vio la notificación, o estaba desconectado/sin la app
+// abierta). No cambia ningún dato, solo repite el broadcast.
+router.post('/pedidos/:id/reenviar-aviso', verifyToken, async (req, res) => {
+  try {
+    const nid = req.user.negocio_id;
+    const { rows } = await pool.query(
+      `SELECT cliente_nombre, cliente_dir, total, estado, domiciliario_id FROM domicilios_pedidos WHERE id=? AND negocio_id=?`,
+      [req.params.id, nid]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Pedido no encontrado' });
+    if (rows[0].estado !== 'listo') return res.status(400).json({ error: 'El pedido no está en estado "listo"' });
+    if (rows[0].domiciliario_id) return res.status(400).json({ error: 'Este pedido ya fue tomado por un domiciliario' });
+    req.app.locals.broadcast?.(nid, 'pedido_listo_domicilio', {
+      id: req.params.id,
+      cliente_nombre: rows[0].cliente_nombre,
+      cliente_dir: rows[0].cliente_dir,
+      total: rows[0].total,
+    });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET /api/domicilios/pendientes-count — polling ligero para badge
 router.get('/pendientes-count', verifyToken, async (req, res) => {
   try {
