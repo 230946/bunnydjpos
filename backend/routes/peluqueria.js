@@ -2611,7 +2611,7 @@ router.get('/facturas', async (req, res) => {
     const { rows } = await pool.query(`
       SELECT v.id, v.fecha, v.subtotal, v.descuento, v.total, v.notas, v.estado,
              c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
-             c.documento AS cliente_doc, c.email AS cliente_email,
+             c.email AS cliente_email,
              e.nombre AS empleado_nombre,
              u.nombre AS cajero_nombre,
              (SELECT GROUP_CONCAT(p.metodo ORDER BY p.metodo SEPARATOR '/') FROM pel_venta_pagos p WHERE p.venta_id=v.id) AS metodo_pago
@@ -2631,7 +2631,7 @@ router.get('/facturas/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT v.*, c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
-             c.documento AS cliente_doc, c.email AS cliente_email,
+             c.email AS cliente_email,
              e.nombre AS empleado_nombre,
              u.nombre AS cajero_nombre
       FROM pel_ventas v
