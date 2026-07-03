@@ -667,6 +667,7 @@ let allMesas = [];
 const $ = id => document.getElementById(id);
 let NEG_MONEDA = 'COP';
 let NEG_IDIOMAS = ['es'];
+let NEG_ZONA = 'America/Bogota';
 const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
 const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
 const fmt = n => (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO');
@@ -696,6 +697,7 @@ async function api(path, opts={}) {
         if (!info) return;
         if (info.moneda) NEG_MONEDA = info.moneda;
         if (info.idiomas) NEG_IDIOMAS = typeof info.idiomas==='string' ? JSON.parse(info.idiomas) : info.idiomas;
+        if (info.zona_horaria) NEG_ZONA = info.zona_horaria;
         if (!info.nombre) return;
         const el = document.getElementById('login-neg-nombre');
         if (el) { el.textContent = info.nombre; el.style.display = 'block'; }
@@ -754,6 +756,7 @@ async function checkContrato(negId){
     const d=await r.json();
     if(d?.moneda) NEG_MONEDA=d.moneda;
     if(d?.idiomas) NEG_IDIOMAS = typeof d.idiomas==='string' ? JSON.parse(d.idiomas) : d.idiomas;
+    if(d?.zona_horaria) NEG_ZONA=d.zona_horaria;
     const blk=msg=>{ $('contrato-block-msg').innerHTML=msg; $('contrato-block').style.display='flex'; };
     if(!d.contrato){ blk('No tienes un contrato activo.<br>Contacta al administrador del sistema.'); return; }
     const {estado,dias_para_vencer}=d.contrato;
@@ -1986,7 +1989,7 @@ function renderCajaPanel(ventasRec=[], dom=null){
     ? `<table class="ventas-rec-table">
         <thead><tr><th>Hora</th><th>Mesa</th><th>Método</th><th>Total</th></tr></thead>
         <tbody>${ventasRec.map(v=>`<tr>
-          <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</td>
+          <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA})}</td>
           <td>Mesa ${v.mesa_num||'—'}</td>
           <td>${mBadge(v.metodo_pago)}</td>
           <td><b>${fmt(v.total)}</b></td>

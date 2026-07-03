@@ -1591,11 +1591,12 @@ async function api(path, opts={}) {
   return d;
 }
 let NEG_MONEDA = 'COP';
+let NEG_ZONA = 'America/Bogota';
 const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
 const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
 function fmt(n){ return (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO'); }
 function fmtDate(s){ return s?new Date(s+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
-function fmtTime(s){ return s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—'; }
+function fmtTime(s){ return s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA}):'—'; }
 function openModal(id){ document.getElementById(id).style.display='flex'; }
 function closeModal(id){ document.getElementById(id).style.display='none'; }
 function showToast(m,ok=true){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
@@ -1802,6 +1803,7 @@ async function checkContrato(negocioId){
     const d=await r.json();
     window._negPlan = d.plan || 'free';
     NEG_MONEDA = d.moneda || 'COP';
+    NEG_ZONA = d.zona_horaria || 'America/Bogota';
     updatePlanComCard(0);
     try{
       const idiomas=d.idiomas?(typeof d.idiomas==='string'?JSON.parse(d.idiomas):d.idiomas):['es'];
@@ -2051,7 +2053,7 @@ async function loadDashboard(){
     : `<span style="font-size:10px;font-weight:700;color:var(--blue,#3b82f6)">🍽️</span>`;
   $('dash-ventas-tbody').innerHTML = ventas.length
     ? ventas.map(v=>`<tr>
-        <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</td>
+        <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA})}</td>
         <td style="text-align:center">${canalBadge(v.tipo)}</td>
         <td>${v.lugar||(v.mesa_num?'Mesa '+v.mesa_num:'—')}</td>
         <td>${metodoBadge(v.metodo_pago)}</td>
@@ -2859,8 +2861,8 @@ async function abrirFactura(id){
     const _mA=Object.entries(pagos).filter(([,val])=>val>0);
     const metStr=_mA.length===1?_mLabelsF[_mA[0][0]]||v.metodo_pago:_mA.map(([k,val])=>`${_mLabelsF[k]}: ${fmt(val)}`).join(' / ');
     const dt=new Date(v.creado);
-    const fecha=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const hora=dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    const fecha=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:NEG_ZONA});
+    const hora=dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA});
     const tipoDoc=(cf.tipoDoc||'Factura').charAt(0).toUpperCase()+(cf.tipoDoc||'Factura').slice(1);
     const total=+v.total, recibido=+v.recibido||0, cambio=+v.cambio||0;
     const mostrarIva=cf.togIva!==false&&+v.iva>0;
@@ -4139,7 +4141,7 @@ function renderDomPedidos(pedidos) {
         <div style="flex:1;min-width:180px">
           <span style="font-weight:700">${p.cliente_nombre}</span>
           <span style="font-size:11px;margin-left:8px;background:${st.bg};color:${st.color};border-radius:12px;padding:2px 8px">${st.label}</span><br>
-          <span style="font-size:12px;color:var(--text3)">#${p.id.slice(0,8).toUpperCase()} · ${new Date(p.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</span>
+          <span style="font-size:12px;color:var(--text3)">#${p.id.slice(0,8).toUpperCase()} · ${new Date(p.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA})}</span>
         </div>
         <div style="text-align:right">
           <strong style="font-size:16px;color:var(--blue)">${fmtCOP(p.total)}</strong><br>
