@@ -8,6 +8,7 @@ const { pool, ph } = require('../db');
 const { authMiddleware, requirePermiso } = require('../middleware/auth');
 const multer  = require('multer');
 const path    = require('path');
+const QRCode  = require('qrcode');
 
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
@@ -72,6 +73,20 @@ router.delete('/mesas/:id', requirePermiso('pos_mesas'), async (req, res) => {
     await pool.query(`UPDATE mesas SET activa=0 WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
       [req.params.id, nid(req)]);
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// QR de autopedido para pegar en la mesa física — apunta a /menu?n=<negocio>&mesa=<id>
+router.get('/mesas/:id/qr', requirePermiso('pos_mesas'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id FROM mesas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Mesa no encontrada' });
+    const url = `${req.protocol}://${req.get('host')}/menu?n=${nid(req)}&mesa=${req.params.id}`;
+    const dataUrl = await QRCode.toDataURL(url, { width: 320, margin: 1 });
+    res.json({ url, dataUrl });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -487,6 +502,109 @@ router.put('/comandas/limpiar/todo', async (req, res) => {
       );
     }
     req.app.locals.broadcast?.(nid(req), 'cocina_limpiada', {});
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════
+// PEDIDOS DE CLIENTE (autopedido por QR — quedan pendientes de aprobación)
+// ════════════════════════════════════════════════════════════════
+
+router.get('/pedidos-cliente/pendientes', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM pedidos_cliente WHERE negocio_id=${ph(1)} AND estado='pendiente_aprobacion' ORDER BY creado ASC`,
+      [nid(req)]
+    );
+    rows.forEach(p => { if (typeof p.items === 'string') p.items = JSON.parse(p.items); });
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Aprobar = exactamente lo que hace el mesero al enviar un pedido a cocina:
+// se fusiona en la comanda activa de la mesa (o crea una) y se suma a la
+// cuenta corriente de la mesa (mesa_estado.pedido) ya marcada como "enviada".
+router.put('/pedidos-cliente/:id/aprobar', async (req, res) => {
+  try {
+    const { rows: pcRows } = await pool.query(
+      `SELECT * FROM pedidos_cliente WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]
+    );
+    if (!pcRows.length) return res.status(404).json({ error: 'Pedido no encontrado' });
+    const pc = pcRows[0];
+    if (pc.estado !== 'pendiente_aprobacion') return res.status(400).json({ error: 'Este pedido ya fue procesado' });
+    const itemsCliente = typeof pc.items === 'string' ? JSON.parse(pc.items) : pc.items;
+
+    // 1) Comanda para cocina — misma lógica de fusión que POST /comandas
+    const { rows: existentes } = await pool.query(
+      `SELECT id, items, estado FROM comandas
+       WHERE negocio_id=${ph(1)} AND mesa_id=${ph(2)} AND estado != 'entregado'
+       ORDER BY creado DESC LIMIT 1`,
+      [nid(req), pc.mesa_id]
+    );
+    const itemsComanda = itemsCliente.map(i => ({ nombre: i.nombre, nombre_zh: i.nombre_zh || null, qty: i.qty, emoji: i.emoji }));
+    let comandaId;
+    if (existentes[0]) {
+      const actual = existentes[0];
+      const itemsPrevios = typeof actual.items === 'string' ? JSON.parse(actual.items) : (actual.items || []);
+      const itemsMerge = [...itemsPrevios, ...itemsComanda];
+      const esAdicion = ['cocinando', 'listo'].includes(actual.estado);
+      await pool.query(
+        `UPDATE comandas SET items=${ph(1)}, es_adicion=${ph(2)}, actualizado=NOW() WHERE id=${ph(3)}`,
+        [JSON.stringify(itemsMerge), esAdicion ? 1 : 0, actual.id]
+      );
+      comandaId = actual.id;
+      req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { id: actual.id, mesa_num: pc.mesa_num, mesa_nombre: pc.mesa_nombre, items: itemsMerge, estado: actual.estado, es_adicion: esAdicion });
+    } else {
+      comandaId = uuid();
+      await pool.query(
+        `INSERT INTO comandas (id,negocio_id,mesa_id,mesa_num,mesa_nombre,mesero_id,items)
+         VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)})`,
+        [comandaId, nid(req), pc.mesa_id, pc.mesa_num, pc.mesa_nombre, req.user.id, JSON.stringify(itemsComanda)]
+      );
+      req.app.locals.broadcast?.(nid(req), 'nueva_comanda', { id: comandaId, mesa_num: pc.mesa_num, mesa_nombre: pc.mesa_nombre, items: itemsComanda, estado: 'nuevo', creado: new Date() });
+    }
+
+    // 2) Cuenta corriente de la mesa — misma lógica que PUT /mesas/:id/pedido
+    const { rows: meRows } = await pool.query(
+      `SELECT pedido FROM mesa_estado WHERE mesa_id=${ph(1)}`, [pc.mesa_id]
+    );
+    let pedidoMesa = meRows.length ? (typeof meRows[0].pedido === 'string' ? JSON.parse(meRows[0].pedido || '[]') : (meRows[0].pedido || [])) : [];
+    for (const i of itemsCliente) {
+      const ex = pedidoMesa.find(p => p.id === i.item_id);
+      if (ex) { ex.qty += i.qty; ex.enviado = (ex.enviado || 0) + i.qty; }
+      else pedidoMesa.push({ id: i.item_id, nombre: i.nombre, nombre_zh: i.nombre_zh || null, emoji: i.emoji, precio: i.precio, qty: i.qty, enviado: i.qty });
+    }
+    await pool.query(`
+      INSERT INTO mesa_estado (mesa_id, ocupada, pedido, mesero_id, actualizado)
+      VALUES (${ph(1)},1,${ph(2)},${ph(3)},NOW())
+      ON DUPLICATE KEY UPDATE ocupada=1, pedido=VALUES(pedido), mesero_id=VALUES(mesero_id), actualizado=NOW()
+    `, [pc.mesa_id, JSON.stringify(pedidoMesa), req.user.id]);
+    req.app.locals.broadcast?.(nid(req), 'mesa_actualizada', { mesa_id: pc.mesa_id, ocupada: true, pedido: pedidoMesa });
+
+    await pool.query(
+      `UPDATE pedidos_cliente SET estado='aprobado', comanda_id=${ph(1)}, actualizado=NOW() WHERE id=${ph(2)}`,
+      [comandaId, pc.id]
+    );
+    req.app.locals.broadcast?.(nid(req), 'pedido_cliente_actualizado', { id: pc.id, estado: 'aprobado' });
+
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/pedidos-cliente/:id/rechazar', async (req, res) => {
+  try {
+    const { motivo } = req.body || {};
+    const { rows } = await pool.query(
+      `SELECT id FROM pedidos_cliente WHERE id=${ph(1)} AND negocio_id=${ph(2)} AND estado='pendiente_aprobacion'`,
+      [req.params.id, nid(req)]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Pedido no encontrado o ya procesado' });
+    await pool.query(
+      `UPDATE pedidos_cliente SET estado='rechazado', motivo_rechazo=${ph(1)}, actualizado=NOW() WHERE id=${ph(2)}`,
+      [motivo || null, req.params.id]
+    );
+    req.app.locals.broadcast?.(nid(req), 'pedido_cliente_actualizado', { id: req.params.id, estado: 'rechazado', motivo: motivo || null });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

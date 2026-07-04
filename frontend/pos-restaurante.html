@@ -88,6 +88,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .mesa-card.ocupada .mesa-status{color:var(--red-d,#A32D2D)}
 .mesa-monto{font-size:11px;font-weight:600;color:var(--green-d)}
 .mesa-zona{font-size:10px;color:var(--text3)}
+.mesa-card.pedido-cliente{border-color:var(--blue);background:var(--blue-l);animation:mesaCobroPend 1s ease-in-out infinite}
+.mesa-pc-badge{font-size:10px;font-weight:700;color:var(--blue-d,#086644);margin-top:3px}
 
 /* ── MENÚ ── */
 .menu-layout{display:flex;flex:1;min-height:0;gap:0}
@@ -631,7 +633,20 @@ table.inv tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
-
+<div class="modal-bg" id="pedido-cliente-modal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h3>🔔 Pedido desde la mesa <span id="pc-mesa-label"></span></h3>
+    <div id="pc-items-list" style="margin:10px 0;max-height:260px;overflow-y:auto"></div>
+    <div id="pc-notas-wrap" style="display:none;background:var(--amber-l,#fff7d6);border-radius:var(--r);padding:8px 10px;font-size:12px;margin-bottom:10px">
+      📝 <span id="pc-notas"></span>
+    </div>
+    <div class="modal-actions" style="flex-direction:column;gap:8px">
+      <button class="btn btn-success btn-block" onclick="aprobarPedidoCliente()">✅ Aprobar y enviar a cocina</button>
+      <button class="btn btn-outline btn-block" style="color:var(--red-d)" onclick="rechazarPedidoCliente()">❌ Rechazar</button>
+      <button class="btn btn-outline btn-block" onclick="closeModal('pedido-cliente-modal')">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -847,6 +862,10 @@ function connectWS(){
       _updateDomBadge(1);
       _browserNotify('🛵 Pedido domicilio',`${data?.cliente_nombre||'Cliente'} — $${(data?.total||0).toLocaleString('es-CO')}`);
     }
+    if(tipo==='pedido_cliente_nuevo'){
+      loadMesas(); Sound.notify();
+      _browserNotify('🔔 Pedido desde la mesa',`Mesa ${data?.mesa_num||'?'} — ${(data?.items||[]).length} ítem(s)`);
+    }
   };
   wsConn.onclose = () => setTimeout(connectWS, 3000); // reconectar
 }
@@ -888,24 +907,68 @@ function nav(p,btn){
 }
 
 // ─── MESAS ────────────────────────────────────────────────────
+let pedidosClientePendientes = [];
 async function loadMesas(){
   try {
-    allMesas = await api('/pos/mesas');
+    const [mesas, pcs] = await Promise.all([
+      api('/pos/mesas'),
+      api('/pos/pedidos-cliente/pendientes').catch(()=>[])
+    ]);
+    allMesas = mesas;
+    pedidosClientePendientes = pcs;
+    const pcPorMesa = new Map(pcs.map(p=>[p.mesa_id,p]));
     const g = $('mesas-grid'); g.innerHTML='';
     allMesas.forEach(m=>{
       const pedidoArr = typeof m.pedido==='string'?JSON.parse(m.pedido||'[]'):(m.pedido||[]);
       const sub = pedidoArr.reduce((a,i)=>a+i.precio*i.qty,0);
       const mostrarIva=!!configFact.togIva && (configFact.iva||0)>0;
       const montoMesa=mostrarIva?sub*(1+(configFact.iva||0)/100):sub;
+      const pc = pcPorMesa.get(m.id);
       const d = document.createElement('div');
-      d.className='mesa-card'+(m.ocupada?' ocupada':'')+(selMesaId===m.id?' seleccionada':'');
-      d.innerHTML=`<div class="mesa-icon">🪑</div><div class="mesa-num">${m.numero}</div><div class="mesa-zona">${m.zona||''}</div><div class="mesa-status">${m.ocupada?'Ocupada':'Libre'}</div>${m.ocupada&&sub?`<div class="mesa-monto">${fmt(montoMesa)}</div>`:''}`;
-      d.onclick=()=>selectMesa(m);
+      d.className='mesa-card'+(pc?' pedido-cliente':(m.ocupada?' ocupada':''))+(selMesaId===m.id?' seleccionada':'');
+      d.innerHTML=`<div class="mesa-icon">🪑</div><div class="mesa-num">${m.numero}</div><div class="mesa-zona">${m.zona||''}</div><div class="mesa-status">${pc?'Pedido cliente':(m.ocupada?'Ocupada':'Libre')}</div>${pc?`<div class="mesa-pc-badge">🔔 Ver pedido</div>`:(m.ocupada&&sub?`<div class="mesa-monto">${fmt(montoMesa)}</div>`:'')}`;
+      d.onclick=()=> pc ? abrirPedidoCliente(pc) : selectMesa(m);
       g.appendChild(d);
     });
     // Actualizar selects de cobro
     await renderMesasCobro();
   } catch(e){ toast('Error cargando mesas'); }
+}
+
+// ─── Pedidos de cliente (autopedido QR) ────────────────────────
+let pcActualId = null;
+function abrirPedidoCliente(pc){
+  pcActualId = pc.id;
+  $('pc-mesa-label').textContent = `${pc.mesa_num}${pc.mesa_nombre?' · '+pc.mesa_nombre:''}`;
+  const items = typeof pc.items==='string'?JSON.parse(pc.items):pc.items;
+  $('pc-items-list').innerHTML = items.map(i=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+    <span>${i.qty}× ${i.nombre}</span><span style="font-weight:600">${fmt((i.precio||0)*i.qty)}</span>
+  </div>`).join('');
+  if(pc.notas){ $('pc-notas').textContent=pc.notas; $('pc-notas-wrap').style.display='block'; }
+  else { $('pc-notas-wrap').style.display='none'; }
+  $('pedido-cliente-modal').style.display='flex';
+}
+
+async function aprobarPedidoCliente(){
+  if(!pcActualId) return;
+  try {
+    await api(`/pos/pedidos-cliente/${pcActualId}/aprobar`,{method:'PUT'});
+    Sound.success();
+    toast('✅ Pedido aprobado y enviado a cocina');
+    closeModal('pedido-cliente-modal');
+    loadMesas();
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+async function rechazarPedidoCliente(){
+  if(!pcActualId) return;
+  const motivo = prompt('¿Por qué rechazas este pedido? (opcional, se lo mostramos al cliente)') || '';
+  try {
+    await api(`/pos/pedidos-cliente/${pcActualId}/rechazar`,{method:'PUT',body:JSON.stringify({motivo})});
+    toast('Pedido rechazado');
+    closeModal('pedido-cliente-modal');
+    loadMesas();
+  } catch(e){ toast('Error: '+e.message); }
 }
 
 // En celular, el pedido arranca como una barra mini (para no tapar el menú)

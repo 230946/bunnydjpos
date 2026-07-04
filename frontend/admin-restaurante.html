@@ -1188,6 +1188,21 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- Mesas: QR de autopedido -->
+<div class="modal-bg" id="mesa-qr-modal" style="display:none">
+  <div class="modal" style="max-width:340px;text-align:center">
+    <h3 id="mesa-qr-title">QR de la mesa</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Los clientes escanean este código para pedir desde su celular.</p>
+    <img id="mesa-qr-img" style="width:100%;max-width:260px;border-radius:var(--r);background:#fff;padding:8px" alt="QR">
+    <input id="mesa-qr-url" readonly onclick="this.select()" style="width:100%;margin-top:10px;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:11px;text-align:center">
+    <div class="modal-actions" style="flex-direction:column;gap:8px;margin-top:12px">
+      <a id="mesa-qr-download" class="btn btn-primary btn-sm" download style="text-decoration:none">⬇ Descargar PNG</a>
+      <button class="btn btn-outline btn-sm" onclick="imprimirMesaQr()">🖨 Imprimir</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('mesa-qr-modal')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Menú: artículo -->
 <div class="modal-bg" id="menu-item-modal" style="display:none">
   <div class="modal">
@@ -3471,6 +3486,7 @@ async function loadMesasAdmin(){
           ? '<span class="badge badge-red">Ocupada</span>'
           : '<span class="badge badge-green">Libre</span>'}</td>
         <td style="display:flex;gap:4px;white-space:nowrap">
+          <button class="btn btn-outline btn-sm" onclick="verQrMesa('${m.id}',${m.numero})">🔗 QR</button>
           <button class="btn btn-outline btn-sm" onclick="openMesaModal('${m.id}',${m.numero},'${(m.nombre||'').replace(/'/g,"\\'")}','${(m.zona||'').replace(/'/g,"\\'")}',${m.capacidad||4})">✏️ Editar</button>
           <button class="btn btn-danger btn-sm" onclick="deleteMesaAdmin('${m.id}',${m.numero})" ${m.ocupada?'disabled title="Mesa ocupada"':''}>🗑 Borrar</button>
         </td>
@@ -3498,12 +3514,38 @@ async function saveMesaAdmin(){
       zona:     $('m-zona').value
     };
     if(!b.numero) return toast('El número de mesa es obligatorio');
+    let nuevaId = null;
     if(mesaAdminEditId)
       await api(`/pos/mesas/${mesaAdminEditId}`, {method:'PUT', body:JSON.stringify(b)});
     else
-      await api('/pos/mesas', {method:'POST', body:JSON.stringify(b)});
+      ({id:nuevaId} = await api('/pos/mesas', {method:'POST', body:JSON.stringify(b)}));
     closeModal('mesa-modal'); toast('Mesa guardada ✓'); loadMesasAdmin();
+    if(nuevaId) verQrMesa(nuevaId, b.numero); // muestra el QR de la mesa recién creada para imprimir
   } catch(e){ toast('Error: '+e.message); }
+}
+
+async function verQrMesa(id, numero){
+  try {
+    const { url, dataUrl } = await api(`/pos/mesas/${id}/qr`);
+    $('mesa-qr-title').textContent = `QR — Mesa ${numero}`;
+    $('mesa-qr-img').src = dataUrl;
+    $('mesa-qr-url').value = url;
+    $('mesa-qr-download').href = dataUrl;
+    $('mesa-qr-download').download = `mesa-${numero}-qr.png`;
+    $('mesa-qr-modal').style.display = 'flex';
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+function imprimirMesaQr(){
+  const w = window.open('', '_blank', 'width=400,height=500');
+  w.document.write(`<html><head><title>${$('mesa-qr-title').textContent}</title></head>
+    <body style="text-align:center;font-family:sans-serif;padding:20px">
+      <h2>${$('mesa-qr-title').textContent}</h2>
+      <img src="${$('mesa-qr-img').src}" style="width:280px">
+      <p style="font-size:12px;color:#555">Escanea para pedir desde tu celular</p>
+    </body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
 }
 
 async function deleteMesaAdmin(id, numero){

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJPOS — Cocina</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --blue:#0B8457;--blue-l:#e0f7ec;--blue-d:#086644;
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;--red-d:#A32D2D;
+  --amber:#C6F135;--amber-l:#f5ffd6;--amber-d:#8aad00;
+  --yellow:#F5C400;--yellow-l:#FFF7D6;--yellow-d:#8a6d00;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --red-l:#3a1010;--amber-l:#2a1a00;--yellow-l:#332800;--green-l:#04342c;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3)}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;overflow-y:auto}
+.login-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:36px 32px;width:340px}
+.login-logo{text-align:center;margin-bottom:22px}
+.login-logo img{width:100%;height:auto;max-height:200px;border-radius:14px;object-fit:contain;margin-bottom:8px;display:none}
+.login-logo img.show{display:block;margin:0 auto 8px}
+.error-box{background:var(--red-l);color:var(--red-d);padding:9px 12px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:none}
+.field{margin-bottom:12px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.field input{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;outline:none}
+.field input:focus{border-color:var(--blue)}
+
+/* ── BOTONES ── */
+.btn{padding:9px 16px;border:none;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:500;transition:.12s}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-d)}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text)}.btn-outline:hover{background:var(--bg2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-block{width:100%}
+
+/* ── APP LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+.topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+.topbar-left img{width:38px;height:38px;object-fit:cover;border-radius:8px;flex-shrink:0}
+.topbar-titles{min-width:0}
+.topbar-titles .neg{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-titles .sub{font-size:11px;color:var(--text2)}
+.cocina-badge{background:var(--red);color:#fff;border-radius:10px;font-size:11px;font-weight:700;padding:2px 8px;min-width:20px;text-align:center}
+.content-area{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px}
+
+/* ── COCINA ── */
+.cocina-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ticket{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px}
+.ticket.nuevo{border-color:var(--red);border-width:2px}
+.ticket.cocinando{border-color:var(--amber);border-width:2px}
+.ticket.listo{border-color:var(--yellow);border-width:2px}
+.ticket.entregado{border-color:var(--green);border-width:2px}
+.ticket-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:0.5px solid var(--border)}
+.ticket-mesa{font-weight:700;font-size:18px}
+.ticket-time{font-size:13px;color:var(--text2)}
+.ticket-item{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:19px;font-weight:600;border-bottom:0.5px solid var(--border)}
+.ticket-item:last-child{border-bottom:none}
+.ticket-qty{font-weight:700;min-width:30px;font-size:19px}
+.ticket-btn{width:100%;margin-top:14px;padding:14px;border:none;border-radius:var(--r);cursor:pointer;font-size:15px;font-weight:600}
+.btn-cocinando{background:var(--amber-l);color:var(--amber-d)}
+.btn-listo{background:var(--green-l);color:var(--green-d)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500}
+.b-nuevo{background:var(--red-l);color:var(--red-d)}
+.b-cocinando{background:var(--amber-l);color:var(--amber-d)}
+.b-listo{background:var(--yellow-l);color:var(--yellow-d)}
+.b-entregado{background:var(--green-l);color:var(--green-d)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--rl);padding:12px 18px;font-size:13px;z-index:400;box-shadow:0 4px 20px rgba(0,0,0,.12);transform:translateY(80px);opacity:0;transition:.25s;pointer-events:none;max-width:280px}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ── CONTRATO ── */
+#contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
+#contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
+#contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
+#contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
+#contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}
+
+/* ── MOBILE: botones táctiles más grandes ── */
+@media(max-width:767px){
+  .btn{min-height:44px;padding:10px 16px}
+  .btn-sm{min-height:38px;padding:7px 12px}
+  .ticket-btn{min-height:48px}
+}
+</style>
+</head>
+<body>
+<div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">No tienes un contrato activo.<br>Contacta al administrador del sistema.</p></div>
+<div id="contrato-alert"><span id="contrato-alert-msg"></span> <button onclick="document.getElementById('contrato-alert').style.display='none'">✕</button></div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img id="login-logo" src="/img/logo.png" alt="Logo" class="show">
+      <p id="login-neg-nombre" style="font-size:17px;font-weight:700;color:var(--blue);margin-top:8px;display:none;text-align:center"></p>
+      <span style="display:inline-block;margin-top:8px;background:var(--green);color:#fff;padding:3px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.08em">🍳 COCINA</span>
+    </div>
+    <div class="error-box" id="login-err"></div>
+    <div class="field" id="negocio-field"><label>Código de negocio</label><input id="l-negocio" placeholder="Usa la URL de acceso de tu negocio"></div>
+    <div class="field"><label>Usuario o email</label><input id="l-login" autocomplete="username" placeholder="cocina01"></div>
+    <div class="field"><label>Contraseña</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-top:6px">Ingresar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app" style="display:none">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="/img/logo.png" alt="Logo">
+      <div class="topbar-titles">
+        <div class="neg" id="topbar-neg">DJPOS</div>
+        <div class="sub" id="topbar-user"></div>
+      </div>
+      <span class="cocina-badge" id="cocina-badge" style="display:none">0</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-sm btn-outline" onclick="loadCocina()">↻ Actualizar</button>
+      <button class="btn btn-sm" style="background:var(--red-l,#fee2e2);color:var(--red,#dc2626);border:none" onclick="limpiarCocina()">🗑 Limpiar todo</button>
+      <button class="btn btn-sm btn-outline" onclick="doLogout()">🚪 Salir</button>
+    </div>
+  </div>
+  <div class="content-area">
+    <div class="cocina-grid" id="cocina-grid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Si el navegador restaura esta página desde el bfcache (ej. botón
+// "atrás"), el estado de JS queda congelado tal como estaba en ese
+// momento — incluido un token ya en null si esa pestaña había cerrado
+// sesión. Se fuerza una recarga completa para re-validar todo desde cero.
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+
+const API = window.location.origin + '/api';
+let token = sessionStorage.getItem('bdj_cocina_token');
+const urlNegocio = new URLSearchParams(window.location.search).get('n') || '';
+let me = null, wsConn = null;
+
+const $ = id => document.getElementById(id);
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+
+async function api(path, opts={}) {
+  const r = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}`, ...(opts.headers||{}) }
+  });
+  if (!r.ok) { const d = await r.json(); throw new Error(d.error||'Error'); }
+  return r.json();
+}
+
+// ─── Sonido (Web Audio API, sin archivos) ──────────────────────
+const Sound = {
+  _c: null,
+  ctx(){ if(!this._c) try{this._c=new(window.AudioContext||window.webkitAudioContext)()}catch{} return this._c; },
+  _n(c,f,t,d,v=0.12,tp='sine'){ const o=c.createOscillator(),g=c.createGain(); o.type=tp; o.frequency.value=f; g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(0.001,t+d); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+d); },
+  play(notes){ const c=this.ctx(); if(!c) return; let t=c.currentTime; notes.forEach(([f,d,v=0.12,tp='sine'])=>{ this._n(c,f,t,d,v,tp); t+=d*.75; }); },
+  notify(){ this.play([[440,0.1,0.12],[550,0.18,0.12]]); },
+};
+
+// ─── Auth ───────────────────────────────────────────────────────
+(function(){
+  const nf = $('l-negocio');
+  if (urlNegocio) { nf.value = urlNegocio; nf.disabled = true; nf.style.opacity = '.55'; $('negocio-field').style.display='none'; }
+  if (urlNegocio) {
+    fetch(`/api/negocio-pub/${urlNegocio}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(info => {
+        if (!info || !info.nombre) return;
+        const el = $('login-neg-nombre');
+        el.textContent = info.nombre; el.style.display = 'block';
+        document.title = `${info.nombre} — Cocina`;
+      })
+      .catch(() => {});
+  }
+})();
+
+$('l-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function doLogin() {
+  const login=$('l-login').value.trim(), pass=$('l-pass').value;
+  const negocio_id = urlNegocio || $('l-negocio')?.value?.trim() || '';
+  const err=$('login-err'); err.style.display='none';
+  if(!negocio_id){ err.textContent='Debes acceder mediante la URL de tu negocio (ej: /cocina?n=ID)'; err.style.display='block'; return; }
+  try {
+    const r = await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login,password:pass,negocio_id})});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Error');
+    // Si el usuario tiene permisos POS específicos (no es admin/superadmin
+    // con acceso completo) y no incluyen pos_cocina, no dejarlo entrar.
+    const p = d.user.permisos || {};
+    const tienePermisosPos = ['pos_mesas','pos_menu','pos_cocina','pos_cobro'].some(k => k in p);
+    if(!d.user.es_superadmin && tienePermisosPos && !p.pos_cocina){
+      throw new Error('Tu usuario no tiene permiso para acceder a Cocina.');
+    }
+    token=d.token; me=d.user;
+    sessionStorage.setItem('bdj_cocina_token',token);
+    initApp();
+  } catch(e){ err.textContent=e.message; err.style.display='block'; }
+}
+
+function doLogout(){
+  fetch(`${API}/auth/logout`,{method:'POST',headers:{'Authorization':`Bearer ${token}`}}).catch(()=>{});
+  wsConn?.close();
+  sessionStorage.removeItem('bdj_cocina_token');
+  location.href='/login';
+}
+
+// ─── Contrato ───────────────────────────────────────────────────
+async function checkContrato(negId){
+  if(me?.es_superadmin) return;
+  try{
+    const r=await fetch(`/api/negocio-pub/${negId}`);
+    if(!r.ok) return;
+    const d=await r.json();
+    const blk=msg=>{ $('contrato-block-msg').innerHTML=msg; $('contrato-block').style.display='flex'; };
+    if(!d.contrato){ blk('No tienes un contrato activo.<br>Contacta al administrador del sistema.'); return; }
+    const {estado,dias_para_vencer}=d.contrato;
+    const msgs={vencido:'Tu contrato ha vencido.<br>Contacta al administrador del sistema.',cancelado:'Tu contrato fue cancelado.<br>Contacta al administrador del sistema.',pendiente:'Tu contrato aún no ha iniciado.<br>Contacta al administrador del sistema.'};
+    if(msgs[estado]){ blk(msgs[estado]); return; }
+    if(estado==='activo'&&dias_para_vencer!==null&&dias_para_vencer<=5){
+      const dias=dias_para_vencer;
+      $('contrato-alert-msg').textContent=dias<=0?' Tu contrato venció hoy. Renuévalo para continuar.':` Tu contrato vence en ${dias} día${dias===1?'':'s'}. Contáctanos para renovarlo.`;
+      $('contrato-alert').style.display='flex';
+    }
+  }catch(_){}
+}
+
+// ─── Notificaciones navegador ───────────────────────────────────
+function _browserNotify(title, body){
+  if('Notification' in window && Notification.permission==='granted' && !document.hasFocus()){
+    new Notification(title, { body, icon: '/favicon.ico' });
+  }
+}
+function _askNotifPermission(){ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }
+
+// ─── WebSocket ──────────────────────────────────────────────────
+function connectWS(){
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const wsUrl = `${proto}://${window.location.host}?negocio_id=${me.negocio_id}`;
+  wsConn = new WebSocket(wsUrl);
+  wsConn.onmessage = e => {
+    const { tipo, data } = JSON.parse(e.data);
+    if(tipo==='nueva_comanda'){ loadCocina(); Sound.notify(); _browserNotify('Nueva comanda 🍽️',`Mesa ${data?.mesa_num||'?'} — ${(data?.items||[]).length} ítem(s)`); }
+    else if(tipo==='comanda_actualizada'){ loadCocina(); }
+    else if(tipo==='cocina_limpiada'){ loadCocina(); }
+    else if(tipo==='domicilio_nuevo'){ loadCocina(); Sound.notify(); _browserNotify('🛵 Pedido domicilio',`${data?.cliente_nombre||'Cliente'} — $${(data?.total||0).toLocaleString('es-CO')}`); }
+  };
+  wsConn.onclose = () => setTimeout(connectWS, 3000); // reconectar
+}
+
+// ─── Init ───────────────────────────────────────────────────────
+async function initApp(){
+  $('login-screen').style.display='none';
+  $('app').style.display='flex';
+  $('topbar-user').textContent = me.nombre || me.username || '';
+  if(me?.negocio_id) checkContrato(me.negocio_id);
+  fetch(`/api/negocio-pub/${me.negocio_id||urlNegocio}`).then(r=>r.ok?r.json():null).then(d=>{ if(d?.nombre) $('topbar-neg').textContent=d.nombre; }).catch(()=>{});
+  _askNotifPermission();
+  connectWS();
+  loadCocina();
+  setInterval(loadCocina, 30000); // respaldo si el WebSocket se desconecta
+}
+
+// ─── Cocina ─────────────────────────────────────────────────────
+async function limpiarCocina(){
+  if(!confirm('¿Limpiar toda la cocina? Esto marca todas las comandas como entregadas y libera las mesas que tenían pedidos pendientes (úsalo cuando esas cuentas se cancelaron, ej. el cliente no pidió nada).')) return;
+  try {
+    await api('/pos/comandas/limpiar/todo', {method:'PUT'});
+    toast('✅ Cocina limpiada y mesas liberadas');
+    loadCocina();
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+async function loadCocina(){
+  try {
+    const [data, domRes] = await Promise.all([
+      api('/pos/comandas'),
+      api('/domicilios/pedidos').catch(()=>({ pedidos:[], pendientes:0 }))
+    ]);
+    const ESTADOS_COCINA = new Set(['pendiente','aceptado','en_preparacion','listo']);
+    const domData = (domRes.pedidos||[]).filter(p => ESTADOS_COCINA.has(p.estado));
+    const totalBadge = data.length + domData.length;
+    const b=$('cocina-badge'); b.style.display=totalBadge>0?'inline-block':'none'; b.textContent=totalBadge;
+    const g=$('cocina-grid'); g.innerHTML='';
+    if(!data.length && !domData.length){ g.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">Sin comandas pendientes</div>'; return; }
+
+    // Tickets normales (mesas)
+    data.forEach(c=>{
+      const items=typeof c.items==='string'?JSON.parse(c.items):c.items;
+      const mins=Math.floor((Date.now()-new Date(c.creado))/60000);
+      let cls, label, badgeCls;
+      if(c.es_adicion){ cls='nuevo'; label='⚠️ Adición'; badgeCls='b-nuevo'; }
+      else if(c.estado==='nuevo'){ cls='nuevo'; label='Pedido'; badgeCls='b-nuevo'; }
+      else if(c.estado==='cocinando'){ cls='cocinando'; label='Cocinando'; badgeCls='b-cocinando'; }
+      else if(c.estado==='listo'){ cls='listo'; label='Preparando'; badgeCls='b-listo'; }
+      else { cls='entregado'; label='Listo para mesa'; badgeCls='b-entregado'; }
+      const d=document.createElement('div'); d.className=`ticket ${cls}`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:18px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 准备中 / Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ 完成 / Listo</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ 已送达 / Entregado</button>`:``}`;
+      g.appendChild(d);
+    });
+
+    // Tickets domicilio
+    domData.forEach(p=>{
+      const items=typeof p.items==='string'?JSON.parse(p.items):p.items;
+      const mins=Math.floor((Date.now()-new Date(p.created_at))/60000);
+      let cls, label;
+      if(p.estado==='pendiente'||p.estado==='aceptado'){ cls='nuevo'; label='Pedido'; }
+      else if(p.estado==='en_preparacion'){ cls='cocinando'; label='Cocinando'; }
+      else { cls='entregado'; label='Listo para Domicilio'; }
+      const badgeCls = cls==='nuevo'?'b-nuevo':cls==='cocinando'?'b-cocinando':'b-entregado';
+      const d=document.createElement('div');
+      d.className=`ticket ${cls}`;
+      d.style.borderLeft='3px solid #f59e0b';
+      const DOM_BTN = p.estado==='pendiente'
+        ? `<button class="ticket-btn btn-cocinando" onclick="updDomicilio('${p.id}','en_preparacion')">👨‍🍳 Preparando</button>`
+        : p.estado==='aceptado'
+        ? `<button class="ticket-btn btn-cocinando" onclick="updDomicilio('${p.id}','en_preparacion')">👨‍🍳 Preparando</button>`
+        : p.estado==='en_preparacion'
+        ? `<button class="ticket-btn btn-listo" onclick="updDomicilio('${p.id}','listo')">✓ Listo para despacho</button>`
+        : p.estado==='listo'
+        ? `<button class="ticket-btn btn-listo" onclick="reenviarAvisoDomicilio('${p.id}')">🔔 Reenviar aviso a domiciliario</button>`
+        : '';
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:18px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
+      g.appendChild(d);
+    });
+  } catch(e){ toast('Error cocina: '+e.message); }
+}
+
+async function updDomicilio(id, estado){
+  try {
+    await api(`/domicilios/pedidos/${id}`,{method:'PUT',body:JSON.stringify({estado})});
+    loadCocina();
+    toast(estado==='listo'?'📦 Listo para despacho':'👨‍🍳 En preparación');
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+// Reenvía el aviso a domiciliarios de un pedido que ya está "listo" pero
+// nadie lo ha tomado — útil si el domiciliario no vio la notificación
+// (app cerrada, sin conexión) y el pedido quedó esperando.
+async function reenviarAvisoDomicilio(id){
+  try {
+    await api(`/domicilios/pedidos/${id}/reenviar-aviso`,{method:'POST'});
+    toast('🔔 Aviso reenviado a los domiciliarios');
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+async function updComanda(id,estado){
+  try {
+    await api(`/pos/comandas/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})});
+    loadCocina();
+    toast(estado==='entregado'?'✅ Entregado':estado==='listo'?'🛎️ Plato listo!':'👨‍🍳 Preparando...');
+  } catch(e){ toast('Error: '+e.message); }
+}
+
+// Sesión ya iniciada en este tab (ej. se recargó la página)
+if(token){
+  try {
+    const p = JSON.parse(atob(token.split('.')[1]));
+    if(p.exp > Date.now()/1000){ me = p; initApp(); }
+    else { sessionStorage.removeItem('bdj_cocina_token'); token=null; }
+  } catch { sessionStorage.removeItem('bdj_cocina_token'); token=null; }
+}
+</script>
+</body>
+</html>

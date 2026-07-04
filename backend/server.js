@@ -23,6 +23,7 @@ const inventarioRouter = require('./routes/inventario');
 const clientesRouter    = require('./routes/clientes');
 const peluqueriaRouter  = require('./routes/peluqueria');
 const domiciliosRouter  = require('./routes/domicilios');
+const publicoRouter     = require('./routes/publico');
 
 const app    = express();
 const server = http.createServer(app);
@@ -44,6 +45,8 @@ app.get('/login',            (_, res) => res.sendFile(path.join(frontendPath, 'l
 app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'pos-restaurante.html')));
 app.get('/minimercado',      (_, res) => res.sendFile(path.join(frontendPath, 'pos-minimercado.html')));
 app.get('/peluqueria',       (_, res) => res.sendFile(path.join(frontendPath, 'pos-peluqueria.html')));
+app.get('/cocina',           (_, res) => res.sendFile(path.join(frontendPath, 'cocina.html')));
+app.get('/menu',             (_, res) => res.sendFile(path.join(frontendPath, 'menu-cliente.html')));
 // Domicilios
 app.get('/domicilios',       (_, res) => res.sendFile(path.join(frontendPath, 'domicilios.html')));
 app.get('/domiciliario',     (_, res) => res.sendFile(path.join(frontendPath, 'domiciliario.html')));
@@ -104,6 +107,7 @@ app.use('/api/pos',        posRouter);
 app.use('/api/inventario', inventarioRouter);
 app.use('/api/peluqueria', peluqueriaRouter);
 app.use('/api/domicilios', domiciliosRouter);
+app.use('/api/publico',   publicoRouter);
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {
@@ -351,6 +355,27 @@ async function runMigrations() {
         FOREIGN KEY (menu_item_id)  REFERENCES menu_items(id)  ON DELETE CASCADE,
         FOREIGN KEY (negocio_id)    REFERENCES negocios(id)    ON DELETE CASCADE,
         FOREIGN KEY (inventario_id) REFERENCES inventario(id)  ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    },
+    {
+      table: 'pedidos_cliente', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS pedidos_cliente (
+        id VARCHAR(36) PRIMARY KEY,
+        negocio_id VARCHAR(36) NOT NULL,
+        mesa_id VARCHAR(36) NOT NULL,
+        mesa_num INT,
+        mesa_nombre VARCHAR(60),
+        items JSON NOT NULL,
+        notas TEXT,
+        estado VARCHAR(20) NOT NULL DEFAULT 'pendiente_aprobacion',
+        motivo_rechazo VARCHAR(255),
+        comanda_id VARCHAR(36),
+        creado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        actualizado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE,
+        FOREIGN KEY (mesa_id) REFERENCES mesas(id) ON DELETE CASCADE,
+        INDEX idx_negocio_estado (negocio_id, estado),
+        INDEX idx_mesa (mesa_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
     },
   ];

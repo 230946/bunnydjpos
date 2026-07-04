@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pedir desde la mesa</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --blue:#0B8457;--blue-l:#e0f7ec;--blue-d:#086644;
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;--red-d:#A32D2D;
+  --amber:#C6F135;--amber-l:#f5ffd6;--amber-d:#8aad00;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --red-l:#3a1010;--amber-l:#2a1a00;--green-l:#04342c;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3)}
+.hide{display:none!important}
+
+/* ── HEADER ── */
+.header{background:var(--bg);border-bottom:0.5px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20}
+.header img{width:38px;height:38px;object-fit:cover;border-radius:8px;flex-shrink:0}
+.header-titles{min-width:0;flex:1}
+.header-titles .neg{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-titles .mesa{font-size:12px;color:var(--text2)}
+
+/* ── CATEGORIAS ── */
+.cats{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;background:var(--bg);border-bottom:0.5px solid var(--border);position:sticky;top:62px;z-index:19;-ms-overflow-style:none;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;padding:7px 14px;border-radius:20px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;cursor:pointer;white-space:nowrap}
+.cat-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ── GRID ── */
+.content{padding:14px 16px 120px}
+.item-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+.item-img{width:64px;height:64px;border-radius:var(--r);object-fit:cover;flex-shrink:0;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:28px}
+.item-info{flex:1;min-width:0}
+.item-nombre{font-weight:600;font-size:14px}
+.item-nombre-zh{font-size:12px;color:var(--text2)}
+.item-desc{font-size:12px;color:var(--text2);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item-precio{font-weight:700;font-size:13px;color:var(--blue-d);margin-top:4px}
+.item-actions{flex-shrink:0;display:flex;align-items:center;gap:8px}
+.qty-btn{width:30px;height:30px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qty-btn:active{background:var(--bg2)}
+.qty-val{min-width:18px;text-align:center;font-weight:700}
+.add-btn{padding:8px 14px;border-radius:20px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+
+/* ── CARRITO STICKY ── */
+.cart-bar{position:fixed;bottom:0;left:0;right:0;background:var(--blue);color:#fff;padding:14px 18px;display:none;align-items:center;justify-content:space-between;cursor:pointer;z-index:30;box-shadow:0 -4px 16px rgba(0,0,0,.15)}
+.cart-bar.show{display:flex}
+.cart-bar .cnt{background:rgba(255,255,255,.25);border-radius:10px;padding:2px 9px;font-size:12px;font-weight:700;margin-right:8px}
+.cart-bar .lbl{font-weight:600;font-size:14px}
+.cart-bar .tot{font-weight:700;font-size:15px}
+
+/* ── OVERLAYS (revisión / espera / error) ── */
+.overlay{position:fixed;inset:0;background:var(--bg3);z-index:100;display:none;flex-direction:column}
+.overlay.show{display:flex}
+.overlay-header{background:var(--bg);border-bottom:0.5px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.overlay-header h3{font-size:16px}
+.back-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text)}
+.overlay-body{flex:1;overflow-y:auto;padding:16px}
+.cart-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.cart-item .nom{flex:1;font-size:13px;font-weight:600}
+.cart-item .sub{font-size:13px;font-weight:700;color:var(--blue-d);min-width:70px;text-align:right}
+textarea#notas{width:100%;min-height:70px;padding:10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;resize:vertical;margin-top:12px}
+.totales{background:var(--bg);border-radius:var(--rl);padding:14px;margin-top:14px;border:0.5px solid var(--border)}
+.totales .row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.totales .row.total{font-weight:700;font-size:16px;padding-top:8px;border-top:0.5px solid var(--border);margin-top:6px}
+.overlay-footer{padding:14px 16px;background:var(--bg);border-top:0.5px solid var(--border)}
+.btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text);font-weight:600;font-size:13px;padding:10px}
+
+/* ── ESTADO (espera/aprobado/rechazado/error) ── */
+.state-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;gap:14px}
+.state-icon{font-size:56px}
+.spinner{width:44px;height:44px;border:4px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.state-title{font-size:18px;font-weight:700}
+.state-msg{font-size:13px;color:var(--text2);max-width:280px;line-height:1.5}
+
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--rl);padding:10px 18px;font-size:13px;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.12);opacity:0;pointer-events:none;transition:.25s;max-width:280px;text-align:center}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="pantalla-error" class="overlay" style="align-items:center;justify-content:center">
+  <div class="state-screen">
+    <div class="state-icon">⚠️</div>
+    <div class="state-title">No pudimos cargar el menú</div>
+    <div class="state-msg" id="error-msg">Verifica el código QR o pídele ayuda al mesero.</div>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <div class="header">
+    <img src="/img/logo.png" alt="Logo">
+    <div class="header-titles">
+      <div class="neg" id="neg-nombre">DJPOS</div>
+      <div class="mesa" id="mesa-label">Mesa —</div>
+    </div>
+  </div>
+  <div class="cats" id="cats"></div>
+  <div class="content" id="items-grid"></div>
+
+  <div class="cart-bar" id="cart-bar" onclick="abrirRevision()">
+    <div><span class="cnt" id="cart-cnt">0</span><span class="lbl">Ver pedido</span></div>
+    <div class="tot" id="cart-tot">$0</div>
+  </div>
+</div>
+
+<!-- Revisión del pedido -->
+<div class="overlay" id="overlay-revision">
+  <div class="overlay-header">
+    <button class="back-btn" onclick="cerrarRevision()">←</button>
+    <h3>Tu pedido</h3>
+  </div>
+  <div class="overlay-body">
+    <div id="cart-list"></div>
+    <textarea id="notas" placeholder="Notas para cocina (opcional): sin cebolla, término medio..."></textarea>
+    <div class="totales">
+      <div class="row total"><span>Total</span><span id="rev-total">$0</span></div>
+    </div>
+  </div>
+  <div class="overlay-footer">
+    <button class="btn" id="btn-confirmar" onclick="confirmarPedido()">Confirmar pedido</button>
+  </div>
+</div>
+
+<!-- Estado del pedido (espera / aprobado / rechazado) -->
+<div class="overlay" id="overlay-estado">
+  <div class="state-screen">
+    <div id="estado-icono"><div class="spinner"></div></div>
+    <div class="state-title" id="estado-titulo">Enviando tu pedido...</div>
+    <div class="state-msg" id="estado-msg">Esperando confirmación del mesero.</div>
+    <button class="btn-outline hide" id="btn-volver-menu" onclick="volverAlMenu()">Volver al menú</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin + '/api';
+const params = new URLSearchParams(window.location.search);
+const negocioId = params.get('n');
+const mesaId = params.get('mesa');
+
+const $ = id => document.getElementById(id);
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+function fmt(n){ return '$'+Math.round(n||0).toLocaleString('es-CO'); }
+
+let menuItems = [], menuCats = [], catActiva = null;
+let carrito = []; // {item_id, nombre, nombre_zh, precio, emoji, qty}
+let miPedidoId = null, wsConn = null, pollTimer = null;
+
+async function api(path, opts={}) {
+  const r = await fetch(`${API}${path}`, { ...opts, headers:{'Content-Type':'application/json', ...(opts.headers||{})} });
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(d.error||'Error');
+  return d;
+}
+
+function mostrarError(msg){
+  $('error-msg').textContent = msg;
+  $('pantalla-error').classList.add('show');
+}
+
+async function init(){
+  if(!negocioId || !mesaId){ mostrarError('Este enlace no es válido. Escanea el código QR de la mesa.'); return; }
+  try {
+    const [neg, mesa, menu] = await Promise.all([
+      fetch(`/api/negocio-pub/${negocioId}`).then(r=>r.ok?r.json():null),
+      api(`/publico/mesa/${mesaId}?n=${negocioId}`),
+      api(`/publico/menu/${negocioId}`)
+    ]);
+    if(neg?.nombre){ $('neg-nombre').textContent = neg.nombre; document.title = `${neg.nombre} — Menú`; }
+    $('mesa-label').textContent = `Mesa ${mesa.numero}${mesa.nombre?' · '+mesa.nombre:''}`;
+    menuCats = menu.categorias || [];
+    menuItems = menu.items || [];
+    renderCats();
+    renderItems();
+    $('app').classList.remove('hide');
+  } catch(e) {
+    mostrarError(e.message || 'No se pudo cargar el menú.');
+  }
+}
+
+function renderCats(){
+  const cats = [{id:null, nombre:'Todos', icono:'🍽️'}, ...menuCats];
+  $('cats').innerHTML = cats.map(c => `<button class="cat-btn${catActiva===c.id?' active':''}" onclick="setCat(${c.id?`'${c.id}'`:'null'})">${c.icono||''} ${c.nombre}</button>`).join('');
+}
+function setCat(id){ catActiva=id; renderCats(); renderItems(); }
+
+function renderItems(){
+  const list = catActiva ? menuItems.filter(i=>i.categoria_id===catActiva) : menuItems;
+  const g = $('items-grid');
+  if(!list.length){ g.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">Sin artículos disponibles</div>'; return; }
+  g.innerHTML = list.map(i => {
+    const enCarrito = carrito.find(c=>c.item_id===i.id);
+    const qty = enCarrito?.qty || 0;
+    return `<div class="item-card">
+      <div class="item-img">${i.foto_url?`<img src="${i.foto_url}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r)">`:(i.emoji||'🍽️')}</div>
+      <div class="item-info">
+        <div class="item-nombre">${i.nombre}</div>
+        ${i.nombre_zh?`<div class="item-nombre-zh">${i.nombre_zh}</div>`:''}
+        ${i.descripcion?`<div class="item-desc">${i.descripcion}</div>`:''}
+        <div class="item-precio">${fmt(i.precio)}</div>
+      </div>
+      <div class="item-actions">
+        ${qty>0
+          ? `<button class="qty-btn" onclick="cambiarQty('${i.id}',-1)">−</button><span class="qty-val">${qty}</span><button class="qty-btn" onclick="cambiarQty('${i.id}',1)">+</button>`
+          : `<button class="add-btn" onclick="cambiarQty('${i.id}',1)">Agregar</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function cambiarQty(itemId, delta){
+  const item = menuItems.find(i=>i.id===itemId);
+  let c = carrito.find(c=>c.item_id===itemId);
+  if(!c){ c = {item_id:itemId, nombre:item.nombre, nombre_zh:item.nombre_zh, precio:parseFloat(item.precio)||0, emoji:item.emoji, qty:0}; carrito.push(c); }
+  c.qty += delta;
+  if(c.qty<=0) carrito = carrito.filter(x=>x.item_id!==itemId);
+  renderItems();
+  actualizarCartBar();
+}
+
+function actualizarCartBar(){
+  const cnt = carrito.reduce((a,c)=>a+c.qty,0);
+  const tot = carrito.reduce((a,c)=>a+c.qty*c.precio,0);
+  $('cart-cnt').textContent = cnt;
+  $('cart-tot').textContent = fmt(tot);
+  $('cart-bar').classList.toggle('show', cnt>0);
+}
+
+function abrirRevision(){
+  $('cart-list').innerHTML = carrito.map(c => `<div class="cart-item">
+    <span class="qty-val">${c.qty}×</span>
+    <span class="nom">${c.nombre}</span>
+    <span class="sub">${fmt(c.qty*c.precio)}</span>
+  </div>`).join('');
+  const tot = carrito.reduce((a,c)=>a+c.qty*c.precio,0);
+  $('rev-total').textContent = fmt(tot);
+  $('overlay-revision').classList.add('show');
+}
+function cerrarRevision(){ $('overlay-revision').classList.remove('show'); }
+
+async function confirmarPedido(){
+  if(!carrito.length) return;
+  const btn = $('btn-confirmar');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const notas = $('notas').value.trim();
+    const r = await api('/publico/pedidos', {method:'POST', body: JSON.stringify({
+      negocio_id: negocioId, mesa_id: mesaId,
+      items: carrito.map(c=>({item_id:c.item_id, qty:c.qty})),
+      notas: notas || null
+    })});
+    miPedidoId = r.id;
+    cerrarRevision();
+    mostrarEstadoEspera();
+    conectarWS();
+    pollTimer = setInterval(consultarEstado, 8000);
+  } catch(e) {
+    toast('Error: '+e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirmar pedido';
+  }
+}
+
+function mostrarEstadoEspera(){
+  $('estado-icono').innerHTML = '<div class="spinner"></div>';
+  $('estado-titulo').textContent = 'Enviando tu pedido...';
+  $('estado-msg').textContent = 'Esperando confirmación del mesero.';
+  $('btn-volver-menu').classList.add('hide');
+  $('overlay-estado').classList.add('show');
+}
+
+function conectarWS(){
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  wsConn = new WebSocket(`${proto}://${window.location.host}?negocio_id=${negocioId}`);
+  wsConn.onmessage = e => {
+    const { tipo, data } = JSON.parse(e.data);
+    if(tipo==='pedido_cliente_actualizado' && data?.id===miPedidoId){
+      manejarResultado(data.estado, data.motivo);
+    }
+  };
+  wsConn.onclose = () => {}; // el poll de respaldo cubre si no reconecta
+}
+
+async function consultarEstado(){
+  if(!miPedidoId) return;
+  try {
+    const d = await api(`/publico/pedidos/${miPedidoId}`);
+    if(d.estado !== 'pendiente_aprobacion') manejarResultado(d.estado, d.motivo_rechazo);
+  } catch(_){}
+}
+
+function manejarResultado(estado, motivo){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+  wsConn?.close();
+  if(estado==='aprobado'){
+    $('estado-icono').innerHTML = '<div class="state-icon">✅</div>';
+    $('estado-titulo').textContent = '¡Pedido confirmado!';
+    $('estado-msg').textContent = 'Tu pedido ya va para cocina. Gracias por tu compra.';
+  } else if(estado==='rechazado'){
+    $('estado-icono').innerHTML = '<div class="state-icon">❌</div>';
+    $('estado-titulo').textContent = 'Tu pedido no pudo confirmarse';
+    $('estado-msg').textContent = motivo || 'Habla con el mesero para más detalles.';
+    $('btn-volver-menu').classList.remove('hide');
+  }
+}
+
+function volverAlMenu(){
+  carrito = [];
+  miPedidoId = null;
+  actualizarCartBar();
+  renderItems();
+  $('overlay-estado').classList.remove('show');
+}
+
+init();
+</script>
+</body>
+</html>
