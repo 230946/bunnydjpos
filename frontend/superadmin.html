@@ -330,7 +330,7 @@ tr:hover td{background:var(--bg2)}
         </div>
 
         <!-- Comisión por negocio -->
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:20px;margin-bottom:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
             <h3 style="font-size:14px;font-weight:600">Comisión por negocio Mes</h3>
             <span id="dash-com-total-lbl" style="font-size:11px;color:var(--text2)"></span>
@@ -883,22 +883,14 @@ function renderTendenciaChart(canvasId, storeKey, data, opts){
   });
   const values = serie.map(p => +p.comision||0);
   const tc = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim()||'#999';
+  const maxVal = Math.max(...values, 1);
   window[storeKey] = new Chart(canvas.getContext('2d'), {
-    type: 'line',
+    type: 'bar',
     data: { labels, datasets: [{
       data: values,
-      borderColor: color,
-      backgroundColor: color+'1a',
-      fill: true,
-      tension: 0.35,
-      borderWidth: 2,
-      borderCapStyle: 'round',
-      borderJoinStyle: 'round',
-      pointRadius: values.map((_,i)=> i===values.length-1 ? 4 : 0),
-      pointHoverRadius: 5,
-      pointBackgroundColor: color,
-      pointBorderColor: '#fff',
-      pointBorderWidth: 2,
+      backgroundColor: values.map(v => v===maxVal && v>0 ? color : color+'66'),
+      borderRadius: {topLeft:4,topRight:4,bottomLeft:0,bottomRight:0},
+      maxBarThickness: 22,
     }]},
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -907,7 +899,7 @@ function renderTendenciaChart(canvasId, storeKey, data, opts){
         tooltip: { callbacks: { title: ctx => opts.dia ? `Día ${ctx[0].label}` : ctx[0].label, label: ctx => ` Comisión: ${fmt(ctx.raw)}` } },
       },
       scales: {
-        x: { display: true, grid: { display:false }, ticks: { color: tc, font: {size:9}, maxTicksLimit: opts.dia?6:6, maxRotation:0 } },
+        x: { display: true, grid: { display:false }, ticks: { color: tc, font: {size:9}, maxTicksLimit: 6, maxRotation:0 } },
         y: { display: false, beginAtZero: true },
       },
     },
