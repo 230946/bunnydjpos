@@ -2287,6 +2287,8 @@ function renderReportes(){
         <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'ayer')">Ayer</button>
         <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'semana')">Esta semana</button>
         <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'mes')">Este mes</button>
+        <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'trimestre')">Este trimestre</button>
+        <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'ano')">Este año</button>
         <button class="btn btn-outline btn-sm rep-q" onclick="repFiltro(event,'30d')">Últimos 30 días</button>
         <label style="font-size:12px;color:var(--text2)">Desde</label>
         <input type="date" id="rep-desde" class="btn btn-outline btn-sm" value="${ls(d30)}" style="cursor:pointer">
@@ -2308,8 +2310,8 @@ function renderReportes(){
     <div class="card" style="margin-bottom:14px">
       <div class="card-header"><h3>Ventas del período</h3><button class="btn btn-sm btn-outline" onclick="exportarExcelPel()">⬇ Exportar Excel</button></div>
       <div class="table-wrap" style="max-height:320px;overflow-y:auto">
-        <table style="font-size:12px"><thead><tr><th>Fecha</th><th>Hora</th><th>Lugar</th><th>Método</th><th>Total</th><th>Cliente</th><th>Cajero</th><th>Factura</th></tr></thead>
-        <tbody id="r-ventas-tbody"><tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">Consulta un período</td></tr></tbody></table>
+        <table style="font-size:12px"><thead><tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Profesional</th><th>Método</th><th>Total</th><th>Cajero</th></tr></thead>
+        <tbody id="r-ventas-tbody"><tr><td colspan="7" style="color:var(--text2);text-align:center;padding:16px">Consulta un período</td></tr></tbody></table>
       </div>
     </div>
     <div class="card" style="margin-bottom:14px"><div class="card-header"><h3>Cajas del período</h3></div>
@@ -2334,6 +2336,8 @@ function repFiltro(ev,tipo){
   else if(tipo==='ayer'){const y=new Date(d-864e5);desde=ls(y);hasta=ls(y);}
   else if(tipo==='semana'){const s=new Date(d);s.setDate(d.getDate()-((d.getDay()+6)%7));desde=ls(s);}
   else if(tipo==='mes')desde=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+  else if(tipo==='trimestre'){const qm=Math.floor(d.getMonth()/3)*3;desde=`${d.getFullYear()}-${String(qm+1).padStart(2,'0')}-01`;}
+  else if(tipo==='ano')desde=`${d.getFullYear()}-01-01`;
   else if(tipo==='30d'){const m=new Date(d);m.setDate(d.getDate()-29);desde=ls(m);}
   document.querySelectorAll('.rep-q').forEach(b=>b.classList.remove('active'));ev.currentTarget.classList.add('active');
   _gel('rep-desde').value=desde;_gel('rep-hasta').value=hasta;cargarReportes();
@@ -2346,7 +2350,7 @@ async function cargarReportes(){
       apiFetch(`${API}/peluqueria/reportes/top-servicios?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
       apiFetch(`${API}/peluqueria/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
       apiFetch(`${API}/peluqueria/reportes/servicios-por-empleado?desde=${desde}&hasta=${hasta}`).catch(e=>{console.error('[rep-empleados]',e);return[];}),
-      apiFetch(`${API}/admin/ventas?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
+      apiFetch(`${API}/peluqueria/facturas?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
     ]);
     window._pelRepData = { r, ventas, desde, hasta };
     if(_gel('r-ventas'))_gel('r-ventas').textContent=fmt(r.ventas.total_ventas);
@@ -2359,7 +2363,12 @@ async function cargarReportes(){
     if(_gel('r-metodos-neq'))_gel('r-metodos-neq').textContent=fmt(r.ventas.nequi);
     // Tabla ventas
     const tb=_gel('r-ventas-tbody');
-    if(tb)tb.innerHTML=ventas&&ventas.length?ventas.map(v=>`<tr><td>${v.fecha||''}</td><td>${v.hora||''}</td><td>${v.lugar||'—'}</td><td>${v.metodo_pago||'—'}</td><td><b>${fmt(v.total)}</b></td><td>${v.cliente||'—'}</td><td style="color:var(--text2)">${v.cajero||'—'}</td><td style="color:var(--text2);font-size:11px">${v.numero_factura||'—'}</td></tr>`).join(''):'<tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">Sin ventas en este período</td></tr>';
+    if(tb)tb.innerHTML=ventas&&ventas.length?ventas.map(v=>{
+      const dt=new Date(String(v.fecha).replace(' ','T'));
+      const fechaStr=isNaN(dt)?'':dt.toLocaleDateString('es-CO');
+      const horaStr=isNaN(dt)?'':dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+      return `<tr><td>${fechaStr}</td><td>${horaStr}</td><td>${esc(v.cliente_nombre||'—')}</td><td style="color:var(--text2)">${esc(v.empleado_nombre||'—')}</td><td>${v.metodo_pago||'—'}</td><td><b>${fmt(v.total)}</b></td><td style="color:var(--text2)">${esc(v.cajero_nombre||'—')}</td></tr>`;
+    }).join(''):'<tr><td colspan="7" style="color:var(--text2);text-align:center;padding:16px">Sin ventas en este período</td></tr>';
     const rc=_gel('r-cajas');if(rc)rc.innerHTML=(r.cajas||[]).length?r.cajas.map(c=>`<tr><td>${fmtDate(c.fecha)}</td><td>${c.usuario_nombre||'—'}</td><td>${fmt(c.total_ventas)}</td><td>${fmt(c.total_gastos)}</td><td><span class="badge ${c.estado==='abierta'?'badge-green':'badge-gray'}">${c.estado}</span></td></tr>`).join(''):'<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sin cajas</td></tr>';
     const rt=_gel('r-top');if(rt){if(topItems&&topItems.length){const mv=Math.max(...topItems.map(p=>+p.vendidos),1);rt.innerHTML=topItems.map((p,i)=>`<div class="gasto-bar-item"><span class="gasto-bar-label"><span style="color:var(--text2);font-size:11px;margin-right:4px">${i+1}.</span>${esc(p.nombre)}</span><div class="gasto-bar-track"><div class="gasto-bar-fill" style="width:${Math.round(+p.vendidos/mv*100)}%;background:var(--acc)"></div></div><span class="gasto-bar-val">${p.vendidos} × ${fmt(p.total)}</span></div>`).join('');} else {rt.innerHTML='<p style="color:var(--text2);text-align:center;padding:16px;font-size:13px">Sin datos en el período</p>';}}
     const rh=_gel('r-horas');if(rh){if(horas&&horas.length){const mh=Math.max(...horas.map(h=>+h.total),1);rh.innerHTML=horas.map(h=>`<div class="gasto-bar-item"><span class="gasto-bar-label" style="min-width:48px">${String(h.hora).padStart(2,'0')}:00</span><div class="gasto-bar-track"><div class="gasto-bar-fill" style="width:${Math.round(+h.total/mh*100)}%;background:#8b5cf6"></div></div><span class="gasto-bar-val">${h.pedidos}ped·${fmt(h.total)}</span></div>`).join('');} else {rh.innerHTML='<p style="color:var(--text2);text-align:center;padding:16px;font-size:13px">Sin datos en el período</p>';}}
@@ -2384,8 +2393,13 @@ function exportarExcelPel(){
     ['Ventas',r?.ventas?.total_ventas],['Gastos',r?.gastos?.total_gastos],['Utilidad',r?.utilidad],
     ['Citas cobradas',r?.ventas?.pedidos],['Efectivo',r?.ventas?.efectivo],['Tarjeta',r?.ventas?.tarjeta],['Nequi/QR',r?.ventas?.nequi],[],
     ['VENTAS DETALLADAS'],
-    ['Fecha','Hora','Lugar','Método','Total','Cliente','Cajero','Factura'],
-    ...(ventas||[]).map(v=>[v.fecha,v.hora,v.lugar,v.metodo_pago,v.total,v.cliente,v.cajero,v.numero_factura]),
+    ['Fecha','Hora','Cliente','Profesional','Método','Total','Cajero'],
+    ...(ventas||[]).map(v=>{
+      const dt=new Date(String(v.fecha).replace(' ','T'));
+      const fechaStr=isNaN(dt)?'':dt.toLocaleDateString('es-CO');
+      const horaStr=isNaN(dt)?'':dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+      return [fechaStr,horaStr,v.cliente_nombre||'—',v.empleado_nombre||'—',v.metodo_pago||'—',v.total,v.cajero_nombre||'—'];
+    }),
   ];
   const csv=rows.map(r=>r.map(c=>'"'+(String(c||'').replace(/"/g,'""'))+'"').join(',')).join('\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});

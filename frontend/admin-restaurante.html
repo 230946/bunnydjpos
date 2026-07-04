@@ -563,6 +563,8 @@ tr:hover td{background:var(--bg2)}
             <button class="rep-q" onclick="repFiltro('ayer')">Ayer</button>
             <button class="rep-q" onclick="repFiltro('semana')">Esta semana</button>
             <button class="rep-q" onclick="repFiltro('mes')">Este mes</button>
+            <button class="rep-q" onclick="repFiltro('trimestre')">Este trimestre</button>
+            <button class="rep-q" onclick="repFiltro('ano')">Este año</button>
             <button class="rep-q" onclick="repFiltro('30d')">30 días</button>
           </div>
           <div style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid var(--border);border-radius:30px;padding:5px 14px;font-size:12px;color:var(--text2);flex-shrink:0">
@@ -629,7 +631,7 @@ tr:hover td{background:var(--bg2)}
             <h3>Detalle de ventas</h3>
             <div style="display:flex;align-items:center;gap:10px">
               <span id="r-ventas-count" style="font-size:12px;color:var(--text2)"></span>
-              <button class="btn btn-sm btn-outline" onclick="exportarExcel()">⬇ Exportar Excel</button>
+              <button class="btn btn-sm btn-outline" onclick="exportarExcelReportes()">⬇ Exportar Excel</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -2460,6 +2462,8 @@ function repFiltro(tipo){
   else if(tipo==='ayer'){ const y=new Date(d-864e5); desde=ls(y); hasta=ls(y); }
   else if(tipo==='semana'){ const s=new Date(d); s.setDate(d.getDate()-((d.getDay()+6)%7)); desde=ls(s); }
   else if(tipo==='mes'){ desde=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
+  else if(tipo==='trimestre'){ const qm=Math.floor(d.getMonth()/3)*3; desde=`${d.getFullYear()}-${String(qm+1).padStart(2,'0')}-01`; }
+  else if(tipo==='ano'){ desde=`${d.getFullYear()}-01-01`; }
   else if(tipo==='30d'){ const m=new Date(d); m.setDate(d.getDate()-29); desde=ls(m); }
   document.querySelectorAll('.rep-q').forEach(b=>b.classList.remove('active'));
   event.currentTarget.classList.add('active');
@@ -2630,7 +2634,7 @@ function toggleRepVenta(id){
 }
 
 // ─── EXPORTAR EXCEL (CSV con BOM) ────────────────────────────
-function exportarExcel(){
+function exportarExcelReportes(){
   const d = window._repData;
   if(!d){ showToast('Consulta un período primero'); return; }
   const { desde, hasta, r, ventasList, inv } = d;

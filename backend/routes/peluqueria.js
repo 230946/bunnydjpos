@@ -2622,7 +2622,7 @@ router.get('/facturas', async (req, res) => {
       LEFT JOIN usuarios u ON u.id = v.usuario_id
       WHERE ${where}
       ORDER BY v.fecha DESC
-      LIMIT 200
+      LIMIT 5000
     `, params);
     res.json(rows);
   } catch(e) { res.status(500).json({ error: e.message }); }
