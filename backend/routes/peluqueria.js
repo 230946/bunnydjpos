@@ -822,6 +822,9 @@ async function _ddl(sql) {
     notas        TEXT,
     INDEX idx_neg_fecha (negocio_id, fecha)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  await _ddl(`ALTER TABLE pel_ventas ADD COLUMN anulado_en DATETIME NULL`);
+  await _ddl(`ALTER TABLE pel_ventas ADD COLUMN anulado_por VARCHAR(36) NULL`);
+  await _ddl(`ALTER TABLE pel_ventas ADD COLUMN motivo_anulacion VARCHAR(255) NULL`);
 
   // Detalle de venta
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_venta_detalle (
@@ -1733,7 +1736,7 @@ router.get('/ventas-empleado-hoy', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT empleado_id, SUM(total) AS total_ventas
        FROM pel_ventas
-       WHERE negocio_id=? AND DATE(fecha)=CURDATE() AND empleado_id IS NOT NULL
+       WHERE negocio_id=? AND DATE(fecha)=CURDATE() AND empleado_id IS NOT NULL AND estado='completada'
        GROUP BY empleado_id`,
       [nid(req)]
     );
@@ -2648,6 +2651,44 @@ router.get('/facturas/:id', async (req, res) => {
     v.detalle = det;
     v.pagos = pags;
     res.json(v);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Anula una factura ya cobrada: mantiene el número/registro visible en
+// Reimprimir, pero revierte al inventario los productos que esa venta
+// había descontado (los servicios no consumen stock).
+router.patch('/facturas/:id/anular', async (req, res) => {
+  try {
+    const { motivo } = req.body || {};
+    const { rows } = await pool.query(
+      `SELECT * FROM pel_ventas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Factura no encontrada' });
+    if (rows[0].estado === 'anulada') return res.status(400).json({ error: 'Esta factura ya fue anulada' });
+
+    const { rows: detalle } = await pool.query(
+      `SELECT * FROM pel_venta_detalle WHERE venta_id=${ph(1)} AND tipo_item='producto' AND ref_id IS NOT NULL`,
+      [req.params.id]
+    );
+    for (const d of detalle) {
+      const cant = parseInt(d.cantidad || 1);
+      await pool.query(
+        `UPDATE pel_productos SET stock_actual = stock_actual + ${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+        [cant, d.ref_id, nid(req)]
+      );
+      await pool.query(
+        `INSERT INTO pel_movimientos_inv (id,negocio_id,producto_id,tipo,cantidad,referencia_id,motivo,usuario_id)
+         VALUES (${ph(1)},${ph(2)},${ph(3)},'devolucion',${ph(4)},${ph(5)},'Anulación de factura',${ph(6)})`,
+        [uuid(), nid(req), d.ref_id, cant, req.params.id, req.user.id]
+      );
+    }
+
+    await pool.query(
+      `UPDATE pel_ventas SET estado='anulada', anulado_en=NOW(), anulado_por=${ph(1)}, motivo_anulacion=${ph(2)} WHERE id=${ph(3)}`,
+      [req.user.id, motivo || null, req.params.id]
+    );
+    res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

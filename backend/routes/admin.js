@@ -263,7 +263,7 @@ router.post('/caja/cerrar', async (req, res) => {
         COALESCE(SUM(CASE WHEN monto_efectivo>0 THEN monto_efectivo WHEN metodo_pago='efectivo' THEN total ELSE 0 END),0) AS efectivo,
         COALESCE(SUM(CASE WHEN monto_tarjeta>0  THEN monto_tarjeta  WHEN metodo_pago='tarjeta'  THEN total ELSE 0 END),0) AS tarjeta,
         COALESCE(SUM(CASE WHEN monto_nequi>0    THEN monto_nequi    WHEN metodo_pago='nequi'    THEN total ELSE 0 END),0) AS nequi
-      FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado)=${ph(2)} AND cajero_id=${ph(3)}
+      FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado)=${ph(2)} AND cajero_id=${ph(3)} AND estado!='anulada'
     `, [nid(req), fecha, req.user.id]);
     // Solo gastos registrados por este usuario
     const { rows: gastos } = await pool.query(
@@ -438,7 +438,7 @@ router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => 
         FROM (
           SELECT id, negocio_id, total, creado, tipo,
                  monto_efectivo, monto_tarjeta, monto_nequi, metodo_pago, id AS vid
-          FROM ventas
+          FROM ventas WHERE estado!='anulada'
           UNION ALL
           SELECT pv.id, pv.negocio_id, pv.total, pv.fecha AS creado, 'servicio' AS tipo,
                  0, 0, 0,
@@ -465,7 +465,7 @@ router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => 
       pool.query(`
         SELECT tipo, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
         FROM ventas
-        WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}
+        WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)} AND estado!='anulada'
         GROUP BY tipo
       `, [nid(req), d, h]),
     ]);
@@ -487,7 +487,7 @@ router.get('/reportes/ventas-por-hora', requirePermiso('reportes'), async (req, 
     const h = hasta || d;
     let sql = `SELECT HOUR(v.creado) AS hora, COUNT(*) AS pedidos, COALESCE(SUM(v.total),0) AS total
                FROM (
-                 SELECT negocio_id, total, creado, tipo, metodo_pago FROM ventas
+                 SELECT negocio_id, total, creado, tipo, metodo_pago FROM ventas WHERE estado!='anulada'
                  UNION ALL
                  SELECT negocio_id, total, fecha AS creado, 'servicio', 'efectivo' FROM pel_ventas WHERE estado='completada'
                ) v
@@ -510,7 +510,7 @@ router.get('/reportes/ventas-por-dia', requirePermiso('reportes'), async (req, r
     const { rows } = await pool.query(
       `SELECT DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(v.total),0) AS total
        FROM (
-         SELECT negocio_id, total, creado FROM ventas
+         SELECT negocio_id, total, creado FROM ventas WHERE estado!='anulada'
          UNION ALL
          SELECT negocio_id, total, fecha AS creado FROM pel_ventas WHERE estado='completada'
        ) v
@@ -540,7 +540,7 @@ router.get('/ventas/recientes', async (req, res) => {
       FROM ventas v
       LEFT JOIN usuarios u ON u.id = v.cajero_id
       LEFT JOIN mesas m ON m.id = v.mesa_id
-      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}
+      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)} AND v.estado!='anulada'
     `;
     const params = [nid(req), d, h];
     if (tipo) { params.push(tipo); sql += ` AND v.tipo=${ph(params.length)}`; }
@@ -570,7 +570,7 @@ router.get('/ventas', requirePermiso('reportes'), async (req, res) => {
       FROM ventas v
       LEFT JOIN usuarios u ON u.id = v.cajero_id
       LEFT JOIN mesas m ON m.id = v.mesa_id
-      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)} AND v.estado!='anulada'`;
     const params = [nid(req), d, h];
     if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
     if (tipo)        { params.push(tipo);         sql += ` AND v.tipo=${ph(params.length)}`; }
@@ -730,7 +730,8 @@ router.get('/facturas', async (req, res) => {
     const { rows } = await pool.query(`
       SELECT v.id, v.numero_factura, v.creado, v.mesa_num, v.cliente_nombre,
              v.metodo_pago, v.monto_efectivo, v.monto_tarjeta, v.monto_nequi,
-             v.subtotal, v.iva, v.total, v.recibido, v.cambio,
+             v.subtotal, v.iva, v.total, v.recibido, v.cambio, v.estado,
+             v.anulado_en, v.motivo_anulacion,
              u.nombre AS cajero_nombre,
              c.telefono AS cliente_tel, c.documento AS cliente_doc,
              c.email AS cliente_email, c.direccion AS cliente_dir,
@@ -743,6 +744,71 @@ router.get('/facturas', async (req, res) => {
       LIMIT 200
     `, params);
     res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Anula una factura ya cobrada: mantiene el número de factura y el registro
+// visible en Reimprimir, pero revierte al inventario exactamente lo que esa
+// venta había descontado (misma lógica de /pos/ventas, en reversa).
+router.patch('/facturas/:id/anular', requirePermiso('reportes'), async (req, res) => {
+  try {
+    const { motivo } = req.body || {};
+    const { rows } = await pool.query(
+      `SELECT * FROM ventas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Factura no encontrada' });
+    const venta = rows[0];
+    if (venta.estado === 'anulada') return res.status(400).json({ error: 'Esta factura ya fue anulada' });
+
+    let items = venta.items;
+    if (typeof items === 'string') { try { items = JSON.parse(items); } catch { items = []; } }
+
+    for (const item of (items || [])) {
+      if (item.item_id) {
+        const qty = item.qty || item.cantidad || 1;
+        const { rows: receta } = await pool.query(
+          `SELECT inventario_id, cantidad FROM menu_item_recetas WHERE menu_item_id=${ph(1)} AND negocio_id=${ph(2)}`,
+          [item.item_id, nid(req)]
+        );
+        if (receta.length > 0) {
+          for (const ing of receta) {
+            await pool.query(
+              `UPDATE inventario SET stock=stock+${ph(1)}, actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+              [ing.cantidad * qty, ing.inventario_id, nid(req)]
+            );
+          }
+        } else {
+          const { rows: mi } = await pool.query(
+            `SELECT inventario_id FROM menu_items WHERE id=${ph(1)} AND negocio_id=${ph(2)} LIMIT 1`,
+            [item.item_id, nid(req)]
+          );
+          const invId = mi[0]?.inventario_id;
+          if (invId) {
+            await pool.query(
+              `UPDATE inventario SET stock=stock+${ph(1)}, actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+              [qty, invId, nid(req)]
+            );
+          } else {
+            await pool.query(
+              `UPDATE menu_items SET stock=stock+${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)} AND stock IS NOT NULL`,
+              [qty, item.item_id, nid(req)]
+            );
+          }
+        }
+      } else if (item.inventario_id) {
+        await pool.query(
+          `UPDATE inventario SET stock=stock+${ph(1)}, actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+          [item.qty || 1, item.inventario_id, nid(req)]
+        );
+      }
+    }
+
+    await pool.query(
+      `UPDATE ventas SET estado='anulada', anulado_en=NOW(), anulado_por=${ph(1)}, motivo_anulacion=${ph(2)} WHERE id=${ph(3)}`,
+      [req.user.id, motivo || null, req.params.id]
+    );
+    res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

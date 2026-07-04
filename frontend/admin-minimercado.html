@@ -707,6 +707,7 @@ tr:hover td{background:var(--bg2)}
                 style="flex:1;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px;outline:none">
               <button class="btn btn-success btn-sm" onclick="enviarEmailFactura()">Enviar</button>
             </div>
+            <button id="fact-anular-btn" class="btn btn-outline btn-sm" style="width:100%;margin-top:8px;color:var(--red);border-color:var(--red)" onclick="anularFacturaActual()">🚫 Anular factura</button>
           </div>
         </div>
       </div>
@@ -2675,17 +2676,20 @@ async function loadFacturas(){
     const data=await api(url);
     $('fact-loading').style.display='none';
     if(!data.length){ $('fact-empty').style.display='block'; return; }
-    $('fact-tbody').innerHTML=data.map(v=>`
-      <tr>
-        <td><b>${v.numero_factura||'—'}</b></td>
+    $('fact-tbody').innerHTML=data.map(v=>{
+      const anulada = v.estado==='anulada';
+      return `
+      <tr style="${anulada?'opacity:.55':''}">
+        <td><b>${v.numero_factura||'—'}</b>${anulada?' <span class="badge" style="background:var(--red-l,#fee2e2);color:var(--red,#dc2626);font-size:10px">ANULADA</span>':''}</td>
         <td>${new Date(v.creado).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
         <td>${v.cliente_nombre||'<span style="color:var(--text3)">Mostrador</span>'}</td>
         <td>${v.mesa_num||'—'}</td>
         <td style="font-size:12px">${_metodoStr(v)}</td>
-        <td><b>${fmt(+v.total)}</b></td>
+        <td><b style="${anulada?'text-decoration:line-through':''}">${fmt(+v.total)}</b></td>
         <td style="color:var(--text2);font-size:12px">${v.cajero_nombre||'—'}</td>
         <td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   } catch(e){ $('fact-loading').style.display='none'; toast('Error: '+e.message); }
 }
 
@@ -2710,6 +2714,10 @@ async function abrirFactura(id){
     const mostrarIva=cf.togIva!==false&&+v.iva>0;
 
     let h=`<div class="recibo" style="font-family:monospace;font-size:12px">`;
+    if(v.estado==='anulada'){
+      h+=`<div style="text-align:center;background:var(--red-l,#fee2e2);color:var(--red,#dc2626);font-weight:700;padding:6px;border-radius:6px;margin-bottom:8px">⚠️ FACTURA ANULADA${v.anulado_en?' — '+new Date(v.anulado_en).toLocaleDateString('es-CO'):''}</div>`;
+      if(v.motivo_anulacion) h+=`<div style="text-align:center;font-size:11px;color:var(--text2);margin-bottom:8px">Motivo: ${v.motivo_anulacion}</div>`;
+    }
     h+=`<div class="recibo-center"><img src="/img/logo.png" style="width:48px;height:48px;object-fit:cover;border-radius:8px;display:block;margin:0 auto 5px"></div>`;
     if(cf.nombre) h+=`<div class="recibo-center" style="font-weight:700;font-size:13px">${cf.nombre}</div>`;
     if(cf.togNit!==false&&cf.nit) h+=`<div class="recibo-center">NIT: ${cf.nit}</div>`;
@@ -2756,8 +2764,21 @@ async function abrirFactura(id){
     }
     h+=`</div>`;
     $('fact-recibo-wrap').innerHTML=h;
+    $('fact-anular-btn').style.display = v.estado==='anulada' ? 'none' : 'block';
     $('fact-modal').style.display='flex';
   } catch(e){ toast('Error cargando factura: '+e.message); }
+}
+
+async function anularFacturaActual(){
+  if(!_factActual) return;
+  const motivo = prompt('Motivo de la anulación (opcional):') || '';
+  if(!confirm(`¿Anular la factura ${_factActual.numero_factura||''}? Esto repone al inventario los artículos vendidos. La factura queda visible pero marcada como ANULADA.`)) return;
+  try {
+    await api(`/admin/facturas/${_factActual.id}/anular`, {method:'PATCH', body:JSON.stringify({motivo})});
+    toast('Factura anulada ✓');
+    closeFactModal();
+    loadFacturas();
+  } catch(e){ toast('Error: '+e.message); }
 }
 
 function closeFactModal(){
