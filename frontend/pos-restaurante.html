@@ -137,9 +137,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .ticket-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:0.5px solid var(--border)}
 .ticket-mesa{font-weight:700;font-size:18px}
 .ticket-time{font-size:13px;color:var(--text2)}
-.ticket-item{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:15px;border-bottom:0.5px solid var(--border)}
+.ticket-item{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:19px;font-weight:600;border-bottom:0.5px solid var(--border)}
 .ticket-item:last-child{border-bottom:none}
-.ticket-qty{font-weight:700;min-width:28px;font-size:16px}
+.ticket-qty{font-weight:700;min-width:30px;font-size:19px}
 .ticket-btn{width:100%;margin-top:14px;padding:14px;border:none;border-radius:var(--r);cursor:pointer;font-size:15px;font-weight:600}
 .btn-cocinando{background:var(--amber-l);color:var(--amber-d)}
 .btn-listo{background:var(--green-l);color:var(--green-d)}
@@ -1180,7 +1180,7 @@ async function loadCocina(){
       else if(c.estado==='listo'){ cls='listo'; label='Preparando'; badgeCls='b-listo'; }
       else { cls='entregado'; label='Listo para mesa'; badgeCls='b-entregado'; }
       const d=document.createElement('div'); d.className=`ticket ${cls}`;
-      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:15px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 准备中 / Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ 完成 / Listo</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ 已送达 / Entregado</button>`:``}`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${c.mesa_nombre||`Mesa ${c.mesa_num}`}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min — ${c.mesero_nombre||''}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:18px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${c.estado==='nuevo'?`<button class="ticket-btn btn-cocinando" onclick="updComanda('${c.id}','cocinando')">👨‍🍳 准备中 / Preparando</button>`:c.estado==='cocinando'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','listo')">✓ 完成 / Listo</button>`:c.estado==='listo'?`<button class="ticket-btn btn-listo" onclick="updComanda('${c.id}','entregado')">🛎️ 已送达 / Entregado</button>`:``}`;
       g.appendChild(d);
     });
 
@@ -1205,7 +1205,7 @@ async function loadCocina(){
         : p.estado==='listo'
         ? `<button class="ticket-btn btn-listo" onclick="reenviarAvisoDomicilio('${p.id}')">🔔 Reenviar aviso a domiciliario</button>`
         : '';
-      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:15px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:18px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
       g.appendChild(d);
     });
   } catch(e){ toast('Error cocina: '+e.message); }
