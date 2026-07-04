@@ -299,24 +299,13 @@ tr:hover td{background:var(--bg2)}
         </div>
 
         <!-- Comisión por negocio — mes actual / histórico (fila propia, crece libremente) -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:14px;margin-top:16px;align-items:start">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:16px;align-items:start">
           <div class="stat-card" style="border-left:3px solid #10b981;padding:18px 20px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Comisión por negocio · mes actual</span>
               <span style="font-size:20px;opacity:.7">📊</span>
             </div>
-            <div style="display:flex;gap:16px;align-items:flex-start">
-              <div id="s-com-por-negocio-mes" style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0">—</div>
-              <div style="width:150px;flex-shrink:0">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px">
-                  <span style="font-size:10px;color:var(--text3);white-space:nowrap">Tendencia diaria</span>
-                </div>
-                <select id="sel-tend-mes" onchange="renderTendenciaChart('chart-tendencia-mes','_chartTendMes',window._tendMesData,{dia:true,negocioId:this.value})" style="width:100%;font-size:10px;padding:2px 4px;margin-bottom:6px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-                  <option value="">Todos los negocios</option>
-                </select>
-                <div style="height:130px;position:relative"><canvas id="chart-tendencia-mes"></canvas></div>
-              </div>
-            </div>
+            <div id="s-com-por-negocio-mes" style="display:flex;flex-direction:column;gap:10px">—</div>
           </div>
 
           <div class="stat-card" style="border-left:3px solid #0ea5e9;padding:18px 20px">
@@ -324,18 +313,7 @@ tr:hover td{background:var(--bg2)}
               <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Comisión por negocio · histórico</span>
               <span style="font-size:20px;opacity:.7">🗂️</span>
             </div>
-            <div style="display:flex;gap:16px;align-items:flex-start">
-              <div id="s-com-por-negocio-total" style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0">—</div>
-              <div style="width:150px;flex-shrink:0">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px">
-                  <span style="font-size:10px;color:var(--text3);white-space:nowrap">Tendencia mensual</span>
-                </div>
-                <select id="sel-tend-total" onchange="renderTendenciaChart('chart-tendencia-total','_chartTendTotal',window._tendTotalData,{dia:false,negocioId:this.value})" style="width:100%;font-size:10px;padding:2px 4px;margin-bottom:6px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-                  <option value="">Todos los negocios</option>
-                </select>
-                <div style="height:130px;position:relative"><canvas id="chart-tendencia-total"></canvas></div>
-              </div>
-            </div>
+            <div id="s-com-por-negocio-total" style="display:flex;flex-direction:column;gap:10px">—</div>
           </div>
         </div>
 
@@ -881,64 +859,15 @@ function renderComPorNegocioCompacto(elId, repData){
     </div>`;
   }).join('') : '<span style="font-size:12px;color:var(--text3)">Sin datos</span>';
 }
-function poblarSelectorTendencia(selId, data){
-  const sel = document.getElementById(selId);
-  if(!sel) return;
-  const vistos = new Map();
-  (data?.detalle||[]).forEach(d => { if(!vistos.has(d.negocio_id)) vistos.set(d.negocio_id, d.nombre); });
-  const actual = sel.value;
-  sel.innerHTML = '<option value="">Todos los negocios</option>' +
-    [...vistos.entries()].map(([id,nombre])=>`<option value="${id}">${esc(nombre)}</option>`).join('');
-  if([...vistos.keys()].includes(actual)) sel.value = actual;
-}
-function renderTendenciaChart(canvasId, storeKey, data, opts){
-  const canvas = document.getElementById(canvasId);
-  if(!canvas) return;
-  if(window[storeKey]){ window[storeKey].destroy(); window[storeKey]=null; }
-  const detalle = (data?.detalle||[]).filter(d => !opts.negocioId || d.negocio_id === opts.negocioId);
-  const color = opts.dia ? '#059669' : '#0284c7';
-  const porPeriodo = {};
-  detalle.forEach(d => { porPeriodo[d.periodo] = (porPeriodo[d.periodo]||0) + (+d.comision||0); });
-  const periodos = Object.keys(porPeriodo).sort();
-  const labels = periodos.map(periodo => {
-    if(opts.dia){ const d=new Date(periodo+'T12:00:00'); return String(d.getDate()); }
-    const [y,m]=periodo.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('es-CO',{month:'short'});
-  });
-  const values = periodos.map(p => porPeriodo[p]);
-  const tc = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim()||'#999';
-  const maxVal = Math.max(...values, 1);
-  window[storeKey] = new Chart(canvas.getContext('2d'), {
-    type: 'bar',
-    data: { labels, datasets: [{
-      data: values,
-      backgroundColor: values.map(v => v===maxVal && v>0 ? color : color+'66'),
-      borderRadius: {topLeft:4,topRight:4,bottomLeft:0,bottomRight:0},
-      maxBarThickness: 22,
-    }]},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { title: ctx => opts.dia ? `Día ${ctx[0].label}` : ctx[0].label, label: ctx => ` Comisión: ${fmt(ctx.raw)}` } },
-      },
-      scales: {
-        x: { display: true, grid: { display:false }, ticks: { color: tc, font: {size:9}, maxTicksLimit: 6, maxRotation:0 } },
-        y: { display: false, beginAtZero: true },
-      },
-    },
-  });
-}
 async function loadDashboard(){
   try {
     const hoyISO = new Date().toISOString().slice(0,10);
-    const [negocios, usuarios, contratos, rep, repTotal, tendMes, tendTotal] = await Promise.all([
+    const [negocios, usuarios, contratos, rep, repTotal] = await Promise.all([
       api('/superadmin/negocios'),
       api('/superadmin/usuarios'),
       api('/superadmin/contratos').catch(()=>[]),
       api('/superadmin/reportes').catch(()=>null),
       api(`/superadmin/reportes?desde=2000-01-01&hasta=${hoyISO}`).catch(()=>null),
-      api('/superadmin/reportes/tendencia?granularidad=dia').catch(()=>null),
-      api('/superadmin/reportes/tendencia?granularidad=mes').catch(()=>null),
     ]);
     const activos = negocios.filter(n=>n.activo).length;
     document.getElementById('s-negocios').textContent = activos;
@@ -958,11 +887,6 @@ async function loadDashboard(){
     }
     renderComPorNegocioCompacto('s-com-por-negocio-mes', rep);
     renderComPorNegocioCompacto('s-com-por-negocio-total', repTotal);
-    window._tendMesData = tendMes; window._tendTotalData = tendTotal;
-    poblarSelectorTendencia('sel-tend-mes', tendMes);
-    poblarSelectorTendencia('sel-tend-total', tendTotal);
-    renderTendenciaChart('chart-tendencia-mes', '_chartTendMes', tendMes, {dia:true, negocioId:document.getElementById('sel-tend-mes')?.value||''});
-    renderTendenciaChart('chart-tendencia-total', '_chartTendTotal', tendTotal, {dia:false, negocioId:document.getElementById('sel-tend-total')?.value||''});
 
     const tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
     document.getElementById('dash-negocios').innerHTML = negocios.slice(0,8).map(n=>`
