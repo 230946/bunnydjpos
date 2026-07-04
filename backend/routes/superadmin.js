@@ -329,6 +329,7 @@ router.get('/reportes/tendencia', async (req, res) => {
 
     const { rows } = await pool.query(`
       SELECT
+        n.id AS negocio_id, n.nombre,
         COALESCE(
           (SELECT plan FROM neg_contratos WHERE negocio_id=n.id AND estado='activo' ORDER BY fecha_fin DESC LIMIT 1),
           np.plan, 'free'
@@ -343,18 +344,18 @@ router.get('/reportes/tendencia', async (req, res) => {
         SELECT id, negocio_id, total, fecha AS creado FROM pel_ventas WHERE estado='completada'
       ) v ON v.negocio_id = n.id AND DATE(v.creado) BETWEEN ? AND ?
       WHERE n.activo = 1
-      GROUP BY n.id, plan, periodo
+      GROUP BY n.id, n.nombre, plan, periodo
       ORDER BY periodo
     `, [desde, hasta]);
 
     const rate = { free:0, basic:0.09, plus:0.07, premium:0.05, personalizado:0.07 };
-    const porPeriodo = {};
-    rows.forEach(r => {
-      const com = parseFloat(r.ingresos||0) * (rate[r.plan] ?? 0);
-      porPeriodo[r.periodo] = (porPeriodo[r.periodo] || 0) + com;
-    });
-    const serie = Object.entries(porPeriodo).sort((a,b)=>a[0]<b[0]?-1:1).map(([periodo,comision])=>({periodo,comision}));
-    res.json({ granularidad: gran, desde, hasta, serie });
+    const detalle = rows.map(r => ({
+      periodo: r.periodo,
+      negocio_id: r.negocio_id,
+      nombre: r.nombre,
+      comision: parseFloat(r.ingresos||0) * (rate[r.plan] ?? 0),
+    })).sort((a,b)=>a.periodo<b.periodo?-1:1);
+    res.json({ granularidad: gran, desde, hasta, detalle });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

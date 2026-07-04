@@ -308,8 +308,13 @@ tr:hover td{background:var(--bg2)}
             <div style="display:flex;gap:16px;align-items:flex-start">
               <div id="s-com-por-negocio-mes" style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0">—</div>
               <div style="width:150px;flex-shrink:0">
-                <div style="font-size:10px;color:var(--text3);margin-bottom:4px;white-space:nowrap">Tendencia diaria</div>
-                <div style="height:150px;position:relative"><canvas id="chart-tendencia-mes"></canvas></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px">
+                  <span style="font-size:10px;color:var(--text3);white-space:nowrap">Tendencia diaria</span>
+                </div>
+                <select id="sel-tend-mes" onchange="renderTendenciaChart('chart-tendencia-mes','_chartTendMes',window._tendMesData,{dia:true,negocioId:this.value})" style="width:100%;font-size:10px;padding:2px 4px;margin-bottom:6px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+                  <option value="">Todos los negocios</option>
+                </select>
+                <div style="height:130px;position:relative"><canvas id="chart-tendencia-mes"></canvas></div>
               </div>
             </div>
           </div>
@@ -322,8 +327,13 @@ tr:hover td{background:var(--bg2)}
             <div style="display:flex;gap:16px;align-items:flex-start">
               <div id="s-com-por-negocio-total" style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0">—</div>
               <div style="width:150px;flex-shrink:0">
-                <div style="font-size:10px;color:var(--text3);margin-bottom:4px;white-space:nowrap">Tendencia mensual</div>
-                <div style="height:150px;position:relative"><canvas id="chart-tendencia-total"></canvas></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px">
+                  <span style="font-size:10px;color:var(--text3);white-space:nowrap">Tendencia mensual</span>
+                </div>
+                <select id="sel-tend-total" onchange="renderTendenciaChart('chart-tendencia-total','_chartTendTotal',window._tendTotalData,{dia:false,negocioId:this.value})" style="width:100%;font-size:10px;padding:2px 4px;margin-bottom:6px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+                  <option value="">Todos los negocios</option>
+                </select>
+                <div style="height:130px;position:relative"><canvas id="chart-tendencia-total"></canvas></div>
               </div>
             </div>
           </div>
@@ -871,17 +881,30 @@ function renderComPorNegocioCompacto(elId, repData){
     </div>`;
   }).join('') : '<span style="font-size:12px;color:var(--text3)">Sin datos</span>';
 }
+function poblarSelectorTendencia(selId, data){
+  const sel = document.getElementById(selId);
+  if(!sel) return;
+  const vistos = new Map();
+  (data?.detalle||[]).forEach(d => { if(!vistos.has(d.negocio_id)) vistos.set(d.negocio_id, d.nombre); });
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">Todos los negocios</option>' +
+    [...vistos.entries()].map(([id,nombre])=>`<option value="${id}">${esc(nombre)}</option>`).join('');
+  if([...vistos.keys()].includes(actual)) sel.value = actual;
+}
 function renderTendenciaChart(canvasId, storeKey, data, opts){
   const canvas = document.getElementById(canvasId);
   if(!canvas) return;
   if(window[storeKey]){ window[storeKey].destroy(); window[storeKey]=null; }
-  const serie = data?.serie || [];
+  const detalle = (data?.detalle||[]).filter(d => !opts.negocioId || d.negocio_id === opts.negocioId);
   const color = opts.dia ? '#059669' : '#0284c7';
-  const labels = serie.map(p => {
-    if(opts.dia){ const d=new Date(p.periodo+'T12:00:00'); return String(d.getDate()); }
-    const [y,m]=p.periodo.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('es-CO',{month:'short'});
+  const porPeriodo = {};
+  detalle.forEach(d => { porPeriodo[d.periodo] = (porPeriodo[d.periodo]||0) + (+d.comision||0); });
+  const periodos = Object.keys(porPeriodo).sort();
+  const labels = periodos.map(periodo => {
+    if(opts.dia){ const d=new Date(periodo+'T12:00:00'); return String(d.getDate()); }
+    const [y,m]=periodo.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('es-CO',{month:'short'});
   });
-  const values = serie.map(p => +p.comision||0);
+  const values = periodos.map(p => porPeriodo[p]);
   const tc = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim()||'#999';
   const maxVal = Math.max(...values, 1);
   window[storeKey] = new Chart(canvas.getContext('2d'), {
@@ -935,8 +958,11 @@ async function loadDashboard(){
     }
     renderComPorNegocioCompacto('s-com-por-negocio-mes', rep);
     renderComPorNegocioCompacto('s-com-por-negocio-total', repTotal);
-    renderTendenciaChart('chart-tendencia-mes', '_chartTendMes', tendMes, {dia:true});
-    renderTendenciaChart('chart-tendencia-total', '_chartTendTotal', tendTotal, {dia:false});
+    window._tendMesData = tendMes; window._tendTotalData = tendTotal;
+    poblarSelectorTendencia('sel-tend-mes', tendMes);
+    poblarSelectorTendencia('sel-tend-total', tendTotal);
+    renderTendenciaChart('chart-tendencia-mes', '_chartTendMes', tendMes, {dia:true, negocioId:document.getElementById('sel-tend-mes')?.value||''});
+    renderTendenciaChart('chart-tendencia-total', '_chartTendTotal', tendTotal, {dia:false, negocioId:document.getElementById('sel-tend-total')?.value||''});
 
     const tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
     document.getElementById('dash-negocios').innerHTML = negocios.slice(0,8).map(n=>`
