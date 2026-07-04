@@ -296,25 +296,27 @@ tr:hover td{background:var(--bg2)}
             </div>
           </div>
 
-          <!-- Comisión por negocio — mes actual -->
-          <div class="stat-card" style="border-left:3px solid #10b981;padding:18px 20px;display:flex;flex-direction:column;gap:0">
+        </div>
+
+        <!-- Comisión por negocio — mes actual / histórico (fila propia, crece libremente) -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:16px;align-items:start">
+          <div class="stat-card" style="border-left:3px solid #10b981;padding:18px 20px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Comisión por negocio · mes actual</span>
               <span style="font-size:20px;opacity:.7">📊</span>
             </div>
-            <div id="s-com-por-negocio-mes" style="display:flex;flex-direction:column;gap:10px;max-height:230px;overflow-y:auto;padding-right:4px">—</div>
+            <div id="s-com-por-negocio-mes" style="display:flex;flex-direction:column;gap:10px">—</div>
           </div>
 
-          <!-- Comisión por negocio — histórico -->
-          <div class="stat-card" style="border-left:3px solid #0ea5e9;padding:18px 20px;display:flex;flex-direction:column;gap:0">
+          <div class="stat-card" style="border-left:3px solid #0ea5e9;padding:18px 20px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Comisión por negocio · histórico</span>
               <span style="font-size:20px;opacity:.7">🗂️</span>
             </div>
-            <div id="s-com-por-negocio-total" style="display:flex;flex-direction:column;gap:10px;max-height:230px;overflow-y:auto;padding-right:4px">—</div>
+            <div id="s-com-por-negocio-total" style="display:flex;flex-direction:column;gap:10px">—</div>
           </div>
-
         </div>
+
         <!-- Comisión por negocio -->
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
