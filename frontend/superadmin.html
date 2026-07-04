@@ -299,13 +299,19 @@ tr:hover td{background:var(--bg2)}
         </div>
 
         <!-- Comisión por negocio — mes actual / histórico (fila propia, crece libremente) -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:16px;align-items:start">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:14px;margin-top:16px;align-items:start">
           <div class="stat-card" style="border-left:3px solid #10b981;padding:18px 20px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Comisión por negocio · mes actual</span>
               <span style="font-size:20px;opacity:.7">📊</span>
             </div>
-            <div id="s-com-por-negocio-mes" style="display:flex;flex-direction:column;gap:10px">—</div>
+            <div style="display:flex;gap:16px;align-items:flex-start">
+              <div id="s-com-por-negocio-mes" style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0">—</div>
+              <div style="width:150px;flex-shrink:0">
+                <div style="font-size:10px;color:var(--text3);margin-bottom:4px;white-space:nowrap">Tendencia diaria</div>
+                <div style="height:150px;position:relative"><canvas id="chart-tendencia-mes"></canvas></div>
+              </div>
+            </div>
           </div>
 
           <div class="stat-card" style="border-left:3px solid #0ea5e9;padding:18px 20px">
@@ -313,7 +319,13 @@ tr:hover td{background:var(--bg2)}
               <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)">Comisión por negocio · histórico</span>
               <span style="font-size:20px;opacity:.7">🗂️</span>
             </div>
-            <div id="s-com-por-negocio-total" style="display:flex;flex-direction:column;gap:10px">—</div>
+            <div style="display:flex;gap:16px;align-items:flex-start">
+              <div id="s-com-por-negocio-total" style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0">—</div>
+              <div style="width:150px;flex-shrink:0">
+                <div style="font-size:10px;color:var(--text3);margin-bottom:4px;white-space:nowrap">Tendencia mensual</div>
+                <div style="height:150px;position:relative"><canvas id="chart-tendencia-total"></canvas></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -859,15 +871,59 @@ function renderComPorNegocioCompacto(elId, repData){
     </div>`;
   }).join('') : '<span style="font-size:12px;color:var(--text3)">Sin datos</span>';
 }
+function renderTendenciaChart(canvasId, storeKey, data, opts){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  if(window[storeKey]){ window[storeKey].destroy(); window[storeKey]=null; }
+  const serie = data?.serie || [];
+  const color = opts.dia ? '#059669' : '#0284c7';
+  const labels = serie.map(p => {
+    if(opts.dia){ const d=new Date(p.periodo+'T12:00:00'); return String(d.getDate()); }
+    const [y,m]=p.periodo.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('es-CO',{month:'short'});
+  });
+  const values = serie.map(p => +p.comision||0);
+  const tc = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim()||'#999';
+  window[storeKey] = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets: [{
+      data: values,
+      borderColor: color,
+      backgroundColor: color+'1a',
+      fill: true,
+      tension: 0.35,
+      borderWidth: 2,
+      borderCapStyle: 'round',
+      borderJoinStyle: 'round',
+      pointRadius: values.map((_,i)=> i===values.length-1 ? 4 : 0),
+      pointHoverRadius: 5,
+      pointBackgroundColor: color,
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { title: ctx => opts.dia ? `Día ${ctx[0].label}` : ctx[0].label, label: ctx => ` Comisión: ${fmt(ctx.raw)}` } },
+      },
+      scales: {
+        x: { display: true, grid: { display:false }, ticks: { color: tc, font: {size:9}, maxTicksLimit: opts.dia?6:6, maxRotation:0 } },
+        y: { display: false, beginAtZero: true },
+      },
+    },
+  });
+}
 async function loadDashboard(){
   try {
     const hoyISO = new Date().toISOString().slice(0,10);
-    const [negocios, usuarios, contratos, rep, repTotal] = await Promise.all([
+    const [negocios, usuarios, contratos, rep, repTotal, tendMes, tendTotal] = await Promise.all([
       api('/superadmin/negocios'),
       api('/superadmin/usuarios'),
       api('/superadmin/contratos').catch(()=>[]),
       api('/superadmin/reportes').catch(()=>null),
       api(`/superadmin/reportes?desde=2000-01-01&hasta=${hoyISO}`).catch(()=>null),
+      api('/superadmin/reportes/tendencia?granularidad=dia').catch(()=>null),
+      api('/superadmin/reportes/tendencia?granularidad=mes').catch(()=>null),
     ]);
     const activos = negocios.filter(n=>n.activo).length;
     document.getElementById('s-negocios').textContent = activos;
@@ -887,6 +943,8 @@ async function loadDashboard(){
     }
     renderComPorNegocioCompacto('s-com-por-negocio-mes', rep);
     renderComPorNegocioCompacto('s-com-por-negocio-total', repTotal);
+    renderTendenciaChart('chart-tendencia-mes', '_chartTendMes', tendMes, {dia:true});
+    renderTendenciaChart('chart-tendencia-total', '_chartTendTotal', tendTotal, {dia:false});
 
     const tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
     document.getElementById('dash-negocios').innerHTML = negocios.slice(0,8).map(n=>`

@@ -313,6 +313,51 @@ router.get('/reportes', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── GET /reportes/tendencia — comisión total de la plataforma en el tiempo ──
+router.get('/reportes/tendencia', async (req, res) => {
+  try {
+    const gran = req.query.granularidad === 'mes' ? 'mes' : 'dia';
+    const now = new Date(Date.now() - 5*60*60*1000);
+    const pad = n => String(n).padStart(2,'0');
+    const today = `${now.getUTCFullYear()}-${pad(now.getUTCMonth()+1)}-${pad(now.getUTCDate())}`;
+    const defaultDesde = gran === 'mes'
+      ? '2000-01-01'
+      : `${now.getUTCFullYear()}-${pad(now.getUTCMonth()+1)}-01`;
+    const desde = req.query.desde || defaultDesde;
+    const hasta = req.query.hasta || today;
+    const periodoExpr = gran === 'mes' ? `DATE_FORMAT(v.creado,'%Y-%m')` : `DATE_FORMAT(v.creado,'%Y-%m-%d')`;
+
+    const { rows } = await pool.query(`
+      SELECT
+        COALESCE(
+          (SELECT plan FROM neg_contratos WHERE negocio_id=n.id AND estado='activo' ORDER BY fecha_fin DESC LIMIT 1),
+          np.plan, 'free'
+        ) AS plan,
+        ${periodoExpr} AS periodo,
+        SUM(v.total) AS ingresos
+      FROM negocios n
+      LEFT JOIN neg_planes np ON np.negocio_id = n.id
+      JOIN (
+        SELECT id, negocio_id, total, creado FROM ventas
+        UNION ALL
+        SELECT id, negocio_id, total, fecha AS creado FROM pel_ventas WHERE estado='completada'
+      ) v ON v.negocio_id = n.id AND DATE(v.creado) BETWEEN ? AND ?
+      WHERE n.activo = 1
+      GROUP BY n.id, plan, periodo
+      ORDER BY periodo
+    `, [desde, hasta]);
+
+    const rate = { free:0, basic:0.09, plus:0.07, premium:0.05, personalizado:0.07 };
+    const porPeriodo = {};
+    rows.forEach(r => {
+      const com = parseFloat(r.ingresos||0) * (rate[r.plan] ?? 0);
+      porPeriodo[r.periodo] = (porPeriodo[r.periodo] || 0) + com;
+    });
+    const serie = Object.entries(porPeriodo).sort((a,b)=>a[0]<b[0]?-1:1).map(([periodo,comision])=>({periodo,comision}));
+    res.json({ granularidad: gran, desde, hasta, serie });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ════════════════════════════════════════════════════════════════
 // PLANES / LICENCIAS
 // ════════════════════════════════════════════════════════════════
