@@ -159,6 +159,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .mesa-cobro-btn{padding:7px 12px;border-radius:var(--r);border:0.5px solid var(--border2);cursor:pointer;font-size:13px;background:var(--red);color:#fff;border-color:var(--red);animation:mesaCobroPend 1s ease-in-out infinite}
 .mesa-cobro-btn.selected{animation:none;box-shadow:0 0 0 2px var(--red-d,#A32D2D)}
 .mesa-cobro-btn.libre{background:transparent;color:var(--text2);border-color:var(--border2);opacity:.4;cursor:default;pointer-events:none;animation:none;box-shadow:none}
+.mesa-cobro-btn.preparando{background:var(--amber-l);color:var(--amber-d);border-color:var(--amber-d);cursor:default;pointer-events:none;animation:none;box-shadow:none}
 @keyframes mesaCobroPend{0%,100%{opacity:1}50%{opacity:.55}}
 .pay-btns{display:flex;gap:8px}
 .pay-btn{flex:1;padding:12px 8px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;background:transparent;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text2)}
@@ -903,7 +904,7 @@ async function loadMesas(){
       g.appendChild(d);
     });
     // Actualizar selects de cobro
-    renderMesasCobro();
+    await renderMesasCobro();
   } catch(e){ toast('Error cargando mesas'); }
 }
 
@@ -1361,20 +1362,30 @@ function selDomCobro(id){
   if(!pagoMixtoActivo&&selPayMethod==='efectivo') renderBilletes(total);
 }
 
-function renderMesasCobro(){
+async function renderMesasCobro(){
   const el=$('mesas-cobro'); el.innerHTML='';
+  // Una mesa solo se marca "pendiente de pago" (roja, parpadeante) cuando
+  // cocina ya no tiene nada suyo en 'nuevo'/'cocinando' — si no, el cajero
+  // podría intentar cobrar una mesa cuyo pedido todavía se está preparando.
+  let mesasEnPreparacion = new Set();
+  try {
+    const comandas = await api('/pos/comandas');
+    comandas.forEach(c=>{ if((c.estado==='nuevo'||c.estado==='cocinando') && c.mesa_id) mesasEnPreparacion.add(c.mesa_id); });
+  } catch(_){}
   allMesas.forEach(m=>{
     const pedidoArr = typeof m.pedido==='string'?JSON.parse(m.pedido||'[]'):(m.pedido||[]);
     const ocupada = m.ocupada || (Array.isArray(pedidoArr) && pedidoArr.length>0);
+    const enPreparacion = ocupada && mesasEnPreparacion.has(m.id);
     const b=document.createElement('button');
-    b.className='mesa-cobro-btn'+(ocupada?'':' libre')+(selCobroMesaId===m.id?' selected':'');
+    b.className='mesa-cobro-btn'+(!ocupada?' libre':enPreparacion?' preparando':'')+(selCobroMesaId===m.id?' selected':'');
     b.textContent=`Mesa ${m.numero}`;
-    b.onclick=()=>{ selCobroMesaId=m.id; renderCobro(); };
+    b.title=enPreparacion?'Cocina todavía está preparando el pedido':'';
+    if(ocupada && !enPreparacion) b.onclick=()=>{ selCobroMesaId=m.id; renderCobro(); };
     el.appendChild(b);
   });
 }
-function renderCobro(){
-  renderMesasCobro();
+async function renderCobro(){
+  await renderMesasCobro();
   const r=$('cobro-recibo'); r.innerHTML='';
   if(!selCobroMesaId){ r.innerHTML='<div style="color:var(--text2);font-size:13px">Selecciona una mesa</div>'; return; }
   const mesa=allMesas.find(m=>m.id===selCobroMesaId);
