@@ -449,7 +449,7 @@ tr:hover td{background:var(--bg2)}
         <div style="margin-top:14px">
           <div class="card">
             <div class="card-header">
-              <h3>Tendencia de ingresos · 7 días</h3>
+              <h3>Tendencia de ingresos · <span id="dash-7d-rango">7 días</span></h3>
               <span id="dash-7d-total" style="font-size:11px;color:var(--text2)"></span>
             </div>
             <div class="card-body" style="padding:12px;height:200px"><canvas id="chart-dias"></canvas></div>
@@ -1949,6 +1949,22 @@ async function loadDashboard(){
   const lv = $('dash-lbl-ventas');
   if(lv) lv.textContent = esHoy ? 'Ingresos hoy' : 'Ingresos período';
 
+  // Etiqueta del rango activo para el título de "Tendencia de ingresos"
+  const _d = new Date();
+  const _ls = dt => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  const _ayer = _ls(new Date(_d - 864e5));
+  const _lunes = (()=>{ const s=new Date(_d); s.setDate(_d.getDate()-((_d.getDay()+6)%7)); return _ls(s); })();
+  const _inicioMes = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-01`;
+  let rangoLabel;
+  if(esHoy) rangoLabel = 'Hoy';
+  else if(desde===hasta && desde===_ayer) rangoLabel = 'Ayer';
+  else if(desde===_lunes && hasta===today()) rangoLabel = 'Esta semana';
+  else if(desde===_inicioMes && hasta===today()) rangoLabel = 'Este mes';
+  else if(desde===hasta) rangoLabel = fmtDate(desde);
+  else rangoLabel = `${fmtDate(desde)} – ${fmtDate(hasta)}`;
+  const rl = $('dash-7d-rango');
+  if(rl) rl.textContent = rangoLabel;
+
   // Período anterior para tendencias
   const msD   = new Date(desde+'T12:00:00Z').getTime();
   const msH   = new Date(hasta+'T12:00:00Z').getTime();
@@ -1958,11 +1974,7 @@ async function loadDashboard(){
   const fmtUTC = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
   const prevD = fmtUTC(prevDesde), prevH = fmtUTC(prevHasta);
 
-  // Últimos 7 días para tendencia (siempre, independiente del filtro)
-  const hoy7 = today();
-  const hace7 = fmtUTC(new Date(new Date(hoy7+'T12:00:00Z').getTime() - 6*86400000));
-
-  const [r, cajas_hoy, gr, ventas, inv, horas, dias, rPrev, dias7, rTotal] = await Promise.all([
+  const [r, cajas_hoy, gr, ventas, inv, horas, dias, rPrev, rTotal] = await Promise.all([
     api(`/admin/reportes/resumen?desde=${desde}&hasta=${hasta}`).catch(e=>{ if(e.message!=='Sesión expirada') showToast('Error cargando resumen: '+e.message); return null; }),
     api(`/admin/caja/resumen?fecha=${desde}`).catch(()=>[]),
     api(`/admin/gastos/resumen?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
@@ -1971,8 +1983,7 @@ async function loadDashboard(){
     api(`/admin/reportes/ventas-por-hora?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
     api(`/admin/reportes/ventas-por-dia?desde=${desde}&hasta=${hasta}`).catch(()=>[]),
     api(`/admin/reportes/resumen?desde=${prevD}&hasta=${prevH}`).catch(()=>null),
-    api(`/admin/reportes/ventas-por-dia?desde=${hace7}&hasta=${hoy7}`).catch(()=>[]),
-    api(`/admin/reportes/resumen?desde=2000-01-01&hasta=${hoy7}`).catch(()=>null),
+    api(`/admin/reportes/resumen?desde=2000-01-01&hasta=${today()}`).catch(()=>null),
   ]);
 
   // Totales con animación de contador
@@ -2010,7 +2021,7 @@ async function loadDashboard(){
   } else { dc.innerHTML='<div style="color:var(--text2);font-size:13px">Sin cajas abiertas hoy</div>'; }
 
   // Gráficas Chart.js
-  renderCharts(r, gr, horas, dias7, hace7, hoy7);
+  renderCharts(r, gr, horas, dias, desde, hasta);
 
   // Últimas ventas
   const metodoBadge = m => `<span class="badge metodo-badge-${m||'efectivo'}">${m||'—'}</span>`;
