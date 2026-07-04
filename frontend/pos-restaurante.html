@@ -162,6 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .mesa-cobro-btn.selected{animation:none;box-shadow:0 0 0 2px var(--red-d,#A32D2D)}
 .mesa-cobro-btn.libre{background:transparent;color:var(--text2);border-color:var(--border2);opacity:.4;cursor:default;pointer-events:none;animation:none;box-shadow:none}
 .mesa-cobro-btn.preparando{background:var(--amber-l);color:var(--amber-d);border-color:var(--amber-d);cursor:default;pointer-events:none;animation:none;box-shadow:none}
+.mesa-cobro-btn.auto-pedido{background:var(--blue);border-color:var(--blue);color:#fff}
 @keyframes mesaCobroPend{0%,100%{opacity:1}50%{opacity:.55}}
 .pay-btns{display:flex;gap:8px}
 .pay-btn{flex:1;padding:12px 8px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;background:transparent;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text2)}
@@ -939,7 +940,7 @@ async function loadMesas(){
 let pcActualId = null;
 function abrirPedidoCliente(pc){
   pcActualId = pc.id;
-  $('pc-mesa-label').textContent = `${pc.mesa_num}${pc.mesa_nombre?' · '+pc.mesa_nombre:''}`;
+  $('pc-mesa-label').textContent = `${pc.mesa_num}${pc.mesa_nombre?' · '+pc.mesa_nombre:''}${pc.cliente_nombre?' — '+pc.cliente_nombre:''}`;
   const items = typeof pc.items==='string'?JSON.parse(pc.items):pc.items;
   $('pc-items-list').innerHTML = items.map(i=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px">
     <span>${i.qty}× ${i.nombre}</span><span style="font-weight:600">${fmt((i.precio||0)*i.qty)}</span>
@@ -1435,6 +1436,10 @@ async function renderMesasCobro(){
     const comandas = await api('/pos/comandas');
     comandas.forEach(c=>{ if((c.estado==='nuevo'||c.estado==='cocinando') && c.mesa_id) mesasEnPreparacion.add(c.mesa_id); });
   } catch(_){}
+  // Auto-pedidos del cliente (QR) esperando que el cajero los autorice
+  let pcs = [];
+  try { pcs = await api('/pos/pedidos-cliente/pendientes'); } catch(_){}
+  const pcPorMesa = new Map(pcs.map(p=>[p.mesa_id,p]));
   // Se limpia recién aquí (no antes del await) para evitar que dos llamadas
   // solapadas (ej. loadMesas + renderCobro casi al mismo tiempo) dupliquen
   // los botones: la que resuelve al final es la que realmente pinta.
@@ -1443,11 +1448,13 @@ async function renderMesasCobro(){
     const pedidoArr = typeof m.pedido==='string'?JSON.parse(m.pedido||'[]'):(m.pedido||[]);
     const ocupada = m.ocupada || (Array.isArray(pedidoArr) && pedidoArr.length>0);
     const enPreparacion = ocupada && mesasEnPreparacion.has(m.id);
+    const pc = pcPorMesa.get(m.id);
     const b=document.createElement('button');
-    b.className='mesa-cobro-btn'+(!ocupada?' libre':enPreparacion?' preparando':'')+(selCobroMesaId===m.id?' selected':'');
-    b.textContent=`Mesa ${m.numero}`;
-    b.title=enPreparacion?'Cocina todavía está preparando el pedido':'';
-    if(ocupada && !enPreparacion) b.onclick=()=>{ selCobroMesaId=m.id; renderCobro(); };
+    b.className='mesa-cobro-btn'+(pc?' auto-pedido':(!ocupada?' libre':enPreparacion?' preparando':''))+(selCobroMesaId===m.id?' selected':'');
+    b.textContent = pc ? `🔔 Mesa ${m.numero} — Auto pedido` : `Mesa ${m.numero}`;
+    b.title=pc?'Pedido hecho por el cliente desde su celular — autorízalo para enviarlo a cocina':(enPreparacion?'Cocina todavía está preparando el pedido':'');
+    if(pc) b.onclick=()=>abrirPedidoCliente(pc);
+    else if(ocupada && !enPreparacion) b.onclick=()=>{ selCobroMesaId=m.id; renderCobro(); };
     el.appendChild(b);
   });
 }

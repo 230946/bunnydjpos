@@ -53,9 +53,12 @@ router.get('/mesa/:mesa_id', async (req, res) => {
 // POST /api/publico/pedidos — el cliente confirma su pedido desde la mesa
 router.post('/pedidos', async (req, res) => {
   try {
-    const { negocio_id, mesa_id, items, notas } = req.body;
+    const { negocio_id, mesa_id, items, notas, cliente_nombre } = req.body;
     if (!negocio_id || !mesa_id || !Array.isArray(items) || !items.length) {
       return res.status(400).json({ error: 'Faltan datos del pedido' });
+    }
+    if (!cliente_nombre || !cliente_nombre.trim()) {
+      return res.status(400).json({ error: 'Indica el nombre del cliente' });
     }
 
     const { rows: neg } = await pool.query(
@@ -101,13 +104,13 @@ router.post('/pedidos', async (req, res) => {
 
     const id = uuid();
     await pool.query(
-      `INSERT INTO pedidos_cliente (id, negocio_id, mesa_id, mesa_num, mesa_nombre, items, notas)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)})`,
-      [id, negocio_id, mesa_id, mesa.numero, mesa.nombre, JSON.stringify(itemsFinal), notas || null]
+      `INSERT INTO pedidos_cliente (id, negocio_id, mesa_id, mesa_num, mesa_nombre, cliente_nombre, items, notas)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)})`,
+      [id, negocio_id, mesa_id, mesa.numero, mesa.nombre, cliente_nombre.trim(), JSON.stringify(itemsFinal), notas || null]
     );
 
     req.app.locals.broadcast?.(negocio_id, 'pedido_cliente_nuevo', {
-      id, mesa_id, mesa_num: mesa.numero, mesa_nombre: mesa.nombre, items: itemsFinal, notas: notas || null
+      id, mesa_id, mesa_num: mesa.numero, mesa_nombre: mesa.nombre, cliente_nombre: cliente_nombre.trim(), items: itemsFinal, notas: notas || null
     });
 
     res.status(201).json({ id });

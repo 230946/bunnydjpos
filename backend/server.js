@@ -365,6 +365,7 @@ async function runMigrations() {
         mesa_id VARCHAR(36) NOT NULL,
         mesa_num INT,
         mesa_nombre VARCHAR(60),
+        cliente_nombre VARCHAR(100),
         items JSON NOT NULL,
         notas TEXT,
         estado VARCHAR(20) NOT NULL DEFAULT 'pendiente_aprobacion',
@@ -376,8 +377,9 @@ async function runMigrations() {
         FOREIGN KEY (mesa_id) REFERENCES mesas(id) ON DELETE CASCADE,
         INDEX idx_negocio_estado (negocio_id, estado),
         INDEX idx_mesa (mesa_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     },
+    { table: 'pedidos_cliente', column: 'cliente_nombre', sql: `ALTER TABLE pedidos_cliente ADD COLUMN cliente_nombre VARCHAR(100) NULL` },
   ];
   for (const m of migrations) {
     try {

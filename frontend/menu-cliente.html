@@ -134,7 +134,22 @@ textarea#notas{width:100%;min-height:70px;padding:10px;border:0.5px solid var(--
     </div>
   </div>
   <div class="overlay-footer">
-    <button class="btn" id="btn-confirmar" onclick="confirmarPedido()">Confirmar pedido</button>
+    <button class="btn" onclick="irANombre()">Confirmar pedido</button>
+  </div>
+</div>
+
+<!-- Nombre del cliente -->
+<div class="overlay" id="overlay-nombre">
+  <div class="overlay-header">
+    <button class="back-btn" onclick="volverARevision()">←</button>
+    <h3>¿A nombre de quién?</h3>
+  </div>
+  <div class="overlay-body">
+    <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">Nombre del cliente</label>
+    <input id="cliente-nombre-input" placeholder="Ej: Juan" style="width:100%;padding:12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:15px" autocomplete="name">
+  </div>
+  <div class="overlay-footer">
+    <button class="btn" id="btn-confirmar" onclick="confirmarPedido()">Enviar pedido</button>
   </div>
 </div>
 
@@ -256,8 +271,20 @@ function abrirRevision(){
 }
 function cerrarRevision(){ $('overlay-revision').classList.remove('show'); }
 
-async function confirmarPedido(){
+function irANombre(){
   if(!carrito.length) return;
+  $('overlay-revision').classList.remove('show');
+  $('overlay-nombre').classList.add('show');
+  setTimeout(()=>$('cliente-nombre-input').focus(), 200);
+}
+function volverARevision(){
+  $('overlay-nombre').classList.remove('show');
+  abrirRevision();
+}
+
+async function confirmarPedido(){
+  const nombre = $('cliente-nombre-input').value.trim();
+  if(!nombre){ toast('Escribe tu nombre para continuar'); return; }
   const btn = $('btn-confirmar');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
@@ -265,17 +292,18 @@ async function confirmarPedido(){
     const r = await api('/publico/pedidos', {method:'POST', body: JSON.stringify({
       negocio_id: negocioId, mesa_id: mesaId,
       items: carrito.map(c=>({item_id:c.item_id, qty:c.qty})),
-      notas: notas || null
+      notas: notas || null,
+      cliente_nombre: nombre
     })});
     miPedidoId = r.id;
-    cerrarRevision();
+    $('overlay-nombre').classList.remove('show');
     mostrarEstadoEspera();
     conectarWS();
     pollTimer = setInterval(consultarEstado, 8000);
   } catch(e) {
     toast('Error: '+e.message);
   } finally {
-    btn.disabled = false; btn.textContent = 'Confirmar pedido';
+    btn.disabled = false; btn.textContent = 'Enviar pedido';
   }
 }
 
@@ -325,6 +353,7 @@ function manejarResultado(estado, motivo){
 function volverAlMenu(){
   carrito = [];
   miPedidoId = null;
+  $('cliente-nombre-input').value = '';
   actualizarCartBar();
   renderItems();
   $('overlay-estado').classList.remove('show');
