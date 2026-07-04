@@ -156,9 +156,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .cobro-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:12px}
 .cobro-card h3{font-size:13px;font-weight:500;margin-bottom:12px;color:var(--text2)}
 .mesas-cobro{display:flex;gap:6px;flex-wrap:wrap}
-.mesa-cobro-btn{padding:7px 12px;border-radius:var(--r);border:0.5px solid var(--border2);cursor:pointer;font-size:13px;background:transparent;color:var(--text2)}
-.mesa-cobro-btn.selected{background:var(--red);color:#fff;border-color:var(--red);animation:mesaCobroPend 1s ease-in-out infinite}
-.mesa-cobro-btn.libre{opacity:.4;cursor:default;pointer-events:none;animation:none}
+.mesa-cobro-btn{padding:7px 12px;border-radius:var(--r);border:0.5px solid var(--border2);cursor:pointer;font-size:13px;background:var(--red);color:#fff;border-color:var(--red);animation:mesaCobroPend 1s ease-in-out infinite}
+.mesa-cobro-btn.selected{animation:none;box-shadow:0 0 0 2px var(--red-d,#A32D2D)}
+.mesa-cobro-btn.libre{background:transparent;color:var(--text2);border-color:var(--border2);opacity:.4;cursor:default;pointer-events:none;animation:none;box-shadow:none}
 @keyframes mesaCobroPend{0%,100%{opacity:1}50%{opacity:.55}}
 .pay-btns{display:flex;gap:8px}
 .pay-btn{flex:1;padding:12px 8px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;background:transparent;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text2)}
