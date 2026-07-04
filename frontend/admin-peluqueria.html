@@ -1027,13 +1027,14 @@ async function renderDashboard(){
   try{
     const hoy=today();
     const _pelNid = sessionStorage.getItem('pel_negocio_id')||urlNegocio;
-    const [d, r, horas, dias, pubData, rTotal] = await Promise.all([
+    const [d, r, horas, dias, pubData, rTotal, prods] = await Promise.all([
       apiFetch(`${API}/peluqueria/dashboard`),
       apiFetch(`${API}/admin/reportes/resumen?desde=${hoy}&hasta=${hoy}`).catch(()=>null),
       apiFetch(`${API}/admin/reportes/ventas-por-hora?desde=${hoy}&hasta=${hoy}`).catch(()=>[]),
       apiFetch(`${API}/admin/reportes/ventas-por-dia?desde=${hoy}&hasta=${hoy}`).catch(()=>[]),
       _pelNid ? fetch(`/api/negocio-pub/${_pelNid}`).then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null),
       apiFetch(`${API}/admin/reportes/resumen?desde=2000-01-01&hasta=${hoy}`).catch(()=>null),
+      apiFetch(`${API}/peluqueria/productos?soloActivos=true`).catch(()=>[]),
     ]);
     if(!d)return;
     if(pubData?.plan) window._negPlan = pubData.plan;
@@ -1069,23 +1070,6 @@ async function renderDashboard(){
         <span class="hora-badge" style="align-self:center">${fmtDT(c.fechaHora)}</span>
       </div>`).join('')}
     </div>`:''}
-    ${(d.invAlertas||[]).length>0?`
-    <div style="background:var(--bg2);border:1px solid #e3b34133;border-radius:var(--r);padding:16px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:12px;text-transform:uppercase;color:var(--yellow);font-weight:700">Alerta de inventario (${d.invAlertas.length})</div>
-        <button class="btn btn-sm" onclick="nav('inventario')" style="font-size:11px">Ver inventario</button>
-      </div>
-      ${d.invAlertas.map(i=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #e3b34122">
-          <div>
-            <span style="font-weight:600;font-size:13px">${esc(i.nombre)}</span>
-            ${i.categoria?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${esc(i.categoria)}</span>`:''}
-          </div>
-          <span style="font-size:12px;font-weight:700;color:${i.agotado?'var(--red)':'var(--yellow)'};white-space:nowrap">
-            ${i.agotado?'AGOTADO':`${parseFloat(i.stock)} ${esc(i.unidad||'und')} (mín: ${parseFloat(i.stock_min)})`}
-          </span>
-        </div>`).join('')}
-    </div>`:''}
     <!-- Resumen financiero del día -->
     <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
       <div style="font-size:12px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;font-weight:700">💰 Resumen financiero hoy</div>
@@ -1101,6 +1085,42 @@ async function renderDashboard(){
         <div class="stat-card" style="padding:12px"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">💳 MÉTODOS DE PAGO</div><div style="height:150px"><canvas id="pel-chart-metodos"></canvas></div></div>
       </div>
     </div>
+    ${(() => {
+      const inv = prods || [];
+      if (!inv.length) return '';
+      const agotados  = inv.filter(p => +p.stock_actual <= 0);
+      const bajoStock = inv.filter(p => +p.stock_actual > 0 && +p.stock_minimo > 0 && +p.stock_actual < +p.stock_minimo);
+      const alertas   = [...agotados, ...bajoStock].slice(0, 15);
+      return `
+    <div class="two-col" style="margin-top:16px;margin-bottom:0">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><h3>📦 Estado del inventario</h3><button class="btn btn-sm btn-outline" onclick="nav('inventario')">Ver todo</button></div>
+        <div class="card-body">
+          <div class="stats-row" style="grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:0">
+            <div class="stat-card" style="padding:10px 8px;text-align:center"><div class="label" style="font-size:10px">Total artículos</div><div class="value" style="font-size:20px">${inv.length}</div></div>
+            <div class="stat-card" style="padding:10px 8px;text-align:center;border-color:var(--yellow)"><div class="label" style="font-size:10px;color:var(--yellow)">⚠ Bajo stock</div><div class="value" style="font-size:20px;color:var(--yellow)">${bajoStock.length}</div></div>
+            <div class="stat-card" style="padding:10px 8px;text-align:center;border-color:var(--red)"><div class="label" style="font-size:10px;color:var(--red)">✕ Agotados</div><div class="value" style="font-size:20px;color:var(--red)">${agotados.length}</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><h3>🚨 Artículos en alerta</h3></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;padding:12px 14px;max-height:240px;overflow-y:auto">
+          ${alertas.length ? alertas.map(p => {
+            const ago = +p.stock_actual <= 0;
+            const color = ago ? 'var(--red)' : 'var(--yellow)';
+            const bg = ago ? '#E24B4A18' : '#C6F13530';
+            return `<div style="border:1px solid ${color};border-radius:var(--rl);padding:14px 14px 12px;background:${bg}">
+              <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px" title="${esc(p.nombre)}">${esc(p.nombre)}</div>
+              <span style="font-size:10px;font-weight:700;background:${color};color:#fff;border-radius:20px;padding:2px 9px">${ago?'Agotado':'Bajo stock'}</span>
+              <div style="font-size:28px;font-weight:700;color:${color};line-height:1.1;margin:10px 0 2px">${Math.round(+p.stock_actual)}</div>
+              <div style="font-size:11px;color:var(--text2)">${esc(p.unidad||'unidades')} · mín ${Math.round(+p.stock_minimo)} ${esc(p.unidad||'unidades')}</div>
+            </div>`;
+          }).join('') : '<div style="color:var(--acc-d);text-align:center;padding:20px;grid-column:1/-1;font-size:13px">✓ Todo el inventario en niveles correctos</div>'}
+        </div>
+      </div>
+    </div>`;
+    })()}
     `;
     // Init charts después de que el DOM esté listo
     const gc='rgba(0,0,0,0.06)',tc='#4a7060',bf={family:"'Segoe UI',sans-serif",size:11};
@@ -2939,7 +2959,7 @@ if(TOKEN){
 setInterval(function(){
   if(document.querySelector('.modal-bg')?.style.display==='flex') return;
   if(!_pg||_pg==='dashboard') return;
-  const renders={agenda:renderAgenda,caja:renderCaja,reportes:renderReportes,clientes:renderClientes,
+  const renders={agenda:renderAgenda,caja:renderCaja,reportes:cargarReportes,clientes:renderClientes,
     servicios:renderServicios,empleados:renderEmpleados,comisiones:renderComisiones,paquetes:renderPaquetes,
     inventario:renderInventario,gastos:renderGastos,facturas:renderFacturas,proveedores:renderProveedores,
     'pedidos-prov':renderPedidosProv,personal:renderPersonal,roles:renderRoles,
