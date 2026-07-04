@@ -1363,7 +1363,7 @@ function selDomCobro(id){
 }
 
 async function renderMesasCobro(){
-  const el=$('mesas-cobro'); el.innerHTML='';
+  const el=$('mesas-cobro');
   // Una mesa solo se marca "pendiente de pago" (roja, parpadeante) cuando
   // cocina ya no tiene nada suyo en 'nuevo'/'cocinando' — si no, el cajero
   // podría intentar cobrar una mesa cuyo pedido todavía se está preparando.
@@ -1372,6 +1372,10 @@ async function renderMesasCobro(){
     const comandas = await api('/pos/comandas');
     comandas.forEach(c=>{ if((c.estado==='nuevo'||c.estado==='cocinando') && c.mesa_id) mesasEnPreparacion.add(c.mesa_id); });
   } catch(_){}
+  // Se limpia recién aquí (no antes del await) para evitar que dos llamadas
+  // solapadas (ej. loadMesas + renderCobro casi al mismo tiempo) dupliquen
+  // los botones: la que resuelve al final es la que realmente pinta.
+  el.innerHTML='';
   allMesas.forEach(m=>{
     const pedidoArr = typeof m.pedido==='string'?JSON.parse(m.pedido||'[]'):(m.pedido||[]);
     const ocupada = m.ocupada || (Array.isArray(pedidoArr) && pedidoArr.length>0);
