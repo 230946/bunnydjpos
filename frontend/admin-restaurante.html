@@ -55,7 +55,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
 /* LAYOUT */
 .app{display:flex;height:100vh;overflow:hidden}
-.sidebar{width:86px;min-width:86px;height:100vh;background:var(--bg);border-right:0.5px solid var(--border);padding:14px 6px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;overflow-x:hidden;flex-shrink:0}
+.sidebar{width:132px;min-width:132px;height:100vh;background:var(--bg);border-right:0.5px solid var(--border);padding:14px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;overflow-x:hidden;flex-shrink:0}
 .sidebar-logo{padding:4px 4px 14px;border-bottom:0.5px solid var(--border);margin-bottom:8px;display:flex;align-items:center;justify-content:center}
 .sidebar-logo img{width:40px;height:40px;border-radius:8px;object-fit:cover;display:none;flex-shrink:0}
 .sidebar-logo img.show{display:block}
@@ -68,7 +68,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .nav-btn{width:100%;padding:7px 4px 5px;border-radius:var(--r);border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:.1s;position:relative}
 .nav-btn.active{background:var(--bg2);color:var(--text);font-weight:500}
 .nav-btn .nav-icon{font-size:18px}
-.nav-btn-label{font-size:9px;font-weight:500;line-height:1.15;text-align:center;overflow-wrap:break-word;max-width:100%}
+.nav-btn-label{font-size:10px;font-weight:500;line-height:1.2;text-align:center;overflow-wrap:break-word;max-width:100%}
 .nav-btn:hover:not(.active){background:var(--bg2)}
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
 .topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:11px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
@@ -1725,7 +1725,7 @@ function openMobileSidebar(){
   sb.style.position='fixed'; sb.style.top='0'; sb.style.left='0';
   sb.style.height='100vh'; sb.style.zIndex='100';
   sb.style.boxShadow='4px 0 20px rgba(0,0,0,.2)';
-  sb.style.width='86px'; sb.style.minWidth='86px';
+  sb.style.width='132px'; sb.style.minWidth='132px';
   ov.style.display='block';
 }
 function closeMobileSidebar(){
