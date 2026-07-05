@@ -940,7 +940,7 @@ async function loadMesas(){
 let pcActualId = null;
 function abrirPedidoCliente(pc){
   pcActualId = pc.id;
-  $('pc-mesa-label').textContent = `${pc.mesa_num}${pc.mesa_nombre?' · '+pc.mesa_nombre:''}${pc.cliente_nombre?' — '+pc.cliente_nombre:''}`;
+  $('pc-mesa-label').textContent = `${pc.mesa_num}${pc.mesa_nombre?' · '+pc.mesa_nombre:''}${pc.cliente_nombre?' — '+pc.cliente_nombre:''}${pc.cliente_celular?' ('+pc.cliente_celular+')':''}`;
   const items = typeof pc.items==='string'?JSON.parse(pc.items):pc.items;
   $('pc-items-list').innerHTML = items.map(i=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px">
     <span>${i.qty}× ${i.nombre}</span><span style="font-weight:600">${fmt((i.precio||0)*i.qty)}</span>

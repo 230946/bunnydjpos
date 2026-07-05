@@ -380,6 +380,7 @@ async function runMigrations() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     },
     { table: 'pedidos_cliente', column: 'cliente_nombre', sql: `ALTER TABLE pedidos_cliente ADD COLUMN cliente_nombre VARCHAR(100) NULL` },
+    { table: 'pedidos_cliente', column: 'cliente_celular', sql: `ALTER TABLE pedidos_cliente ADD COLUMN cliente_celular VARCHAR(30) NULL` },
   ];
   for (const m of migrations) {
     try {

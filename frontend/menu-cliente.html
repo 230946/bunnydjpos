@@ -103,6 +103,22 @@ textarea#notas{width:100%;min-height:70px;padding:10px;border:0.5px solid var(--
   </div>
 </div>
 
+<!-- "Login" con celular antes de ver el menú -->
+<div class="overlay" id="overlay-login">
+  <div class="overlay-body" style="display:flex;flex-direction:column;justify-content:center;flex:1">
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:40px">📱</div>
+      <div class="state-title" style="margin-top:8px" id="login-neg-nombre">Bienvenido</div>
+      <div class="state-msg">Ingresa tu número de celular para pedir desde <span id="login-mesa-label">tu mesa</span></div>
+    </div>
+    <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">Número de celular (10 dígitos)</label>
+    <input id="login-celular-input" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]*" placeholder="Ej: 3001234567" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" style="width:100%;padding:12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:15px">
+  </div>
+  <div class="overlay-footer">
+    <button class="btn" onclick="continuarConCelular()">Continuar</button>
+  </div>
+</div>
+
 <div id="app" class="hide">
   <div class="header">
     <img src="/img/logo.png" alt="Logo">
@@ -178,6 +194,8 @@ function fmt(n){ return '$'+Math.round(n||0).toLocaleString('es-CO'); }
 let menuItems = [], menuCats = [], catActiva = null;
 let carrito = []; // {item_id, nombre, nombre_zh, precio, emoji, qty}
 let miPedidoId = null, wsConn = null, pollTimer = null;
+let clienteCelular = sessionStorage.getItem('menu_cliente_celular') || null;
+let _menuInfo = null, _mesaInfo = null;
 
 async function api(path, opts={}) {
   const r = await fetch(`${API}${path}`, { ...opts, headers:{'Content-Type':'application/json', ...(opts.headers||{})} });
@@ -199,16 +217,32 @@ async function init(){
       api(`/publico/mesa/${mesaId}?n=${negocioId}`),
       api(`/publico/menu/${negocioId}`)
     ]);
-    if(neg?.nombre){ $('neg-nombre').textContent = neg.nombre; document.title = `${neg.nombre} — Menú`; }
+    if(neg?.nombre){ $('neg-nombre').textContent = neg.nombre; document.title = `${neg.nombre} — Menú`; $('login-neg-nombre').textContent = neg.nombre; }
+    _mesaInfo = mesa; _menuInfo = menu;
     $('mesa-label').textContent = `Mesa ${mesa.numero}${mesa.nombre?' · '+mesa.nombre:''}`;
+    $('login-mesa-label').textContent = `Mesa ${mesa.numero}`;
     menuCats = menu.categorias || [];
     menuItems = menu.items || [];
-    renderCats();
-    renderItems();
-    $('app').classList.remove('hide');
+    if(clienteCelular){ mostrarMenu(); }
+    else { $('overlay-login').classList.add('show'); setTimeout(()=>$('login-celular-input').focus(),200); }
   } catch(e) {
     mostrarError(e.message || 'No se pudo cargar el menú.');
   }
+}
+
+function continuarConCelular(){
+  const val = $('login-celular-input').value.replace(/\D/g,'');
+  if(val.length !== 10){ toast('Escribe tu número de celular (10 dígitos)'); return; }
+  clienteCelular = val;
+  sessionStorage.setItem('menu_cliente_celular', val);
+  $('overlay-login').classList.remove('show');
+  mostrarMenu();
+}
+
+function mostrarMenu(){
+  renderCats();
+  renderItems();
+  $('app').classList.remove('hide');
 }
 
 function renderCats(){
@@ -293,7 +327,8 @@ async function confirmarPedido(){
       negocio_id: negocioId, mesa_id: mesaId,
       items: carrito.map(c=>({item_id:c.item_id, qty:c.qty})),
       notas: notas || null,
-      cliente_nombre: nombre
+      cliente_nombre: nombre,
+      cliente_celular: clienteCelular
     })});
     miPedidoId = r.id;
     $('overlay-nombre').classList.remove('show');
