@@ -1702,6 +1702,9 @@ function expandNavGroupOf(panel){
   });
 }
 function toggleSidebar(){
+  // En celular no existe el modo "solo íconos" de escritorio — el botón
+  // simplemente vuelve a abrir el menú móvil normal (igual que peluquería).
+  if(window.innerWidth<=767){ openMobileSidebar(); return; }
   const sb=$('sidebar'), btn=$('sb-toggle');
   const collapsed=sb.classList.toggle('collapsed');
   btn.textContent=collapsed?'›':'‹';
@@ -1709,6 +1712,7 @@ function toggleSidebar(){
   localStorage.setItem('bdj_sb',collapsed?'1':'0');
 }
 function restoreSidebar(){
+  if(window.innerWidth<=767) return; // el modo "solo íconos" no aplica en celular
   if(localStorage.getItem('bdj_sb')==='1'){
     const sb=$('sidebar'), btn=$('sb-toggle');
     if(sb){ sb.classList.add('collapsed'); btn.textContent='›'; btn.title='Expandir menú'; }
