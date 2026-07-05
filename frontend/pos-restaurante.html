@@ -276,9 +276,13 @@ table.inv tr:hover td{background:var(--bg2)}
     font-size:13px;font-weight:600;box-shadow:0 -4px 20px rgba(0,0,0,.15)
   }
 
-  /* Menú */
-  .menu-cats{width:80px}
-  .menu-items-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));padding:8px}
+  /* Menú — mismo motivo que Cobro: nada de scroll interno propio en las
+     columnas, que todo se desplace junto con .content-area para que el
+     gesto de scroll táctil funcione bien (y evita el glitch de repintado
+     que dejaba las tarjetas sin texto). */
+  .menu-layout{flex:none;min-height:auto}
+  .menu-cats{width:80px;overflow-y:visible;align-self:flex-start;position:sticky;top:0}
+  .menu-items-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));padding:8px;overflow-y:visible;flex:none;min-height:auto}
 
   /* Cobro stack vertical — sin scroll interno propio en cada columna:
      que todo se desplace junto con el scroll normal de la página (el de
