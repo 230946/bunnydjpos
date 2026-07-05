@@ -231,6 +231,12 @@ body{display:flex;flex-direction:column;min-height:100vh}
 /* Vista tracking */
 #view-track{padding:30px 20px;display:none;text-align:center}
 .track-icon{font-size:64px;margin-bottom:12px}
+.track-icon.moving{display:inline-block;animation:scooterDrive 1s ease-in-out infinite}
+@keyframes scooterDrive{
+  0%{transform:translateX(-8px) rotate(-4deg)}
+  50%{transform:translateX(8px) rotate(4deg)}
+  100%{transform:translateX(-8px) rotate(-4deg)}
+}
 .track-id{font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.8px;margin-bottom:16px}
 .track-title{font-size:22px;font-weight:800;margin-bottom:8px}
 .track-sub{font-size:15px;color:var(--text2);line-height:1.5;margin-bottom:28px}
@@ -904,7 +910,9 @@ async function refreshTracking(idOverride) {
     if (!r.ok) return;
     const p = await r.json();
     const info = ESTADOS[p.estado] || ESTADOS.pendiente;
-    document.getElementById('tr-icon').textContent  = info.icon;
+    const trIcon = document.getElementById('tr-icon');
+    trIcon.textContent = info.icon;
+    trIcon.classList.toggle('moving', p.estado === 'en_camino' || p.estado === 'recogido');
     document.getElementById('tr-title').textContent = info.title;
     document.getElementById('tr-sub').textContent   = info.sub;
     document.getElementById('tr-id').textContent    = 'Pedido #' + id.slice(0,8).toUpperCase();
