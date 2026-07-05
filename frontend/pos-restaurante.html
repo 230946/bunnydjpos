@@ -1141,6 +1141,7 @@ function setTotals(sub){
   actualizarPedidoMini(sub+iva);
 }
 function changeQty(i,d){
+  if(!pedido[i]) return; // botón de una fila ya removida por un re-render anterior
   if(d>0){
     const mi=menuItems.find(m=>m.id===pedido[i].id);
     if(mi){
@@ -1178,6 +1179,7 @@ function notificarQuitadoCocina(nombre,cantidad){
     .catch(e=>toast('⚠️ Error avisando a cocina: '+e.message));
 }
 function removeItem(i){
+  if(!pedido[i]) return; // botón de una fila ya removida por un re-render anterior
   const nombre=pedido[i].nombre, cancelar=pedido[i].enviado||0;
   pedido.splice(i,1);
   renderPedido();
