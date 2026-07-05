@@ -339,6 +339,7 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-section" data-seccion="portales" onclick="toggleNavGroup('portales')"><span class="nav-label">Accesos directos</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-portales">
       <button class="nav-btn" onclick="_abrirPortal('pos')" title="POS Restaurante"><span class="nav-icon">🍽</span><span class="nav-label"> POS Restaurante ↗</span></button>
+      <button class="nav-btn" onclick="_abrirPortal('cocina')" title="App Cocina"><span class="nav-icon">🍳</span><span class="nav-label"> App Cocina ↗</span></button>
       <button class="nav-btn" onclick="_abrirPortal('domicilios')" title="App Domicilios"><span class="nav-icon">🛵</span><span class="nav-label"> App Domicilios ↗</span></button>
       <button class="nav-btn" onclick="_abrirPortal('domiciliario')" title="App Repartidores"><span class="nav-icon">🏍️</span><span class="nav-label"> App Repartidores ↗</span></button>
     </div>
@@ -1684,7 +1685,7 @@ async function forgotPassword(){
 function _abrirPortal(tipo) {
   const nid = urlNegocio;
   if (!nid) { alert('No se encontró el ID del negocio'); return; }
-  const urls = { pos: `/pos-restaurante.html?n=${nid}`, domicilios: `/domicilios?n=${nid}`, domiciliario: `/domiciliario?n=${nid}` };
+  const urls = { pos: `/pos-restaurante.html?n=${nid}`, cocina: `/cocina?n=${nid}`, domicilios: `/domicilios?n=${nid}`, domiciliario: `/domiciliario?n=${nid}` };
   window.open(urls[tipo] || '/', '_blank');
 }
 function toggleNavGroup(seccion){
