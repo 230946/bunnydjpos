@@ -464,7 +464,7 @@ table.inv tr:hover td{background:var(--bg2)}
                 <div style="display:flex;gap:0;border-bottom:1.5px solid var(--border);margin:-14px -14px 12px">
                   <button id="tab-mesas-cobro" onclick="switchCobroMode('mesas')"
                     style="flex:1;padding:10px 6px;font-size:13px;font-weight:700;border:none;background:var(--blue-l,#eff6ff);color:var(--blue-d,#1d4ed8);border-bottom:2.5px solid var(--blue,#2563eb);cursor:pointer">
-                    🍽️ Mesas
+                    🍽️ Mesas <span id="mesas-cobro-badge" style="display:none;background:var(--red,#dc2626);color:#fff;border-radius:10px;font-size:11px;padding:1px 5px;margin-left:3px">0</span>
                   </button>
                   <button id="tab-dom-cobro" onclick="switchCobroMode('domicilios')"
                     style="flex:1;padding:10px 6px;font-size:13px;font-weight:700;border:none;background:transparent;color:var(--text2);border-bottom:2.5px solid transparent;cursor:pointer">
@@ -1522,11 +1522,13 @@ async function renderMesasCobro(){
   // solapadas (ej. loadMesas + renderCobro casi al mismo tiempo) dupliquen
   // los botones: la que resuelve al final es la que realmente pinta.
   el.innerHTML='';
+  let pendientesFacturar = 0;
   allMesas.forEach(m=>{
     const pedidoArr = typeof m.pedido==='string'?JSON.parse(m.pedido||'[]'):(m.pedido||[]);
     const ocupada = m.ocupada || (Array.isArray(pedidoArr) && pedidoArr.length>0);
     const enPreparacion = ocupada && mesasEnPreparacion.has(m.id);
     const pc = pcPorMesa.get(m.id);
+    if(ocupada && !enPreparacion && !pc) pendientesFacturar++;
     const b=document.createElement('button');
     b.className='mesa-cobro-btn'+(pc?' auto-pedido':(!ocupada?' libre':enPreparacion?' preparando':''))+(selCobroMesaId===m.id?' selected':'');
     b.textContent = pc ? `🔔 Mesa ${m.numero} — Auto pedido` : `Mesa ${m.numero}`;
@@ -1535,6 +1537,8 @@ async function renderMesasCobro(){
     else if(ocupada && !enPreparacion) b.onclick=()=>{ selCobroMesaId=m.id; renderCobro(); };
     el.appendChild(b);
   });
+  const mesasBadge = $('mesas-cobro-badge');
+  if(mesasBadge){ mesasBadge.style.display = pendientesFacturar>0 ? 'inline' : 'none'; mesasBadge.textContent = pendientesFacturar; }
 }
 async function renderCobro(){
   await renderMesasCobro();
