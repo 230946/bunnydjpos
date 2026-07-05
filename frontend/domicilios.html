@@ -16,6 +16,13 @@
   --border:#e8e8f0;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--radius:14px;
   --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
 }
+#arrival-alert{
+  display:none;position:fixed;left:0;right:0;bottom:0;z-index:600;
+  background:var(--orange);color:#fff;padding:14px 16px calc(14px + var(--safe-bot));
+  text-align:center;font-size:14px;font-weight:700;
+  animation:arrivalPulse 1s ease-in-out infinite;box-shadow:0 -4px 16px rgba(0,0,0,.25)
+}
+@keyframes arrivalPulse{0%,100%{opacity:1}50%{opacity:.6}}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 body{display:flex;flex-direction:column;min-height:100vh}
 
@@ -371,6 +378,10 @@ body{display:flex;flex-direction:column;min-height:100vh}
   <button id="btn-confirmar" onclick="confirmarPedido()">✅ Confirmar pedido</button>
 </div>
 
+<!-- Alerta persistente: el domiciliario llegó — no se quita sola, solo cuando
+     el repartidor marca "Entregado" -->
+<div id="arrival-alert">🛵📍 ¡Tu domiciliario ya llegó! Sal a recibir tu pedido</div>
+
 <!-- Vista: tracking -->
 <div id="view-track">
   <div class="track-icon" id="tr-icon">📦</div>
@@ -484,6 +495,34 @@ let metodoPago = 'efectivo';
 let currentPedidoId = null;
 let trackInterval = null;
 let _clientMap = null;
+
+// ── Alerta sonora de llegada (Web Audio API, sin archivos) ─────────
+const Sound = {
+  _c: null,
+  ctx(){ if(!this._c) try{this._c=new(window.AudioContext||window.webkitAudioContext)()}catch{} return this._c; },
+  _n(c,f,t,d,v=0.14,tp='sine'){ const o=c.createOscillator(),g=c.createGain(); o.type=tp; o.frequency.value=f; g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(0.001,t+d); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+d); },
+  play(notes){ const c=this.ctx(); if(!c) return; if(c.state==='suspended') c.resume(); let t=c.currentTime; notes.forEach(([f,d,v=0.14,tp='sine'])=>{ this._n(c,f,t,d,v,tp); t+=d*.75; }); },
+  arrival(){ this.play([[880,0.15,0.15],[660,0.15,0.15],[880,0.2,0.15]]); }
+};
+// Los navegadores bloquean audio sin gesto previo del usuario — se "calienta"
+// el AudioContext en la primera interacción para que la alerta repetitiva
+// (que dispara sola, sin clic) sí pueda sonar más adelante.
+document.addEventListener('click', () => Sound.ctx(), { once: true });
+
+let arrivalAlarmInterval = null;
+function actualizarAlertaLlegada(activa){
+  const el = document.getElementById('arrival-alert');
+  if(activa){
+    el.style.display = 'block';
+    if(!arrivalAlarmInterval){
+      Sound.arrival();
+      arrivalAlarmInterval = setInterval(()=>Sound.arrival(), 6000);
+    }
+  } else {
+    el.style.display = 'none';
+    if(arrivalAlarmInterval){ clearInterval(arrivalAlarmInterval); arrivalAlarmInterval = null; }
+  }
+}
 let _clientMapMarker = null;
 let lang = 'es'; // idioma activo: 'es' | 'zh'
 let clienteTel    = null;
@@ -910,11 +949,17 @@ async function refreshTracking(idOverride) {
       mapWrap.style.display = 'none';
     }
 
+    // Alerta de llegada: se activa cuando el domiciliario marca "Llegué" y
+    // NO se apaga sola — solo cuando el pedido pasa a "entregado".
+    actualizarAlertaLlegada(!!p.llego_en && p.estado !== 'entregado');
+
     if (p.estado === 'entregado') {
       clearInterval(trackInterval);
+      actualizarAlertaLlegada(false);
       showRating(p.id);
     } else if (p.estado === 'cancelado') {
       clearInterval(trackInterval);
+      actualizarAlertaLlegada(false);
       resetCiclo(5000);
     }
   } catch (_) {}
@@ -1031,6 +1076,7 @@ function _finalizarRating() {
 
 function newOrder() {
   clearInterval(trackInterval);
+  actualizarAlertaLlegada(false);
   currentPedidoId = null;
   localStorage.removeItem(`djpos_dom_pedido_${NEG_ID}`);
   cart = {};
@@ -1101,6 +1147,7 @@ function cambiarNumero() {
   localStorage.removeItem(`djpos_dom_pedido_${NEG_ID}`);
   clienteTel = null; clienteNombre = null;
   clearInterval(trackInterval);
+  actualizarAlertaLlegada(false);
   currentPedidoId = null;
   cart = {}; updateCartDrawer(); updateBottomBar();
   const chip = document.getElementById('user-chip');

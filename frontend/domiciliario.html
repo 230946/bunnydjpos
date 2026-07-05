@@ -516,7 +516,9 @@ function renderMisEntregas(list, error){
         <div style="display:flex;gap:8px;flex-direction:column;align-items:flex-end">
           ${p.estado!=='en_camino'
             ? `<button class="btn-encamino" onclick="actualizarEstado('${p.id}','en_camino',this)">🛵 Salir a entregar</button>`
-            : ''}
+            : p.llego_en
+              ? `<span style="font-size:11px;color:var(--text3)">📍 Ya avisaste tu llegada</span>`
+              : `<button class="btn-encamino" onclick="marcarLlegada('${p.id}',this)">📍 Llegué</button>`}
           <button class="btn-entregado" onclick="actualizarEstado('${p.id}','entregado',this)">✅ Entregar</button>
         </div>
       </div>
@@ -628,6 +630,18 @@ async function tomarPedido(id, btn){
   } catch(e){
     toast('❌ '+e.message);
     btn.disabled=false; btn.textContent='🛵 Tomar';
+  }
+}
+
+async function marcarLlegada(id, btn){
+  btn.disabled=true; btn.textContent='Avisando…';
+  try {
+    await riderFetch(`/rider/mis-entregas/${id}/llegue`, {method:'PUT'});
+    toast('📍 Avisamos al cliente que llegaste');
+    await loadAll();
+  } catch(e){
+    toast('❌ '+e.message);
+    btn.disabled=false; btn.textContent='📍 Llegué';
   }
 }
 

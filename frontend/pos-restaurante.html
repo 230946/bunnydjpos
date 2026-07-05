@@ -347,6 +347,13 @@ table.inv tr:hover td{background:var(--bg2)}
 <!-- APP -->
 <div class="app" id="app" style="display:none">
 
+  <!-- Alerta persistente de pedido de cliente (QR) pendiente de aprobar —
+       visible sin importar en qué pestaña esté el cajero/mesero, hasta que
+       se apruebe o rechace desde el modal correspondiente. -->
+  <div id="pc-alert-banner" onclick="abrirDesdeAlertaGlobal()" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:500;background:var(--blue);color:#fff;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;animation:mesaCobroPend 1s ease-in-out infinite;box-shadow:0 -4px 16px rgba(0,0,0,.2)">
+    🔔 <span id="pc-alert-count">0</span> pedido(s) de cliente esperando aprobación — toca para revisar
+  </div>
+
   <!-- SIDEBAR ÍCONOS -->
   <div class="sidebar">
     <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid var(--border);width:100%;text-align:center">
@@ -824,6 +831,7 @@ async function initApp(){
   try { configFact = await api(`/admin/config/factura`); } catch(e){ console.warn('[configFact] error:', e.message); }
   _askNotifPermission();
   connectWS();
+  setInterval(pollAlertaPedidosCliente, 20000); // respaldo si el WebSocket se desconecta
   // Si no hay caja abierta, mostrar el panel de caja primero
   try {
     const caja = await api('/admin/caja');
@@ -864,9 +872,10 @@ function connectWS(){
       _browserNotify('🛵 Pedido domicilio',`${data?.cliente_nombre||'Cliente'} — $${(data?.total||0).toLocaleString('es-CO')}`);
     }
     if(tipo==='pedido_cliente_nuevo'){
-      loadMesas(); Sound.notify();
+      loadMesas();
       _browserNotify('🔔 Pedido desde la mesa',`Mesa ${data?.mesa_num||'?'} — ${(data?.items||[]).length} ítem(s)`);
     }
+    if(tipo==='pedido_cliente_actualizado') loadMesas(); // otro cajero ya lo aprobó/rechazó, o la app cliente confirma
   };
   wsConn.onclose = () => setTimeout(connectWS, 3000); // reconectar
 }
@@ -917,6 +926,7 @@ async function loadMesas(){
     ]);
     allMesas = mesas;
     pedidosClientePendientes = pcs;
+    actualizarAlertaGlobalPedidoCliente();
     const pcPorMesa = new Map(pcs.map(p=>[p.mesa_id,p]));
     const g = $('mesas-grid'); g.innerHTML='';
     allMesas.forEach(m=>{
@@ -938,6 +948,39 @@ async function loadMesas(){
 
 // ─── Pedidos de cliente (autopedido QR) ────────────────────────
 let pcActualId = null;
+let pcAlarmInterval = null;
+
+// Actualiza el banner fijo + la alarma sonora repetitiva según cuántos
+// pedidos de cliente sigan pendientes de aprobación. La alarma no para
+// sola: solo se detiene cuando pedidosClientePendientes queda en 0 (o
+// sea, cuando se aprueban o rechazan todos desde el modal).
+function actualizarAlertaGlobalPedidoCliente(){
+  const banner = $('pc-alert-banner');
+  const n = pedidosClientePendientes.length;
+  if(n>0){
+    banner.style.display='block';
+    $('pc-alert-count').textContent = n;
+    if(!pcAlarmInterval){
+      Sound.alert();
+      pcAlarmInterval = setInterval(()=>Sound.alert(), 7000);
+    }
+  } else {
+    banner.style.display='none';
+    if(pcAlarmInterval){ clearInterval(pcAlarmInterval); pcAlarmInterval=null; }
+  }
+}
+
+function abrirDesdeAlertaGlobal(){
+  if(!pedidosClientePendientes.length) return;
+  abrirPedidoCliente(pedidosClientePendientes[0]);
+}
+
+// Respaldo por si el WebSocket se desconecta: revisa cada rato aunque el
+// cajero no esté en las pestañas de Mesas/Cobro (que ya lo hacen solas).
+async function pollAlertaPedidosCliente(){
+  try { pedidosClientePendientes = await api('/pos/pedidos-cliente/pendientes'); } catch(_){ return; }
+  actualizarAlertaGlobalPedidoCliente();
+}
 function abrirPedidoCliente(pc){
   pcActualId = pc.id;
   $('pc-mesa-label').textContent = `${pc.mesa_num}${pc.mesa_nombre?' · '+pc.mesa_nombre:''}${pc.cliente_nombre?' — '+pc.cliente_nombre:''}${pc.cliente_celular?' ('+pc.cliente_celular+')':''}`;
@@ -1441,6 +1484,8 @@ async function renderMesasCobro(){
   // Auto-pedidos del cliente (QR) esperando que el cajero los autorice
   let pcs = [];
   try { pcs = await api('/pos/pedidos-cliente/pendientes'); } catch(_){}
+  pedidosClientePendientes = pcs;
+  actualizarAlertaGlobalPedidoCliente();
   const pcPorMesa = new Map(pcs.map(p=>[p.mesa_id,p]));
   // Se limpia recién aquí (no antes del await) para evitar que dos llamadas
   // solapadas (ej. loadMesas + renderCobro casi al mismo tiempo) dupliquen

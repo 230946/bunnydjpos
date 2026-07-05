@@ -285,7 +285,7 @@ router.get('/pedido/:id', async (req, res) => {
     let whereExtra = '';
     if (negocioId) { whereExtra = ' AND p.negocio_id=?'; params.push(negocioId); }
     const { rows } = await pool.query(
-      `SELECT p.id, p.estado, p.negocio_id, p.cliente_nombre, p.items, p.subtotal, p.total, p.created_at,
+      `SELECT p.id, p.estado, p.negocio_id, p.cliente_nombre, p.items, p.subtotal, p.total, p.created_at, p.llego_en,
               COALESCE(r.nombre, e.nombre) AS rider_nombre,
               COALESCE(r.telefono, e.celular) AS rider_tel,
               e.lat AS rider_lat, e.lng AS rider_lng, e.gps_at AS rider_gps_at,
@@ -382,7 +382,7 @@ router.post('/rider/disponibles/:id/tomar', requireEmpleado, async (req, res) =>
 router.get('/rider/mis-entregas', requireEmpleado, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, cliente_nombre, cliente_dir, cliente_tel, total, estado, items, notas, created_at
+      `SELECT id, cliente_nombre, cliente_dir, cliente_tel, total, estado, items, notas, created_at, llego_en
        FROM domicilios_pedidos
        WHERE negocio_id=? AND domiciliario_id=? AND estado NOT IN ('entregado','cancelado')
        ORDER BY created_at DESC`,
@@ -413,6 +413,25 @@ router.put('/rider/mis-entregas/:id/estado', requireEmpleado, async (req, res) =
       ventaInfo = await confirmarPagoEntrega(req.params.id, req.empleado.negocio_id);
     }
     res.json({ ok: true, ...(ventaInfo || {}) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/domicilios/rider/mis-entregas/:id/llegue — el domiciliario marca que
+// llegó a la dirección del cliente; dispara la alerta visual/sonora en la
+// página de seguimiento del cliente hasta que se marque "entregado".
+router.put('/rider/mis-entregas/:id/llegue', requireEmpleado, async (req, res) => {
+  try {
+    const { rows: check } = await pool.query(
+      `SELECT id FROM domicilios_pedidos WHERE id=? AND domiciliario_id=? AND negocio_id=? LIMIT 1`,
+      [req.params.id, req.empleado.id, req.empleado.negocio_id]
+    );
+    if (!check[0]) return res.status(404).json({ error: 'Pedido no encontrado' });
+    await pool.query(
+      `UPDATE domicilios_pedidos SET llego_en=NOW(), actualizado=NOW()
+       WHERE id=? AND domiciliario_id=? AND negocio_id=?`,
+      [req.params.id, req.empleado.id, req.empleado.negocio_id]
+    );
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
