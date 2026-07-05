@@ -715,6 +715,10 @@ const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
 const fmt = n => (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO');
 const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+// Un caracter roto/mal codificado en nombre, descripción o emoji de un
+// producto (ej. pegado desde otro programa) puede cortar el HTML de la
+// tarjeta a la mitad si se inserta crudo — se escapa antes de usarlo.
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
 function closeModal(id){ $(id).style.display='none'; }
 
 async function api(path, opts={}) {
@@ -722,6 +726,13 @@ async function api(path, opts={}) {
     ...opts,
     headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}`, ...(opts.headers||{}) }
   });
+  if (r.status === 401) {
+    // Sesión expirada: cerrarla ya, en vez de dejar que los polls (alertas,
+    // WS reconnect, etc.) sigan reintentando en bucle contra un token muerto.
+    sessionStorage.removeItem('bdj_pos_token');
+    location.href = '/login';
+    throw new Error('Sesión expirada');
+  }
   if (!r.ok) { const d = await r.json(); throw new Error(d.error||'Error'); }
   return r.json();
 }
@@ -1155,7 +1166,7 @@ function renderMenuItems(){
     const agotado=esAgotado(item);
     const d=document.createElement('div');
     d.className='menu-item-card'+(agotado?' agotado':'');
-    d.innerHTML=`${item.foto_url?`<img src="${API.replace('/api','')}${item.foto_url}" class="menu-item-img" alt="${item.nombre}" onerror="this.style.display='none'">`:`<div class="menu-item-img-placeholder">${item.emoji||'🍽️'}</div>`}<div class="menu-item-body"><div class="menu-item-name">${item.nombre}</div>${item.descripcion?`<div class="menu-item-desc">${item.descripcion}</div>`:''}<div class="menu-item-price">${fmt(item.precio)}</div>${stockLabel(item)}${agotado?'<span class="menu-item-badge">Agotado</span>':''}</div>`;
+    d.innerHTML=`${item.foto_url?`<img src="${API.replace('/api','')}${item.foto_url}" class="menu-item-img" alt="${esc(item.nombre)}" onerror="this.style.display='none'">`:`<div class="menu-item-img-placeholder">${esc(item.emoji)||'🍽️'}</div>`}<div class="menu-item-body"><div class="menu-item-name">${esc(item.nombre)}</div>${item.descripcion?`<div class="menu-item-desc">${esc(item.descripcion)}</div>`:''}<div class="menu-item-price">${fmt(item.precio)}</div>${stockLabel(item)}${agotado?'<span class="menu-item-badge">Agotado</span>':''}</div>`;
     if(item.descripcion||item.receta_count>0||item.inventario_id!=null){
       d.addEventListener('mouseenter', e=>_showPosTip(item,e));
       d.addEventListener('mousemove',  e=>_posPosTip(e));
