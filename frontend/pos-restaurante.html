@@ -1338,7 +1338,9 @@ async function loadCocina(){
         : p.estado==='en_preparacion'
         ? `<button class="ticket-btn btn-listo" onclick="updDomicilio('${p.id}','listo')">✓ Listo para despacho</button>`
         : p.estado==='listo'
-        ? `<button class="ticket-btn btn-listo" onclick="reenviarAvisoDomicilio('${p.id}')">🔔 Reenviar aviso a domiciliario</button>`
+        ? (p.pago_estado==='pagado'
+            ? `<button class="ticket-btn btn-listo" onclick="reenviarAvisoDomicilio('${p.id}')">🔔 Reenviar aviso a domiciliario</button>`
+            : `<div style="background:var(--amber-l,#fff7d6);color:var(--amber-d,#8aad00);border-radius:var(--r);padding:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px">⚠️ Falta facturar en Caja para despachar</div>`)
         : '';
       d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🛵 ${p.cliente_nombre}</span><span class="badge ${badgeCls}">${label}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="font-size:11px;color:var(--text2);margin:3px 0 6px">${p.cliente_dir}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:18px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${DOM_BTN}`;
       g.appendChild(d);
