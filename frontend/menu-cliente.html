@@ -378,10 +378,13 @@ function manejarResultado(estado, motivo){
     $('estado-icono').innerHTML = '<div class="state-icon">✅</div>';
     $('estado-titulo').textContent = '¡Pedido confirmado!';
     $('estado-msg').textContent = 'Tu pedido ya va para cocina. Gracias por tu compra.';
+    $('btn-volver-menu').textContent = '+ Pedir algo más';
+    $('btn-volver-menu').classList.remove('hide');
   } else if(estado==='rechazado'){
     $('estado-icono').innerHTML = '<div class="state-icon">❌</div>';
     $('estado-titulo').textContent = 'Tu pedido no pudo confirmarse';
     $('estado-msg').textContent = motivo || 'Habla con el mesero para más detalles.';
+    $('btn-volver-menu').textContent = 'Volver al menú';
     $('btn-volver-menu').classList.remove('hide');
   }
 }
