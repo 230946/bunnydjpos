@@ -33,6 +33,12 @@ const PORT   = process.env.PORT || 3001;
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(process.env.UPLOADS_DIR || './uploads'));
+// Ningún GET de página/API se cachea — cubre las rutas con res.sendFile
+// (login, pos, cocina, menu, etc.) que no pasan por express.static.
+app.use((req, res, next) => {
+  if (req.method === 'GET') res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  next();
+});
 
 // ── Servir frontend desde el servidor (evita problema file://) ────
 const frontendPath = path.join(__dirname, '..', 'frontend');
