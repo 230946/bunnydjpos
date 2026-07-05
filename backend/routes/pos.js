@@ -50,7 +50,7 @@ router.post('/mesas', requirePermiso('pos_mesas'), async (req, res) => {
       [id, nid(req), numero, nombre||`Mesa ${numero}`, capacidad||4, zona||null]
     );
     await pool.query(
-      `INSERT INTO mesa_estado (mesa_id, pedido) VALUES (${ph(1)}, '[]')`, [id]
+      `INSERT INTO mesa_estado (mesa_id, pedido, sesion_token) VALUES (${ph(1)}, '[]', ${ph(2)})`, [id, uuid()]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -106,13 +106,16 @@ router.put('/mesas/:id/pedido', async (req, res) => {
 });
 
 // Limpiar mesa al cobrar (o para liberarla manualmente si quedó desincronizada)
+// Renueva sesion_token: invalida el QR/link que el cliente ya facturado
+// pudiera tener todavía abierto, para que no pueda seguir pidiendo desde ahí
+// sin volver a escanear el código físico de la mesa.
 router.post('/mesas/:id/liberar', async (req, res) => {
   try {
     await pool.query(`
-      INSERT INTO mesa_estado (mesa_id, ocupada, pedido, actualizado)
-      VALUES (${ph(1)}, 0, '[]', NOW())
-      ON DUPLICATE KEY UPDATE ocupada=0, pedido='[]', actualizado=NOW()
-    `, [req.params.id]);
+      INSERT INTO mesa_estado (mesa_id, ocupada, pedido, sesion_token, actualizado)
+      VALUES (${ph(1)}, 0, '[]', ${ph(2)}, NOW())
+      ON DUPLICATE KEY UPDATE ocupada=0, pedido='[]', sesion_token=VALUES(sesion_token), actualizado=NOW()
+    `, [req.params.id, uuid()]);
     await pool.query(`
       UPDATE comandas SET estado='entregado', actualizado=NOW()
       WHERE mesa_id=${ph(1)} AND negocio_id=${ph(2)} AND estado != 'entregado'
@@ -497,8 +500,8 @@ router.put('/comandas/limpiar/todo', async (req, res) => {
     );
     for (const { mesa_id } of afectadas) {
       await pool.query(
-        `UPDATE mesa_estado SET ocupada=0, pedido='[]', actualizado=NOW() WHERE mesa_id=${ph(1)}`,
-        [mesa_id]
+        `UPDATE mesa_estado SET ocupada=0, pedido='[]', sesion_token=${ph(1)}, actualizado=NOW() WHERE mesa_id=${ph(2)}`,
+        [uuid(), mesa_id]
       );
     }
     req.app.locals.broadcast?.(nid(req), 'cocina_limpiada', {});

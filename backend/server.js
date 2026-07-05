@@ -280,6 +280,7 @@ async function runMigrations() {
     { table: 'domicilios_pedidos', column: 'monto_tarjeta',  sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'domicilios_pedidos', column: 'monto_nequi',    sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'domicilios_pedidos', column: 'llego_en',       sql: `ALTER TABLE domicilios_pedidos ADD COLUMN llego_en TIMESTAMP NULL` },
+    { table: 'mesa_estado', column: 'sesion_token', sql: `ALTER TABLE mesa_estado ADD COLUMN sesion_token VARCHAR(36) NULL` },
     {
       table: 'domicilios_pedidos', column: '__create__',
       createSql: `CREATE TABLE IF NOT EXISTS domicilios_pedidos (

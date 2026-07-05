@@ -98,8 +98,9 @@ textarea#notas{width:100%;min-height:70px;padding:10px;border:0.5px solid var(--
 <div id="pantalla-error" class="overlay" style="align-items:center;justify-content:center">
   <div class="state-screen">
     <div class="state-icon">⚠️</div>
-    <div class="state-title">No pudimos cargar el menú</div>
+    <div class="state-title" id="error-title">No pudimos cargar el menú</div>
     <div class="state-msg" id="error-msg">Verifica el código QR o pídele ayuda al mesero.</div>
+    <button class="btn-outline" onclick="location.reload()" style="margin-top:6px">🔄 Reintentar</button>
   </div>
 </div>
 
@@ -195,16 +196,17 @@ let menuItems = [], menuCats = [], catActiva = null;
 let carrito = []; // {item_id, nombre, nombre_zh, precio, emoji, qty}
 let miPedidoId = null, wsConn = null, pollTimer = null;
 let clienteCelular = sessionStorage.getItem('menu_cliente_celular') || null;
-let _menuInfo = null, _mesaInfo = null;
+let _menuInfo = null, _mesaInfo = null, sesionToken = null;
 
 async function api(path, opts={}) {
   const r = await fetch(`${API}${path}`, { ...opts, headers:{'Content-Type':'application/json', ...(opts.headers||{})} });
   const d = await r.json().catch(()=>({}));
-  if (!r.ok) throw new Error(d.error||'Error');
+  if (!r.ok) { const err = new Error(d.error||'Error'); err.codigo = d.codigo; throw err; }
   return d;
 }
 
-function mostrarError(msg){
+function mostrarError(msg, titulo){
+  $('error-title').textContent = titulo || 'No pudimos cargar el menú';
   $('error-msg').textContent = msg;
   $('pantalla-error').classList.add('show');
 }
@@ -219,7 +221,7 @@ async function init(){
     ]);
     if(neg?.nombre){ $('neg-nombre').textContent = neg.nombre; document.title = `${neg.nombre} — Menú`; $('login-neg-nombre').textContent = neg.nombre; }
     if(neg?.logo_url){ $('neg-logo').src = neg.logo_url; $('login-neg-logo').src = neg.logo_url; }
-    _mesaInfo = mesa; _menuInfo = menu;
+    _mesaInfo = mesa; _menuInfo = menu; sesionToken = mesa.sesion_token || null;
     $('mesa-label').textContent = `Mesa ${mesa.numero}${mesa.nombre?' · '+mesa.nombre:''}`;
     $('login-mesa-label').textContent = `Mesa ${mesa.numero}`;
     menuCats = menu.categorias || [];
@@ -329,7 +331,8 @@ async function confirmarPedido(){
       items: carrito.map(c=>({item_id:c.item_id, qty:c.qty})),
       notas: notas || null,
       cliente_nombre: nombre,
-      cliente_celular: clienteCelular
+      cliente_celular: clienteCelular,
+      sesion_token: sesionToken
     })});
     miPedidoId = r.id;
     $('overlay-nombre').classList.remove('show');
@@ -337,7 +340,11 @@ async function confirmarPedido(){
     conectarWS();
     pollTimer = setInterval(consultarEstado, 8000);
   } catch(e) {
-    toast('Error: '+e.message);
+    if(e.codigo === 'sesion_invalida'){
+      mostrarError(e.message, '🔒 Mesa cerrada');
+    } else {
+      toast('Error: '+e.message);
+    }
   } finally {
     btn.disabled = false; btn.textContent = 'Enviar pedido';
   }

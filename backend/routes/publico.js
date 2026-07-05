@@ -36,24 +36,39 @@ router.get('/menu/:negocio_id', async (req, res) => {
 });
 
 // GET /api/publico/mesa/:mesa_id?n=<negocio_id> — valida que el QR apunte a una mesa real
+// y devuelve el sesion_token vigente: se lo lleva el cliente y hay que
+// mandarlo de vuelta al confirmar el pedido (ver POST /pedidos).
 router.get('/mesa/:mesa_id', async (req, res) => {
   try {
     const { mesa_id } = req.params;
     const { n } = req.query;
     if (!n) return res.status(400).json({ error: 'Falta negocio' });
     const { rows } = await pool.query(
-      `SELECT id, numero, nombre FROM mesas WHERE id=${ph(1)} AND negocio_id=${ph(2)} AND activa=1 LIMIT 1`,
+      `SELECT m.id, m.numero, m.nombre, me.sesion_token
+       FROM mesas m LEFT JOIN mesa_estado me ON me.mesa_id = m.id
+       WHERE m.id=${ph(1)} AND m.negocio_id=${ph(2)} AND m.activa=1 LIMIT 1`,
       [mesa_id, n]
     );
     if (!rows.length) return res.status(404).json({ error: 'Mesa no encontrada' });
-    res.json(rows[0]);
+    const mesa = rows[0];
+    // Mesas creadas antes de esta funcionalidad no tienen sesion_token — se
+    // le asigna uno la primera vez que alguien la consulta (auto-reparación).
+    if (!mesa.sesion_token) {
+      mesa.sesion_token = uuid();
+      await pool.query(
+        `INSERT INTO mesa_estado (mesa_id, pedido, sesion_token) VALUES (${ph(1)}, '[]', ${ph(2)})
+         ON DUPLICATE KEY UPDATE sesion_token=VALUES(sesion_token)`,
+        [mesa_id, mesa.sesion_token]
+      );
+    }
+    res.json(mesa);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // POST /api/publico/pedidos — el cliente confirma su pedido desde la mesa
 router.post('/pedidos', async (req, res) => {
   try {
-    const { negocio_id, mesa_id, items, notas, cliente_nombre, cliente_celular } = req.body;
+    const { negocio_id, mesa_id, items, notas, cliente_nombre, cliente_celular, sesion_token } = req.body;
     if (!negocio_id || !mesa_id || !Array.isArray(items) || !items.length) {
       return res.status(400).json({ error: 'Faltan datos del pedido' });
     }
@@ -70,11 +85,19 @@ router.post('/pedidos', async (req, res) => {
     if (!neg.length) return res.status(404).json({ error: 'Negocio no encontrado' });
 
     const { rows: mesas } = await pool.query(
-      `SELECT id, numero, nombre FROM mesas WHERE id=${ph(1)} AND negocio_id=${ph(2)} AND activa=1 LIMIT 1`,
+      `SELECT m.id, m.numero, m.nombre, me.sesion_token
+       FROM mesas m LEFT JOIN mesa_estado me ON me.mesa_id = m.id
+       WHERE m.id=${ph(1)} AND m.negocio_id=${ph(2)} AND m.activa=1 LIMIT 1`,
       [mesa_id, negocio_id]
     );
     if (!mesas.length) return res.status(404).json({ error: 'Mesa no encontrada' });
     const mesa = mesas[0];
+    // La mesa ya fue cobrada/liberada (o limpiada) desde que el cliente cargó
+    // el menú: su sesión quedó invalidada y no puede seguir pidiendo sin
+    // volver a escanear el QR físico de la mesa.
+    if (mesa.sesion_token && sesion_token !== mesa.sesion_token) {
+      return res.status(409).json({ error: 'Esta mesa ya fue cerrada. Escanea el código QR de la mesa nuevamente para pedir.', codigo: 'sesion_invalida' });
+    }
 
     // Evita que la misma mesa mande varios pedidos mientras uno ya espera aprobación
     const { rows: pendientes } = await pool.query(

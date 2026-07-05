@@ -350,8 +350,13 @@ table.inv tr:hover td{background:var(--bg2)}
   <!-- Alerta persistente de pedido de cliente (QR) pendiente de aprobar —
        visible sin importar en qué pestaña esté el cajero/mesero, hasta que
        se apruebe o rechace desde el modal correspondiente. -->
-  <div id="pc-alert-banner" onclick="abrirDesdeAlertaGlobal()" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:500;background:var(--blue);color:#fff;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;animation:mesaCobroPend 1s ease-in-out infinite;box-shadow:0 -4px 16px rgba(0,0,0,.2)">
-    🔔 <span id="pc-alert-count">0</span> pedido(s) de cliente esperando aprobación — toca para revisar
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:500;display:flex;flex-direction:column-reverse">
+    <div id="pc-alert-banner" onclick="abrirDesdeAlertaGlobal()" style="display:none;background:var(--blue);color:#fff;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;animation:mesaCobroPend 1s ease-in-out infinite;box-shadow:0 -4px 16px rgba(0,0,0,.2)">
+      🔔 <span id="pc-alert-count">0</span> pedido(s) de cliente esperando aprobación — toca para revisar
+    </div>
+    <div id="dom-alert-banner" style="display:none;background:#f59e0b;color:#1a1a1a;padding:12px 16px;text-align:center;font-size:13px;font-weight:700;animation:mesaCobroPend 1s ease-in-out infinite;box-shadow:0 -4px 16px rgba(0,0,0,.2)">
+      🛵 <span id="dom-alert-count">0</span> pedido(s) de domicilio nuevo(s) — ¡prepáralos!
+    </div>
   </div>
 
   <!-- SIDEBAR ÍCONOS -->
@@ -975,6 +980,25 @@ function abrirDesdeAlertaGlobal(){
   abrirPedidoCliente(pedidosClientePendientes[0]);
 }
 
+// Domicilios nuevos sin atender en Cocina — misma idea: no se apaga sola,
+// solo cuando cocina cambia el estado (botón "Preparando").
+let domAlarmInterval = null;
+function actualizarAlertaDomicilioNuevo(count){
+  const banner = $('dom-alert-banner');
+  if(!banner) return;
+  if(count>0){
+    banner.style.display='block';
+    $('dom-alert-count').textContent = count;
+    if(!domAlarmInterval){
+      Sound.notify();
+      domAlarmInterval = setInterval(()=>Sound.notify(), 7000);
+    }
+  } else {
+    banner.style.display='none';
+    if(domAlarmInterval){ clearInterval(domAlarmInterval); domAlarmInterval=null; }
+  }
+}
+
 // Respaldo por si el WebSocket se desconecta: revisa cada rato aunque el
 // cajero no esté en las pestañas de Mesas/Cobro (que ya lo hacen solas).
 async function pollAlertaPedidosCliente(){
@@ -1273,6 +1297,8 @@ async function loadCocina(){
     ]);
     const ESTADOS_COCINA = new Set(['pendiente','aceptado','en_preparacion','listo']);
     const domData = (domRes.pedidos||[]).filter(p => ESTADOS_COCINA.has(p.estado));
+    const domNuevos = domData.filter(p => p.estado==='pendiente'||p.estado==='aceptado').length;
+    actualizarAlertaDomicilioNuevo(domNuevos);
     const totalBadge = data.length + domData.length;
     updateCocinaBadge(totalBadge);
     const g=$('cocina-grid'); g.innerHTML='';
