@@ -55,7 +55,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
 /* LAYOUT */
 .app{display:flex;height:100vh;overflow:hidden}
-.sidebar{width:132px;min-width:132px;height:100vh;background:var(--bg);border-right:0.5px solid var(--border);padding:14px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;overflow-x:hidden;flex-shrink:0}
+.sidebar{width:142px;min-width:142px;height:100vh;background:var(--bg);border-right:0.5px solid var(--border);padding:14px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;overflow-x:hidden;flex-shrink:0}
 .sidebar-logo{padding:4px 4px 14px;border-bottom:0.5px solid var(--border);margin-bottom:8px;display:flex;align-items:center;justify-content:center}
 .sidebar-logo img{width:40px;height:40px;border-radius:8px;object-fit:cover;display:none;flex-shrink:0}
 .sidebar-logo img.show{display:block}
@@ -1725,7 +1725,7 @@ function openMobileSidebar(){
   sb.style.position='fixed'; sb.style.top='0'; sb.style.left='0';
   sb.style.height='100vh'; sb.style.zIndex='100';
   sb.style.boxShadow='4px 0 20px rgba(0,0,0,.2)';
-  sb.style.width='132px'; sb.style.minWidth='132px';
+  sb.style.width='142px'; sb.style.minWidth='142px';
   ov.style.display='block';
 }
 function closeMobileSidebar(){
