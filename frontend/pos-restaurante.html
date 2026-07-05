@@ -280,9 +280,12 @@ table.inv tr:hover td{background:var(--bg2)}
   .menu-cats{width:80px}
   .menu-items-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));padding:8px}
 
-  /* Cobro stack vertical */
+  /* Cobro stack vertical — sin scroll interno propio en cada columna:
+     que todo se desplace junto con el scroll normal de la página (el de
+     .panel-body), en vez de quedar "atrapado" en cajas con scroll propio
+     que no responden bien al mouse táctil/gesto de scroll. */
   .cobro-layout{flex-direction:column}
-  .cobro-right{width:100%}
+  .cobro-left,.cobro-right{width:100%;flex:none;min-height:auto;overflow-y:visible}
 
   /* Mesas en 3 columnas */
   .mesas-grid{grid-template-columns:repeat(3,1fr)}
