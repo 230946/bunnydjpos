@@ -388,6 +388,23 @@
   </div>
 </div>
 
+<!-- MODAL CATEGORÍAS DE PRODUCTO -->
+<div class="modal-bg" id="catprod-modal" style="display:none">
+  <div class="modal" style="width:420px">
+    <div class="modal-head"><h3>Categorías de producto</h3><button class="modal-close" onclick="cerrarModal('catprod-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="catprod-nueva-nombre" placeholder="Nueva categoría..." style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+        <button class="btn-acc" onclick="crearCategoriaProd()" style="white-space:nowrap">+ Agregar</button>
+      </div>
+      <div id="catprod-list" style="max-height:320px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-acc" onclick="cerrarModal('catprod-modal')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL EMPLEADO -->
 <div class="modal-bg" id="emp-modal" style="display:none">
   <div class="modal" style="width:480px">
@@ -470,7 +487,12 @@
         <div class="fg" style="flex:1"><label>Código / SKU</label><input id="inv-sku" placeholder="Ej: COD-001"></div>
       </div>
       <div class="frow">
-        <div class="fg"><label>Categoría</label><input id="inv-cat" placeholder="Ej: Shampoos, Tintes..."></div>
+        <div class="fg"><label>Categoría</label>
+          <div style="display:flex;gap:6px">
+            <select id="inv-cat" style="flex:1"><option value="">— Sin categoría —</option></select>
+            <button type="button" class="btn-sm-outline" onclick="abrirModalCategoriasProd()" title="Gestionar categorías" style="padding:0 10px">🏷️</button>
+          </div>
+        </div>
         <div class="fg"><label>Unidad</label><input id="inv-unidad" placeholder="Ej: und, ml, g"></div>
       </div>
       <div class="frow">
@@ -1020,7 +1042,7 @@ function toggleGrupo(id){
   });
 })();
 function cerrarModal(id){document.getElementById(id).style.display='none';}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['modalCita','modalDetCita','svc-modal','emp-modal','inv-modal','inv-ajuste-modal','gasto-modal','cat-modal','personal-modal','prov-modal','pedido-prov-modal','rol-modal','role-assign-modal','horario-modal','cfg-imp-modal','paq-modal'].forEach(id=>cerrarModal(id));});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['modalCita','modalDetCita','svc-modal','emp-modal','inv-modal','inv-ajuste-modal','gasto-modal','cat-modal','catprod-modal','personal-modal','prov-modal','pedido-prov-modal','rol-modal','role-assign-modal','horario-modal','cfg-imp-modal','paq-modal'].forEach(id=>cerrarModal(id));});
 
 let _pelChartH=null,_pelChartM=null,_pelChartD=null,_pelChartCom=null;
 let _pelDashPeriodo='hoy';
@@ -1352,6 +1374,67 @@ async function eliminarCategoria(id){
     await apiFetch(`${API}/peluqueria/categorias-servicio/${id}`,{method:'DELETE'});
     showToast('Categoría eliminada');
     await _renderCatList();
+  }catch(e){showToast(e.message,'err');}
+}
+
+// ─── Categorías de producto (inventario) ──────────────────────
+async function _cargarCatsProd(selected){
+  try{
+    const cats=await apiFetch(`${API}/peluqueria/categorias-producto`)||[];
+    const sel=document.getElementById('inv-cat');
+    sel.innerHTML='<option value="">— Sin categoría —</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    sel.value=selected||'';
+  }catch{}
+}
+async function abrirModalCategoriasProd(){
+  document.getElementById('catprod-nueva-nombre').value='';
+  document.getElementById('catprod-modal').style.display='flex';
+  await _renderCatProdList();
+}
+async function _renderCatProdList(){
+  const listEl=document.getElementById('catprod-list');
+  listEl.innerHTML='<div style="color:var(--text2);font-size:13px">Cargando...</div>';
+  try{
+    const cats=await apiFetch(`${API}/peluqueria/categorias-producto`)||[];
+    if(!cats.length){listEl.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px">Sin categorías. Agrega una arriba.</div>';return;}
+    listEl.innerHTML=cats.map(c=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-bottom:1px solid var(--border);gap:8px" id="catprod-row-${c.id}">
+        <span style="font-size:13px;flex:1" id="catprod-text-${c.id}">${esc(c.nombre)}</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm-outline" onclick="editarCategoriaProd('${c.id}','${esc(c.nombre).replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 8px">Renombrar</button>
+          <button class="btn-sm-outline" style="color:var(--red);font-size:11px;padding:3px 8px" onclick="eliminarCategoriaProd('${c.id}')">Eliminar</button>
+        </div>
+      </div>`).join('');
+  }catch(e){listEl.innerHTML=`<div style="color:var(--red);font-size:13px">${esc(e.message)}</div>`;}
+}
+async function crearCategoriaProd(){
+  const nombre=document.getElementById('catprod-nueva-nombre').value.trim();
+  if(!nombre){showToast('Escribe un nombre','err');return;}
+  try{
+    await apiFetch(`${API}/peluqueria/categorias-producto`,{method:'POST',body:JSON.stringify({nombre})});
+    document.getElementById('catprod-nueva-nombre').value='';
+    showToast('Categoría creada ✓');
+    await _renderCatProdList();
+    await _cargarCatsProd(document.getElementById('inv-cat')?.value);
+  }catch(e){showToast(e.message,'err');}
+}
+async function editarCategoriaProd(id,nombreActual){
+  const nuevoNombre=prompt('Nuevo nombre para la categoría:',nombreActual);
+  if(!nuevoNombre||nuevoNombre.trim()===nombreActual)return;
+  try{
+    await apiFetch(`${API}/peluqueria/categorias-producto/${id}`,{method:'PUT',body:JSON.stringify({nombre:nuevoNombre.trim()})});
+    showToast('Categoría actualizada ✓');
+    await _renderCatProdList();
+    await _cargarCatsProd(document.getElementById('inv-cat')?.value);
+  }catch(e){showToast(e.message,'err');}
+}
+async function eliminarCategoriaProd(id){
+  if(!confirm('¿Eliminar esta categoría? Los productos que la usen quedarán sin categoría.'))return;
+  try{
+    await apiFetch(`${API}/peluqueria/categorias-producto/${id}`,{method:'DELETE'});
+    showToast('Categoría eliminada');
+    await _renderCatProdList();
+    await _cargarCatsProd(document.getElementById('inv-cat')?.value);
   }catch(e){showToast(e.message,'err');}
 }
 async function guardarServicio(){
@@ -1825,7 +1908,7 @@ async function recargarInv(){
 
 function filtrarInv(){
   const q=(document.getElementById('inv-busq')?.value||'').toLowerCase();
-  const items=q?_invData.filter(i=>i.nombre.toLowerCase().includes(q)||(i.categoria||'').toLowerCase().includes(q)):_invData;
+  const items=q?_invData.filter(i=>i.nombre.toLowerCase().includes(q)||(i.categoria_nombre||'').toLowerCase().includes(q)):_invData;
   const el=document.getElementById('inv-list');if(!el)return;
   const cnt=document.getElementById('inv-count');if(cnt)cnt.textContent=`${items.length} producto${items.length!==1?'s':''}`;
   if(!items.length){el.innerHTML='<div style="color:var(--text3);text-align:center;padding:40px">No hay productos en inventario.</div>';return;}
@@ -1898,7 +1981,7 @@ async function abrirModalInv(id=null){
     const item=_invData.find(i=>i.id===id)||{};
     document.getElementById('inv-nombre').value=item.nombre||'';
     document.getElementById('inv-sku').value=item.sku||'';
-    document.getElementById('inv-cat').value=item.categoria_nombre||'';
+    await _cargarCatsProd(item.categoria_id||'');
     document.getElementById('inv-unidad').value=item.unidad||'unidad';
     document.getElementById('inv-stock').value=item.stock_actual||0;
     document.getElementById('inv-stock-min').value=item.stock_minimo||0;
@@ -1907,7 +1990,8 @@ async function abrirModalInv(id=null){
     const c=parseFloat(item.precio_costo||0),p=parseFloat(item.precio_venta||0);
     document.getElementById('inv-margen').value=c>0?((p-c)/c*100).toFixed(1):'';
   }else{
-    ['inv-nombre','inv-sku','inv-cat'].forEach(id=>document.getElementById(id).value='');
+    ['inv-nombre','inv-sku'].forEach(id=>document.getElementById(id).value='');
+    await _cargarCatsProd('');
     document.getElementById('inv-unidad').value='unidad';
     ['inv-stock','inv-stock-min','inv-costo','inv-precio','inv-margen'].forEach(id=>document.getElementById(id).value=0);
   }
@@ -1921,6 +2005,7 @@ async function guardarInv(){
   const body={
     nombre,
     sku:skuVal||null,
+    categoriaId:document.getElementById('inv-cat').value||null,
     unidad:document.getElementById('inv-unidad').value.trim()||'unidad',
     stockActual:parseFloat(document.getElementById('inv-stock').value)||0,
     stockMinimo:parseFloat(document.getElementById('inv-stock-min').value)||0,
