@@ -150,7 +150,7 @@
     .gasto-bar-track{flex:1.2;height:8px;background:var(--bg3);border-radius:99px;overflow:hidden}
     .gasto-bar-fill{height:100%;border-radius:99px}
     .gasto-bar-val{font-size:12px;color:var(--text2);white-space:nowrap}
-    .rep-q.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+    .rep-q.active,.dash-q.active{background:var(--acc);color:#fff;border-color:var(--acc)}
     .toggle{display:inline-flex;cursor:pointer;align-items:center}
     .toggle input{display:none}
     .toggle-s{width:36px;height:20px;background:var(--border);border-radius:99px;position:relative;transition:.2s}
@@ -1023,16 +1023,33 @@ function cerrarModal(id){document.getElementById(id).style.display='none';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')['modalCita','modalDetCita','svc-modal','emp-modal','inv-modal','inv-ajuste-modal','gasto-modal','cat-modal','personal-modal','prov-modal','pedido-prov-modal','rol-modal','role-assign-modal','horario-modal','cfg-imp-modal','paq-modal'].forEach(id=>cerrarModal(id));});
 
 let _pelChartH=null,_pelChartM=null,_pelChartD=null,_pelChartCom=null;
+let _pelDashPeriodo='hoy';
+const _PEL_DASH_LABELS={hoy:'hoy',ayer:'ayer',semana:'esta semana'};
+function pelDashFiltro(ev,tipo){
+  _pelDashPeriodo=tipo;
+  document.querySelectorAll('.dash-q').forEach(b=>b.classList.remove('active'));
+  if(ev?.currentTarget) ev.currentTarget.classList.add('active');
+  renderDashboard();
+}
+function _pelDashRango(){
+  const d=new Date();const ls=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  let desde,hasta=ls(d);
+  if(_pelDashPeriodo==='ayer'){ const y=new Date(d-864e5); desde=ls(y); hasta=ls(y); }
+  else if(_pelDashPeriodo==='semana'){ const s=new Date(d); s.setDate(d.getDate()-((d.getDay()+6)%7)); desde=ls(s); }
+  else { desde=hasta; } // 'hoy'
+  return {desde,hasta};
+}
 async function renderDashboard(){
   document.getElementById('content').innerHTML='<div style="color:var(--text2)">Cargando...</div>';
   try{
     const hoy=today();
+    const {desde:_pDesde,hasta:_pHasta}=_pelDashRango();
     const _pelNid = sessionStorage.getItem('pel_negocio_id')||urlNegocio;
     const [d, r, horas, dias, pubData, rTotal, prods] = await Promise.all([
       apiFetch(`${API}/peluqueria/dashboard`),
-      apiFetch(`${API}/admin/reportes/resumen?desde=${hoy}&hasta=${hoy}`).catch(()=>null),
-      apiFetch(`${API}/admin/reportes/ventas-por-hora?desde=${hoy}&hasta=${hoy}`).catch(()=>[]),
-      apiFetch(`${API}/admin/reportes/ventas-por-dia?desde=${hoy}&hasta=${hoy}`).catch(()=>[]),
+      apiFetch(`${API}/admin/reportes/resumen?desde=${_pDesde}&hasta=${_pHasta}`).catch(()=>null),
+      apiFetch(`${API}/admin/reportes/ventas-por-hora?desde=${_pDesde}&hasta=${_pHasta}`).catch(()=>[]),
+      apiFetch(`${API}/admin/reportes/ventas-por-dia?desde=${_pDesde}&hasta=${_pHasta}`).catch(()=>[]),
       _pelNid ? fetch(`/api/negocio-pub/${_pelNid}`).then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null),
       apiFetch(`${API}/admin/reportes/resumen?desde=2000-01-01&hasta=${hoy}`).catch(()=>null),
       apiFetch(`${API}/peluqueria/productos?soloActivos=true`).catch(()=>[]),
@@ -1071,9 +1088,16 @@ async function renderDashboard(){
         <span class="hora-badge" style="align-self:center">${fmtDT(c.fechaHora)}</span>
       </div>`).join('')}
     </div>`:''}
-    <!-- Resumen financiero del día -->
+    <!-- Resumen financiero del período -->
     <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
-      <div style="font-size:12px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;font-weight:700">💰 Resumen financiero hoy</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div style="font-size:12px;text-transform:uppercase;color:var(--text3);font-weight:700">💰 Resumen financiero — ${_PEL_DASH_LABELS[_pelDashPeriodo]}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm dash-q${_pelDashPeriodo==='hoy'?' active':''}" onclick="pelDashFiltro(event,'hoy')">Hoy</button>
+          <button class="btn btn-outline btn-sm dash-q${_pelDashPeriodo==='ayer'?' active':''}" onclick="pelDashFiltro(event,'ayer')">Ayer</button>
+          <button class="btn btn-outline btn-sm dash-q${_pelDashPeriodo==='semana'?' active':''}" onclick="pelDashFiltro(event,'semana')">Esta semana</button>
+        </div>
+      </div>
       <div class="fin-stat-grid">
         <div class="stat-card"><div class="label">Ventas</div><div class="value" style="font-size:18px">${fmtV(r?.ventas?.total_ventas)}</div></div>
         <div class="stat-card"><div class="label">Gastos</div><div class="value" style="font-size:18px;color:var(--red)">${fmtV(r?.gastos?.total_gastos)}</div></div>
