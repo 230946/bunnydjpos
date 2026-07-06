@@ -878,6 +878,22 @@ async function _ddl(sql) {
     INDEX idx_neg (negocio_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
 
+  // Pedidos/solicitudes a proveedores propios de peluquería (pel_proveedores,
+  // no la tabla compartida de restaurante/minimercado)
+  await _ddl(`CREATE TABLE IF NOT EXISTS pel_pedidos_proveedor (
+    id            VARCHAR(36)   PRIMARY KEY,
+    negocio_id    VARCHAR(36)   NOT NULL,
+    proveedor_id  VARCHAR(36)   NOT NULL,
+    usuario_id    VARCHAR(36),
+    items         JSON,
+    total         DECIMAL(12,2) NOT NULL DEFAULT 0,
+    notas         TEXT,
+    estado        VARCHAR(20)   NOT NULL DEFAULT 'pendiente',
+    fecha_entrega DATE          NULL,
+    creado        DATETIME      DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_neg (negocio_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+
   // Categorías de producto
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_categorias_producto (
     id         VARCHAR(36)  PRIMARY KEY,
@@ -2003,6 +2019,48 @@ router.put('/proveedores/:id', async (req, res) => {
     await pool.query(
       `UPDATE pel_proveedores SET nombre=?,telefono=?,email=?,activo=? WHERE id=? AND negocio_id=?`,
       [nombre, telefono||null, email||null, activo!==undefined?activo:1, req.params.id, nid(req)]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════
+// PEDIDOS A PROVEEDOR (usa pel_proveedores, no la tabla compartida)
+// ════════════════════════════════════════════════════════════════
+
+router.get('/pedidos-proveedor', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT pp.*, pr.nombre AS proveedor_nombre, u.nombre AS usuario_nombre
+      FROM pel_pedidos_proveedor pp
+      JOIN pel_proveedores pr ON pr.id = pp.proveedor_id
+      LEFT JOIN usuarios u ON u.id = pp.usuario_id
+      WHERE pp.negocio_id=? ORDER BY pp.creado DESC LIMIT 50
+    `, [nid(req)]);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/pedidos-proveedor', async (req, res) => {
+  try {
+    const { proveedor_id, items, total, notas, fecha_entrega } = req.body;
+    if (!proveedor_id) return res.status(400).json({ error: 'Proveedor requerido' });
+    const id = uuid();
+    await pool.query(
+      `INSERT INTO pel_pedidos_proveedor (id,negocio_id,proveedor_id,usuario_id,items,total,notas,fecha_entrega)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [id, nid(req), proveedor_id, req.user.id, JSON.stringify(items||[]), total||0, notas||null, fecha_entrega||null]
+    );
+    res.status(201).json({ id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/pedidos-proveedor/:id/estado', async (req, res) => {
+  try {
+    const { estado } = req.body;
+    await pool.query(
+      `UPDATE pel_pedidos_proveedor SET estado=? WHERE id=? AND negocio_id=?`,
+      [estado, req.params.id, nid(req)]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

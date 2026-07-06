@@ -2657,16 +2657,16 @@ function renderPedidosProv(){
 }
 async function cargarPedidosProv(){
   try{
-    const data=await apiFetch(`${API}/admin/pedidos-proveedor`)||[];
+    const data=await apiFetch(`${API}/peluqueria/pedidos-proveedor`)||[];
     const estados={pendiente:'badge-amber',enviado:'badge-blue',recibido:'badge-green',cancelado:'badge-red'};
     const tb=_gel('pedidos-prov-tbody');
     if(tb)tb.innerHTML=data.map(p=>`<tr><td><b>${esc(p.proveedor_nombre)}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estados[p.estado]||'badge-gray'}">${p.estado}</span></td><td><select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option value="">—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text2)">Sin solicitudes</td></tr>';
   }catch(e){showToast(e.message,'err');}
 }
-async function cambiarEstadoPedido(id,estado){if(!estado)return;await apiFetch(`${API}/admin/pedidos-proveedor/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})});showToast('Estado actualizado');cargarPedidosProv();}
+async function cambiarEstadoPedido(id,estado){if(!estado)return;await apiFetch(`${API}/peluqueria/pedidos-proveedor/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})});showToast('Estado actualizado');cargarPedidosProv();}
 async function abrirPedidoProvModal(){
   try{
-    const provs=await apiFetch(`${API}/admin/proveedores`)||[];
+    const provs=await apiFetch(`${API}/peluqueria/proveedores`)||[];
     const sel=_gel('pp-prov');if(sel)sel.innerHTML=provs.map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
     ['pp-fecha','pp-notas','pp-total'].forEach(f=>{const el=_gel(f);if(el)el.value='';});
     _gel('pedido-prov-modal').style.display='flex';
@@ -2674,7 +2674,7 @@ async function abrirPedidoProvModal(){
 }
 async function guardarPedidoProv(){
   try{
-    await apiFetch(`${API}/admin/pedidos-proveedor`,{method:'POST',body:JSON.stringify({proveedor_id:_gel('pp-prov').value,notas:_gel('pp-notas').value,total:+_gel('pp-total').value||0,fecha_entrega:_gel('pp-fecha').value||null})});
+    await apiFetch(`${API}/peluqueria/pedidos-proveedor`,{method:'POST',body:JSON.stringify({proveedor_id:_gel('pp-prov').value,notas:_gel('pp-notas').value,total:+_gel('pp-total').value||0,fecha_entrega:_gel('pp-fecha').value||null})});
     cerrarModal('pedido-prov-modal');showToast('Solicitud enviada ✓');cargarPedidosProv();
   }catch(e){showToast(e.message,'err');}
 }
