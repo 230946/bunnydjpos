@@ -120,8 +120,8 @@
     .nav-sep{padding:6px 12px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-radius:6px;transition:.12s}
     .nav-sep:hover{background:var(--acc-ll);color:var(--text2)}
     .nav-sep .sep-arrow{font-size:9px;transition:transform .2s;flex-shrink:0}
-    .nav-group{overflow:hidden;transition:max-height .25s ease;max-height:400px}
-    .nav-group.collapsed{max-height:0}
+    .nav-group{overflow:visible}
+    .nav-group.collapsed{display:none}
     .nav-portal-link{text-decoration:none;display:flex;align-items:center;justify-content:space-between}
     .nav-portal-link::after{content:'↗';font-size:10px;opacity:.5;margin-left:auto}
     .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
@@ -165,6 +165,8 @@
     .dia-slot{width:100%;min-height:48px;border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;gap:2px}
     .dia-slot.activo{background:var(--acc-ll);border-color:var(--acc);color:var(--acc);font-weight:600}
     .dia-slot.vacio{color:var(--text3);cursor:pointer}
+    .dia-slot.excepcion{background:#f59e0b22;border:1px dashed #f59e0b;color:#b45c00;font-weight:600}
+    .dia-slot.libre{background:var(--bg2);border-style:dashed;color:var(--text3);font-style:italic;font-weight:400}
     .recibo{font-family:monospace;font-size:12px;max-width:300px;margin:0 auto}
     .recibo-center{text-align:center;margin:2px 0}
     .recibo-row{display:flex;justify-content:space-between;padding:2px 0}
@@ -261,14 +263,17 @@
     <div class="nav-group" id="grp-finanzas">
       <div class="nav-item" data-nav="servicios" onclick="nav('servicios')">📂 Servicios</div>
       <div class="nav-item" data-nav="paquetes" onclick="nav('paquetes')">🎁 Paquetes</div>
-      <div class="nav-item" data-nav="inventario" onclick="nav('inventario')">📦 Inventario</div>
       <div class="nav-item" data-nav="caja" onclick="nav('caja')">💰 Caja del día</div>
       <div class="nav-item" id="nav-toggle-comisiones" data-nav="comisiones" onclick="nav('comisiones')">💸 Comisiones</div>
       <div class="nav-item" data-nav="gastos" onclick="nav('gastos')">📋 Gastos</div>
       <div class="nav-item" data-nav="clientes" onclick="nav('clientes')">👤 Clientes</div>
+      <div class="nav-item" id="nav-facturas-fixed" data-nav="facturas" onclick="nav('facturas')">🖨️ Reimprimir</div>
+    </div>
+    <div class="nav-sep" onclick="toggleGrupo('grp-inventario')">Inventario <span class="sep-arrow" id="arr-inventario">▼</span></div>
+    <div class="nav-group" id="grp-inventario">
+      <div class="nav-item" data-nav="inventario" onclick="nav('inventario')">📦 Inventario</div>
       <div class="nav-item" data-nav="proveedores" onclick="nav('proveedores')">🚚 Proveedores</div>
       <div class="nav-item" data-nav="pedidos-prov" onclick="nav('pedidos-prov')">🛒 Pedidos prov.</div>
-      <div class="nav-item" id="nav-facturas-fixed" data-nav="facturas" onclick="nav('facturas')">🖨️ Reimprimir</div>
     </div>
     <div class="nav-sep" onclick="toggleGrupo('grp-personal')">Personal <span class="sep-arrow" id="arr-personal">▼</span></div>
     <div class="nav-group" id="grp-personal">
@@ -292,7 +297,7 @@
       <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;padding-bottom:5px">Idioma</div>
       <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
     </div>
-    <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
+    <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="toggleFullscreenPOS()" title="Pantalla completa" style="margin-bottom:4px">⛶ Pantalla completa</button><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
   </nav>
   <div class="main">
     <div class="topbar">
@@ -337,7 +342,7 @@
       <div class="frow">
         <div class="fg"><label>Empleado</label>
           <select id="cEmpleado" onchange="verificarHorarioEmpleado()">
-            <option value="">— Sin asignar —</option>
+            <option value="">— Cualquiera disponible —</option>
           </select>
           <div id="cEmpWarn" style="display:none;color:#b45309;font-size:12px;margin-top:4px;padding:4px 8px;background:#fef3c7;border-radius:4px">⚠️ Este empleado no tiene horario laboral registrado</div>
         </div>
@@ -389,7 +394,7 @@
 </div>
 
 <!-- MODAL CATEGORÍAS DE PRODUCTO -->
-<div class="modal-bg" id="catprod-modal" style="display:none">
+<div class="modal-bg" id="catprod-modal" style="display:none;z-index:60">
   <div class="modal" style="width:420px">
     <div class="modal-head"><h3>Categorías de producto</h3><button class="modal-close" onclick="cerrarModal('catprod-modal')">✕</button></div>
     <div class="modal-body">
@@ -469,6 +474,10 @@
           </div>
         </div>
       </div>
+      <div class="fg" style="margin-top:4px">
+        <label>% Comisión por venta de productos <span style="font-weight:400;color:var(--text3)">(opcional, aparte del sueldo/comisión de arriba)</span></label>
+        <input id="emp-comision-producto" type="number" min="0" step="0.5" placeholder="0" style="max-width:160px">
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="cerrarModal('emp-modal')">Cancelar</button>
@@ -503,6 +512,23 @@
         <div class="fg"><label>Costo</label><input id="inv-costo" type="number" min="0" step="100" placeholder="0" oninput="invRecalcPrecio()"></div>
         <div class="fg"><label>Margen %</label><input id="inv-margen" type="number" step="0.1" placeholder="0" oninput="invRecalcPrecio()"></div>
         <div class="fg"><label>Precio venta</label><input id="inv-precio" type="number" min="0" step="100" placeholder="0" oninput="invRecalcMargen()"></div>
+      </div>
+      <div class="fg"><label>Impuesto sobre ventas</label>
+        <div style="display:flex;gap:6px">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg)" id="inv-tax-lbl-0">
+            <input type="radio" name="inv-tax" value="0" checked onchange="invTaxChange(0)"> Exento
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg)" id="inv-tax-lbl-19">
+            <input type="radio" name="inv-tax" value="19" onchange="invTaxChange(19)"> IVA 19%
+          </label>
+        </div>
+      </div>
+      <div class="fg"><label>Descripción</label><textarea id="inv-desc" rows="2" placeholder="Ej: Shampoo para cabello seco y dañado, 400ml" style="resize:vertical"></textarea></div>
+      <div class="fg"><label>Foto del producto</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <img id="inv-foto-preview" style="display:none;width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+          <label class="btn-sm-outline" style="cursor:pointer">📷 Subir foto<input type="file" id="inv-foto-file" accept="image/*" style="display:none" onchange="previewInvFoto(this)"></label>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -603,7 +629,7 @@
   </div>
 </div>
 <!-- MODAL PROVEEDOR -->
-<div class="modal-bg" id="prov-modal" style="display:none">
+<div class="modal-bg" id="prov-modal" style="display:none;z-index:60">
   <div class="modal" style="max-width:400px">
     <div class="modal-head"><h3 id="prov-modal-title">Nuevo proveedor</h3><button class="modal-close" onclick="cerrarModal('prov-modal')">✕</button></div>
     <div class="modal-body">
@@ -619,15 +645,166 @@
     </div>
   </div>
 </div>
+<!-- MODAL CLIENTE -->
+<div class="modal-bg" id="cliente-modal" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head"><h3 id="cli-modal-title">Nuevo cliente</h3><button class="modal-close" onclick="cerrarModal('cliente-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre *</label><input id="cli-nombre" placeholder="Nombre completo"></div>
+      <div class="frow">
+        <div class="fg"><label>Teléfono</label><input id="cli-tel" type="tel" placeholder="3001234567"></div>
+        <div class="fg"><label>Documento</label><input id="cli-doc" placeholder="Cédula / NIT"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Email</label><input id="cli-email" type="email" placeholder="correo@ejemplo.com"></div>
+        <div class="fg"><label>Dirección</label><input id="cli-dir" placeholder="Opcional"></div>
+      </div>
+      <div class="field"><label>Notas</label><textarea id="cli-notas" rows="2" style="resize:vertical" placeholder="Preferencias, alergias, etc."></textarea></div>
+      <div class="field"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input id="cli-activo" type="checkbox"> Activo</label></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrarModal('cliente-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
 <!-- MODAL PEDIDO PROVEEDOR -->
 <div class="modal-bg" id="pedido-prov-modal" style="display:none">
-  <div class="modal" style="max-width:440px">
+  <div class="modal" style="max-width:700px;width:100%;max-height:90vh;overflow-y:auto">
     <div class="modal-head"><h3>Nueva solicitud de pedido</h3><button class="modal-close" onclick="cerrarModal('pedido-prov-modal')">✕</button></div>
     <div class="modal-body">
-      <div class="field"><label>Proveedor *</label><select id="pp-prov"></select></div>
-      <div class="field"><label>Fecha de entrega esperada</label><input id="pp-fecha" type="date"></div>
-      <div class="field"><label>Notas / Lista de productos</label><textarea id="pp-notas" rows="4" placeholder="- 10 unidades producto A&#10;- 5 unidades producto B..."></textarea></div>
-      <div class="field"><label>Total estimado ($)</label><input id="pp-total" type="number" min="0" placeholder="0"></div>
+      <div class="field"><label>Proveedor *</label>
+        <div style="display:flex;gap:6px">
+          <select id="pp-prov" style="flex:1" onchange="ppProvChange()"></select>
+          <button type="button" class="btn-sm-outline" onclick="abrirProvModalDesdePedido()" title="Crear proveedor" style="padding:0 10px;white-space:nowrap">+ Nuevo</button>
+        </div>
+      </div>
+
+      <!-- Agregar producto -->
+      <div style="background:var(--bg2);border-radius:var(--r);padding:12px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text)">Agregar producto al pedido</div>
+        <div style="display:grid;grid-template-columns:1fr 72px 100px auto;gap:8px;align-items:end">
+          <div class="fg" style="margin:0">
+            <label>Producto</label>
+            <select id="pp-producto" onchange="ppProductoChange()">
+              <option value="">— Selecciona un proveedor primero —</option>
+            </select>
+          </div>
+          <div class="fg" style="margin:0">
+            <label>Cantidad</label>
+            <input id="pp-qty" type="number" min="0.01" step="0.01" value="1">
+          </div>
+          <div class="fg" style="margin:0">
+            <label>Costo unit.</label>
+            <input id="pp-costo" type="number" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <button class="btn btn-acc btn-sm" onclick="ppAddItem()" style="height:36px;align-self:end">+ Añadir</button>
+        </div>
+        <div id="pp-iva-hint" style="font-size:11px;color:var(--text2);margin-top:4px;display:none"></div>
+
+        <!-- Crear nuevo producto -->
+        <div style="margin-top:10px">
+          <button class="btn-sm-outline" id="pp-new-btn" onclick="ppToggleNewProd()">+ Crear nuevo producto</button>
+          <div id="pp-new-form" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text2)">Nuevo producto para este proveedor</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="fg" style="margin:0;grid-column:1/-1">
+                <label>Código / SKU</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input id="ppn-codigo" placeholder="Escanea o escribe el código..." style="flex:1"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('ppn-nombre').focus();}">
+                  <span style="font-size:18px;cursor:default;color:var(--text2)" title="Escanea con pistola o escribe manualmente">&#128290;</span>
+                </div>
+              </div>
+              <div class="fg" style="margin:0"><label>Nombre *</label><input id="ppn-nombre" placeholder="Nombre del producto"></div>
+              <div class="fg" style="margin:0"><label>Categoría</label>
+                <div style="display:flex;gap:6px">
+                  <select id="ppn-cat" style="flex:1"><option value="">— Sin categoría —</option></select>
+                  <button type="button" class="btn-sm-outline" onclick="abrirModalCategoriasProd('ppn-cat')" title="Crear categoría" style="padding:0 10px">🏷️</button>
+                </div>
+              </div>
+              <div class="fg" style="margin:0"><label>Unidad de Medida</label>
+                <select id="ppn-unidad" onchange="ppnUnidadChange()">
+                  <option value="unidades">Unidades</option>
+                  <option value="kg">Kilogramos (kg)</option>
+                  <option value="g">Gramos (g)</option>
+                  <option value="lb">Libras (lb)</option>
+                  <option value="L">Litros (L)</option>
+                  <option value="ml">Mililitros (ml)</option>
+                  <option value="caja">Caja</option>
+                  <option value="paquete">Paquete</option>
+                  <option value="bolsa">Bolsa</option>
+                  <option value="docena">Docena</option>
+                  <option value="botella">Botella</option>
+                  <option value="lata">Lata</option>
+                  <option value="metro">Metro (m)</option>
+                  <option value="rollo">Rollo</option>
+                </select>
+              </div>
+              <div class="fg" style="margin:0"><label>Costo compra</label><input id="ppn-costo" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <!-- Cantidad por unidad: solo para Caja, Paquete, Bolsa -->
+              <div class="fg" id="ppn-cant-wrap" style="margin:0;grid-column:1/-1;display:none">
+                <label id="ppn-cant-lbl">Cantidad por paquete</label>
+                <input id="ppn-cant" type="number" min="1" step="1" placeholder="Ej: 12 unidades por caja">
+              </div>
+            </div>
+            <!-- Impuesto sobre ventas -->
+            <div style="margin-top:12px">
+              <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text2)">Impuesto sobre ventas</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg)" id="ppn-tax-lbl-0">
+                  <input type="radio" name="ppn-tax" value="0" checked onchange="ppnTaxChange(0)"> Exento
+                </label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg)" id="ppn-tax-lbl-19">
+                  <input type="radio" name="ppn-tax" value="19" onchange="ppnTaxChange(19)"> IVA 19%
+                </label>
+              </div>
+            </div>
+            <button class="btn btn-acc btn-sm" style="margin-top:12px" onclick="ppCrearProducto()">Crear y agregar al pedido</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de items -->
+      <div id="pp-items-wrap" style="display:none;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">Items del pedido</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="color:var(--text2);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">
+              <th style="padding:5px 6px;text-align:left">Producto</th>
+              <th style="padding:5px 6px;text-align:right">Cant.</th>
+              <th style="padding:5px 6px;text-align:right">Costo unit.</th>
+              <th style="padding:5px 6px;text-align:right">IVA</th>
+              <th style="padding:5px 6px;text-align:right">Subtotal</th>
+              <th style="padding:5px 6px;text-align:right">Total c/IVA</th>
+              <th style="padding:5px 6px;width:30px"></th>
+            </tr></thead>
+            <tbody id="pp-items-tbody"></tbody>
+            <tfoot style="border-top:1.5px solid var(--border)">
+              <tr>
+                <td colspan="5" style="padding:5px 6px;text-align:right;color:var(--text2);font-size:12px">Subtotal sin IVA:</td>
+                <td style="padding:5px 6px;text-align:right;font-weight:500" id="pp-subtotal">$0</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td colspan="5" style="padding:5px 6px;text-align:right;color:var(--text2);font-size:12px">IVA:</td>
+                <td style="padding:5px 6px;text-align:right;font-weight:500" id="pp-iva-total">$0</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td colspan="5" style="padding:5px 6px;text-align:right;font-weight:700">Total general:</td>
+                <td style="padding:5px 6px;text-align:right;font-weight:700;color:var(--green)" id="pp-gran-total">$0</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="frow" style="margin-bottom:4px">
+        <div class="fg"><label>Fecha de entrega esperada</label><input id="pp-fecha" type="date"></div>
+        <div class="fg"><label>Notas</label><input id="pp-notas" placeholder="Observaciones del pedido..."></div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="cerrarModal('pedido-prov-modal')">Cancelar</button>
@@ -675,8 +852,9 @@
     <div class="modal-head"><h3 id="h-modal-title">Agregar turno</h3><button class="modal-close" onclick="cerrarModal('horario-modal')">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="h-turno-id">
+      <input type="hidden" id="h-fecha">
       <div class="field"><label>Empleado</label><select id="h-empleado"></select></div>
-      <div class="field"><label>Días de la semana</label>
+      <div class="field" id="h-dias-wrap-field"><label>Días de la semana</label>
         <div class="dias-chk-row" id="h-dias-wrap">
           <label class="dia-chk"><input type="checkbox" name="h-dias" value="0"><span>Dom</span></label>
           <label class="dia-chk"><input type="checkbox" name="h-dias" value="1"><span>Lun</span></label>
@@ -687,7 +865,13 @@
           <label class="dia-chk"><input type="checkbox" name="h-dias" value="6"><span>Sáb</span></label>
         </div>
       </div>
-      <div class="frow">
+      <div class="field" id="h-fecha-info" style="display:none;font-size:13px;color:var(--text2)">Turno especial para: <b id="h-fecha-label"></b></div>
+      <div class="field" id="h-libre-wrap" style="display:none">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="h-libre" onchange="hLibreChange()"> Día libre (no trabaja este día)
+        </label>
+      </div>
+      <div class="frow" id="h-horas-wrap">
         <div class="fg"><label>Hora entrada</label><input id="h-entrada" type="time" value="08:00"></div>
         <div class="fg"><label>Hora salida</label><input id="h-salida" type="time" value="17:00"></div>
       </div>
@@ -854,10 +1038,15 @@ const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 function showToast(msg,type='ok'){const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;document.getElementById('toast').appendChild(t);setTimeout(()=>t.remove(),3500);}
 async function apiFetch(path,opts={}){
   const r=await fetch(path,{headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN,...(opts.headers||{})},...opts});
-  if(r.status===401){salir();return null;}if(!r.ok){let msg='Error '+r.status;try{const j=await r.json();msg=j.message||msg;}catch{}throw new Error(msg);}
+  if(r.status===401){salir();return null;}if(!r.ok){let msg='Error '+r.status;try{const j=await r.json();msg=j.error||j.message||msg;}catch{}throw new Error(msg);}
   if(r.status===204)return null;return r.json();
 }
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 async function doLogin(){
+  if(document.documentElement.requestFullscreen && !document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}
   const negocio_id=urlNegocio;
   const errEl=document.getElementById('login-error');
   if(!negocio_id){errEl.textContent='Debes acceder mediante la URL de tu negocio (ej: /admin-peluqueria.html?n=ID)';errEl.style.display='block';return;}
@@ -960,7 +1149,7 @@ async function cargarSvcs(){
     _empsCat=emps||[];
     _empsConHorario=new Set((hors||[]).map(h=>h.empleado_pel_id).filter(Boolean));
     const sel=document.getElementById('cEmpleado');
-    sel.innerHTML='<option value="">— Sin asignar —</option>'+_empsCat.map(e=>`<option value="${esc(e.id)}" data-nombre="${esc(e.nombre)}">${esc(e.nombre)}${e.especialidad?` · ${esc(e.especialidad)}`:''}</option>`).join('');
+    sel.innerHTML='<option value="">— Cualquiera disponible —</option>'+_empsCat.map(e=>`<option value="${esc(e.id)}" data-nombre="${esc(e.nombre)}">${esc(e.nombre)}${e.especialidad?` · ${esc(e.especialidad)}`:''}</option>`).join('');
   }catch{}
 }
 
@@ -1034,7 +1223,7 @@ function toggleGrupo(id){
   localStorage.setItem('pel_'+id,willCollapse?'0':'1');
 }
 (function(){
-  ['grp-principal','grp-finanzas','grp-personal','grp-cfg'].forEach(id=>{
+  ['grp-principal','grp-finanzas','grp-inventario','grp-personal','grp-cfg'].forEach(id=>{
     if(localStorage.getItem('pel_'+id)==='0'){
       const grp=document.getElementById(id);if(grp)grp.classList.add('collapsed');
       const arr=document.getElementById(id.replace('grp-','arr-'));if(arr)arr.style.transform='rotate(-90deg)';
@@ -1042,7 +1231,7 @@ function toggleGrupo(id){
   });
 })();
 function cerrarModal(id){document.getElementById(id).style.display='none';}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['modalCita','modalDetCita','svc-modal','emp-modal','inv-modal','inv-ajuste-modal','gasto-modal','cat-modal','catprod-modal','personal-modal','prov-modal','pedido-prov-modal','rol-modal','role-assign-modal','horario-modal','cfg-imp-modal','paq-modal'].forEach(id=>cerrarModal(id));});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['modalCita','modalDetCita','svc-modal','emp-modal','inv-modal','inv-ajuste-modal','gasto-modal','cat-modal','catprod-modal','personal-modal','prov-modal','cliente-modal','pedido-prov-modal','rol-modal','role-assign-modal','horario-modal','cfg-imp-modal','paq-modal'].forEach(id=>cerrarModal(id));});
 
 let _pelChartH=null,_pelChartM=null,_pelChartD=null,_pelChartCom=null;
 let _pelDashPeriodo='hoy';
@@ -1238,28 +1427,95 @@ async function renderAgenda(){
   catch(e){document.getElementById('agendaList').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
 }
 
-async function renderClientes(pag=1){
-  const busq=document.getElementById('cBusq')?.value||'';
+let _clientesData=[], clienteEditId=null;
+async function renderClientes(){
   document.getElementById('content').innerHTML=`
-    <div class="search-bar"><input id="cBusq" placeholder="Buscar cliente..." value="${esc(busq)}" onkeydown="if(event.key==='Enter')renderClientes(1)">
-    <button class="btn btn-acc btn-sm" onclick="renderClientes(1)">Buscar</button></div>
-    <div id="cList">Cargando...</div>`;
-  let url=`${API}/peluqueria/clientes?pagina=${pag}&tamPagina=20`;
-  if(busq)url+=`&busqueda=${encodeURIComponent(busq)}`;
-  try{const d=await apiFetch(url);const cl=d?.items||[];
-  document.getElementById('cList').innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>Cliente</th><th>Teléfono</th><th>Última visita</th><th>Total visitas</th><th>Gasto total</th></tr></thead>
-    <tbody>${cl.map(c=>`<tr>
-      <td style="font-weight:600">${esc(c.nombre)}</td>
-      <td style="font-size:12px;color:var(--text2)">${esc(c.telefono||'—')}</td>
-      <td style="font-size:12px">${fmtDate(c.ultimaVisita)}</td>
-      <td style="color:var(--acc)">${c.totalVisitas||0}</td>
-      <td style="font-weight:700">${fmt(c.gastoTotal||0)}</td>
-    </tr>`).join('')}</tbody></table></div>
-    <div class="pagination"><button class="btn btn-sm" onclick="renderClientes(${pag-1})" ${pag<=1?'disabled':''}>‹</button>
-    <span class="pag-info">Pág ${pag} · ${d?.totalCount||0}</span>
-    <button class="btn btn-sm" onclick="renderClientes(${pag+1})" ${!d?.hasNextPage?'disabled':''}>›</button></div>`;}
-  catch(e){document.getElementById('cList').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+    <div class="card">
+      <div class="card-header">
+        <h3>Clientes</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="cli-buscar" placeholder="Buscar por nombre, teléfono o documento..." style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);font-size:13px;width:240px" oninput="filtrarClientesAdmin()">
+          <button class="btn-sm-outline" onclick="cargarClientes()">↻ Actualizar</button>
+          <button class="btn btn-acc btn-sm" onclick="abrirClienteModal(null)">+ Nuevo</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Documento</th><th>Email</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="cli-tbody"></tbody></table>
+      </div>
+    </div>`;
+  await cargarClientes();
+}
+async function cargarClientes(){
+  try{
+    _clientesData=await apiFetch(`${API}/admin/clientes`)||[];
+    renderClientesTabla(_clientesData);
+  }catch(e){showToast(e.message,'err');}
+}
+function filtrarClientesAdmin(){
+  const q=(document.getElementById('cli-buscar')?.value||'').toLowerCase();
+  const filtrado=q?_clientesData.filter(c=>(c.nombre||'').toLowerCase().includes(q)||(c.telefono||'').includes(q)||(c.documento||'').toLowerCase().includes(q)):_clientesData;
+  renderClientesTabla(filtrado);
+}
+function renderClientesTabla(data){
+  const tb=document.getElementById('cli-tbody');if(!tb)return;
+  tb.innerHTML=data.length?data.map(c=>`<tr>
+    <td style="font-weight:600">${esc(c.nombre)}</td>
+    <td style="font-size:12px;color:var(--text2)">${esc(c.telefono||'—')}</td>
+    <td style="font-size:12px;color:var(--text2)">${esc(c.documento||'—')}</td>
+    <td style="font-size:12px;color:var(--text2)">${esc(c.email||'—')}</td>
+    <td><span class="badge ${c.activo?'badge-green':'badge-gray'}">${c.activo?'Activo':'Inactivo'}</span></td>
+    <td style="display:flex;gap:6px;white-space:nowrap">
+      <button class="btn-sm-outline" onclick="abrirClienteModal('${c.id}')">Editar</button>
+      <button class="btn-sm-outline" style="color:var(--red)" onclick="eliminarCliente('${c.id}','${esc(c.nombre).replace(/'/g,"\\'")}')">Eliminar</button>
+    </td>
+  </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text2)">Sin clientes registrados</td></tr>';
+}
+function abrirClienteModal(id){
+  clienteEditId=id;
+  document.getElementById('cli-modal-title').textContent=id?'Editar cliente':'Nuevo cliente';
+  ['cli-nombre','cli-tel','cli-doc','cli-email','cli-dir','cli-notas'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('cli-activo').checked=true;
+  if(id){
+    const c=_clientesData.find(x=>x.id===id);
+    if(c){
+      document.getElementById('cli-nombre').value=c.nombre||'';
+      document.getElementById('cli-tel').value=c.telefono||'';
+      document.getElementById('cli-doc').value=c.documento||'';
+      document.getElementById('cli-email').value=c.email||'';
+      document.getElementById('cli-dir').value=c.direccion||'';
+      document.getElementById('cli-notas').value=c.notas||'';
+      document.getElementById('cli-activo').checked=!!c.activo;
+    }
+  }
+  document.getElementById('cliente-modal').style.display='flex';
+}
+async function guardarCliente(){
+  const nombre=document.getElementById('cli-nombre').value.trim();
+  if(!nombre){showToast('El nombre es obligatorio','err');return;}
+  const body={
+    nombre,
+    telefono:document.getElementById('cli-tel').value.trim()||null,
+    documento:document.getElementById('cli-doc').value.trim()||null,
+    email:document.getElementById('cli-email').value.trim()||null,
+    direccion:document.getElementById('cli-dir').value.trim()||null,
+    notas:document.getElementById('cli-notas').value.trim()||null,
+    activo:document.getElementById('cli-activo').checked?1:0
+  };
+  try{
+    if(clienteEditId)await apiFetch(`${API}/admin/clientes/${clienteEditId}`,{method:'PUT',body:JSON.stringify(body)});
+    else await apiFetch(`${API}/admin/clientes`,{method:'POST',body:JSON.stringify(body)});
+    cerrarModal('cliente-modal');showToast('Cliente guardado ✓');
+    await cargarClientes();
+  }catch(e){showToast(e.message,'err');}
+}
+async function eliminarCliente(id,nombre){
+  if(!confirm(`¿Eliminar cliente "${nombre}"? Quedará inactivo.`))return;
+  try{
+    await apiFetch(`${API}/admin/clientes/${id}`,{method:'DELETE'});
+    showToast('Cliente eliminado');
+    await cargarClientes();
+  }catch(e){showToast(e.message,'err');}
 }
 
 async function renderServicios(){
@@ -1378,15 +1634,22 @@ async function eliminarCategoria(id){
 }
 
 // ─── Categorías de producto (inventario) ──────────────────────
+let _catProdTarget='inv-cat';
 async function _cargarCatsProd(selected){
   try{
     const cats=await apiFetch(`${API}/peluqueria/categorias-producto`)||[];
-    const sel=document.getElementById('inv-cat');
-    sel.innerHTML='<option value="">— Sin categoría —</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
-    sel.value=selected||'';
+    const opts='<option value="">— Sin categoría —</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    ['inv-cat','ppn-cat'].forEach(id=>{
+      const sel=document.getElementById(id);
+      if(!sel)return;
+      const prevVal=sel.value;
+      sel.innerHTML=opts;
+      sel.value=(id===_catProdTarget?selected:prevVal)||'';
+    });
   }catch{}
 }
-async function abrirModalCategoriasProd(){
+async function abrirModalCategoriasProd(targetSelectId){
+  _catProdTarget=targetSelectId||'inv-cat';
   document.getElementById('catprod-nueva-nombre').value='';
   document.getElementById('catprod-modal').style.display='flex';
   await _renderCatProdList();
@@ -1411,11 +1674,11 @@ async function crearCategoriaProd(){
   const nombre=document.getElementById('catprod-nueva-nombre').value.trim();
   if(!nombre){showToast('Escribe un nombre','err');return;}
   try{
-    await apiFetch(`${API}/peluqueria/categorias-producto`,{method:'POST',body:JSON.stringify({nombre})});
+    const r=await apiFetch(`${API}/peluqueria/categorias-producto`,{method:'POST',body:JSON.stringify({nombre})});
     document.getElementById('catprod-nueva-nombre').value='';
     showToast('Categoría creada ✓');
     await _renderCatProdList();
-    await _cargarCatsProd(document.getElementById('inv-cat')?.value);
+    await _cargarCatsProd(r.id);
   }catch(e){showToast(e.message,'err');}
 }
 async function editarCategoriaProd(id,nombreActual){
@@ -1425,7 +1688,7 @@ async function editarCategoriaProd(id,nombreActual){
     await apiFetch(`${API}/peluqueria/categorias-producto/${id}`,{method:'PUT',body:JSON.stringify({nombre:nuevoNombre.trim()})});
     showToast('Categoría actualizada ✓');
     await _renderCatProdList();
-    await _cargarCatsProd(document.getElementById('inv-cat')?.value);
+    await _cargarCatsProd(document.getElementById(_catProdTarget)?.value);
   }catch(e){showToast(e.message,'err');}
 }
 async function eliminarCategoriaProd(id){
@@ -1434,7 +1697,7 @@ async function eliminarCategoriaProd(id){
     await apiFetch(`${API}/peluqueria/categorias-producto/${id}`,{method:'DELETE'});
     showToast('Categoría eliminada');
     await _renderCatProdList();
-    await _cargarCatsProd(document.getElementById('inv-cat')?.value);
+    await _cargarCatsProd(document.getElementById(_catProdTarget)?.value);
   }catch(e){showToast(e.message,'err');}
 }
 async function guardarServicio(){
@@ -1467,32 +1730,16 @@ async function toggleServicio(id,activo){
 }
 
 async function renderEmpleados(){
-  const portalUrl=urlNegocio?`${location.origin}/portal-empleado.html?n=${urlNegocio}`:'';
   document.getElementById('content').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <span style="font-size:13px;color:var(--text2)" id="emp-count"></span>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        ${portalUrl?`<button class="btn-outline btn-sm" onclick="copiarPortalUrl()" title="Copiar enlace del portal de empleados">🔗 Copiar enlace del portal</button>`:''}
         <button class="btn-acc" onclick="abrirModalEmpleado()">+ Agregar empleado</button>
       </div>
     </div>
-    ${portalUrl?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:11px;color:var(--text3);flex-shrink:0">🔗 Portal empleados:</span>
-      <code style="font-size:11px;color:var(--acc);word-break:break-all;flex:1">${portalUrl}</code>
-      <button class="btn-outline btn-sm" onclick="copiarPortalUrl()" style="flex-shrink:0">Copiar</button>
-    </div>`:''}
     <div id="emp-list"><div style="color:var(--text2)">Cargando...</div></div>`;
   await recargarEmpleados();
 }
-function copiarPortalUrl(){
-  const url=`${location.origin}/portal-empleado.html?n=${urlNegocio}`;
-  navigator.clipboard.writeText(url).then(()=>{
-    showToast('Enlace copiado al portapapeles','ok');
-  }).catch(()=>{
-    prompt('Copia este enlace:',url);
-  });
-}
-
 async function recargarEmpleados(){
   try{
     const emps=await apiFetch(`${API}/peluqueria/empleados?soloActivos=false`)||[];
@@ -1579,6 +1826,7 @@ function _cargarTipoRem(e) {
     document.getElementById('emp-comision-val').value = e.tipo_comision === 'fijo' ? (e.monto_comision||'') : (e.pct_comision||'');
     _actualizarLblComision();
   }
+  document.getElementById('emp-comision-producto').value = e.pct_comision_producto || '';
 }
 function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)return;
   _editEmpId=e.id;
@@ -1601,7 +1849,7 @@ function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)re
 function abrirModalEmpleado(){
   _editEmpId=null;
   document.getElementById('emp-modal-title').textContent='Nuevo empleado';
-  ['emp-nombre','emp-apellido','emp-cedula','emp-cargo','emp-especialidad','emp-tel','emp-email','emp-sueldo','emp-tarifa','emp-comision-val'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['emp-nombre','emp-apellido','emp-cedula','emp-cargo','emp-especialidad','emp-tel','emp-email','emp-sueldo','emp-tarifa','emp-comision-val','emp-comision-producto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.querySelectorAll('input[name="emp-rem"]').forEach(r=>r.checked=false);
   cambiarTipoRem('');
   _setEmpFoto(null);
@@ -1631,6 +1879,7 @@ async function guardarEmpleado(){
     const val=parseFloat(document.getElementById('emp-comision-val').value)||0;
     if(tipoComision==='fijo') montoComision=val; else pctComision=val;
   }
+  const pctComisionProducto=parseFloat(document.getElementById('emp-comision-producto').value)||0;
   const body={
     nombre,
     apellido:document.getElementById('emp-apellido').value.trim()||null,
@@ -1639,7 +1888,7 @@ async function guardarEmpleado(){
     especialidad:document.getElementById('emp-especialidad').value.trim()||null,
     telefono:document.getElementById('emp-tel').value.trim()||null,
     email:document.getElementById('emp-email').value.trim()||null,
-    sueldoBase, tarifaHora, tipoComision, pctComision, montoComision,
+    sueldoBase, tarifaHora, tipoComision, pctComision, montoComision, pctComisionProducto,
     categoriaId:document.getElementById('emp-categoria-id').value||null,
   };
   try{
@@ -1913,7 +2162,7 @@ function filtrarInv(){
   const cnt=document.getElementById('inv-count');if(cnt)cnt.textContent=`${items.length} producto${items.length!==1?'s':''}`;
   if(!items.length){el.innerHTML='<div style="color:var(--text3);text-align:center;padding:40px">No hay productos en inventario.</div>';return;}
   el.innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th style="text-align:center">En POS</th><th></th></tr></thead>
+    <thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th>IVA</th><th style="text-align:center">En POS</th><th></th></tr></thead>
     <tbody>${items.map(i=>{
       const bajo=parseInt(i.stock_actual)>0&&parseInt(i.stock_actual)<parseInt(i.stock_minimo);
       const agotado=parseInt(i.stock_actual)<=0;
@@ -1933,6 +2182,7 @@ function filtrarInv(){
         <td style="font-size:12px">${fmt(costo)}</td>
         <td style="font-size:12px">${fmt(pventa)}</td>
         <td style="font-weight:700;font-size:13px;color:${margenColor}">${margenTxt}</td>
+        <td style="font-size:12px;color:${parseFloat(i.iva_pct||0)>0?'var(--text2)':'var(--text3)'}">${parseFloat(i.iva_pct||0)>0?parseFloat(i.iva_pct)+'%':'Exento'}</td>
         <td style="text-align:center">
           <label style="display:inline-flex;align-items:center;cursor:pointer;gap:5px" title="${enVenta?'Visible en POS':'No visible en POS'}">
             <input type="checkbox" ${enVenta?'checked':''} onchange="toggleEnVenta('${i.id}',this)"
@@ -1981,6 +2231,7 @@ async function abrirModalInv(id=null){
     const item=_invData.find(i=>i.id===id)||{};
     document.getElementById('inv-nombre').value=item.nombre||'';
     document.getElementById('inv-sku').value=item.sku||'';
+    document.getElementById('inv-desc').value=item.descripcion||'';
     await _cargarCatsProd(item.categoria_id||'');
     document.getElementById('inv-unidad').value=item.unidad||'unidad';
     document.getElementById('inv-stock').value=item.stock_actual||0;
@@ -1989,13 +2240,30 @@ async function abrirModalInv(id=null){
     document.getElementById('inv-precio').value=item.precio_venta||0;
     const c=parseFloat(item.precio_costo||0),p=parseFloat(item.precio_venta||0);
     document.getElementById('inv-margen').value=c>0?((p-c)/c*100).toFixed(1):'';
+    document.getElementById('inv-foto-file').value='';
+    if(item.imagen_url){document.getElementById('inv-foto-preview').src=API.replace('/api','')+item.imagen_url;document.getElementById('inv-foto-preview').style.display='block';}
+    else{document.getElementById('inv-foto-preview').style.display='none';document.getElementById('inv-foto-preview').src='';}
+    const ivaVal=parseFloat(item.iva_pct||0)>0?19:0;
+    const rIva=document.querySelector(`input[name="inv-tax"][value="${ivaVal}"]`);
+    if(rIva){rIva.checked=true;invTaxChange(ivaVal);}
   }else{
-    ['inv-nombre','inv-sku'].forEach(id=>document.getElementById(id).value='');
+    ['inv-nombre','inv-sku','inv-desc'].forEach(id=>document.getElementById(id).value='');
     await _cargarCatsProd('');
     document.getElementById('inv-unidad').value='unidad';
     ['inv-stock','inv-stock-min','inv-costo','inv-precio','inv-margen'].forEach(id=>document.getElementById(id).value=0);
+    document.getElementById('inv-foto-file').value='';
+    document.getElementById('inv-foto-preview').style.display='none';
+    document.getElementById('inv-foto-preview').src='';
+    const r0=document.querySelector('input[name="inv-tax"][value="0"]');
+    if(r0){r0.checked=true;invTaxChange(0);}
+    try{ const nc=await apiFetch(`${API}/peluqueria/productos/next-sku`); document.getElementById('inv-sku').value=nc.sku; }catch{}
   }
   document.getElementById('inv-modal').style.display='flex';
+}
+function previewInvFoto(input){
+  if(!input.files[0])return;
+  document.getElementById('inv-foto-preview').src=URL.createObjectURL(input.files[0]);
+  document.getElementById('inv-foto-preview').style.display='block';
 }
 
 async function guardarInv(){
@@ -2005,20 +2273,29 @@ async function guardarInv(){
   const body={
     nombre,
     sku:skuVal||null,
+    descripcion:document.getElementById('inv-desc').value.trim()||null,
     categoriaId:document.getElementById('inv-cat').value||null,
     unidad:document.getElementById('inv-unidad').value.trim()||'unidad',
     stockActual:parseFloat(document.getElementById('inv-stock').value)||0,
     stockMinimo:parseFloat(document.getElementById('inv-stock-min').value)||0,
     precioCosto:parseFloat(document.getElementById('inv-costo').value)||0,
     precioVenta:parseFloat(document.getElementById('inv-precio').value)||0,
+    ivaPct:parseFloat(document.querySelector('input[name="inv-tax"]:checked')?.value)||0,
   };
   try{
+    let prodId=_editInvId;
     if(_editInvId){
       await apiFetch(`${API}/peluqueria/productos/${_editInvId}`,{method:'PUT',body:JSON.stringify(body)});
       showToast('Producto actualizado ✓');
     }else{
-      await apiFetch(`${API}/peluqueria/productos`,{method:'POST',body:JSON.stringify(body)});
+      const r=await apiFetch(`${API}/peluqueria/productos`,{method:'POST',body:JSON.stringify(body)});
+      prodId=r.id;
       showToast('Producto creado ✓');
+    }
+    const fotoFile=document.getElementById('inv-foto-file').files[0];
+    if(fotoFile){
+      const form=new FormData();form.append('foto',fotoFile);
+      await fetch(`${API}/peluqueria/productos/${prodId}/foto`,{method:'POST',headers:{'Authorization':'Bearer '+TOKEN},body:form});
     }
     cerrarModal('inv-modal');_editInvId=null;
     await recargarInv();
@@ -2310,7 +2587,7 @@ let _factActual=null,_factCfg=null;
 const DIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const CATEGORIAS_PERMISOS=[
   {grupo:'🖥️ Punto de Venta',permisos:[['pos_cobro','Cobro / Caja'],['inventario','Inventario']]},
-  {grupo:'💰 Finanzas',permisos:[['gastos','Gastos'],['reportes','Reportes'],['facturacion','Facturación']]},
+  {grupo:'💰 Finanzas',permisos:[['gastos','Gastos'],['reportes','Reportes'],['facturacion','Facturación'],['clientes','Clientes']]},
   {grupo:'👥 Administración',permisos:[['personal','Personal'],['horarios','Horarios'],['proveedores','Proveedores']]},
 ];
 const MODULOS_PERMISOS=CATEGORIAS_PERMISOS.flatMap(c=>c.permisos);
@@ -2529,7 +2806,7 @@ function renderFacturas(){
           <input id="fact-q" placeholder="N° o cliente..." oninput="cargarFacturas()" style="width:160px">
           <button class="btn btn-outline btn-sm" onclick="cargarFacturas()">↻</button>
         </div></div>
-      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th><th>Profesional</th><th></th></tr></thead><tbody id="fact-tbody"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>N°</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th><th>Profesional</th><th></th></tr></thead><tbody id="fact-tbody"></tbody></table></div>
       <div id="fact-empty" style="display:none;text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin facturas en el rango seleccionado</div>
       <div id="fact-loading" style="display:none;text-align:center;padding:24px;color:var(--text2)">Cargando...</div>
     </div>`;
@@ -2548,7 +2825,7 @@ async function cargarFacturas(){
       const dt=new Date(v.fecha);
       const fStr=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
       const anulada=v.estado==='anulada';
-      return `<tr style="${anulada?'opacity:.55':''}"><td style="font-size:11px">${fStr}${anulada?' <span class="badge" style="background:var(--red);color:#fff;font-size:10px">ANULADA</span>':''}</td><td>${v.cliente_nombre||'<span style="color:var(--text3)">Mostrador</span>'}</td><td style="font-size:12px">${v.metodo_pago||'—'}</td><td><b style="${anulada?'text-decoration:line-through':''}">${fmt(+v.total)}</b></td><td style="color:var(--text2);font-size:12px">${v.empleado_nombre||v.cajero_nombre||'—'}</td><td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td></tr>`;
+      return `<tr style="${anulada?'opacity:.55':''}"><td style="font-size:12px;font-family:monospace">${v.numero_factura?String(v.numero_factura).padStart(6,'0'):'—'}</td><td style="font-size:11px">${fStr}${anulada?' <span class="badge" style="background:var(--red);color:#fff;font-size:10px">ANULADA</span>':''}</td><td>${v.cliente_nombre||'<span style="color:var(--text3)">Mostrador</span>'}</td><td style="font-size:12px">${v.metodo_pago||'—'}</td><td><b style="${anulada?'text-decoration:line-through':''}">${fmt(+v.total)}</b></td><td style="color:var(--text2);font-size:12px">${v.empleado_nombre||v.cajero_nombre||'—'}</td><td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td></tr>`;
     }).join('');
   }catch(e){if(fl)fl.style.display='none';showToast(e.message,'err');}
 }
@@ -2566,21 +2843,32 @@ async function abrirFactura(id){
     if(cf.nombre)h+=`<div class="recibo-center" style="font-weight:700;font-size:13px">${esc(cf.nombre)}</div>`;
     if(cf.togNit!==false&&cf.nit)h+=`<div class="recibo-center">NIT: ${cf.nit}</div>`;
     if(cf.direccion)h+=`<div class="recibo-center" style="font-size:10px">${esc(cf.direccion)}</div>`;
+    if(v.numero_factura)h+=`<div class="recibo-center" style="font-weight:700;font-size:12px;margin-top:3px">Factura N° ${String(v.numero_factura).padStart(6,'0')}</div>`;
     h+=`<hr class="recibo-hr">`;
     h+=`<div class="recibo-row"><span>${fecha}</span><span>${hora}</span></div>`;
-    if(v.cliente_nombre)h+=`<div class="recibo-row"><span>Cliente</span><span>${esc(v.cliente_nombre)}</span></div>`;
+    h+=`<div class="recibo-row"><span>Cliente</span><span>${esc(v.cliente_nombre||'Consumidor final')}</span></div>`;
     if(v.cliente_doc)h+=`<div class="recibo-row"><span>Doc.</span><span>${esc(v.cliente_doc)}</span></div>`;
     if(v.cliente_tel)h+=`<div class="recibo-row"><span>Tel.</span><span>${esc(v.cliente_tel)}</span></div>`;
+    if(v.cliente_email)h+=`<div class="recibo-row"><span>Email</span><span>${esc(v.cliente_email)}</span></div>`;
+    if(v.cliente_dir)h+=`<div class="recibo-row"><span>Dir.</span><span>${esc(v.cliente_dir)}</span></div>`;
     if(v.empleado_nombre)h+=`<div class="recibo-row"><span>Profesional</span><span>${esc(v.empleado_nombre)}</span></div>`;
     if(v.cajero_nombre)h+=`<div class="recibo-row"><span>Cajero</span><span>${esc(v.cajero_nombre)}</span></div>`;
     h+=`<hr class="recibo-hr">`;
+    let subtotalSinIva=0, ivaTotal=0;
     items.forEach(i=>{
       const sub=+(i.subtotal||0)||((+i.precio_unitario)*(+i.cantidad));
-      h+=`<div class="recibo-row"><span>${esc(i.descripcion)}</span><span>${fmt(sub)}</span></div>`;
+      const ivaPct=+(i.iva_pct||0);
+      h+=`<div class="recibo-row"><span>${esc(i.descripcion)}${ivaPct>0?` (IVA ${ivaPct}%)`:''}</span><span>${fmt(sub)}</span></div>`;
       if(+i.cantidad>1)h+=`<div style="color:var(--text2);padding-left:6px;font-size:11px">${i.cantidad}×${fmt(+i.precio_unitario)}</div>`;
+      if(ivaPct>0){const base=sub/(1+ivaPct/100);subtotalSinIva+=base;ivaTotal+=sub-base;}
+      else subtotalSinIva+=sub;
     });
     h+=`<hr class="recibo-hr">`;
     if(+v.descuento>0)h+=`<div class="recibo-row"><span>Descuento</span><span>-${fmt(+v.descuento)}</span></div>`;
+    if(ivaTotal>0){
+      h+=`<div class="recibo-row"><span>Subtotal</span><span>${fmt(subtotalSinIva)}</span></div>`;
+      h+=`<div class="recibo-row"><span>IVA incluido</span><span>${fmt(ivaTotal)}</span></div>`;
+    }
     h+=`<div class="recibo-row recibo-total" style="font-size:14px"><span>TOTAL</span><span>${fmt(+v.total)}</span></div>`;
     if(Array.isArray(v.pagos)&&v.pagos.length){v.pagos.forEach(p=>h+=`<div class="recibo-row" style="font-size:11px;color:var(--text2)"><span>${esc(p.metodo)}</span><span>${fmt(+p.monto)}</span></div>`);}
     h+=`<div class="recibo-center" style="margin-top:10px;font-size:11px">¡Gracias por su visita!</div></div>`;
@@ -2603,7 +2891,7 @@ async function anularFacturaActual(){
 function cerrarFactModal(){_gel('fact-modal').style.display='none';_factActual=null;}
 function imprimirFactura(){
   const html=_gel('fact-recibo-wrap').innerHTML;const w=window.open('','_blank','width=400,height=700');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:monospace;font-size:12px;padding:10px;color:#000;background:#fff}.recibo{max-width:300px;margin:0 auto}.recibo-center{text-align:center;margin:2px 0}.recibo-row{display:flex;justify-content:space-between;padding:2px 0}.recibo-total{font-weight:700}.recibo-hr{border:none;border-top:1px dashed #000;margin:6px 0}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura</title><style>@page{size:72mm auto;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{width:72mm;font-family:monospace;font-size:14px;padding:8px;color:#000;background:#fff}.recibo{max-width:100%;margin:0 auto}.recibo-center{text-align:center;margin:2px 0}.recibo-row{display:flex;justify-content:space-between;padding:2px 0}.recibo-total{font-weight:700}.recibo-hr{border:none;border-top:1px dashed #000;margin:6px 0}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
   w.document.close();
 }
 
@@ -2624,6 +2912,11 @@ async function cargarProveedores(){
     if(tb)tb.innerHTML=data.map(p=>`<tr><td><b>${esc(p.nombre)}</b></td><td>${p.telefono||'—'}</td><td>${p.email||'—'}</td><td><span class="badge ${p.activo?'badge-green':'badge-gray'}">${p.activo?'Activo':'Inactivo'}</span></td><td><button class="btn btn-outline btn-sm" onclick="abrirProvModal('${p.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">Sin proveedores</td></tr>';
   }catch(e){showToast(e.message,'err');}
 }
+let _provModalCtx=null;
+function abrirProvModalDesdePedido(){
+  abrirProvModal(null);
+  _provModalCtx='pedido';
+}
 async function abrirProvModal(id){
   provEditId=id;
   ['pv-nombre','pv-tel','pv-email'].forEach(f=>{const el=_gel(f);if(el)el.value='';});
@@ -2641,9 +2934,20 @@ async function abrirProvModal(id){
 async function guardarProveedor(){
   try{
     const b={nombre:_gel('pv-nombre').value,telefono:_gel('pv-tel').value,email:_gel('pv-email').value};
+    let newId=null;
     if(provEditId)await apiFetch(`${API}/peluqueria/proveedores/${provEditId}`,{method:'PUT',body:JSON.stringify(b)});
-    else await apiFetch(`${API}/peluqueria/proveedores`,{method:'POST',body:JSON.stringify(b)});
+    else{ const r=await apiFetch(`${API}/peluqueria/proveedores`,{method:'POST',body:JSON.stringify(b)}); newId=r?.id; }
     cerrarModal('prov-modal');showToast('Proveedor guardado ✓');cargarProveedores();
+    if(_provModalCtx==='pedido' && newId){
+      const provs=await apiFetch(`${API}/peluqueria/proveedores`)||[];
+      const sel=_gel('pp-prov');
+      if(sel){
+        sel.innerHTML=provs.map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
+        sel.value=newId;
+        await ppProvChange();
+      }
+    }
+    _provModalCtx=null;
   }catch(e){showToast(e.message,'err');}
 }
 
@@ -2660,21 +2964,190 @@ async function cargarPedidosProv(){
     const data=await apiFetch(`${API}/peluqueria/pedidos-proveedor`)||[];
     const estados={pendiente:'badge-amber',enviado:'badge-blue',recibido:'badge-green',cancelado:'badge-red'};
     const tb=_gel('pedidos-prov-tbody');
-    if(tb)tb.innerHTML=data.map(p=>`<tr><td><b>${esc(p.proveedor_nombre)}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estados[p.estado]||'badge-gray'}">${p.estado}</span></td><td><select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option value="">—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text2)">Sin solicitudes</td></tr>';
+    if(tb)tb.innerHTML=data.map(p=>`<tr><td><b>${esc(p.proveedor_nombre)}</b></td><td>${fmtDate(p.creado)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estados[p.estado]||'badge-gray'}">${p.estado}</span></td><td><select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option value="">—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text2)">Sin solicitudes</td></tr>';
   }catch(e){showToast(e.message,'err');}
 }
 async function cambiarEstadoPedido(id,estado){if(!estado)return;await apiFetch(`${API}/peluqueria/pedidos-proveedor/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})});showToast('Estado actualizado');cargarPedidosProv();}
+
+let _ppItems=[], _ppProductos=[], _ppCats=[];
 async function abrirPedidoProvModal(){
   try{
     const provs=await apiFetch(`${API}/peluqueria/proveedores`)||[];
     const sel=_gel('pp-prov');if(sel)sel.innerHTML=provs.map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
-    ['pp-fecha','pp-notas','pp-total'].forEach(f=>{const el=_gel(f);if(el)el.value='';});
+    _ppItems=[]; _ppProductos=[];
+    _gel('pp-fecha').value=''; _gel('pp-notas').value='';
+    _gel('pp-qty').value='1'; _gel('pp-costo').value='';
+    _gel('pp-items-tbody').innerHTML='';
+    _gel('pp-items-wrap').style.display='none';
+    _gel('pp-new-form').style.display='none';
+    _gel('pp-iva-hint').style.display='none';
+    ['ppn-codigo','ppn-nombre','ppn-costo','ppn-cant'].forEach(f=>{if(_gel(f))_gel(f).value='';});
+    if(_gel('ppn-unidad')){_gel('ppn-unidad').value='unidades'; ppnUnidadChange();}
+    const r0=document.querySelector('input[name="ppn-tax"][value="0"]');
+    if(r0){r0.checked=true; ppnTaxChange(0);}
+    try{ _ppCats=await apiFetch(`${API}/peluqueria/categorias-producto`)||[]; }catch{ _ppCats=[]; }
+    const catSel=_gel('ppn-cat');
+    if(catSel) catSel.innerHTML='<option value="">— Sin categoría —</option>'+_ppCats.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    ppCalcTotals();
     _gel('pedido-prov-modal').style.display='flex';
+    if(provs.length) await ppProvChange();
   }catch(e){showToast(e.message,'err');}
 }
-async function guardarPedidoProv(){
+
+async function ppProvChange(){
+  const provId=_gel('pp-prov').value;
+  if(!provId){ _ppProductos=[]; _gel('pp-producto').innerHTML='<option value="">— Sin proveedor —</option>'; return; }
+  _gel('pp-producto').innerHTML='<option value="">Cargando...</option>';
   try{
-    await apiFetch(`${API}/peluqueria/pedidos-proveedor`,{method:'POST',body:JSON.stringify({proveedor_id:_gel('pp-prov').value,notas:_gel('pp-notas').value,total:+_gel('pp-total').value||0,fecha_entrega:_gel('pp-fecha').value||null})});
+    _ppProductos=await apiFetch(`${API}/peluqueria/productos?proveedorId=${provId}`)||[];
+    if(!_ppProductos.length){
+      _gel('pp-producto').innerHTML='<option value="">— Sin productos registrados —</option>';
+    } else {
+      _gel('pp-producto').innerHTML='<option value="">— Seleccionar producto —</option>'+
+        _ppProductos.map(p=>`<option value="${p.id}">${esc(p.nombre)}${p.iva_pct>0?' (IVA '+p.iva_pct+'%)':' (Exento)'}</option>`).join('');
+    }
+    ppProductoChange();
+  }catch(e){ _gel('pp-producto').innerHTML='<option value="">Error al cargar</option>'; }
+}
+
+function ppProductoChange(){
+  const pid=_gel('pp-producto').value;
+  const prod=_ppProductos.find(p=>p.id===pid);
+  if(prod){
+    _gel('pp-costo').value=prod.precio_costo||'';
+    _gel('pp-iva-hint').textContent=prod.iva_pct>0?`IVA ${prod.iva_pct}% se desglosará en el total`:'Exento de IVA';
+    _gel('pp-iva-hint').style.display='block';
+  } else {
+    _gel('pp-costo').value='';
+    _gel('pp-iva-hint').style.display='none';
+  }
+}
+
+function ppAddItem(){
+  const pid=_gel('pp-producto').value;
+  const prod=_ppProductos.find(p=>p.id===pid);
+  if(!prod){ showToast('Selecciona un producto','err'); return; }
+  const qty=parseFloat(_gel('pp-qty').value)||1;
+  const costo=parseFloat(_gel('pp-costo').value)||0;
+  if(qty<=0){ showToast('Cantidad inválida','err'); return; }
+  const existing=_ppItems.find(i=>i.id===pid);
+  if(existing){ existing.qty=+(existing.qty+qty).toFixed(4); existing.costo=costo; }
+  else _ppItems.push({id:prod.id,nombre:prod.nombre,qty,costo,iva_pct:parseFloat(prod.iva_pct)||0});
+  _gel('pp-qty').value='1';
+  ppRenderItems();
+}
+
+function ppRemoveItem(idx){ _ppItems.splice(idx,1); ppRenderItems(); }
+
+function ppRenderItems(){
+  _gel('pp-items-wrap').style.display=_ppItems.length?'':'none';
+  _gel('pp-items-tbody').innerHTML=_ppItems.map((it,i)=>{
+    const sub=it.qty*it.costo;
+    const ivaAmt=sub*(it.iva_pct/100);
+    const tot=sub+ivaAmt;
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:5px 6px">${esc(it.nombre)}</td>
+      <td style="padding:5px 6px;text-align:right">${it.qty}</td>
+      <td style="padding:5px 6px;text-align:right">${fmt(it.costo)}</td>
+      <td style="padding:5px 6px;text-align:right">${it.iva_pct>0?it.iva_pct+'%':'Exento'}</td>
+      <td style="padding:5px 6px;text-align:right">${fmt(sub)}</td>
+      <td style="padding:5px 6px;text-align:right;font-weight:500">${fmt(tot)}</td>
+      <td style="padding:5px 6px;text-align:center"><button class="btn-sm-outline" style="color:var(--red);border-color:var(--red)" onclick="ppRemoveItem(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+  ppCalcTotals();
+}
+
+function ppCalcTotals(){
+  let sub=0,ivaT=0;
+  _ppItems.forEach(it=>{const s=it.qty*it.costo;sub+=s;ivaT+=s*(it.iva_pct/100);});
+  if(_gel('pp-subtotal'))  _gel('pp-subtotal').textContent=fmt(sub);
+  if(_gel('pp-iva-total')) _gel('pp-iva-total').textContent=fmt(ivaT);
+  if(_gel('pp-gran-total'))_gel('pp-gran-total').textContent=fmt(sub+ivaT);
+}
+
+async function ppToggleNewProd(){
+  const f=_gel('pp-new-form');
+  const abriendo=f.style.display==='none';
+  f.style.display=abriendo?'':'none';
+  if(abriendo && !_gel('ppn-codigo').value.trim()){
+    try{ const nc=await apiFetch(`${API}/peluqueria/productos/next-sku`); _gel('ppn-codigo').value=nc.sku; }catch{}
+  }
+}
+
+function ppnUnidadChange(){
+  const u=_gel('ppn-unidad').value;
+  const show=['caja','paquete','bolsa'].includes(u);
+  _gel('ppn-cant-wrap').style.display=show?'':'none';
+  const labels={caja:'Cantidad por caja',paquete:'Cantidad por paquete',bolsa:'Cantidad por bolsa'};
+  if(show) _gel('ppn-cant-lbl').textContent=labels[u]||'Cantidad por unidad';
+  if(!show && _gel('ppn-cant')) _gel('ppn-cant').value='';
+}
+
+function ppnTaxChange(val){
+  [0,19].forEach(v=>{
+    const lbl=_gel('ppn-tax-lbl-'+v);
+    if(lbl) lbl.style.background=v===val?'var(--acc-ll)':'var(--bg)';
+  });
+}
+function invTaxChange(val){
+  [0,19].forEach(v=>{
+    const lbl=_gel('inv-tax-lbl-'+v);
+    if(lbl) lbl.style.background=v===val?'var(--acc-ll)':'var(--bg)';
+  });
+}
+
+function ppnGetTax(){
+  const r=document.querySelector('input[name="ppn-tax"]:checked');
+  return r?parseFloat(r.value):0;
+}
+
+async function ppCrearProducto(){
+  const nombre=_gel('ppn-nombre').value.trim();
+  if(!nombre){ showToast('El nombre es requerido','err'); return; }
+  const provId=_gel('pp-prov').value;
+  const iva_pct=ppnGetTax();
+  const unidad=_gel('ppn-unidad').value||'unidades';
+  const cantPaq=(['caja','paquete','bolsa'].includes(unidad)&&_gel('ppn-cant').value)?parseInt(_gel('ppn-cant').value)||null:null;
+  try{
+    const res=await apiFetch(`${API}/peluqueria/productos`,{method:'POST',body:JSON.stringify({
+      nombre,
+      sku:_gel('ppn-codigo').value.trim()||null,
+      categoriaId:_gel('ppn-cat').value||null,
+      unidad,
+      precioCosto:parseFloat(_gel('ppn-costo').value)||0,
+      precioVenta:parseFloat(_gel('ppn-costo').value)||0,
+      proveedorId:provId||null,
+      ivaPct:iva_pct,
+      esPaquete:cantPaq!=null,
+      cantidadPaquete:cantPaq
+    })});
+    showToast('Producto creado ✓');
+    ['ppn-codigo','ppn-nombre','ppn-costo','ppn-cant'].forEach(f=>{if(_gel(f))_gel(f).value='';});
+    if(_gel('ppn-cat')) _gel('ppn-cat').value='';
+    _gel('ppn-unidad').value='unidades';
+    ppnUnidadChange();
+    const r0=document.querySelector('input[name="ppn-tax"][value="0"]');
+    if(r0){r0.checked=true; ppnTaxChange(0);}
+    await ppProvChange();
+    if(res.id){ _gel('pp-producto').value=res.id; ppProductoChange(); }
+    _gel('pp-new-form').style.display='none';
+  }catch(e){ showToast('Error: '+e.message,'err'); }
+}
+
+async function guardarPedidoProv(){
+  if(!_ppItems.length){ showToast('Agrega al menos un producto','err'); return; }
+  try{
+    let sub=0,ivaT=0;
+    const items=_ppItems.map(it=>{
+      const s=it.qty*it.costo; const iv=s*(it.iva_pct/100);
+      sub+=s; ivaT+=iv;
+      return {id:it.id,nombre:it.nombre,cantidad:it.qty,costo_unitario:it.costo,iva_pct:it.iva_pct,subtotal:s,iva_monto:iv,total:s+iv};
+    });
+    await apiFetch(`${API}/peluqueria/pedidos-proveedor`,{method:'POST',body:JSON.stringify({
+      proveedor_id:_gel('pp-prov').value, items, total:sub+ivaT,
+      notas:_gel('pp-notas').value||null, fecha_entrega:_gel('pp-fecha').value||null
+    })});
     cerrarModal('pedido-prov-modal');showToast('Solicitud enviada ✓');cargarPedidosProv();
   }catch(e){showToast(e.message,'err');}
 }
@@ -2807,20 +3280,81 @@ function _fechaParaDia(dia){
   const d=new Date(hoy);d.setDate(hoy.getDate()+offset);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+let _horOffset=0, _horModoExcepcion=false;
+function _horSemanaFechas(offset){
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const domingo=new Date(hoy);domingo.setDate(hoy.getDate()-hoy.getDay()+offset*7);
+  return Array.from({length:7},(_,i)=>{const d=new Date(domingo);d.setDate(domingo.getDate()+i);return d;});
+}
+function _fmtYMD(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function _fmtDDMM(d){return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
+function _fmtFechaLarga(ymd){
+  const [y,m,d]=ymd.split('-').map(Number);
+  const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${d} de ${meses[m-1]} de ${y}`;
+}
+function horSemanaNav(delta){
+  _horOffset=delta===0?0:_horOffset+delta;
+  cargarHorarios();
+}
 function renderHorarios(){
+  _horOffset=0;
   document.getElementById('content').innerHTML=`
     <div class="card">
-      <div class="card-header"><h3>Distribución de horarios</h3><button class="btn btn-primary btn-sm" onclick="abrirHorarioModal()">+ Turno</button></div>
+      <div class="card-header" style="flex-wrap:wrap;gap:10px">
+        <h3>Distribución de horarios</h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-sm-outline" onclick="horSemanaNav(-1)" title="Semana anterior">◀</button>
+          <span id="hor-semana-label" style="font-size:13px;font-weight:600;min-width:120px;text-align:center"></span>
+          <button class="btn-sm-outline" onclick="horSemanaNav(1)" title="Semana siguiente">▶</button>
+          <button class="btn-sm-outline" onclick="horSemanaNav(0)">Hoy</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="abrirHorarioModal()">+ Turno</button>
+      </div>
       <div class="card-body" id="horarios-container"></div></div>`;
   cargarHorarios();
 }
 async function cargarHorarios(){
   try{
-    const [horarios]=await Promise.all([apiFetch(`${API}/admin/horarios`)||[]]);
-    const byUser={};(horarios||[]).forEach(h=>{const k=h.empleado_pel_id||h.usuario_id;if(!byUser[k])byUser[k]={nombre:h.usuario_nombre,turnos:{}};byUser[k].turnos[h.dia_semana]=h;});
+    const fechas=_horSemanaFechas(_horOffset);
+    const fechasYMD=fechas.map(_fmtYMD);
+    const lbl=_gel('hor-semana-label');
+    if(lbl)lbl.textContent=_horOffset===0?'Esta semana':`${_fmtDDMM(fechas[0])} – ${_fmtDDMM(fechas[6])}`;
+    const horarios=await apiFetch(`${API}/admin/horarios`)||[];
+    const byUser={};
+    horarios.forEach(h=>{
+      const k=h.empleado_pel_id||h.usuario_id;
+      if(!byUser[k])byUser[k]={nombre:h.usuario_nombre,plantilla:{},excepciones:{}};
+      if(h.fecha)byUser[k].excepciones[String(h.fecha).slice(0,10)]=h;
+      else byUser[k].plantilla[h.dia_semana]=h;
+    });
     const el=_gel('horarios-container');
-    const diaHoy=new Date().getDay();
-    if(el)el.innerHTML=Object.entries(byUser).map(([uid,u])=>`<div style="margin-bottom:14px;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden"><div style="padding:8px 12px;background:var(--bg3);font-size:13px;font-weight:500">${esc(u.nombre)}</div><div class="horario-grid" style="padding:10px">${DIAS.map((d,i)=>{const t=u.turnos[i];const eid=t?(t.empleado_pel_id||t.usuario_id):uid;const esPasado=(i-diaHoy+7)%7!==0&&i!==diaHoy&&(i<diaHoy);return `<div class="dia-col"><div class="dia-label" style="${esPasado?'color:var(--text3)':''}">${d}</div><div class="dia-slot ${t?'activo':'vacio'}" style="${esPasado?'opacity:.35;cursor:default':'cursor:pointer'}" ${!esPasado?(t?`onclick="editarHorarioSlot('${t.id}','${eid}',${i},'${t.hora_entrada.slice(0,5)}','${t.hora_salida.slice(0,5)}')"`:`onclick="abrirHorarioSlot('${uid}',${i})"`):''}>${t?`<span>${t.hora_entrada.slice(0,5)}</span><span>${t.hora_salida.slice(0,5)}</span>`:(esPasado?'':'+')} </div></div>`;}).join('')}</div></div>`).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">Sin horarios configurados. Agrega empleados primero en la sección Empleados.</div>';
+    const hoyYMD=_fmtYMD(new Date());
+    if(el)el.innerHTML=Object.entries(byUser).map(([uid,u])=>`<div style="margin-bottom:14px;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden"><div style="padding:8px 12px;background:var(--bg3);font-size:13px;font-weight:500">${esc(u.nombre)}</div><div class="horario-grid" style="padding:10px">${DIAS.map((d,i)=>{
+      const fechaYMD=fechasYMD[i];
+      const exc=u.excepciones[fechaYMD];
+      const t=exc||u.plantilla[i];
+      const esExcepcion=!!exc;
+      const esLibre=esExcepcion&&!!(+t.es_libre);
+      const eid=t?(t.empleado_pel_id||t.usuario_id):uid;
+      const esPasado=fechaYMD<hoyYMD;
+      const diaLbl=`${d} ${_fmtDDMM(fechas[i])}`;
+      const entradaC=t&&t.hora_entrada?String(t.hora_entrada).slice(0,5):'';
+      const salidaC=t&&t.hora_salida?String(t.hora_salida).slice(0,5):'';
+      let onclickAttr='';
+      if(!esPasado){
+        if(esExcepcion) onclickAttr=`onclick="editarHorarioExcepcion('${t.id}','${eid}',${i},'${fechaYMD}','${entradaC}','${salidaC}',${esLibre?1:0})"`;
+        else if(t) onclickAttr=_horOffset===0
+          ?`onclick="editarHorarioSlot('${t.id}','${eid}',${i},'${entradaC}','${salidaC}')"`
+          :`onclick="abrirHorarioExcepcion('${uid}',${i},'${fechaYMD}','${entradaC}','${salidaC}')"`;
+        else onclickAttr=_horOffset===0
+          ?`onclick="abrirHorarioSlot('${uid}',${i})"`
+          :`onclick="abrirHorarioExcepcion('${uid}',${i},'${fechaYMD}','','')"`;
+      }
+      const claseExtra=esExcepcion?(esLibre?'libre':'excepcion'):'';
+      const contenido=esLibre?'<span style="font-size:11px">Libre</span>':(t?`<span>${entradaC}</span><span>${salidaC}</span>`:(esPasado?'':'+'));
+      return `<div class="dia-col"><div class="dia-label" style="${esPasado?'color:var(--text3)':''}">${diaLbl}</div><div class="dia-slot ${t?'activo':'vacio'} ${claseExtra}" style="${esPasado?'opacity:.35;cursor:default':'cursor:pointer'}" ${onclickAttr}>${contenido}</div></div>`;
+    }).join('')}</div></div>`).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">Sin horarios configurados. Agrega empleados primero en la sección Empleados.</div>';
   }catch(e){showToast(e.message,'err');}
 }
 async function _cargarPersonalHorario(){
@@ -2836,40 +3370,94 @@ function _setDiasChk(diasArr, disabled){
     cb.closest('.dia-chk').style.cursor=disabled?'default':'pointer';
   });
 }
+function _hModoVista(){
+  const exc=_horModoExcepcion;
+  _gel('h-dias-wrap-field').style.display=exc?'none':'';
+  _gel('h-fecha-info').style.display=exc?'':'none';
+  _gel('h-libre-wrap').style.display=exc?'':'none';
+  hLibreChange();
+}
+function hLibreChange(){
+  const libre=_horModoExcepcion&&_gel('h-libre').checked;
+  _gel('h-horas-wrap').style.display=libre?'none':'';
+}
 async function abrirHorarioModal(){
   try{
+    _horModoExcepcion=false;
     await _cargarPersonalHorario();
     _gel('h-turno-id').value='';
+    _gel('h-fecha').value='';
     _gel('h-modal-title').textContent='Agregar turno';
     _gel('h-entrada').value='08:00';_gel('h-salida').value='17:00';
     _gel('h-empleado').disabled=false;
     _setDiasChk([],false);
+    _hModoVista();
     _gel('h-btn-eliminar').style.display='none';
     _gel('horario-modal').style.display='flex';
   }catch(e){showToast(e.message,'err');}
 }
 async function abrirHorarioSlot(uid,dia){
   try{
+    _horModoExcepcion=false;
     await _cargarPersonalHorario();
     _gel('h-turno-id').value='';
+    _gel('h-fecha').value='';
     _gel('h-modal-title').textContent='Agregar turno';
     _gel('h-empleado').value=uid;
     _gel('h-entrada').value='08:00';_gel('h-salida').value='17:00';
     _gel('h-empleado').disabled=true;
     _setDiasChk([+dia],true);
+    _hModoVista();
     _gel('h-btn-eliminar').style.display='none';
     _gel('horario-modal').style.display='flex';
   }catch(e){showToast(e.message,'err');}
 }
 async function editarHorarioSlot(id,uid,dia,entrada,salida){
   try{
+    _horModoExcepcion=false;
     await _cargarPersonalHorario();
     _gel('h-turno-id').value=id;
+    _gel('h-fecha').value='';
     _gel('h-modal-title').textContent='Editar turno';
     _gel('h-empleado').value=uid;
-    _gel('h-entrada').value=entrada;_gel('h-salida').value=salida;
+    _gel('h-entrada').value=entrada||'08:00';_gel('h-salida').value=salida||'17:00';
     _gel('h-empleado').disabled=true;
     _setDiasChk([+dia],true);
+    _hModoVista();
+    _gel('h-btn-eliminar').style.display='';
+    _gel('horario-modal').style.display='flex';
+  }catch(e){showToast(e.message,'err');}
+}
+async function abrirHorarioExcepcion(uid,dia,fechaYMD,entrada,salida){
+  try{
+    _horModoExcepcion=true;
+    await _cargarPersonalHorario();
+    _gel('h-turno-id').value='';
+    _gel('h-fecha').value=fechaYMD;
+    _gel('h-modal-title').textContent='Turno especial';
+    _gel('h-empleado').value=uid;
+    _gel('h-empleado').disabled=true;
+    _gel('h-entrada').value=entrada||'08:00';_gel('h-salida').value=salida||'17:00';
+    _gel('h-libre').checked=false;
+    _gel('h-fecha-label').textContent=_fmtFechaLarga(fechaYMD);
+    _hModoVista();
+    _gel('h-btn-eliminar').style.display='none';
+    _gel('horario-modal').style.display='flex';
+  }catch(e){showToast(e.message,'err');}
+}
+async function editarHorarioExcepcion(id,uid,dia,fechaYMD,entrada,salida,esLibre){
+  try{
+    _horModoExcepcion=true;
+    await _cargarPersonalHorario();
+    _gel('h-turno-id').value=id;
+    _gel('h-fecha').value=fechaYMD;
+    _gel('h-modal-title').textContent='Editar turno especial';
+    _gel('h-empleado').value=uid;
+    _gel('h-empleado').disabled=true;
+    _gel('h-entrada').value=entrada||'08:00';_gel('h-salida').value=salida||'17:00';
+    _gel('h-libre').checked=!!(+esLibre);
+    _gel('h-fecha-label').textContent=_fmtFechaLarga(fechaYMD);
+    _hModoVista();
     _gel('h-btn-eliminar').style.display='';
     _gel('horario-modal').style.display='flex';
   }catch(e){showToast(e.message,'err');}
@@ -2877,6 +3465,21 @@ async function editarHorarioSlot(id,uid,dia,entrada,salida){
 async function guardarHorario(){
   try{
     const tid=_gel('h-turno-id').value;
+    if(_horModoExcepcion){
+      const fecha=_gel('h-fecha').value;
+      const esLibre=_gel('h-libre').checked;
+      if(!esLibre&&(!_gel('h-entrada').value||!_gel('h-salida').value)){showToast('Completa hora de entrada y salida','err');return;}
+      if(tid)await apiFetch(`${API}/admin/horarios/${tid}`,{method:'DELETE'});
+      await apiFetch(`${API}/admin/horarios`,{method:'POST',body:JSON.stringify({
+        usuario_id:_gel('h-empleado').value,
+        dia_semana:new Date(fecha+'T00:00:00').getDay(),
+        fecha, es_libre:esLibre,
+        hora_entrada:esLibre?null:_gel('h-entrada').value,
+        hora_salida:esLibre?null:_gel('h-salida').value
+      })});
+      cerrarModal('horario-modal');showToast('Turno especial guardado ✓');cargarHorarios();
+      return;
+    }
     const diasChecked=[...document.querySelectorAll('input[name="h-dias"]:checked')].map(cb=>+cb.value);
     if(!diasChecked.length){showToast('Selecciona al menos un día','err');return;}
     if(tid)await apiFetch(`${API}/admin/horarios/${tid}`,{method:'DELETE'});
