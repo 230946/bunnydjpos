@@ -229,8 +229,21 @@ router.put('/usuarios/:id/password', async (req, res) => {
   try { await pool.query(`ALTER TABLE horarios MODIFY COLUMN usuario_id VARCHAR(36) NULL`); } catch {}
   try { await pool.query(`ALTER TABLE horarios ADD COLUMN empleado_pel_id VARCHAR(36) NULL`); } catch {}
   try { await pool.query(`ALTER TABLE horarios ADD COLUMN fecha DATE NULL`); } catch {}
+  try { await pool.query(`ALTER TABLE horarios ADD COLUMN es_libre TINYINT(1) NOT NULL DEFAULT 0`); } catch {}
+  try { await pool.query(`ALTER TABLE horarios MODIFY COLUMN hora_entrada TIME NULL`); } catch {}
+  try { await pool.query(`ALTER TABLE horarios MODIFY COLUMN hora_salida TIME NULL`); } catch {}
 })();
 
+// DATE se serializa como Date JS; forzar YYYY-MM-DD local para evitar el
+// corrimiento de día que produce JSON.stringify()->toISOString() (UTC).
+const _fechaYMD = v => {
+  if (!v) return null;
+  if (v instanceof Date) {
+    const pad = n => String(n).padStart(2,'0');
+    return `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}`;
+  }
+  return String(v).slice(0,10);
+};
 router.get('/horarios', async (req, res) => {
   try {
     // Intentar con JOIN a pel_empleados (nuevo sistema)
@@ -252,6 +265,7 @@ router.get('/horarios', async (req, res) => {
     for (const sql of queries) {
       try {
         const { rows } = await pool.query(sql, [req.user.negocio_id]);
+        rows.forEach(r => { r.fecha = _fechaYMD(r.fecha); });
         return res.json(rows);
       } catch (_) {}
     }
@@ -261,13 +275,15 @@ router.get('/horarios', async (req, res) => {
 
 router.post('/horarios', requirePermiso('horarios'), async (req, res) => {
   try {
-    const { usuario_id, dia_semana, hora_entrada, hora_salida } = req.body;
+    const { usuario_id, dia_semana, hora_entrada, hora_salida, fecha, es_libre } = req.body;
     const id = uuid();
-    // fecha = NULL → horario semanal recurrente (no acotado a una fecha específica)
+    // fecha = NULL → horario semanal recurrente; fecha = 'YYYY-MM-DD' → excepción de un solo día
     await pool.query(
-      `INSERT INTO horarios (id,empleado_pel_id,negocio_id,dia_semana,hora_entrada,hora_salida)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)})`,
-      [id, usuario_id, req.user.negocio_id, dia_semana, hora_entrada, hora_salida]
+      `INSERT INTO horarios (id,empleado_pel_id,negocio_id,dia_semana,hora_entrada,hora_salida,fecha,es_libre)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)})`,
+      [id, usuario_id, req.user.negocio_id, dia_semana,
+       es_libre ? null : hora_entrada, es_libre ? null : hora_salida,
+       fecha || null, es_libre ? 1 : 0]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
