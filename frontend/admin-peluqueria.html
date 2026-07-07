@@ -441,16 +441,13 @@
         <div class="fg"><label>Teléfono</label><input id="emp-tel" placeholder="Número de contacto"></div>
         <div class="fg"><label>Email</label><input id="emp-email" type="email" placeholder="email@ejemplo.com"></div>
       </div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin:14px 0 8px">Configuración de comisiones por empleado</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin:14px 0 8px">Configuración de pago por empleado</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;transition:.15s" id="lbl-rem-sueldo">
           <input type="radio" name="emp-rem" value="sueldo" onchange="cambiarTipoRem(this.value)" style="accent-color:var(--acc)"> Sueldo básico
         </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;transition:.15s" id="lbl-rem-hora">
           <input type="radio" name="emp-rem" value="hora" onchange="cambiarTipoRem(this.value)" style="accent-color:var(--acc)"> Tarifa por hora
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;transition:.15s" id="lbl-rem-comision">
-          <input type="radio" name="emp-rem" value="comision" onchange="cambiarTipoRem(this.value)" style="accent-color:var(--acc)"> Comisión
         </label>
       </div>
       <div id="rem-sueldo-row" style="display:none">
@@ -459,23 +456,29 @@
       <div id="rem-hora-row" style="display:none">
         <div class="fg"><label>Tarifa por hora</label><input id="emp-tarifa" type="number" min="0" step="500" placeholder="0"></div>
       </div>
-      <div id="rem-comision-row" style="display:none">
-        <div class="frow">
-          <div class="fg">
-            <label>Tipo de comisión</label>
-            <select id="emp-tipo-comision" onchange="_actualizarLblComision()">
-              <option value="porcentaje">Porcentaje (%)</option>
-              <option value="fijo">Monto fijo ($)</option>
-            </select>
-          </div>
-          <div class="fg">
-            <label id="emp-comision-lbl">Valor (%)</label>
-            <input id="emp-comision-val" type="number" min="0" step="0.5" placeholder="0">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="checkbox" id="emp-chk-comision" onchange="_toggleComisionServicios()" style="accent-color:var(--acc)">
+          Además gana comisión por servicios <span style="font-weight:400;color:var(--text3)">(se puede combinar con el sueldo/tarifa de arriba)</span>
+        </label>
+        <div id="rem-comision-row" style="display:none;margin-top:8px">
+          <div class="frow">
+            <div class="fg">
+              <label>Tipo de comisión</label>
+              <select id="emp-tipo-comision" onchange="_actualizarLblComision()">
+                <option value="porcentaje">Porcentaje (%)</option>
+                <option value="fijo">Monto fijo ($)</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label id="emp-comision-lbl">Valor (%)</label>
+              <input id="emp-comision-val" type="number" min="0" step="0.5" placeholder="0">
+            </div>
           </div>
         </div>
       </div>
-      <div class="fg" style="margin-top:4px">
-        <label>% Comisión por venta de productos <span style="font-weight:400;color:var(--text3)">(opcional, aparte del sueldo/comisión de arriba)</span></label>
+      <div class="fg" style="margin-top:10px">
+        <label>% Comisión por venta de productos <span style="font-weight:400;color:var(--text3)">(opcional, aparte de lo de arriba)</span></label>
         <input id="emp-comision-producto" type="number" min="0" step="0.5" placeholder="0" style="max-width:160px">
       </div>
     </div>
@@ -1806,8 +1809,7 @@ function quitarFotoEmpleado(){ _setEmpFoto(null); document.getElementById('emp-f
 function cambiarTipoRem(tipo) {
   document.getElementById('rem-sueldo-row').style.display = tipo === 'sueldo' ? '' : 'none';
   document.getElementById('rem-hora-row').style.display = tipo === 'hora' ? '' : 'none';
-  document.getElementById('rem-comision-row').style.display = tipo === 'comision' ? '' : 'none';
-  ['lbl-rem-sueldo','lbl-rem-hora','lbl-rem-comision'].forEach(id => {
+  ['lbl-rem-sueldo','lbl-rem-hora'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const sel = id === 'lbl-rem-'+tipo;
@@ -1815,7 +1817,11 @@ function cambiarTipoRem(tipo) {
     el.style.background  = sel ? 'var(--acc-l)' : '';
     el.style.fontWeight  = sel ? '700' : '';
   });
-  if (tipo === 'comision') _actualizarLblComision();
+}
+function _toggleComisionServicios() {
+  const on = document.getElementById('emp-chk-comision').checked;
+  document.getElementById('rem-comision-row').style.display = on ? '' : 'none';
+  if (on) _actualizarLblComision();
 }
 function _actualizarLblComision() {
   const t = document.getElementById('emp-tipo-comision')?.value;
@@ -1826,14 +1832,13 @@ function _cargarTipoRem(e) {
   let tipo = '';
   if (e.sueldo_base) tipo = 'sueldo';
   else if (e.tarifa_hora) tipo = 'hora';
-  else if (e.tipo_comision && e.tipo_comision !== 'ninguna') tipo = 'comision';
   document.querySelectorAll('input[name="emp-rem"]').forEach(r => r.checked = r.value === tipo);
   cambiarTipoRem(tipo);
-  if (tipo === 'comision') {
-    document.getElementById('emp-tipo-comision').value = e.tipo_comision || 'porcentaje';
-    document.getElementById('emp-comision-val').value = e.tipo_comision === 'fijo' ? (e.monto_comision||'') : (e.pct_comision||'');
-    _actualizarLblComision();
-  }
+  const tieneComision = !!(e.tipo_comision && e.tipo_comision !== 'ninguna');
+  document.getElementById('emp-chk-comision').checked = tieneComision;
+  document.getElementById('emp-tipo-comision').value = e.tipo_comision === 'fijo' ? 'fijo' : 'porcentaje';
+  document.getElementById('emp-comision-val').value = e.tipo_comision === 'fijo' ? (e.monto_comision||'') : (e.pct_comision||'');
+  _toggleComisionServicios();
   document.getElementById('emp-comision-producto').value = e.pct_comision_producto || '';
 }
 function abrirModalEmpleadoById(id){const e=_empsData.find(x=>x.id==id);if(!e)return;
@@ -1860,6 +1865,8 @@ function abrirModalEmpleado(){
   ['emp-nombre','emp-apellido','emp-cedula','emp-cargo','emp-especialidad','emp-tel','emp-email','emp-sueldo','emp-tarifa','emp-comision-val','emp-comision-producto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.querySelectorAll('input[name="emp-rem"]').forEach(r=>r.checked=false);
   cambiarTipoRem('');
+  document.getElementById('emp-chk-comision').checked=false;
+  _toggleComisionServicios();
   _setEmpFoto(null);
   document.getElementById('emp-foto-input').value='';
   _cargarCatsEmpleado('');
@@ -1877,12 +1884,14 @@ async function guardarEmpleado(){
   const nombre=document.getElementById('emp-nombre').value.trim();
   if(!nombre){showToast('El nombre es obligatorio','err');return;}
   const remRadio = document.querySelector('input[name="emp-rem"]:checked')?.value||'';
-  let sueldoBase=null, tarifaHora=null, tipoComision='ninguna', pctComision=0, montoComision=0;
+  let sueldoBase=null, tarifaHora=null;
   if(remRadio==='sueldo'){
     sueldoBase=parseFloat(document.getElementById('emp-sueldo').value)||null;
   }else if(remRadio==='hora'){
     tarifaHora=parseFloat(document.getElementById('emp-tarifa').value)||null;
-  }else if(remRadio==='comision'){
+  }
+  let tipoComision='ninguna', pctComision=0, montoComision=0;
+  if(document.getElementById('emp-chk-comision').checked){
     tipoComision=document.getElementById('emp-tipo-comision').value||'porcentaje';
     const val=parseFloat(document.getElementById('emp-comision-val').value)||0;
     if(tipoComision==='fijo') montoComision=val; else pctComision=val;
