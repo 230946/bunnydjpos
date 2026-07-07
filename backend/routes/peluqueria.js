@@ -1016,6 +1016,23 @@ async function _ddl(sql) {
     INDEX idx_neg_emp_estado (negocio_id, empleado_id, estado)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
 
+  // Pagos de nómina (sueldo + tarifa + comisiones liquidados de una vez)
+  await _ddl(`CREATE TABLE IF NOT EXISTS pel_nomina_pagos (
+    id               VARCHAR(36)   PRIMARY KEY,
+    negocio_id       VARCHAR(36)   NOT NULL,
+    empleado_id      VARCHAR(36)   NOT NULL,
+    desde            DATE          NOT NULL,
+    hasta            DATE          NOT NULL,
+    dias_trabajados  INT           NOT NULL DEFAULT 0,
+    horas_netas      DECIMAL(8,2)  NOT NULL DEFAULT 0,
+    pago_sueldo      DECIMAL(12,2) NOT NULL DEFAULT 0,
+    pago_tarifa      DECIMAL(12,2) NOT NULL DEFAULT 0,
+    comision_pagada  DECIMAL(12,2) NOT NULL DEFAULT 0,
+    total_pagado     DECIMAL(12,2) NOT NULL DEFAULT 0,
+    fecha_pago       DATETIME      DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_neg_emp (negocio_id, empleado_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+
   // Proveedores
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_proveedores (
     id         VARCHAR(36)   PRIMARY KEY,
@@ -1058,6 +1075,7 @@ async function _ddl(sql) {
   await _ddl(`ALTER TABLE pel_productos ADD COLUMN es_paquete TINYINT(1) NOT NULL DEFAULT 0`);
   await _ddl(`ALTER TABLE pel_productos ADD COLUMN cantidad_paquete INT NULL`);
   await _ddl(`ALTER TABLE pel_productos ADD COLUMN imagen_url VARCHAR(300) NULL`);
+  await _ddl(`ALTER TABLE pel_productos ADD COLUMN codigo_barras VARCHAR(50) NULL`);
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_productos (
     id             VARCHAR(36)   PRIMARY KEY,
     negocio_id     VARCHAR(36)   NOT NULL,
@@ -2084,92 +2102,154 @@ router.get('/cajas/historial', requirePermiso('pos_cobro'), async (req, res) => 
 // NÓMINA — liquidación de horas + sueldo prorrateado + comisiones
 // ════════════════════════════════════════════════════════════════
 
+async function _calcularNomina(negocioId, desde, hasta, empleadoId) {
+  let empSql = `SELECT id, nombre, apellido, sueldo_base, tarifa_hora FROM pel_empleados WHERE negocio_id=? AND activo=1`;
+  const empParams = [negocioId];
+  if (empleadoId) { empSql += ` AND id=?`; empParams.push(empleadoId); }
+  const { rows: empleados } = await pool.query(empSql, empParams);
+
+  const { rows: turnos } = await pool.query(
+    `SELECT empleado_pel_id, fecha, hora_entrada, hora_salida FROM horarios
+     WHERE negocio_id=? AND activo=1 AND es_libre=0 AND fecha BETWEEN ? AND ?
+     AND empleado_pel_id IS NOT NULL AND hora_entrada IS NOT NULL AND hora_salida IS NOT NULL`,
+    [negocioId, desde, hasta]
+  );
+  const { rows: pausas } = await pool.query(
+    `SELECT empleado_id, inicio, fin FROM pel_pausas_turno
+     WHERE negocio_id=? AND fin IS NOT NULL AND DATE(inicio) BETWEEN ? AND ?`,
+    [negocioId, desde, hasta]
+  );
+  const { rows: comisiones } = await pool.query(
+    `SELECT cd.empleado_id, cd.monto_comision, cd.estado, d.tipo_item
+     FROM pel_comision_detalle cd
+     JOIN pel_venta_detalle d ON d.id=cd.venta_detalle_id
+     JOIN pel_ventas v ON v.id=d.venta_id
+     WHERE cd.negocio_id=? AND DATE(v.fecha) BETWEEN ? AND ?`,
+    [negocioId, desde, hasta]
+  );
+  let pagosSql = `SELECT empleado_id, desde, hasta FROM pel_nomina_pagos WHERE negocio_id=?`;
+  const pagosParams = [negocioId];
+  if (empleadoId) { pagosSql += ` AND empleado_id=?`; pagosParams.push(empleadoId); }
+  const { rows: pagosPrevios } = await pool.query(pagosSql, pagosParams);
+
+  // intervalos ya pagados por empleado
+  const pagadoPorEmp = {};
+  pagosPrevios.forEach(p => {
+    if (!pagadoPorEmp[p.empleado_id]) pagadoPorEmp[p.empleado_id] = [];
+    pagadoPorEmp[p.empleado_id].push({ desde: _fechaYMD(p.desde), hasta: _fechaYMD(p.hasta) });
+  });
+  const _yaPagado = (empId, fechaYMD) => {
+    const intervalos = pagadoPorEmp[empId];
+    if (!intervalos) return false;
+    return intervalos.some(iv => fechaYMD >= iv.desde && fechaYMD <= iv.hasta);
+  };
+
+  // horas brutas por (empleado, fecha)
+  const brutasPorDia = {}; // key = empleado_pel_id + '|' + fecha
+  turnos.forEach(t => {
+    const fechaYMD = _fechaYMD(t.fecha);
+    if (_yaPagado(t.empleado_pel_id, fechaYMD)) return;
+    const key = t.empleado_pel_id + '|' + fechaYMD;
+    const [eh, em] = String(t.hora_entrada).split(':').map(Number);
+    const [sh, sm] = String(t.hora_salida).split(':').map(Number);
+    const horas = Math.max(0, (sh * 60 + sm - (eh * 60 + em)) / 60);
+    brutasPorDia[key] = (brutasPorDia[key] || 0) + horas;
+  });
+  // horas de pausa por (empleado, fecha)
+  const pausasPorDia = {};
+  pausas.forEach(p => {
+    const fechaYMD = _fechaYMD(p.inicio);
+    const key = p.empleado_id + '|' + fechaYMD;
+    const horas = (new Date(p.fin) - new Date(p.inicio)) / 3600000;
+    pausasPorDia[key] = (pausasPorDia[key] || 0) + Math.max(0, horas);
+  });
+  // comisiones por empleado, separadas por producto/servicio
+  const comisionPorEmp = {};
+  comisiones.forEach(c => {
+    if (!comisionPorEmp[c.empleado_id]) comisionPorEmp[c.empleado_id] = {
+      pendiente: 0, pagada: 0,
+      pendienteProducto: 0, pagadaProducto: 0,
+      pendienteServicio: 0, pagadaServicio: 0
+    };
+    const monto = parseFloat(c.monto_comision || 0);
+    const estado = c.estado === 'pagada' ? 'pagada' : 'pendiente';
+    const grupo = c.tipo_item === 'producto' ? 'Producto' : 'Servicio';
+    comisionPorEmp[c.empleado_id][estado] += monto;
+    comisionPorEmp[c.empleado_id][estado + grupo] += monto;
+  });
+
+  return empleados.map(e => {
+    let horasNetasTotal = 0, diasTrabajados = 0;
+    Object.keys(brutasPorDia).forEach(key => {
+      if (!key.startsWith(e.id + '|')) return;
+      const brutas = brutasPorDia[key];
+      if (brutas <= 0) return;
+      diasTrabajados++;
+      const pausaHoras = pausasPorDia[key] || 0;
+      horasNetasTotal += Math.max(0, brutas - pausaHoras);
+    });
+    const tarifaHora = parseFloat(e.tarifa_hora) || 0;
+    const sueldoBase = parseFloat(e.sueldo_base) || 0;
+    const pagoTarifa = tarifaHora ? horasNetasTotal * tarifaHora : 0;
+    const pagoSueldo = sueldoBase ? Math.round(sueldoBase / 30 * diasTrabajados) : 0;
+    const com = comisionPorEmp[e.id] || {
+      pendiente: 0, pagada: 0, pendienteProducto: 0, pagadaProducto: 0, pendienteServicio: 0, pagadaServicio: 0
+    };
+    return {
+      empleadoId: e.id,
+      nombre: e.nombre + (e.apellido ? ' ' + e.apellido : ''),
+      diasTrabajados,
+      horasNetas: Math.round(horasNetasTotal * 100) / 100,
+      tarifaHora,
+      pagoTarifa: Math.round(pagoTarifa),
+      sueldoBase,
+      pagoSueldo,
+      comisionPendiente: Math.round(com.pendiente),
+      comisionPagada: Math.round(com.pagada),
+      comisionProductoPendiente: Math.round(com.pendienteProducto),
+      comisionProductoPagada: Math.round(com.pagadaProducto),
+      comisionServicioPendiente: Math.round(com.pendienteServicio),
+      comisionServicioPagada: Math.round(com.pagadaServicio),
+      totalAPagar: Math.round(pagoTarifa) + pagoSueldo + Math.round(com.pendiente)
+    };
+  });
+}
+
 router.get('/nomina', async (req, res) => {
   try {
     const { desde, hasta, empleadoId } = req.query;
     if (!desde || !hasta) return res.status(400).json({ error: 'desde y hasta requeridos' });
+    const resultado = await _calcularNomina(nid(req), desde, hasta, empleadoId);
+    res.json(resultado);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/nomina/pagar', async (req, res) => {
+  try {
+    const { empleadoId, desde, hasta } = req.body;
+    if (!empleadoId || !desde || !hasta) return res.status(400).json({ error: 'empleadoId, desde y hasta requeridos' });
     const negocioId = nid(req);
-
-    let empSql = `SELECT id, nombre, apellido, sueldo_base, tarifa_hora FROM pel_empleados WHERE negocio_id=? AND activo=1`;
-    const empParams = [negocioId];
-    if (empleadoId) { empSql += ` AND id=?`; empParams.push(empleadoId); }
-    const { rows: empleados } = await pool.query(empSql, empParams);
-
-    const { rows: turnos } = await pool.query(
-      `SELECT empleado_pel_id, fecha, hora_entrada, hora_salida FROM horarios
-       WHERE negocio_id=? AND activo=1 AND es_libre=0 AND fecha BETWEEN ? AND ?
-       AND empleado_pel_id IS NOT NULL AND hora_entrada IS NOT NULL AND hora_salida IS NOT NULL`,
-      [negocioId, desde, hasta]
-    );
-    const { rows: pausas } = await pool.query(
-      `SELECT empleado_id, inicio, fin FROM pel_pausas_turno
-       WHERE negocio_id=? AND fin IS NOT NULL AND DATE(inicio) BETWEEN ? AND ?`,
-      [negocioId, desde, hasta]
-    );
-    const { rows: comisiones } = await pool.query(
-      `SELECT cd.empleado_id, cd.monto_comision, cd.estado
-       FROM pel_comision_detalle cd
+    const [fila] = await _calcularNomina(negocioId, desde, hasta, empleadoId);
+    if (!fila || (fila.totalAPagar === 0 && fila.diasTrabajados === 0)) {
+      return res.status(400).json({ error: 'Nada pendiente por pagar en este rango' });
+    }
+    await pool.query(
+      `UPDATE pel_comision_detalle cd
        JOIN pel_venta_detalle d ON d.id=cd.venta_detalle_id
        JOIN pel_ventas v ON v.id=d.venta_id
-       WHERE cd.negocio_id=? AND DATE(v.fecha) BETWEEN ? AND ?`,
-      [negocioId, desde, hasta]
+       SET cd.estado='pagada', cd.fecha_pago=NOW()
+       WHERE cd.negocio_id=? AND cd.empleado_id=? AND cd.estado='pendiente'
+         AND DATE(v.fecha) BETWEEN ? AND ?`,
+      [negocioId, empleadoId, desde, hasta]
     );
-
-    // horas brutas por (empleado, fecha)
-    const brutasPorDia = {}; // key = empleado_pel_id + '|' + fecha
-    turnos.forEach(t => {
-      const fechaYMD = _fechaYMD(t.fecha);
-      const key = t.empleado_pel_id + '|' + fechaYMD;
-      const [eh, em] = String(t.hora_entrada).split(':').map(Number);
-      const [sh, sm] = String(t.hora_salida).split(':').map(Number);
-      const horas = Math.max(0, (sh * 60 + sm - (eh * 60 + em)) / 60);
-      brutasPorDia[key] = (brutasPorDia[key] || 0) + horas;
-    });
-    // horas de pausa por (empleado, fecha)
-    const pausasPorDia = {};
-    pausas.forEach(p => {
-      const fechaYMD = _fechaYMD(p.inicio);
-      const key = p.empleado_id + '|' + fechaYMD;
-      const horas = (new Date(p.fin) - new Date(p.inicio)) / 3600000;
-      pausasPorDia[key] = (pausasPorDia[key] || 0) + Math.max(0, horas);
-    });
-    // comisiones por empleado
-    const comisionPorEmp = {};
-    comisiones.forEach(c => {
-      if (!comisionPorEmp[c.empleado_id]) comisionPorEmp[c.empleado_id] = { pendiente: 0, pagada: 0 };
-      comisionPorEmp[c.empleado_id][c.estado === 'pagada' ? 'pagada' : 'pendiente'] += parseFloat(c.monto_comision || 0);
-    });
-
-    const resultado = empleados.map(e => {
-      let horasNetasTotal = 0, diasTrabajados = 0;
-      Object.keys(brutasPorDia).forEach(key => {
-        if (!key.startsWith(e.id + '|')) return;
-        const brutas = brutasPorDia[key];
-        if (brutas <= 0) return;
-        diasTrabajados++;
-        const pausaHoras = pausasPorDia[key] || 0;
-        horasNetasTotal += Math.max(0, brutas - pausaHoras);
-      });
-      const tarifaHora = parseFloat(e.tarifa_hora) || 0;
-      const sueldoBase = parseFloat(e.sueldo_base) || 0;
-      const pagoTarifa = tarifaHora ? horasNetasTotal * tarifaHora : 0;
-      const pagoSueldo = sueldoBase ? Math.round(sueldoBase / 30 * diasTrabajados) : 0;
-      const com = comisionPorEmp[e.id] || { pendiente: 0, pagada: 0 };
-      return {
-        empleadoId: e.id,
-        nombre: e.nombre + (e.apellido ? ' ' + e.apellido : ''),
-        diasTrabajados,
-        horasNetas: Math.round(horasNetasTotal * 100) / 100,
-        tarifaHora,
-        pagoTarifa: Math.round(pagoTarifa),
-        sueldoBase,
-        pagoSueldo,
-        comisionPendiente: Math.round(com.pendiente),
-        comisionPagada: Math.round(com.pagada),
-        totalAPagar: Math.round(pagoTarifa) + pagoSueldo + Math.round(com.pendiente)
-      };
-    });
-    res.json(resultado);
+    await pool.query(
+      `INSERT INTO pel_nomina_pagos
+       (id,negocio_id,empleado_id,desde,hasta,dias_trabajados,horas_netas,pago_sueldo,pago_tarifa,comision_pagada,total_pagado)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      [uuid(), negocioId, empleadoId, desde, hasta, fila.diasTrabajados, fila.horasNetas,
+       fila.pagoSueldo, fila.pagoTarifa, fila.comisionPendiente, fila.totalAPagar]
+    );
+    res.json({ ok: true, ...fila });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -2503,13 +2583,13 @@ router.patch('/productos/:id/toggle-venta', async (req, res) => {
 
 router.post('/productos', async (req, res) => {
   try {
-    const { nombre, descripcion, sku, categoriaId, proveedorId, precioCosto, precioVenta, stockActual, stockMinimo, unidad, ivaPct, esPaquete, cantidadPaquete } = req.body;
+    const { nombre, descripcion, sku, codigoBarras, categoriaId, proveedorId, precioCosto, precioVenta, stockActual, stockMinimo, unidad, ivaPct, esPaquete, cantidadPaquete } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
     const id = uuid();
     await pool.query(
-      `INSERT INTO pel_productos (id,negocio_id,categoria_id,proveedor_id,sku,nombre,descripcion,precio_costo,precio_venta,stock_actual,stock_minimo,unidad,iva_pct,es_paquete,cantidad_paquete)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [id, nid(req), categoriaId||null, proveedorId||null, sku||null, nombre, descripcion||null,
+      `INSERT INTO pel_productos (id,negocio_id,categoria_id,proveedor_id,sku,codigo_barras,nombre,descripcion,precio_costo,precio_venta,stock_actual,stock_minimo,unidad,iva_pct,es_paquete,cantidad_paquete)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [id, nid(req), categoriaId||null, proveedorId||null, sku||null, codigoBarras||null, nombre, descripcion||null,
        precioCosto||0, precioVenta||0, stockActual||0, stockMinimo||0, unidad||'unidad',
        ivaPct||0, esPaquete?1:0, cantidadPaquete||null]
     );
@@ -2526,11 +2606,11 @@ router.post('/productos', async (req, res) => {
 
 router.put('/productos/:id', async (req, res) => {
   try {
-    const { nombre, descripcion, sku, categoriaId, proveedorId, precioCosto, precioVenta, stockMinimo, unidad, ivaPct, esPaquete, cantidadPaquete } = req.body;
+    const { nombre, descripcion, sku, codigoBarras, categoriaId, proveedorId, precioCosto, precioVenta, stockMinimo, unidad, ivaPct, esPaquete, cantidadPaquete } = req.body;
     await pool.query(
-      `UPDATE pel_productos SET nombre=?,descripcion=?,sku=?,categoria_id=?,proveedor_id=?,
+      `UPDATE pel_productos SET nombre=?,descripcion=?,sku=?,codigo_barras=?,categoria_id=?,proveedor_id=?,
        precio_costo=?,precio_venta=?,stock_minimo=?,unidad=?,iva_pct=?,es_paquete=?,cantidad_paquete=? WHERE id=? AND negocio_id=?`,
-      [nombre, descripcion||null, sku||null, categoriaId||null, proveedorId||null,
+      [nombre, descripcion||null, sku||null, codigoBarras||null, categoriaId||null, proveedorId||null,
        precioCosto||0, precioVenta||0, stockMinimo||0, unidad||'unidad',
        ivaPct||0, esPaquete?1:0, cantidadPaquete||null, req.params.id, nid(req)]
     );
