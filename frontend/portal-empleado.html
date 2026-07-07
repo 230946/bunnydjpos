@@ -226,6 +226,7 @@
           <button class="btn-refresh" onclick="refrescarManual()" id="btnRefresh">↻ Actualizar</button>
           <div class="last-update" id="lastUpdate"></div>
         </div>
+        <button class="btn-salir" onclick="toggleFullscreenPOS()" title="Pantalla completa">⛶</button>
         <button class="btn-salir" onclick="window.open('/manual-portal-empleado.html','_blank')" title="Ayuda">❓</button>
         <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
       </div>
@@ -249,12 +250,36 @@
       <button class="btn-tomar" style="font-size:12px;padding:6px 12px" onclick="toggleFormAgregarDia()">➕ Agregar día</button>
     </div>
     <div id="pFormAgregarDia" style="display:none;background:var(--bg2);border:1.5px solid var(--acc);border-radius:var(--radius);padding:16px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Registrar nuevo día de trabajo</div>
+      <div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Registrar días de trabajo</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer">
+          <input type="radio" name="aModo" value="dia" checked onchange="_toggleModoAgregarDia()"> Un día
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer">
+          <input type="radio" name="aModo" value="rango" onchange="_toggleModoAgregarDia()"> Semana / mes (rango de fechas)
+        </label>
+      </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);display:flex;flex-direction:column;gap:4px">Fecha<input type="date" id="aDiaFecha" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
+        <label id="aDiaFechaWrap" style="font-size:12px;font-weight:600;color:var(--text2);display:flex;flex-direction:column;gap:4px">Fecha<input type="date" id="aDiaFecha" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
+        <label id="aDiaDesdeWrap" style="display:none;font-size:12px;font-weight:600;color:var(--text2);flex-direction:column;gap:4px">Desde<input type="date" id="aDiaDesde" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
+        <label id="aDiaHastaWrap" style="display:none;font-size:12px;font-weight:600;color:var(--text2);flex-direction:column;gap:4px">Hasta<input type="date" id="aDiaHasta" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
         <label style="font-size:12px;font-weight:600;color:var(--text2);display:flex;flex-direction:column;gap:4px">Entrada<input type="time" id="aDiaEntrada" value="08:00" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
         <label style="font-size:12px;font-weight:600;color:var(--text2);display:flex;flex-direction:column;gap:4px">Salida<input type="time" id="aDiaSalida" value="17:00" style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2)"></label>
-        <button class="btn-tomar" onclick="agregarDiaTurno()">Guardar</button>
+      </div>
+      <div id="aDiaSemanaWrap" style="display:none;margin-top:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px">Repetir solo en estos días</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="aDiaSem" value="0" checked>Dom</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="aDiaSem" value="1" checked>Lun</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="aDiaSem" value="2" checked>Mar</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="aDiaSem" value="3" checked>Mié</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="aDiaSem" value="4" checked>Jue</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="aDiaSem" value="5" checked>Vie</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="aDiaSem" value="6" checked>Sáb</label>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button class="btn-tomar" id="aDiaGuardarBtn" onclick="agregarDiaTurno()">Guardar</button>
         <button class="btn-tomar" style="background:var(--bg);color:var(--text2);border:1px solid var(--border)" onclick="toggleFormAgregarDia()">Cancelar</button>
       </div>
     </div>
@@ -715,7 +740,7 @@ function actualizarBtnPausa(val) {
     btn.style.background = 'var(--acc)';
     btn.style.color = '#fff';
     btn.style.cursor = 'pointer';
-    btn.textContent = '▶ Retomar';
+    btn.textContent = '⏸ Pausar';
   } else {
     btn.disabled = true;
     btn.style.background = '#d1d5db';
@@ -752,25 +777,80 @@ function toggleFormAgregarDia() {
     const hoy = new Date().toISOString().slice(0,10);
     document.getElementById('aDiaFecha').value = hoy;
     document.getElementById('aDiaFecha').min = hoy;
+    document.getElementById('aDiaDesde').value = hoy;
+    document.getElementById('aDiaDesde').min = hoy;
+    document.getElementById('aDiaHasta').min = hoy;
+    document.querySelector('input[name="aModo"][value="dia"]').checked = true;
+    _toggleModoAgregarDia();
   }
+}
+function _toggleModoAgregarDia() {
+  const modo = document.querySelector('input[name="aModo"]:checked').value;
+  const esRango = modo === 'rango';
+  document.getElementById('aDiaFechaWrap').style.display = esRango ? 'none' : 'flex';
+  document.getElementById('aDiaDesdeWrap').style.display = esRango ? 'flex' : 'none';
+  document.getElementById('aDiaHastaWrap').style.display = esRango ? 'flex' : 'none';
+  document.getElementById('aDiaSemanaWrap').style.display = esRango ? 'block' : 'none';
 }
 async function agregarDiaTurno() {
   if (!_cedulaActiva) return;
-  const fecha    = document.getElementById('aDiaFecha').value;
-  const entrada  = document.getElementById('aDiaEntrada').value;
-  const salida   = document.getElementById('aDiaSalida').value;
-  if (!fecha) { alert('Selecciona una fecha'); return; }
-  if (await _postTurno({ accion:'agregar', fecha, horaEntrada:entrada, horaSalida:salida })) {
-    toggleFormAgregarDia();
-    cargarDatos(_cedulaActiva);
+  const modo = document.querySelector('input[name="aModo"]:checked').value;
+  const entrada = document.getElementById('aDiaEntrada').value;
+  const salida  = document.getElementById('aDiaSalida').value;
+  const btn = document.getElementById('aDiaGuardarBtn');
+
+  if (modo === 'dia') {
+    const fecha = document.getElementById('aDiaFecha').value;
+    if (!fecha) { alert('Selecciona una fecha'); return; }
+    if (await _postTurno({ accion:'agregar', fecha, horaEntrada:entrada, horaSalida:salida })) {
+      toggleFormAgregarDia();
+      cargarDatos(_cedulaActiva);
+    }
+    return;
   }
+
+  // Modo rango: semana o mes — registra cada fecha entre "desde" y "hasta"
+  // cuyo día de la semana esté marcado.
+  const desde = document.getElementById('aDiaDesde').value;
+  const hasta = document.getElementById('aDiaHasta').value;
+  if (!desde || !hasta) { alert('Selecciona el rango de fechas (desde/hasta)'); return; }
+  if (hasta < desde) { alert('"Hasta" debe ser igual o posterior a "Desde"'); return; }
+  const diasMarcados = new Set([...document.querySelectorAll('.aDiaSem:checked')].map(c => +c.value));
+  if (!diasMarcados.size) { alert('Marca al menos un día de la semana'); return; }
+
+  const fechas = [];
+  const cur = new Date(desde + 'T12:00:00');
+  const fin = new Date(hasta + 'T12:00:00');
+  while (cur <= fin) {
+    if (diasMarcados.has(cur.getDay())) {
+      fechas.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`);
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  if (!fechas.length) { alert('No hay fechas que coincidan con los días marcados en ese rango'); return; }
+  if (!confirm(`Se registrarán ${fechas.length} día(s) de trabajo entre ${desde} y ${hasta}. ¿Continuar?`)) return;
+
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  let ok = 0;
+  for (const fecha of fechas) {
+    if (await _postTurno({ accion:'agregar', fecha, horaEntrada:entrada, horaSalida:salida })) ok++;
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+  toggleFormAgregarDia();
+  cargarDatos(_cedulaActiva);
+  if (ok < fechas.length) alert(`Se registraron ${ok} de ${fechas.length} días. Revisa si hubo algún error.`);
 }
 async function eliminarDiaTurno(horarioId) {
   if (!_cedulaActiva || !confirm('¿Eliminar este día de turno?')) return;
   if (await _postTurno({ accion:'eliminar', horarioId })) cargarDatos(_cedulaActiva);
 }
 
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 async function iniciarSesion(){
+  if(document.documentElement.requestFullscreen && !document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}
   if(!empId && !_getNegocioId()){
     document.getElementById('loginErr').textContent='Ingresa el código de negocio.';
     document.getElementById('loginErr').style.display='block';
