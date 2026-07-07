@@ -900,7 +900,7 @@ function imprimirRecibo(){
   const html=$('success-content')?.innerHTML||'';
   const w=window.open('','_blank','width=400,height=700');
   if(!w) return;
-  w.document.write(`<html><body style="font-family:monospace;font-size:12px;padding:12px">${html}</body></html>`);
+  w.document.write(`<html><head><meta charset="UTF-8"><style>@page{size:72mm auto;margin:0}body{width:72mm;font-family:monospace;font-size:12px;padding:8px;margin:0}</style></head><body>${html}</body></html>`);
   w.document.close(); w.focus(); w.print(); w.close();
 }
 

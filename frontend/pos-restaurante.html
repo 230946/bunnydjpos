@@ -2125,7 +2125,7 @@ function imprimirRecibo(){
     contenido = contenido.replace(/<div id="recibo-qr"[^>]*>[\s\S]*?<\/div>/,
       `<div style="text-align:center;margin:6px auto 2px"><img src="${canvas.toDataURL()}" style="width:90px;height:90px"></div>`);
   }
-  const estilos = `<style>body{font-family:'Courier New',monospace;font-size:12px;padding:16px;max-width:300px;margin:auto}.recibo-row{display:flex;justify-content:space-between;margin:2px 0}.recibo-hr{border:none;border-top:1px dashed #aaa;margin:7px 0}.recibo-center{text-align:center}.recibo-total{font-weight:700;font-size:13px}.recibo-cambio{font-weight:700;color:#0a6e4a}img{display:block;margin:0 auto}</style>`;
+  const estilos = `<style>@page{size:72mm auto;margin:0}body{width:72mm;font-family:'Courier New',monospace;font-size:12px;padding:8px;margin:auto}.recibo-row{display:flex;justify-content:space-between;margin:2px 0}.recibo-hr{border:none;border-top:1px dashed #aaa;margin:7px 0}.recibo-center{text-align:center}.recibo-total{font-weight:700;font-size:13px}.recibo-cambio{font-weight:700;color:#0a6e4a}img{display:block;margin:0 auto}</style>`;
   const win=window.open('','_blank','width=380,height=620');
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">${estilos}</head><body>${contenido}</body></html>`);
   win.document.close();
