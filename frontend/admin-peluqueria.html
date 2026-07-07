@@ -1201,6 +1201,14 @@ function _abrirPortal(tipo) {
     empleado: `/portal-empleado.html?n=${nid}`,
     pos:      `/pos-peluqueria.html?n=${nid}`,
   };
+  if (tipo === 'pos') {
+    // Forzar login: la pestaña nueva hereda una copia del sessionStorage
+    // de esta pestaña, así que se limpia la sesión de POS guardada aquí
+    // antes de abrirla, para que siempre pida usuario y clave.
+    sessionStorage.removeItem('pos_pel_token');
+    sessionStorage.removeItem('pos_pel_user');
+    sessionStorage.removeItem('pos_pel_rol');
+  }
   window.open(urls[tipo], '_blank');
   return false;
 }
