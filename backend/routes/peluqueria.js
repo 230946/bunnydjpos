@@ -5,6 +5,14 @@ const router = require('express').Router();
 const { v4: uuid } = require('uuid');
 const { pool, ph } = require('../db');
 const { authMiddleware, requirePermiso } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+
+const _uploadFotoStorage = multer.diskStorage({
+  destination: process.env.UPLOADS_DIR || './uploads',
+  filename: (_, file, cb) => cb(null, uuid() + path.extname(file.originalname))
+});
+const uploadFotoProducto = multer({ storage: _uploadFotoStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // ── Ruta pública: portal del empleado (sin auth) ─────────────────
 router.get('/portal-empleado/:id', async (req, res) => {
@@ -183,6 +191,13 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
        ORDER BY c.fecha_hora LIMIT 30`, [negocioId]
     );
 
+    const { rows: pausaR } = await pool.query(
+      `SELECT id, motivo, inicio FROM pel_pausas_turno
+       WHERE BINARY empleado_id=? AND DATE(inicio)=CURDATE() AND fin IS NULL
+       ORDER BY inicio DESC LIMIT 1`, [e.id]
+    );
+    const pausa = pausaR[0] ? { id: pausaR[0].id, motivo: pausaR[0].motivo, inicio: toISO(pausaR[0].inicio) } : null;
+
     res.json({
       empleado: { ...e, dias: DIAS },
       horarios: horarios.map(h => ({ ...h, dia_nombre: DIAS[h.dia_semana] || h.dia_semana, fecha: h.fecha ? toISO(h.fecha).slice(0,10) : null })),
@@ -190,6 +205,7 @@ router.get('/portal-negocio/:negocio_id', async (req, res) => {
         detalles: detallesHoy.filter(d => d.cita_id === c.id) })),
       proximas: proximas.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
       cola: cola.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora) })),
+      pausa,
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -481,6 +497,55 @@ function calcSlots(horario, citas, dur) {
     }
   }
   return slots;
+}
+
+// Verifica si un empleado tiene horario disponible para una cita (excepción de fecha > plantilla semanal)
+async function _empleadoDisponible(empleadoId, fechaHoraStr, duracionMin) {
+  const fh = new Date(String(fechaHoraStr).replace(' ', 'T'));
+  const diaSemana = fh.getDay();
+  const pad = n => String(n).padStart(2, '0');
+  const fechaYMD = `${fh.getFullYear()}-${pad(fh.getMonth()+1)}-${pad(fh.getDate())}`;
+  const minInicio = fh.getHours()*60 + fh.getMinutes();
+  const minFin = minInicio + (parseInt(duracionMin)||30);
+
+  const { rows: exc } = await pool.query(
+    `SELECT hora_entrada, hora_salida, es_libre FROM horarios WHERE empleado_pel_id=? AND fecha=? AND activo=1 LIMIT 1`,
+    [empleadoId, fechaYMD]
+  );
+  let horario = exc[0];
+  if (!horario) {
+    const { rows: plantilla } = await pool.query(
+      `SELECT hora_entrada, hora_salida, es_libre FROM horarios WHERE empleado_pel_id=? AND dia_semana=? AND fecha IS NULL AND activo=1 LIMIT 1`,
+      [empleadoId, diaSemana]
+    );
+    horario = plantilla[0];
+  }
+  if (!horario) return { ok: false, motivo: 'sin_horario' };
+  if (horario.es_libre) return { ok: false, motivo: 'libre' };
+  const parseMin = t => { const [h,m] = String(t).split(':').map(Number); return h*60+m; };
+  const minEntrada = parseMin(horario.hora_entrada);
+  const minSalida = parseMin(horario.hora_salida);
+  if (minInicio < minEntrada || minFin > minSalida) {
+    return { ok: false, motivo: 'fuera_horario', entrada: horario.hora_entrada, salida: horario.hora_salida };
+  }
+  return { ok: true };
+}
+function _mensajeNoDisponible(disp) {
+  if (disp.motivo === 'sin_horario') return 'El empleado no tiene horario configurado para ese día.';
+  if (disp.motivo === 'libre') return 'El empleado tiene ese día marcado como libre.';
+  if (disp.motivo === 'fuera_horario') return `El empleado trabaja de ${String(disp.entrada).slice(0,5)} a ${String(disp.salida).slice(0,5)} ese día.`;
+  return 'El empleado no tiene disponibilidad en ese horario.';
+}
+// "Cualquiera disponible": true si al menos un empleado activo del negocio tiene horario para esa fecha/hora
+async function _algunEmpleadoDisponible(negocioId, fechaHoraStr, duracionMin) {
+  const { rows: emps } = await pool.query(
+    `SELECT id FROM pel_empleados WHERE negocio_id=? AND activo=1`, [negocioId]
+  );
+  for (const e of emps) {
+    const disp = await _empleadoDisponible(e.id, fechaHoraStr, duracionMin);
+    if (disp.ok) return true;
+  }
+  return false;
 }
 
 router.get('/booking/:negocioId/info', async (req, res) => {
@@ -825,6 +890,8 @@ async function _ddl(sql) {
   await _ddl(`ALTER TABLE pel_ventas ADD COLUMN anulado_en DATETIME NULL`);
   await _ddl(`ALTER TABLE pel_ventas ADD COLUMN anulado_por VARCHAR(36) NULL`);
   await _ddl(`ALTER TABLE pel_ventas ADD COLUMN motivo_anulacion VARCHAR(255) NULL`);
+  await _ddl(`ALTER TABLE pel_ventas ADD COLUMN numero_factura INT NULL`);
+  await _ddl(`ALTER TABLE pel_ventas ADD INDEX idx_neg_numero (negocio_id, numero_factura)`);
 
   // Detalle de venta
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_venta_detalle (
@@ -841,6 +908,7 @@ async function _ddl(sql) {
     subtotal            DECIMAL(12,2) NOT NULL,
     INDEX idx_venta (venta_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  await _ddl(`ALTER TABLE pel_venta_detalle ADD COLUMN iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0`);
 
   // Pagos de venta (múltiples métodos)
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_venta_pagos (
@@ -904,6 +972,10 @@ async function _ddl(sql) {
 
   // Productos
   await _ddl(`ALTER TABLE pel_productos ADD COLUMN en_venta TINYINT(1) NOT NULL DEFAULT 0`);
+  await _ddl(`ALTER TABLE pel_productos ADD COLUMN iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0`);
+  await _ddl(`ALTER TABLE pel_productos ADD COLUMN es_paquete TINYINT(1) NOT NULL DEFAULT 0`);
+  await _ddl(`ALTER TABLE pel_productos ADD COLUMN cantidad_paquete INT NULL`);
+  await _ddl(`ALTER TABLE pel_productos ADD COLUMN imagen_url VARCHAR(300) NULL`);
   await _ddl(`CREATE TABLE IF NOT EXISTS pel_productos (
     id             VARCHAR(36)   PRIMARY KEY,
     negocio_id     VARCHAR(36)   NOT NULL,
@@ -991,6 +1063,7 @@ async function _ddl(sql) {
     `ALTER TABLE pel_empleados ADD COLUMN tipo_comision ENUM('porcentaje','fijo','ninguna') NOT NULL DEFAULT 'ninguna' AFTER email`,
     `ALTER TABLE pel_empleados ADD COLUMN pct_comision DECIMAL(5,2) NOT NULL DEFAULT 0 AFTER tipo_comision`,
     `ALTER TABLE pel_empleados ADD COLUMN monto_comision DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER pct_comision`,
+    `ALTER TABLE pel_empleados ADD COLUMN pct_comision_producto DECIMAL(5,2) NOT NULL DEFAULT 0 AFTER monto_comision`,
     `ALTER TABLE pel_empleados ADD COLUMN sueldo_base  DECIMAL(12,2) DEFAULT NULL`,
     `ALTER TABLE pel_empleados ADD COLUMN tarifa_hora  DECIMAL(10,2) DEFAULT NULL`,
     `ALTER TABLE pel_empleados ADD COLUMN foto_url VARCHAR(300) NULL`,
@@ -1133,14 +1206,14 @@ router.get('/empleados', async (req, res) => {
 
 router.post('/empleados', async (req, res) => {
   try {
-    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, sueldoBase, tarifaHora, categoriaId } = req.body;
+    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, pctComisionProducto, sueldoBase, tarifaHora, categoriaId } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
     const id = uuid();
     await pool.query(
-      `INSERT INTO pel_empleados (id,negocio_id,nombre,apellido,cedula,cargo,especialidad,telefono,email,tipo_comision,pct_comision,monto_comision,sueldo_base,tarifa_hora,categoria_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO pel_empleados (id,negocio_id,nombre,apellido,cedula,cargo,especialidad,telefono,email,tipo_comision,pct_comision,monto_comision,pct_comision_producto,sueldo_base,tarifa_hora,categoria_id)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [id, nid(req), nombre, apellido||null, cedula||null, cargo||null, especialidad||null, telefono||null, email||null,
-       tipoComision||'ninguna', pctComision||0, montoComision||0, sueldoBase||null, tarifaHora||null, categoriaId||null]
+       tipoComision||'ninguna', pctComision||0, montoComision||0, pctComisionProducto||0, sueldoBase||null, tarifaHora||null, categoriaId||null]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1148,13 +1221,13 @@ router.post('/empleados', async (req, res) => {
 
 router.put('/empleados/:id', async (req, res) => {
   try {
-    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, sueldoBase, tarifaHora, categoriaId } = req.body;
+    const { nombre, apellido, cedula, cargo, especialidad, telefono, email, tipoComision, pctComision, montoComision, pctComisionProducto, sueldoBase, tarifaHora, categoriaId } = req.body;
     await pool.query(
       `UPDATE pel_empleados SET nombre=?,apellido=?,cedula=?,cargo=?,especialidad=?,telefono=?,email=?,
-       tipo_comision=?,pct_comision=?,monto_comision=?,sueldo_base=?,tarifa_hora=?,categoria_id=?
+       tipo_comision=?,pct_comision=?,monto_comision=?,pct_comision_producto=?,sueldo_base=?,tarifa_hora=?,categoria_id=?
        WHERE id=? AND negocio_id=?`,
       [nombre, apellido||null, cedula||null, cargo||null, especialidad||null, telefono||null, email||null,
-       tipoComision||'ninguna', pctComision||0, montoComision||0,
+       tipoComision||'ninguna', pctComision||0, montoComision||0, pctComisionProducto||0,
        sueldoBase||null, tarifaHora||null, categoriaId||null, req.params.id, nid(req)]
     );
     res.json({ ok: true });
@@ -1163,10 +1236,10 @@ router.put('/empleados/:id', async (req, res) => {
 
 router.patch('/empleados/:id/comision', async (req, res) => {
   try {
-    const { tipoComision, pctComision, montoComision } = req.body;
+    const { tipoComision, pctComision, montoComision, pctComisionProducto } = req.body;
     await pool.query(
-      `UPDATE pel_empleados SET tipo_comision=?,pct_comision=?,monto_comision=? WHERE id=? AND negocio_id=?`,
-      [tipoComision||'ninguna', pctComision||0, montoComision||0, req.params.id, nid(req)]
+      `UPDATE pel_empleados SET tipo_comision=?,pct_comision=?,monto_comision=?,pct_comision_producto=? WHERE id=? AND negocio_id=?`,
+      [tipoComision||'ninguna', pctComision||0, montoComision||0, pctComisionProducto||0, req.params.id, nid(req)]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1428,6 +1501,13 @@ router.post('/citas', async (req, res) => {
     const fh = String(fechaHora).replace('T',' ').replace('Z','').split('.')[0];
     const totalPrecio = servicios.reduce((a, s) => a + parseFloat(s.precio||0), 0);
     const duracionTotal = servicios.reduce((a, s) => a + parseInt(s.duracion_min||30), 0) || 30;
+    if (empleadoId) {
+      const disp = await _empleadoDisponible(empleadoId, fh, duracionTotal);
+      if (!disp.ok) return res.status(400).json({ error: _mensajeNoDisponible(disp) });
+    } else {
+      const algunoLibre = await _algunEmpleadoDisponible(nid(req), fh, duracionTotal);
+      if (!algunoLibre) return res.status(400).json({ error: 'Ningún empleado tiene disponibilidad en ese horario.' });
+    }
     const id = uuid();
     // Nombre del empleado si solo tenemos ID
     let empNombre = empleadoNombre || null;
@@ -1459,6 +1539,13 @@ router.put('/citas/:id', async (req, res) => {
     const fh = String(fechaHora).replace('T',' ').replace('Z','').split('.')[0];
     const totalPrecio = servicios.reduce((a, s) => a + parseFloat(s.precio||0), 0);
     const duracionTotal = servicios.reduce((a, s) => a + parseInt(s.duracion_min||30), 0) || 30;
+    if (empleadoId) {
+      const disp = await _empleadoDisponible(empleadoId, fh, duracionTotal);
+      if (!disp.ok) return res.status(400).json({ error: _mensajeNoDisponible(disp) });
+    } else if (fh) {
+      const algunoLibre = await _algunEmpleadoDisponible(nid(req), fh, duracionTotal);
+      if (!algunoLibre) return res.status(400).json({ error: 'Ningún empleado tiene disponibilidad en ese horario.' });
+    }
     let empNombre = empleadoNombre || null;
     if (empleadoId && !empNombre) {
       const { rows: er } = await pool.query(`SELECT nombre FROM pel_empleados WHERE id=?`, [empleadoId]);
@@ -1492,6 +1579,14 @@ router.patch('/citas/:id/empleado', async (req, res) => {
       );
       if (!rows[0]) return res.status(404).json({ error: 'Empleado no encontrado' });
       empNombre = rows[0].nombre;
+      const { rows: citaRows } = await pool.query(
+        `SELECT fecha_hora, duracion_min FROM pel_citas WHERE id=? AND negocio_id=?`,
+        [req.params.id, nid(req)]
+      );
+      if (citaRows[0]) {
+        const disp = await _empleadoDisponible(empleadoId, citaRows[0].fecha_hora, citaRows[0].duracion_min);
+        if (!disp.ok) return res.status(400).json({ error: _mensajeNoDisponible(disp) });
+      }
     }
     await pool.query(
       `UPDATE pel_citas SET empleado_id=?, empleado_nombre=? WHERE id=? AND negocio_id=?`,
@@ -1543,12 +1638,13 @@ router.patch('/citas/:id/completar', async (req, res) => {
     const subtotal = parseFloat(cita.precio || 0);
     const desc = parseFloat(descuento || 0);
     const total = subtotal - desc;
+    const numeroFactura = await _nextNumeroFactura(nid(req));
 
     const ventaId = uuid();
     await pool.query(
-      `INSERT INTO pel_ventas (id,negocio_id,caja_id,cliente_id,empleado_id,subtotal,descuento,total,fecha)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-      [ventaId, nid(req), cajaId, cita.cliente_id||null, cita.empleado_id||null, subtotal, desc, total, localDateTime(req.user.zona_horaria)]
+      `INSERT INTO pel_ventas (id,negocio_id,caja_id,cliente_id,empleado_id,subtotal,descuento,total,fecha,numero_factura)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [ventaId, nid(req), cajaId, cita.cliente_id||null, cita.empleado_id||null, subtotal, desc, total, localDateTime(req.user.zona_horaria), numeroFactura]
     );
 
     // Insertar pagos
@@ -1612,13 +1708,21 @@ router.patch('/citas/:id/completar', async (req, res) => {
       [metodoPago, ventaId, req.params.id]
     );
 
-    res.json({ ok: true, ventaId });
+    res.json({ ok: true, ventaId, numeroFactura });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ════════════════════════════════════════════════════════════════
 // VENTAS (POS directo sin cita previa)
 // ════════════════════════════════════════════════════════════════
+
+async function _nextNumeroFactura(negocioId) {
+  const { rows } = await pool.query(
+    `SELECT COALESCE(MAX(numero_factura),0)+1 AS next FROM pel_ventas WHERE negocio_id=?`,
+    [negocioId]
+  );
+  return rows[0]?.next || 1;
+}
 
 router.post('/ventas', async (req, res) => {
   try {
@@ -1634,12 +1738,13 @@ router.post('/ventas', async (req, res) => {
     const desc = parseFloat(descuento||0);
     const total = subtotal - desc;
     const fechaVenta = fecha ? String(fecha).replace('T',' ').replace('Z','').split('.')[0] : localDateTime(req.user.zona_horaria);
+    const numeroFactura = await _nextNumeroFactura(nid(req));
 
     const ventaId = uuid();
     await pool.query(
-      `INSERT INTO pel_ventas (id,negocio_id,caja_id,cliente_id,empleado_id,subtotal,descuento,total,notas,fecha)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      [ventaId, nid(req), cajaId, clienteId||null, empleadoId||null, subtotal, desc, total, notas||null, fechaVenta]
+      `INSERT INTO pel_ventas (id,negocio_id,caja_id,cliente_id,empleado_id,subtotal,descuento,total,notas,fecha,numero_factura)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      [ventaId, nid(req), cajaId, clienteId||null, empleadoId||null, subtotal, desc, total, notas||null, fechaVenta, numeroFactura]
     );
 
     for (const p of (pagos.length ? pagos : [{ metodo: 'Efectivo', monto: total }])) {
@@ -1654,11 +1759,11 @@ router.post('/ventas', async (req, res) => {
       const subDet = parseFloat(item.precio||0)*parseFloat(item.cantidad||1) - parseFloat(item.descuento||0);
       const empItem = item.empleadoId || empleadoId || null;
       await pool.query(
-        `INSERT INTO pel_venta_detalle (id,venta_id,tipo_item,ref_id,empleado_id,cliente_paquete_id,descripcion,cantidad,precio_unitario,descuento,subtotal)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO pel_venta_detalle (id,venta_id,tipo_item,ref_id,empleado_id,cliente_paquete_id,descripcion,cantidad,precio_unitario,descuento,subtotal,iva_pct)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
         [detId, ventaId, item.tipo||'servicio', item.refId||null, empItem,
          item.clientePaqueteId||null, item.descripcion||item.nombre, item.cantidad||1,
-         item.precio||0, item.descuento||0, subDet]
+         item.precio||0, item.descuento||0, subDet, parseFloat(item.ivaPct||0)]
       );
 
       // Descontar stock si es producto
@@ -1697,9 +1802,20 @@ router.post('/ventas', async (req, res) => {
       // Comisión
       if (empItem) {
         const { rows: empR } = await pool.query(
-          `SELECT tipo_comision,pct_comision,monto_comision FROM pel_empleados WHERE id=?`, [empItem]
+          `SELECT tipo_comision,pct_comision,monto_comision,pct_comision_producto FROM pel_empleados WHERE id=?`, [empItem]
         );
-        if (empR.length && item.tipo !== 'paquete') {
+        if (empR.length && item.tipo === 'producto') {
+          const e = empR[0];
+          const pctProd = parseFloat(e.pct_comision_producto || 0);
+          if (pctProd > 0) {
+            const montoComision = subDet * pctProd / 100;
+            await pool.query(
+              `INSERT INTO pel_comision_detalle (id,negocio_id,venta_detalle_id,empleado_id,base_calculo,pct_aplicado,monto_comision)
+               VALUES (?,?,?,?,?,?,?)`,
+              [uuid(), nid(req), detId, empItem, subDet, pctProd, montoComision]
+            );
+          }
+        } else if (empR.length && item.tipo !== 'paquete') {
           const { rows: cfg } = await pool.query(
             `SELECT pct_comision FROM pel_comisiones_config
              WHERE negocio_id=? AND empleado_id=? AND (servicio_id=? OR servicio_id IS NULL)
@@ -1722,7 +1838,7 @@ router.post('/ventas', async (req, res) => {
       }
     }
 
-    res.status(201).json({ id: ventaId });
+    res.status(201).json({ id: ventaId, numeroFactura });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1937,21 +2053,23 @@ router.post('/comisiones/recalcular', async (req, res) => {
     if (!empleadoId) return res.status(400).json({ error: 'empleadoId requerido' });
 
     const { rows: empR } = await pool.query(
-      `SELECT tipo_comision, pct_comision, monto_comision FROM pel_empleados WHERE id=? AND negocio_id=?`,
+      `SELECT tipo_comision, pct_comision, monto_comision, pct_comision_producto FROM pel_empleados WHERE id=? AND negocio_id=?`,
       [empleadoId, nid(req)]
     );
     if (!empR.length) return res.status(404).json({ error: 'Empleado no encontrado' });
     const emp = empR[0];
-    if (emp.tipo_comision === 'ninguna') return res.json({ ok: true, actualizadas: 0, msg: 'Empleado sin comisión configurada' });
+    if (emp.tipo_comision === 'ninguna' && !(parseFloat(emp.pct_comision_producto)>0)) {
+      return res.json({ ok: true, actualizadas: 0, msg: 'Empleado sin comisión configurada' });
+    }
 
-    // Todos los items de venta del empleado en el rango
-    let where = `WHERE d.empleado_id=? AND v.negocio_id=?`;
+    // Todos los items de venta del empleado en el rango (excluye paquetes, no generan comisión)
+    let where = `WHERE d.empleado_id=? AND v.negocio_id=? AND d.tipo_item!='paquete'`;
     const params = [empleadoId, nid(req)];
     if (desde) { params.push(desde); where += ` AND DATE(v.fecha)>=?`; }
     if (hasta) { params.push(hasta); where += ` AND DATE(v.fecha)<=?`; }
 
     const { rows: items } = await pool.query(
-      `SELECT d.id AS det_id, d.subtotal
+      `SELECT d.id AS det_id, d.subtotal, d.tipo_item
        FROM pel_venta_detalle d
        JOIN pel_ventas v ON v.id=d.venta_id
        ${where}`, params
@@ -1961,7 +2079,10 @@ router.post('/comisiones/recalcular', async (req, res) => {
     for (const item of items) {
       const base = parseFloat(item.subtotal) || 0;
       let monto = 0, pct = null;
-      if (emp.tipo_comision === 'porcentaje') { pct = parseFloat(emp.pct_comision); monto = base * pct / 100; }
+      if (item.tipo_item === 'producto') {
+        pct = parseFloat(emp.pct_comision_producto || 0);
+        monto = base * pct / 100;
+      } else if (emp.tipo_comision === 'porcentaje') { pct = parseFloat(emp.pct_comision); monto = base * pct / 100; }
       else if (emp.tipo_comision === 'fijo') { monto = parseFloat(emp.monto_comision); }
 
       // Actualizar si existe, crear si no
@@ -2058,10 +2179,32 @@ router.post('/pedidos-proveedor', async (req, res) => {
 router.put('/pedidos-proveedor/:id/estado', async (req, res) => {
   try {
     const { estado } = req.body;
+    const { rows } = await pool.query(
+      `SELECT estado AS estado_actual, items FROM pel_pedidos_proveedor WHERE id=? AND negocio_id=?`,
+      [req.params.id, nid(req)]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Pedido no encontrado' });
+    const actual = rows[0];
     await pool.query(
       `UPDATE pel_pedidos_proveedor SET estado=? WHERE id=? AND negocio_id=?`,
       [estado, req.params.id, nid(req)]
     );
+    if (estado === 'recibido' && actual.estado_actual !== 'recibido') {
+      const items = typeof actual.items === 'string' ? JSON.parse(actual.items) : (actual.items || []);
+      for (const it of items) {
+        if (!it.id) continue;
+        const cant = parseInt(it.cantidad) || 0;
+        await pool.query(
+          `UPDATE pel_productos SET stock_actual = stock_actual + ?, en_venta = 1 WHERE id=? AND negocio_id=?`,
+          [cant, it.id, nid(req)]
+        );
+        await pool.query(
+          `INSERT INTO pel_movimientos_inv (id,negocio_id,producto_id,tipo,cantidad,motivo,usuario_id)
+           VALUES (?,?,?,'entrada',?,'Pedido a proveedor recibido',?)`,
+          [uuid(), nid(req), it.id, cant, req.user.id || null]
+        );
+      }
+    }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -2140,7 +2283,7 @@ router.delete('/categorias-producto/:id', async (req, res) => {
 
 router.get('/productos', async (req, res) => {
   try {
-    const { soloActivos, alertaStock, enVenta } = req.query;
+    const { soloActivos, alertaStock, enVenta, proveedorId } = req.query;
     let sql = `SELECT p.*, c.nombre AS categoria_nombre, pr.nombre AS proveedor_nombre
                FROM pel_productos p
                LEFT JOIN pel_categorias_producto c ON c.id=p.categoria_id
@@ -2150,9 +2293,26 @@ router.get('/productos', async (req, res) => {
     if (soloActivos === 'true') sql += ` AND p.activo=1`;
     if (alertaStock === 'true') sql += ` AND p.stock_actual <= p.stock_minimo`;
     if (enVenta === 'true') sql += ` AND p.en_venta=1 AND p.activo=1 AND p.stock_actual > 0`;
+    if (proveedorId) { sql += ` AND p.proveedor_id=?`; params.push(proveedorId); }
     sql += ' ORDER BY p.nombre';
     const { rows } = await pool.query(sql, params);
     res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/productos/next-sku', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT sku FROM pel_productos WHERE negocio_id=? AND sku REGEXP '^COD-[0-9]+$'
+       ORDER BY CAST(SUBSTRING(sku, 5) AS UNSIGNED) DESC LIMIT 1`,
+      [nid(req)]
+    );
+    let next = 1;
+    if (rows[0]) {
+      const num = parseInt(rows[0].sku.replace('COD-', ''), 10);
+      if (!isNaN(num)) next = num + 1;
+    }
+    res.json({ sku: `COD-${String(next).padStart(3, '0')}` });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -2168,14 +2328,15 @@ router.patch('/productos/:id/toggle-venta', async (req, res) => {
 
 router.post('/productos', async (req, res) => {
   try {
-    const { nombre, descripcion, sku, categoriaId, proveedorId, precioCosto, precioVenta, stockActual, stockMinimo, unidad } = req.body;
+    const { nombre, descripcion, sku, categoriaId, proveedorId, precioCosto, precioVenta, stockActual, stockMinimo, unidad, ivaPct, esPaquete, cantidadPaquete } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
     const id = uuid();
     await pool.query(
-      `INSERT INTO pel_productos (id,negocio_id,categoria_id,proveedor_id,sku,nombre,descripcion,precio_costo,precio_venta,stock_actual,stock_minimo,unidad)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO pel_productos (id,negocio_id,categoria_id,proveedor_id,sku,nombre,descripcion,precio_costo,precio_venta,stock_actual,stock_minimo,unidad,iva_pct,es_paquete,cantidad_paquete)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [id, nid(req), categoriaId||null, proveedorId||null, sku||null, nombre, descripcion||null,
-       precioCosto||0, precioVenta||0, stockActual||0, stockMinimo||0, unidad||'unidad']
+       precioCosto||0, precioVenta||0, stockActual||0, stockMinimo||0, unidad||'unidad',
+       ivaPct||0, esPaquete?1:0, cantidadPaquete||null]
     );
     if (parseInt(stockActual||0) > 0) {
       await pool.query(
@@ -2190,14 +2351,27 @@ router.post('/productos', async (req, res) => {
 
 router.put('/productos/:id', async (req, res) => {
   try {
-    const { nombre, descripcion, sku, categoriaId, proveedorId, precioCosto, precioVenta, stockMinimo, unidad } = req.body;
+    const { nombre, descripcion, sku, categoriaId, proveedorId, precioCosto, precioVenta, stockMinimo, unidad, ivaPct, esPaquete, cantidadPaquete } = req.body;
     await pool.query(
       `UPDATE pel_productos SET nombre=?,descripcion=?,sku=?,categoria_id=?,proveedor_id=?,
-       precio_costo=?,precio_venta=?,stock_minimo=?,unidad=? WHERE id=? AND negocio_id=?`,
+       precio_costo=?,precio_venta=?,stock_minimo=?,unidad=?,iva_pct=?,es_paquete=?,cantidad_paquete=? WHERE id=? AND negocio_id=?`,
       [nombre, descripcion||null, sku||null, categoriaId||null, proveedorId||null,
-       precioCosto||0, precioVenta||0, stockMinimo||0, unidad||'unidad', req.params.id, nid(req)]
+       precioCosto||0, precioVenta||0, stockMinimo||0, unidad||'unidad',
+       ivaPct||0, esPaquete?1:0, cantidadPaquete||null, req.params.id, nid(req)]
     );
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/productos/:id/foto', uploadFotoProducto.single('foto'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+    const url = `/uploads/${req.file.filename}`;
+    await pool.query(
+      `UPDATE pel_productos SET imagen_url=? WHERE id=? AND negocio_id=?`,
+      [url, req.params.id, nid(req)]
+    );
+    res.json({ url });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -2664,21 +2838,22 @@ router.get('/facturas', async (req, res) => {
     const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
     const params = [nid(req), d, h];
-    let where = `v.negocio_id=${ph(1)} AND v.estado='completada' AND DATE(v.fecha) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    let where = `v.negocio_id=${ph(1)} AND v.estado IN ('completada','anulada') AND DATE(v.fecha) BETWEEN ${ph(2)} AND ${ph(3)}`;
     if (q && q.trim()) {
-      params.push(`%${q.trim()}%`);
-      const n = params.length;
-      where += ` AND c.nombre LIKE ${ph(n)}`;
+      const qTrim = q.trim();
+      params.push(`%${qTrim}%`, qTrim);
+      const n1 = params.length - 1, n2 = params.length;
+      where += ` AND (c.nombre LIKE ${ph(n1)} OR v.numero_factura = ${ph(n2)})`;
     }
     const { rows } = await pool.query(`
-      SELECT v.id, v.fecha, v.subtotal, v.descuento, v.total, v.notas, v.estado,
+      SELECT v.id, v.fecha, v.subtotal, v.descuento, v.total, v.notas, v.estado, v.numero_factura,
              c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
-             c.email AS cliente_email,
+             c.email AS cliente_email, c.documento AS cliente_doc, c.direccion AS cliente_dir,
              e.nombre AS empleado_nombre,
              u.nombre AS cajero_nombre,
              (SELECT GROUP_CONCAT(p.metodo ORDER BY p.metodo SEPARATOR '/') FROM pel_venta_pagos p WHERE p.venta_id=v.id) AS metodo_pago
       FROM pel_ventas v
-      LEFT JOIN pel_clientes c ON c.id = v.cliente_id
+      LEFT JOIN clientes c ON c.id = v.cliente_id
       LEFT JOIN pel_empleados e ON e.id = v.empleado_id
       LEFT JOIN usuarios u ON u.id = v.usuario_id
       WHERE ${where}
@@ -2693,11 +2868,11 @@ router.get('/facturas/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT v.*, c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
-             c.email AS cliente_email,
+             c.email AS cliente_email, c.documento AS cliente_doc, c.direccion AS cliente_dir,
              e.nombre AS empleado_nombre,
              u.nombre AS cajero_nombre
       FROM pel_ventas v
-      LEFT JOIN pel_clientes c ON c.id = v.cliente_id
+      LEFT JOIN clientes c ON c.id = v.cliente_id
       LEFT JOIN pel_empleados e ON e.id = v.empleado_id
       LEFT JOIN usuarios u ON u.id = v.usuario_id
       WHERE v.id=${ph(1)} AND v.negocio_id=${ph(2)}
