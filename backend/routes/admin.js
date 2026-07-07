@@ -441,8 +441,10 @@ router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => 
           FROM ventas WHERE estado!='anulada'
           UNION ALL
           SELECT pv.id, pv.negocio_id, pv.total, pv.fecha AS creado, 'servicio' AS tipo,
-                 0, 0, 0,
-                 COALESCE((SELECT pc.metodo_pago FROM pel_citas pc WHERE pc.venta_id=pv.id AND pc.metodo_pago IS NOT NULL LIMIT 1),'efectivo'),
+                 COALESCE((SELECT SUM(p.monto) FROM pel_venta_pagos p WHERE p.venta_id=pv.id AND LOWER(p.metodo)='efectivo'),0),
+                 COALESCE((SELECT SUM(p.monto) FROM pel_venta_pagos p WHERE p.venta_id=pv.id AND LOWER(p.metodo)='tarjeta'),0),
+                 COALESCE((SELECT SUM(p.monto) FROM pel_venta_pagos p WHERE p.venta_id=pv.id AND LOWER(p.metodo) IN ('nequi','qr','nequi/qr')),0),
+                 'efectivo',
                  NULL AS vid
           FROM pel_ventas pv WHERE pv.estado='completada'
         ) v
