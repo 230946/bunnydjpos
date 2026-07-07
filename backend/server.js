@@ -255,6 +255,7 @@ async function seedSuperadmin() {
 async function runMigrations() {
   const migrations = [
     { table: 'inventario', column: 'iva_pct',      sql: `ALTER TABLE inventario ADD COLUMN iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0` },
+    { table: 'inventario', column: 'codigo_barras', sql: `ALTER TABLE inventario ADD COLUMN codigo_barras VARCHAR(50) NULL` },
     { table: 'negocios',   column: 'departamento', sql: `ALTER TABLE negocios ADD COLUMN departamento VARCHAR(100) NULL` },
     { table: 'negocios',   column: 'idiomas',      sql: `ALTER TABLE negocios ADD COLUMN idiomas VARCHAR(255) NULL DEFAULT '["es"]'` },
     { table: 'negocios',   column: 'color_primario', sql: `ALTER TABLE negocios ADD COLUMN color_primario VARCHAR(20) NULL` },

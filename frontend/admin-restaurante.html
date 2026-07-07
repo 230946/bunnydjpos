@@ -1143,7 +1143,7 @@ tr:hover td{background:var(--bg2)}
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre / Código</th><th>Stock</th><th>Mín.</th><th>Costo compra</th><th>Costo unit.</th><th>Precio venta</th><th>Estado</th><th></th></tr></thead>
+                <thead><tr><th>Código / Nombre</th><th>Stock</th><th>Mín.</th><th>Costo compra</th><th>Costo unit.</th><th>Precio venta</th><th>Estado</th><th></th></tr></thead>
                 <tbody id="inv-tbody"></tbody>
               </table>
             </div>
@@ -1264,8 +1264,9 @@ tr:hover td{background:var(--bg2)}
   <div class="modal" style="max-width:520px">
     <h3 id="inv-modal-title">Nuevo artículo</h3>
     <div class="two-col">
+      <div class="field"><label>Código interno</label><input id="iv-codigo" placeholder="COD-001"></div>
+      <div class="field"><label>Código de barras</label><input id="iv-barcode" placeholder="Escanea o escribe..."></div>
       <div class="field" style="grid-column:1/-1"><label>Nombre *</label><input id="iv-nombre"></div>
-      <div class="field"><label>Código</label><input id="iv-codigo" placeholder="COD-001"></div>
       <div class="field"><label>Categoría</label><input id="iv-cat" placeholder="Carnes, Bebidas..."></div>
       <div class="field" style="grid-column:1/-1"><label>Descripción</label><textarea id="iv-desc" placeholder="Descripción opcional..."></textarea></div>
       <div class="field"><label id="iv-stock-label">Stock actual</label><input id="iv-stock" type="number" min="0" step="0.001" placeholder="0"></div>
@@ -3851,7 +3852,7 @@ async function loadInventario(){
       const _smDisp=`${Math.round(_smin)} ${i.unidad}`;
       const costoUnit=_uc?i.costo/i.cantidad_paquete:i.costo;
       return `<tr onmouseenter="_showInvTip('${i.id}',event)" onmousemove="_posInvTip(event)" onmouseleave="_hideInvTip()" style="cursor:default">
-        <td><b>${i.nombre}</b><br><span style="font-size:10px;color:var(--text3)">${i.codigo||'—'}</span><br>${paqBadge}${modBadge}</td>
+        <td><span style="font-size:11px;color:var(--acc);font-weight:600;font-family:monospace">${i.codigo||'—'}</span>${i.codigo_barras?` <span style="font-size:10px;color:var(--text3)">🏷️ ${i.codigo_barras}</span>`:''}<br><b>${i.nombre}</b><br>${paqBadge}${modBadge}</td>
         <td style="${st}">${_stDisp}</td>
         <td>${_smDisp}</td>
         <td>${fmt(i.costo)}</td>
@@ -3985,7 +3986,7 @@ function togglePaquete(){
 async function openInvModal(id){
   invEditId=id;
   $('inv-modal-title').textContent=id?'Editar artículo':'Nuevo artículo';
-  ['iv-nombre','iv-codigo','iv-cat','iv-stock','iv-smin','iv-costo','iv-precio','iv-margen','iv-cant-paquete','iv-unidad-compra'].forEach(f=>$(f).value='');
+  ['iv-nombre','iv-codigo','iv-barcode','iv-cat','iv-stock','iv-smin','iv-costo','iv-precio','iv-margen','iv-cant-paquete','iv-unidad-compra'].forEach(f=>$(f).value='');
   $('iv-desc').value=''; $('iv-es-prod').checked=false;
   $('iv-unidad').value='unidades'; $('iv-margen-label').textContent=''; $('iv-paquete-row').style.display='none';
   $('iv-stock-label').textContent='Stock actual'; $('iv-smin-label').textContent='Stock mínimo';
@@ -3999,6 +4000,7 @@ async function openInvModal(id){
   try{
     const d=await api(`/inventario/${id}`);
     $('iv-nombre').value=d.nombre||''; $('iv-codigo').value=d.codigo||'';
+    $('iv-barcode').value=d.codigo_barras||'';
     $('iv-cat').value=d.categoria||''; $('iv-desc').value=d.descripcion||'';
     $('iv-unidad').value=d.unidad||'unidades';
     $('iv-unidad-compra').value=d.unidad_compra||'';
@@ -4022,7 +4024,7 @@ async function saveInv(){
     const stockInput=+$('iv-stock').value||0;
     const sminInput=+$('iv-smin').value||0;
     const b={
-      codigo:$('iv-codigo').value, nombre:$('iv-nombre').value,
+      codigo:$('iv-codigo').value, codigo_barras:$('iv-barcode').value.trim()||null, nombre:$('iv-nombre').value,
       categoria:$('iv-cat').value||'General', descripcion:$('iv-desc').value||null,
       stock:Math.round(stockInput*factor*1000)/1000,
       stock_min:Math.round(sminInput),

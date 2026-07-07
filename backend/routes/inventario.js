@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
     if (proveedor_id) { params.push(proveedor_id);       sql += ` AND i.proveedor_id=${ph(params.length)}`; }
     if (es_producto !== undefined) { params.push(es_producto==='true'); sql += ` AND i.es_producto=${ph(params.length)}`; }
     if (bajo_stock === 'true') sql += ' AND i.stock > 0 AND i.stock < i.stock_min';
-    if (q) { params.push(`%${q}%`, `%${q}%`); sql += ` AND (i.nombre LIKE ${ph(params.length-1)} OR i.codigo LIKE ${ph(params.length)})`; }
+    if (q) { params.push(`%${q}%`, `%${q}%`, `%${q}%`); sql += ` AND (i.nombre LIKE ${ph(params.length-2)} OR i.codigo LIKE ${ph(params.length-1)} OR i.codigo_barras LIKE ${ph(params.length)})`; }
     sql += ' ORDER BY i.categoria, i.nombre';
     const { rows } = await pool.query(sql, params);
     res.json(rows);
@@ -87,17 +87,17 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', requirePermiso('inventario'), async (req, res) => {
   try {
-    const { codigo, nombre, categoria, stock, stock_min, stock_max,
+    const { codigo, codigo_barras, nombre, categoria, stock, stock_min, stock_max,
             unidad, unidad_compra, costo, precio_venta, proveedor_id, es_producto,
             descripcion, margen, es_paquete, cantidad_paquete, modulo, iva_pct } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
     const id = uuid();
     await pool.query(
-      `INSERT INTO inventario (id,negocio_id,codigo,nombre,categoria,stock,stock_min,stock_max,
+      `INSERT INTO inventario (id,negocio_id,codigo,codigo_barras,nombre,categoria,stock,stock_min,stock_max,
        unidad,unidad_compra,costo,precio_venta,proveedor_id,es_producto,descripcion,margen,es_paquete,cantidad_paquete,modulo,iva_pct)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},
-       ${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)},${ph(14)},${ph(15)},${ph(16)},${ph(17)},${ph(18)},${ph(19)},${ph(20)})`,
-      [id, nid(req), codigo||null, nombre, categoria||'General',
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},
+       ${ph(10)},${ph(11)},${ph(12)},${ph(13)},${ph(14)},${ph(15)},${ph(16)},${ph(17)},${ph(18)},${ph(19)},${ph(20)},${ph(21)})`,
+      [id, nid(req), codigo||null, codigo_barras||null, nombre, categoria||'General',
        stock||0, stock_min||0, stock_max||null, unidad||'unidades', unidad_compra||null,
        costo||0, precio_venta||0, proveedor_id||null, es_producto||false,
        descripcion||null, margen||null, es_paquete||false, cantidad_paquete||null,
@@ -117,7 +117,7 @@ router.post('/', requirePermiso('inventario'), async (req, res) => {
 
 router.put('/:id', requirePermiso('inventario'), async (req, res) => {
   try {
-    const { codigo, nombre, categoria, stock, stock_min, stock_max,
+    const { codigo, codigo_barras, nombre, categoria, stock, stock_min, stock_max,
             unidad, unidad_compra, costo, precio_venta, proveedor_id, es_producto, activo,
             descripcion, margen, es_paquete, cantidad_paquete, modulo } = req.body;
     // Si viene stock en el body, crear movimiento de ajuste para mantener trazabilidad
@@ -140,13 +140,13 @@ router.put('/:id', requirePermiso('inventario'), async (req, res) => {
       }
     }
     await pool.query(
-      `UPDATE inventario SET codigo=${ph(1)},nombre=${ph(2)},categoria=${ph(3)},stock_min=${ph(4)},
-       stock_max=${ph(5)},unidad=${ph(6)},unidad_compra=${ph(7)},costo=${ph(8)},precio_venta=${ph(9)},
-       proveedor_id=${ph(10)},es_producto=${ph(11)},activo=${ph(12)},
-       descripcion=${ph(13)},margen=${ph(14)},es_paquete=${ph(15)},cantidad_paquete=${ph(16)},
-       modulo=${ph(17)},actualizado=NOW()
-       WHERE id=${ph(18)} AND negocio_id=${ph(19)}`,
-      [codigo||null, nombre, categoria||'General', stock_min||0, stock_max||null,
+      `UPDATE inventario SET codigo=${ph(1)},codigo_barras=${ph(2)},nombre=${ph(3)},categoria=${ph(4)},stock_min=${ph(5)},
+       stock_max=${ph(6)},unidad=${ph(7)},unidad_compra=${ph(8)},costo=${ph(9)},precio_venta=${ph(10)},
+       proveedor_id=${ph(11)},es_producto=${ph(12)},activo=${ph(13)},
+       descripcion=${ph(14)},margen=${ph(15)},es_paquete=${ph(16)},cantidad_paquete=${ph(17)},
+       modulo=${ph(18)},actualizado=NOW()
+       WHERE id=${ph(19)} AND negocio_id=${ph(20)}`,
+      [codigo||null, codigo_barras||null, nombre, categoria||'General', stock_min||0, stock_max||null,
        unidad||'unidades', unidad_compra||null, costo||0, precio_venta||0, proveedor_id||null,
        es_producto||false, activo!==false,
        descripcion||null, margen||null, es_paquete||false, cantidad_paquete||null,
@@ -239,13 +239,14 @@ router.get('/alertas/bajo-stock', async (req, res) => {
 router.get('/exportar/excel', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT codigo,nombre,categoria,stock,stock_min,stock_max,unidad,costo,precio_venta,
+      `SELECT codigo,codigo_barras,nombre,categoria,stock,stock_min,stock_max,unidad,costo,precio_venta,
               es_producto,activo FROM inventario WHERE negocio_id=${ph(1)} AND activo=1 ORDER BY categoria,nombre`,
       [nid(req)]
     );
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(rows.map(r => ({
-      'Código':         r.codigo||'',
+      'Código':          r.codigo||'',
+      'Código de barras': r.codigo_barras||'',
       'Nombre':         r.nombre,
       'Categoría':      r.categoria,
       'Stock actual':   r.stock,
@@ -257,7 +258,7 @@ router.get('/exportar/excel', async (req, res) => {
       'Es producto':    r.es_producto?'Sí':'No',
     })));
     // Ancho de columnas
-    ws['!cols'] = [8,30,20,14,14,14,12,14,14,12].map(w=>({wch:w}));
+    ws['!cols'] = [8,16,30,20,14,14,14,12,14,14,12].map(w=>({wch:w}));
     XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
     const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     res.setHeader('Content-Disposition', 'attachment; filename="inventario.xlsx"');
@@ -284,6 +285,7 @@ router.post('/importar/excel', requirePermiso('inventario'), uploadExcel.single(
         if (!nombre) continue;
         const data = {
           codigo:       row['Código']       || row['codigo']       || null,
+          codigo_barras: row['Código de barras'] || row['codigo_barras'] || null,
           nombre,
           categoria:    row['Categoría']    || row['categoria']    || 'General',
           stock:        parseFloat(row['Stock actual']  || row['stock']      || 0),
@@ -305,19 +307,19 @@ router.post('/importar/excel', requirePermiso('inventario'), uploadExcel.single(
           await pool.query(
             `UPDATE inventario SET stock=${ph(1)},stock_min=${ph(2)},stock_max=${ph(3)},
              costo=${ph(4)},precio_venta=${ph(5)},categoria=${ph(6)},unidad=${ph(7)},
-             es_producto=${ph(8)},actualizado=NOW() WHERE id=${ph(9)}`,
+             es_producto=${ph(8)},codigo_barras=${ph(9)},actualizado=NOW() WHERE id=${ph(10)}`,
             [data.stock, data.stock_min, data.stock_max, data.costo, data.precio_venta,
-             data.categoria, data.unidad, data.es_producto, ex.id]
+             data.categoria, data.unidad, data.es_producto, data.codigo_barras, ex.id]
           );
           actualizados++;
         } else {
           const id = uuid();
           await pool.query(
-            `INSERT INTO inventario (id,negocio_id,codigo,nombre,categoria,stock,stock_min,stock_max,
+            `INSERT INTO inventario (id,negocio_id,codigo,codigo_barras,nombre,categoria,stock,stock_min,stock_max,
              unidad,costo,precio_venta,es_producto)
              VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},
-             ${ph(9)},${ph(10)},${ph(11)},${ph(12)})`,
-            [id, nid(req), data.codigo, nombre, data.categoria, data.stock,
+             ${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)})`,
+            [id, nid(req), data.codigo, data.codigo_barras, nombre, data.categoria, data.stock,
              data.stock_min, data.stock_max, data.unidad, data.costo, data.precio_venta, data.es_producto]
           );
           creados++;
