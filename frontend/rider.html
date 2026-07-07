@@ -96,6 +96,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <h1 id="rider-nombre">Panel Domiciliario</h1>
     <p id="rider-sub">Cargando…</p>
   </div>
+  <button onclick="toggleFullscreenPOS()" title="Pantalla completa" style="margin-left:auto;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;flex-shrink:0">⛶</button>
 </div>
 
 <div id="content"></div>
@@ -105,6 +106,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 <div id="toast"></div>
 
 <script>
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 const params = new URLSearchParams(location.search);
 const TOKEN  = params.get('t');
 const API    = '/api/domicilios';

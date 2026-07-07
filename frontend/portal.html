@@ -126,6 +126,7 @@
         <div class="user-bar-name" id="user-bar-name"></div>
         <div class="user-bar-role" id="user-bar-role"></div>
       </div>
+      <button class="logout-btn" onclick="toggleFullscreenPOS()" style="margin-right:6px">⛶ Pantalla completa</button>
       <button class="logout-btn" onclick="cerrarSesion()">↪ Cerrar sesión</button>
     </div>
 
@@ -307,7 +308,12 @@ function cerrarSesion(){
   $('login-err').style.display = 'none'; $('login-err').textContent = '';
 }
 
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 async function doLogin(){
+  if(document.documentElement.requestFullscreen && !document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}
   const login = $('inp-user').value.trim();
   const pass  = $('inp-pass').value;
   const errEl = $('login-err');

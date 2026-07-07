@@ -138,6 +138,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-sm btn-outline" onclick="loadCocina()">↻ Actualizar</button>
       <button class="btn btn-sm" style="background:var(--red-l,#fee2e2);color:var(--red,#dc2626);border:none" onclick="limpiarCocina()">🗑 Limpiar todo</button>
+      <button class="btn btn-sm btn-outline" onclick="toggleFullscreenPOS()">⛶ Pantalla</button>
       <button class="btn btn-sm btn-outline" onclick="doLogout()">🚪 Salir</button>
     </div>
   </div>
@@ -200,7 +201,12 @@ const Sound = {
 
 $('l-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 async function doLogin() {
+  if(document.documentElement.requestFullscreen && !document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}
   const login=$('l-login').value.trim(), pass=$('l-pass').value;
   const negocio_id = urlNegocio || $('l-negocio')?.value?.trim() || '';
   const err=$('login-err'); err.style.display='none';

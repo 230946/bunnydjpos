@@ -204,6 +204,7 @@ body{display:flex;flex-direction:column;min-height:100vh}
       <span id="gps-badge" title="GPS" style="font-size:18px;opacity:.5">📍</span>
       <span id="gps-txt" style="font-size:9px;font-weight:700;color:#94a3b8;letter-spacing:.5px">SIN GPS</span>
     </div>
+    <button id="btn-fullscreen" onclick="toggleFullscreenPOS()" title="Pantalla completa" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:10px;padding:7px 10px;font-size:14px;cursor:pointer;flex-shrink:0;margin-right:6px">⛶</button>
     <button id="btn-logout" onclick="logout()">🚪 Salir</button>
   </div>
 
@@ -325,7 +326,12 @@ async function riderFetch(path, opts={}){
 }
 
 // ── Auth ─────────────────────────────────────────────────────────
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 async function login(){
+  if(document.documentElement.requestFullscreen && !document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}
   const doc = document.getElementById('l-doc').value.trim();
   const cel = document.getElementById('l-cel').value.trim().replace(/[\s\-()]/g,'');
   const errEl = document.getElementById('login-error');

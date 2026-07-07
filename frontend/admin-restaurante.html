@@ -336,6 +336,7 @@ tr:hover td{background:var(--bg2)}
         <div class="nav-label" style="font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;padding-bottom:5px;text-align:center">Idioma</div>
         <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center"></div>
       </div>
+      <button class="nav-btn" onclick="toggleFullscreenPOS()" title="Pantalla completa"><span class="nav-icon">⛶</span><span class="nav-btn-label">Pantalla</span></button>
       <button class="nav-btn" onclick="doLogout()" title="Salir"><span class="nav-icon">🚪</span><span class="nav-btn-label">Salir</span></button>
     </div>
   </div>
@@ -1626,7 +1627,12 @@ function $ (id){ return document.getElementById(id); }
 function today(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 // ─── Auth ────────────────────────────────────────────────────
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 async function doLogin(){
+  if(document.documentElement.requestFullscreen && !document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}
   const login = $('l-login').value.trim();
   const pass  = $('l-pass').value;
   const negocio_id = urlNegocio || '';

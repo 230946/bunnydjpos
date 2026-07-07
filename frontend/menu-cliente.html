@@ -121,7 +121,8 @@ textarea#notas{width:100%;min-height:70px;padding:10px;border:0.5px solid var(--
 </div>
 
 <div id="app" class="hide">
-  <div class="header">
+  <div class="header" style="position:relative">
+    <button onclick="toggleFullscreenPOS()" title="Pantalla completa" style="position:absolute;top:8px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--text2)">⛶</button>
     <img id="neg-logo" src="/img/logo.png" alt="Logo">
     <div class="header-titles">
       <div class="neg" id="neg-nombre">DJPOS</div>
@@ -189,6 +190,10 @@ const negocioId = params.get('n');
 const mesaId = params.get('mesa');
 
 const $ = id => document.getElementById(id);
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
 function fmt(n){ return '$'+Math.round(n||0).toLocaleString('es-CO'); }
 

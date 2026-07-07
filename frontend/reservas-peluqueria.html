@@ -187,6 +187,7 @@ textarea.f-inp{resize:none;height:76px}
     <div class="h-sub">Reserva tu cita en línea</div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+    <button onclick="toggleFullscreenPOS()" title="Pantalla completa" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:16px;line-height:1;cursor:pointer;padding:0">⛶</button>
     <a href="/manual-reservar-cita.html" target="_blank" title="Ayuda" style="color:rgba(255,255,255,.7);font-size:16px;line-height:1;text-decoration:none">❓</a>
     <div style="display:flex;align-items:center;gap:5px;opacity:.55">
       <img src="/img/logo.png" style="width:16px;height:16px;border-radius:3px;object-fit:contain" onerror="this.style.display='none'">
@@ -316,6 +317,10 @@ textarea.f-inp{resize:none;height:76px}
 </div><!-- .page -->
 
 <script>
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 const BASE = '/api/peluqueria/booking';
 const NID  = new URLSearchParams(location.search).get('n');
 

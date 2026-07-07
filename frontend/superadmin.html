@@ -222,6 +222,7 @@ tr:hover td{background:var(--bg2)}
     <button class="nav-btn" onclick="showPanel('actividad',this)">📜 Actividad</button>
     <button class="nav-btn" onclick="showPanel('contratos',this)">📄 Contratos</button>
     <div style="margin-top:auto;padding-top:16px;border-top:0.5px solid var(--border)">
+      <button class="nav-btn" onclick="toggleFullscreenPOS()">⛶ Pantalla completa</button>
       <button class="nav-btn" onclick="doLogout()">🚪 Cerrar sesión</button>
     </div>
   </div>
@@ -241,6 +242,7 @@ tr:hover td{background:var(--bg2)}
     <button class="sa-nav-icon" onclick="showPanel('actividad',this)">📜<span class="lbl">Actividad</span></button>
     <button class="sa-nav-icon" onclick="showPanel('contratos',this)">📄<span class="lbl">Contratos</span></button>
     <div class="mob-sidebar-bot">
+      <button class="sa-nav-icon" onclick="toggleFullscreenPOS()">⛶<span class="lbl">Pantalla</span></button>
       <button class="sa-nav-icon" onclick="window.open('/manual-superadmin.html','_blank')">❓<span class="lbl">Ayuda</span></button>
       <button class="sa-nav-icon" onclick="doLogout()" style="color:var(--red)">🚪<span class="lbl">Salir</span></button>
     </div>
@@ -695,7 +697,12 @@ let token = sessionStorage.getItem('bdj_token');
 let crearAdminNegocioId = null;
 
 // ── Auth ──────────────────────────────────────────────────────
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
 async function doLogin(){
+  if(document.documentElement.requestFullscreen && !document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}
   const login = document.getElementById('l-login').value.trim();
   const pass  = document.getElementById('l-pass').value;
   const err   = document.getElementById('login-error');

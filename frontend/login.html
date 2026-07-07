@@ -120,6 +120,7 @@ function guardarSesion(tipo, token, user){
 }
 
 async function doLogin() {
+  if (document.documentElement.requestFullscreen && !document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); }
   const login = document.getElementById('l-login').value.trim();
   const pass  = document.getElementById('l-pass').value;
   const errEl = document.getElementById('login-error');

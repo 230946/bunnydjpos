@@ -273,6 +273,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <span class="h-user" id="h-user"></span>
     <span id="stock-alert-badge" title="Artículos con stock bajo" onclick="mostrarAlertasStock()" style="display:none;background:#f59e0b;color:#1a1a1a;border-radius:10px;font-size:11px;font-weight:700;padding:2px 8px;cursor:pointer;margin-right:4px">⚠ 0</span>
     <span id="ar-badge" style="display:none;font-size:10px;font-weight:500;color:var(--text3);border:0.5px solid var(--border);border-radius:10px;padding:2px 8px;pointer-events:none;transition:background .4s,color .4s,border-color .4s;white-space:nowrap">↺ 30s</span>
+    <button class="hbtn" onclick="toggleFullscreenPOS()" title="Pantalla completa">⛶</button>
     <button class="hbtn" onclick="window.open('/manual-pos-minimercado.html','_blank')" title="Ayuda">❓</button>
     <button class="hbtn" onclick="doLogout()">Salir</button>
   </div>
@@ -460,7 +461,12 @@ const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 })();
 
 // ── AUTH ──────────────────────────────────────────────────────────
+function toggleFullscreenPOS() {
+  if (document.fullscreenElement) { document.exitFullscreen().catch(()=>{}); }
+  else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(()=>{}); }
+}
 async function doLogin(){
+  if (document.documentElement.requestFullscreen && !document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); }
   const u = $('l-login').value.trim();
   const p = $('l-pass').value;
   const err = $('login-error');
