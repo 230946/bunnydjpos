@@ -6,6 +6,7 @@
 <title>Portal del Empleado</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
 <link rel="stylesheet" href="css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -55,6 +56,14 @@
   .container{max-width:720px;margin:0 auto;padding:20px 16px}
   .section-title{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:.5px;margin:24px 0 10px}
   .card{background:var(--bg2);border-radius:var(--radius);box-shadow:0 2px 12px rgba(0,0,0,.06);padding:16px;margin-bottom:12px}
+  .hist-filtro{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  .hist-filtro input[type=date]{border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--bg2);color:var(--text)}
+  .hist-filtro button{background:var(--acc);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+  .hist-chart-card{background:var(--bg2);border-radius:var(--radius);box-shadow:0 2px 12px rgba(0,0,0,.06);padding:14px 16px;margin-bottom:12px}
+  .hist-chart-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .hist-chart-title span:first-child{font-size:13px;font-weight:700;color:var(--text)}
+  .hist-chart-total{font-size:12px;color:var(--text2);font-weight:600}
+  .hist-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:var(--bg2);border:1px solid var(--border);font-size:13px}
   .horario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
   .horario-dia{border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px}
   .horario-dia.hoy{border-color:var(--acc);background:var(--acc-l)}
@@ -286,6 +295,18 @@
     <div class="card" id="pHorario"></div>
     <div class="section-title">Citas de hoy</div>
     <div id="pCitasHoy"></div>
+    <div class="section-title">Historial de citas</div>
+    <div class="hist-filtro">
+      <input type="date" id="ch-desde" onchange="cargarHistorialCitas()">
+      <span style="color:var(--text3);font-size:12px">a</span>
+      <input type="date" id="ch-hasta" onchange="cargarHistorialCitas()">
+      <button onclick="cargarHistorialCitas()">Filtrar</button>
+    </div>
+    <div class="hist-chart-card">
+      <div class="hist-chart-title"><span>📈 Citas completadas</span><span class="hist-chart-total" id="ch-chart-total"></span></div>
+      <div style="height:180px"><canvas id="ch-chart"></canvas></div>
+    </div>
+    <div id="ch-items"></div>
     <div class="section-title">Próximas citas (7 días)</div>
     <div class="card" id="pProximas"></div>
   </div>
@@ -430,9 +451,79 @@ async function cargarDatos(cedula) {
     if (!r.ok) return;
     const data = await r.json();
     actualizarSecciones(data);
+    cargarHistorialCitas();
     const el = document.getElementById('lastUpdate');
     if (el) el.textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'});
   } catch {}
+}
+
+function _initHistCitasFiltro() {
+  const dDesde=document.getElementById('ch-desde'), dHasta=document.getElementById('ch-hasta');
+  if (!dDesde || !dHasta || dDesde.value || dHasta.value) return;
+  const hoy=new Date(); const hace6=new Date(); hace6.setDate(hoy.getDate()-6);
+  const fmt=d=>d.toISOString().slice(0,10);
+  dHasta.value=fmt(hoy); dDesde.value=fmt(hace6);
+}
+let _histCitasChart=null;
+async function cargarHistorialCitas() {
+  if (!_cedulaActiva) return;
+  _initHistCitasFiltro();
+  const desde=document.getElementById('ch-desde').value;
+  const hasta=document.getElementById('ch-hasta').value;
+  const el=document.getElementById('ch-items');
+  try {
+    const base = empId
+      ? `${API}/peluqueria/portal-empleado/${empId}/citas-historial`
+      : `${API}/peluqueria/portal-negocio/${encodeURIComponent(_getNegocioId())}/citas-historial`;
+    const r = await fetch(`${base}?cedula=${encodeURIComponent(_cedulaActiva)}&desde=${desde}&hasta=${hasta}`);
+    if (!r.ok) return;
+    const { items, tendencia } = await r.json();
+    renderHistorialCitasChart(tendencia||[], desde, hasta);
+    if (el) {
+      el.innerHTML = (items||[]).length ? items.map(c => `
+        <div class="hist-item">
+          <div>
+            <div style="font-weight:600">${_esc(c.cliente_nombre||'—')}${c.cliente_apellido?' '+_esc(c.cliente_apellido):''}</div>
+            <div style="font-size:11px;color:var(--text3)">${_esc((c.servicios||[]).join(', ')||'—')}</div>
+          </div>
+          <div style="text-align:right;font-size:11px;color:var(--text3)">${fmtHora(c.fecha_hora)}<br>${_pd(c.fecha_hora)?.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit'})||''}</div>
+        </div>`).join('') : '<div class="empty">Sin citas completadas en este rango</div>';
+    }
+  } catch (e) {}
+}
+function renderHistorialCitasChart(tendencia, desde, hasta) {
+  if (!desde || !hasta) return;
+  const dias=[];
+  for(let d=new Date(desde+'T12:00:00'); d<=new Date(hasta+'T12:00:00'); d.setDate(d.getDate()+1)){
+    dias.push(d.toISOString().slice(0,10));
+  }
+  const labels=dias.map(f=>new Date(f+'T12:00:00').toLocaleDateString('es-CO',{weekday:'short'}).replace('.','').toUpperCase());
+  const data=dias.map(f=>{ const row=(tendencia||[]).find(x=>String(x.fecha||'').slice(0,10)===f); return row?+row.citas:0; });
+  const total=data.reduce((a,v)=>a+v,0);
+  const totalEl=document.getElementById('ch-chart-total');
+  if (totalEl) totalEl.textContent=`Total: ${total}`;
+  const canvas=document.getElementById('ch-chart');
+  if (!canvas || typeof Chart==='undefined') return;
+  if (_histCitasChart) { _histCitasChart.destroy(); _histCitasChart=null; }
+  const ctx=canvas.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0,'rgba(11,132,87,.30)'); grad.addColorStop(1,'rgba(11,132,87,.02)');
+  _histCitasChart=new Chart(ctx,{
+    type:'line',
+    data:{ labels, datasets:[{
+      data, borderColor:'#0B8457', backgroundColor:grad,
+      borderWidth:2.5, pointBackgroundColor:'#0B8457',
+      pointRadius:4, pointHoverRadius:6, tension:0.4, fill:true,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.raw} cita${ctx.raw===1?'':'s'}`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#999',font:{size:11}}},
+        y:{beginAtZero:true,ticks:{stepSize:1,color:'#999',font:{size:11}},grid:{color:'#eee'}}
+      }
+    }
+  });
 }
 
 async function refrescarManual() {
@@ -570,9 +661,10 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
   }
   document.getElementById('pHorario').innerHTML = horHtml || '<div class="empty">Sin turnos registrados</div>';
 
-  // Citas de hoy
-  document.getElementById('pCitasHoy').innerHTML = citasHoy.length
-    ? citasHoy.map(c => {
+  // Citas de hoy — las ya Completadas se muestran en "Historial de citas" (gráfica), no aquí
+  const citasHoyActivas = citasHoy.filter(c => c.estado !== 'Completada');
+  document.getElementById('pCitasHoy').innerHTML = citasHoyActivas.length
+    ? citasHoyActivas.map(c => {
         const detalles = c.detalles || [];
         const misDetalles = detalles.filter(d => d.empleado_id === _empleadoActual?.id);
         const acciones = [];

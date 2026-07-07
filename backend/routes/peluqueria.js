@@ -475,6 +475,80 @@ router.post('/portal-empleado/:empId/turno', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Historial de citas completadas (gráfica + lista, portal empleado) ──
+function _rangoFechas(desde, hasta) {
+  const hoy = new Date();
+  const hace6 = new Date(); hace6.setDate(hoy.getDate() - 6);
+  const fmt = d => d.toISOString().slice(0, 10);
+  return { desde: desde || fmt(hace6), hasta: hasta || fmt(hoy) };
+}
+async function _citasHistorial(empId, negocioId, desdeIn, hastaIn) {
+  const { desde, hasta } = _rangoFechas(desdeIn, hastaIn);
+  const [{ rows: items }, { rows: tendencia }] = await Promise.all([
+    pool.query(
+      `SELECT DISTINCT c.id, c.fecha_hora, c.duracion_min,
+              COALESCE(cl.nombre, c.cliente_nombre) AS cliente_nombre,
+              COALESCE(cl.apellido, '') AS cliente_apellido
+       FROM pel_citas c
+       LEFT JOIN pel_clientes cl ON BINARY cl.id = BINARY c.cliente_id
+       WHERE c.negocio_id=?
+         AND (BINARY c.empleado_id=? OR EXISTS (SELECT 1 FROM pel_cita_detalle xd WHERE xd.cita_id=c.id AND BINARY xd.empleado_id=?))
+         AND c.estado='Completada' AND DATE(c.fecha_hora) BETWEEN ? AND ?
+       ORDER BY c.fecha_hora DESC LIMIT 200`,
+      [negocioId, empId, empId, desde, hasta]
+    ),
+    pool.query(
+      `SELECT DATE(c.fecha_hora) AS fecha, COUNT(DISTINCT c.id) AS citas
+       FROM pel_citas c
+       WHERE c.negocio_id=?
+         AND (BINARY c.empleado_id=? OR EXISTS (SELECT 1 FROM pel_cita_detalle xd WHERE xd.cita_id=c.id AND BINARY xd.empleado_id=?))
+         AND c.estado='Completada' AND DATE(c.fecha_hora) BETWEEN ? AND ?
+       GROUP BY DATE(c.fecha_hora) ORDER BY fecha`,
+      [negocioId, empId, empId, desde, hasta]
+    ),
+  ]);
+  const itemIds = items.map(r => r.id);
+  let detalles = [];
+  if (itemIds.length) {
+    const phIn = itemIds.map(() => '?').join(',');
+    const { rows: d } = await pool.query(
+      `SELECT cita_id, nombre FROM pel_cita_detalle WHERE cita_id IN (${phIn})`, itemIds
+    );
+    detalles = d;
+  }
+  return {
+    items: items.map(c => ({ ...c, fecha_hora: toISO(c.fecha_hora),
+      servicios: detalles.filter(d => d.cita_id === c.id).map(d => d.nombre) })),
+    tendencia: tendencia.map(t => ({ fecha: toISO(t.fecha).slice(0, 10), citas: parseInt(t.citas) })),
+  };
+}
+
+router.get('/portal-negocio/:negocioId/citas-historial', async (req, res) => {
+  try {
+    const { cedula, desde, hasta } = req.query;
+    if (!cedula) return res.status(400).json({ error: 'cedula requerida' });
+    const negocioId = req.params.negocioId;
+    const { rows: empR } = await pool.query(
+      `SELECT id FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [negocioId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    res.json(await _citasHistorial(empR[0].id, negocioId, desde, hasta));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/portal-empleado/:empId/citas-historial', async (req, res) => {
+  try {
+    const { cedula, desde, hasta } = req.query;
+    const { rows: empR } = await pool.query(
+      `SELECT id, negocio_id FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
+      [req.params.empId, cedula]
+    );
+    if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    res.json(await _citasHistorial(empR[0].id, empR[0].negocio_id, desde, hasta));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── RUTAS PÚBLICAS: PORTAL DE RESERVAS ───────────────────────────
 
 function calcSlots(horario, citas, dur) {
