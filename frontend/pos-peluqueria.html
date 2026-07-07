@@ -206,7 +206,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .m-inp:focus{border-color:var(--acc)}
 
 /* Recibo */
-.recibo{font-family:'Courier New',monospace;font-size:12px;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r);padding:14px;max-height:50vh;max-height:50dvh;overflow-y:auto}
+.recibo{font-family:'Courier New',monospace;font-size:14px;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r);padding:14px;max-height:50vh;max-height:50dvh;overflow-y:auto}
 .rc{text-align:center;margin-bottom:3px}
 .rhr{border:none;border-top:1px dashed var(--border);margin:5px 0}
 .rr{display:flex;justify-content:space-between;margin:1px 0}
@@ -346,13 +346,13 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 }
 /* ── Modal pago productos ── */
 .ppay-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
-.ppay-box{background:var(--bg);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:420px;max-height:90vh;max-height:90dvh;overflow-y:auto;padding:20px 18px}
+.ppay-box{background:var(--bg);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:420px;max-height:90vh;max-height:90dvh;overflow-y:auto;padding:14px}
 @media(min-width:480px){.ppay-overlay{align-items:center}.ppay-box{border-radius:var(--rl);max-height:85vh;max-height:85dvh}}
-.ppay-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:12px}
-.ppay-card h3{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px}
-.ppay-btns{display:flex;gap:8px}
-.ppay-btn{flex:1;padding:12px 6px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;background:transparent;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text2);transition:.12s}
-.ppay-btn span{font-size:20px}
+.ppay-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rl);padding:10px 12px;margin-bottom:8px}
+.ppay-card h3{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.ppay-btns{display:flex;gap:6px}
+.ppay-btn{flex:1;padding:8px 6px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;background:transparent;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--text2);transition:.12s}
+.ppay-btn span{font-size:16px}
 .ppay-btn.sel{border-color:var(--blue);background:var(--blue-l);color:var(--blue-d)}
 .ppay-vueltas{background:var(--green-l);border:0.5px solid var(--green);border-radius:var(--r);padding:10px 14px;margin-top:8px;display:none}
 .ppay-vueltas-lbl{font-size:11px;color:var(--green-d);margin-bottom:2px}
@@ -388,6 +388,9 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 .cita-alert.urgent .al-body strong{color:var(--red)}
 .cita-alert .al-close{background:none;border:none;color:#888;cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0}
 @keyframes pos-alert-in{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.prod-card{transition:transform .15s,box-shadow .15s,border-color .15s,background-color .15s}
+.prod-card:hover{transform:scale(1.035);box-shadow:0 4px 14px rgba(0,0,0,.12);border-color:var(--acc)!important;background:var(--acc-ll)!important;z-index:1;position:relative}
+.prod-card.agotado:hover{transform:none;box-shadow:none;border-color:var(--border)!important;background:var(--bg)!important}
 </style>
 </head>
 <body>
@@ -424,6 +427,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <span id="cajaBadge" class="tb-caja caja-no no-print">Sin caja</span>
     <span class="tb-time tb-ml" id="topTime"></span>
     <span class="tb-user" id="topUser"></span>
+    <button class="tb-salir no-print" onclick="toggleFullscreenPOS()" title="Pantalla completa">⛶</button>
     <button class="tb-salir no-print" onclick="window.open('/manual-pos-peluqueria.html','_blank')" title="Ayuda">❓</button>
     <button class="tb-salir no-print" onclick="salir()">Salir</button>
   </div>
@@ -511,7 +515,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
           style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:6px;font-size:13px;background:var(--bg2);color:var(--text);flex:1;min-width:120px">
         <span id="prod-count" style="font-size:12px;color:var(--text3);flex-shrink:0"></span>
       </div>
-      <div id="prod-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain"></div>
+      <div id="prod-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));align-items:start;gap:8px;overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain"></div>
     </div>
     <!-- Carrito -->
     <div class="prod-panel">
@@ -527,7 +531,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
           <span>Total</span><span id="prod-total">$ 0</span>
         </div>
         <button id="prod-cobrar-btn" onclick="cobrarProductos()" disabled
-          class="btn btn-success btn-block" style="opacity:.5;font-size:14px;font-weight:700;min-height:44px">
+          class="btn btn-green btn-block" style="opacity:.5;font-size:14px;font-weight:700;min-height:44px">
           Cobrar
         </button>
       </div>
@@ -599,21 +603,56 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 <!-- MODAL PAGO PRODUCTOS -->
 <div class="ppay-overlay" id="ppayModal" onclick="if(event.target===this)cerrarPPay()">
   <div class="ppay-box">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <span style="font-size:16px;font-weight:700">🛍️ Cobrar productos</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span style="font-size:15px;font-weight:700">🛍️ Cobrar productos</span>
       <button onclick="cerrarPPay()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>
     </div>
     <!-- Resumen -->
     <div class="ppay-card">
       <h3>Resumen</h3>
       <div id="ppay-resumen"></div>
-      <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;margin-top:6px;padding-top:6px;border-top:0.5px solid var(--border)">
         <span>Total</span><span id="ppay-total">$0</span>
       </div>
     </div>
+    <!-- Cliente -->
+    <div class="ppay-card" id="ppay-cli-wrap" style="position:relative;padding:10px 12px;margin-bottom:8px">
+      <h3 style="margin-bottom:6px;font-size:11px">Cliente *</h3>
+      <div id="ppay-cli-sel-box" style="display:none;align-items:center;justify-content:space-between;background:var(--acc-ll);border:1px solid var(--acc);border-radius:var(--r);padding:6px 9px;font-size:12px">
+        <span id="ppay-cli-sel-nombre"></span>
+        <button onclick="limpiarClientePPay()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:13px">✕</button>
+      </div>
+      <div id="ppay-cli-search-wrap" style="display:flex;gap:6px">
+        <input id="ppay-cli-input" placeholder="Buscar por nombre, teléfono o documento..." oninput="buscarClientePPay()"
+          style="flex:1;min-width:0;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+        <button onclick="mostrarNuevoClientePPay()" style="flex-shrink:0;padding:0 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:transparent;cursor:pointer;font-size:11px;color:var(--acc);font-weight:600;white-space:nowrap">+ Nuevo</button>
+        <div id="ppay-cli-dropdown" style="display:none;position:absolute;left:12px;right:12px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);margin-top:4px;max-height:160px;overflow-y:auto;z-index:5;box-shadow:0 4px 10px rgba(0,0,0,.15)"></div>
+      </div>
+      <div id="ppay-cli-nuevo-wrap" style="display:none;margin-top:6px;padding-top:6px;border-top:0.5px solid var(--border)">
+        <input id="ppay-cli-nuevo-nombre" placeholder="Nombre *" style="width:100%;margin-bottom:5px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+        <div style="display:flex;gap:6px;margin-bottom:5px">
+          <input id="ppay-cli-nuevo-tel" placeholder="Teléfono" style="flex:1;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+          <input id="ppay-cli-nuevo-doc" placeholder="Documento" style="flex:1;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+        </div>
+        <input id="ppay-cli-nuevo-email" type="email" placeholder="Email" style="width:100%;margin-bottom:5px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+        <input id="ppay-cli-nuevo-dir" placeholder="Dirección" style="width:100%;margin-bottom:5px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+        <textarea id="ppay-cli-nuevo-notas" rows="2" placeholder="Notas" style="width:100%;margin-bottom:5px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px;resize:vertical"></textarea>
+        <div style="display:flex;gap:6px">
+          <button onclick="cerrarNuevoClientePPay()" style="flex:1;padding:6px;border-radius:var(--r);border:0.5px solid var(--border2);background:transparent;cursor:pointer;font-size:11px;color:var(--text2)">Cancelar</button>
+          <button onclick="registrarNuevoClientePPay()" class="btn btn-acc" style="flex:1;padding:6px;font-size:11px">Registrar</button>
+        </div>
+      </div>
+    </div>
+    <!-- Vendido por -->
+    <div class="ppay-card" style="padding:10px 12px;margin-bottom:8px">
+      <h3 style="margin-bottom:6px;font-size:11px">Vendido por <span style="font-weight:400;color:var(--text3)">(opcional)</span></h3>
+      <select id="ppay-empleado" style="width:100%;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+        <option value="">— Sin asignar —</option>
+      </select>
+    </div>
     <!-- Método de pago -->
     <div class="ppay-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <h3 style="margin:0">Método de pago</h3>
         <button onclick="togglePPMixto()" id="ppay-mixto-btn"
           style="font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">⚡ Mixto</button>
@@ -639,15 +678,15 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <div class="ppay-card" id="ppay-efectivo-sec">
       <h3>Valor recibido</h3>
       <input id="ppay-recibido" type="number" min="0" placeholder="0" oninput="calcPPVueltas()"
-        style="width:100%;padding:10px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:20px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none">
+        style="width:100%;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:17px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none">
       <div class="ppay-billetes" id="ppay-billetes"></div>
-      <button onclick="ppayExacto()" style="width:100%;margin-top:8px;padding:7px;border-radius:var(--r);border:0.5px solid var(--border2);background:transparent;cursor:pointer;font-size:12px;color:var(--text2)">Valor exacto</button>
+      <button onclick="ppayExacto()" style="width:100%;margin-top:6px;padding:6px;border-radius:var(--r);border:0.5px solid var(--border2);background:transparent;cursor:pointer;font-size:11px;color:var(--text2)">Valor exacto</button>
       <div class="ppay-vueltas" id="ppay-vueltas"><div class="ppay-vueltas-lbl">Vueltas</div><div class="ppay-vueltas-val" id="ppay-vueltas-val">$0</div></div>
-      <div class="ppay-err" id="ppay-err">⚠️ Valor menor al total</div>
+      <div class="ppay-err" id="ppay-err">⚠️ Faltan <span id="ppay-err-val">$0</span></div>
     </div>
     <!-- Botón -->
     <button id="ppay-procesar" onclick="procesarPagoProductos()"
-      class="btn btn-green btn-block" style="padding:16px;font-size:15px">✓ Procesar pago</button>
+      class="btn btn-green btn-block" style="padding:12px;font-size:14px">✓ Procesar pago</button>
   </div>
 </div>
 
@@ -666,7 +705,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <div class="m-field">
       <label class="m-label">Empleado</label>
       <select class="m-inp" id="nc-emp">
-        <option value="">— Sin asignar —</option>
+        <option value="">— Cualquiera disponible —</option>
       </select>
     </div>
     <div class="m-field">
@@ -787,7 +826,12 @@ async function api(method, path, body) {
 function cerrarModal(id) { $(id).style.display = 'none'; }
 
 /* ──────── LOGIN ──────── */
+function toggleFullscreenPOS() {
+  if (document.fullscreenElement) { document.exitFullscreen().catch(()=>{}); }
+  else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(()=>{}); }
+}
 async function doLogin() {
+  if (document.documentElement.requestFullscreen && !document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); }
   const errEl = $('login-error');
   errEl.style.display = 'none';
   try {
@@ -866,7 +910,7 @@ async function cargarEmpleados() {
     sel.innerHTML = '<option value="">Todos los empleados</option>' + _empleados.map(e => `<option value="${e.id}">${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('');
     // Selector en modal nueva cita
     const ncEmp = $('nc-emp');
-    ncEmp.innerHTML = '<option value="">— Sin asignar —</option>' + _empleados.map(e => `<option value="${e.id}">${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('');
+    ncEmp.innerHTML = '<option value="">— Cualquiera disponible —</option>' + _empleados.map(e => `<option value="${e.id}">${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('');
     // Selector en vista cola
     const poolSel = $('poolYo');
     if (poolSel) poolSel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' + _empleados.map(e => `<option value="${e.id}">${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('');
@@ -1293,34 +1337,45 @@ function calcVueltas() {
     : `<div style="margin-top:6px;font-size:12px;color:var(--red)">Falta: ${fmtCOP(Math.abs(vuelta))}</div>`;
 }
 
-function buildReciboHtmlPel(data) {
-  const { items, total, descuento, metodoPago, pagosRows, clienteNombre, empleadoNombre, fecha } = data;
+function buildReciboHtmlPel(data, tipoLabel='SERVICIOS') {
+  const { items, total, descuento, metodoPago, pagosRows, clienteNombre, clienteData, empleadoNombre, fecha, subtotalSinIva, ivaTotal, numeroFactura } = data;
   const n = _negInfoPel || {};
   const dt = fecha ? new Date(fecha) : new Date();
   const fStr = dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
   const hStr = dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
   let h = '';
   if (n.logo_url) h += `<div class="rc"><img src="${n.logo_url}" style="max-height:50px;max-width:160px;object-fit:contain;margin-bottom:4px"></div>`;
-  h += `<div class="rc rb" style="font-size:13px">${esc(n.nombre||'Peluquería')}</div>`;
-  if (n.nit) h += `<div class="rc" style="font-size:10px">NIT: ${esc(n.nit)}</div>`;
-  if (n.direccion) h += `<div class="rc" style="font-size:10px">${esc(n.direccion)}${n.ciudad?', '+esc(n.ciudad):''}</div>`;
-  if (n.telefono) h += `<div class="rc" style="font-size:10px">Tel: ${esc(n.telefono)}</div>`;
+  h += `<div class="rc rb" style="font-size:15px">${esc(n.nombre||'Peluquería')}</div>`;
+  if (n.nit) h += `<div class="rc" style="font-size:12px">NIT: ${esc(n.nit)}</div>`;
+  if (n.direccion) h += `<div class="rc" style="font-size:12px">${esc(n.direccion)}${n.ciudad?', '+esc(n.ciudad):''}</div>`;
+  if (n.telefono) h += `<div class="rc" style="font-size:12px">Tel: ${esc(n.telefono)}</div>`;
+  if (numeroFactura) h += `<div class="rc rb" style="font-size:13px;margin-top:3px">Factura N° ${String(numeroFactura).padStart(6,'0')}</div>`;
   h += `<hr class="rhr">`;
   h += `<div class="rr"><span>${fStr}</span><span>${hStr}</span></div>`;
-  if (clienteNombre) h += `<div class="rr"><span>Cliente</span><span>${esc(clienteNombre)}</span></div>`;
+  h += `<div class="rr"><span>Cliente</span><span>${esc(clienteNombre||'Consumidor final')}</span></div>`;
+  if (clienteData?.documento) h += `<div class="rr"><span>Doc.</span><span>${esc(clienteData.documento)}</span></div>`;
+  if (clienteData?.telefono) h += `<div class="rr"><span>Tel.</span><span>${esc(clienteData.telefono)}</span></div>`;
+  if (clienteData?.email) h += `<div class="rr"><span>Email</span><span>${esc(clienteData.email)}</span></div>`;
+  if (clienteData?.direccion) h += `<div class="rr"><span>Dir.</span><span>${esc(clienteData.direccion)}</span></div>`;
   if (empleadoNombre) h += `<div class="rr"><span>Atendido por</span><span>${esc(empleadoNombre)}</span></div>`;
   if (USER_NOMBRE) h += `<div class="rr"><span>Cajero</span><span>${esc(USER_NOMBRE)}</span></div>`;
-  h += `<hr class="rhr"><div class="rb" style="margin-bottom:3px">SERVICIOS</div>`;
-  items.forEach(s => h += `<div class="rr"><span>${esc(s.nombre)}</span><span>${fmtCOP(+s.precio||0)}</span></div>`);
+  h += `<hr class="rhr"><div class="rb" style="margin-bottom:3px">${tipoLabel}</div>`;
+  items.forEach(s => {
+    h += `<div class="rr"><span>${esc(s.nombre)}${s.iva_pct>0?` (IVA ${s.iva_pct}%)`:''}</span><span>${fmtCOP(+s.precio||0)}</span></div>`;
+  });
   h += `<hr class="rhr">`;
   if (descuento > 0) h += `<div class="rr" style="color:var(--red)"><span>Descuento</span><span>-${fmtCOP(descuento)}</span></div>`;
-  h += `<div class="rr rb"><span>TOTAL</span><span>${fmtCOP(total)}</span></div>`;
+  if (ivaTotal > 0) {
+    h += `<div class="rr"><span>Subtotal</span><span>${fmtCOP(subtotalSinIva)}</span></div>`;
+    h += `<div class="rr"><span>IVA incluido</span><span>${fmtCOP(ivaTotal)}</span></div>`;
+  }
+  h += `<div class="rr rb" style="font-size:16px"><span>TOTAL</span><span>${fmtCOP(total)}</span></div>`;
   if (metodoPago === 'mixto' && pagosRows?.length) {
-    pagosRows.forEach(p => h += `<div class="rr" style="font-size:11px;color:var(--text2)"><span>${esc(p.metodo)}</span><span>${fmtCOP(+p.monto)}</span></div>`);
+    pagosRows.forEach(p => h += `<div class="rr" style="font-size:13px;color:var(--text2)"><span>${esc(p.metodo)}</span><span>${fmtCOP(+p.monto)}</span></div>`);
   } else {
     h += `<div class="rr" style="margin-top:3px"><span>Pago</span><span>${metodoPago}</span></div>`;
   }
-  h += `<hr class="rhr"><div class="rc" style="font-size:10px;margin-top:4px">¡Gracias por tu visita!</div>`;
+  h += `<hr class="rhr"><div class="rc" style="font-size:12px;margin-top:4px">¡Gracias por tu visita!</div>`;
   return h;
 }
 
@@ -1333,7 +1388,7 @@ function previewCobroPel() {
   const clienteNombre = c.clienteNombre || c.cliente_nombre || '';
   const empleadoNombre = c.empleadoNombre || c.empleado_nombre || '';
   _pendingVentaPel = {
-    cita: c, extraItems: [..._extraItems], subtotal, descuento, total,
+    tipo: 'cita', cita: c, extraItems: [..._extraItems], subtotal, descuento, total,
     metodoPago: _metodoPago, pagosRows: [..._pagosRows],
     items, clienteNombre, empleadoNombre, fecha: new Date(),
   };
@@ -1344,10 +1399,12 @@ function previewCobroPel() {
 
 function corregirFacturaPel() {
   $('preview-pel-modal').style.display = 'none';
-  $('cobroModal').style.display = 'flex';
+  if (_pendingVentaPel?.tipo === 'producto') { $('ppayModal').style.display = 'flex'; }
+  else { $('cobroModal').style.display = 'flex'; }
 }
 
 async function confirmarPagoPel() {
+  if (_pendingVentaPel?.tipo === 'producto') return confirmarPagoProductos();
   const btn = $('btn-confirmar-pago-pel');
   btn.disabled = true;
   try {
@@ -1365,9 +1422,10 @@ async function confirmarPagoPel() {
       });
     }
     const pagos = p.metodoPago === 'mixto' ? p.pagosRows : [{ metodo: p.metodoPago, monto: p.total }];
-    await api('PATCH', `/citas/${c.id}/completar`, {
+    const r = await api('PATCH', `/citas/${c.id}/completar`, {
       metodoPago: p.metodoPago, descuento: p.descuento, pagos,
     });
+    p.numeroFactura = r?.numeroFactura;
     $('preview-pel-modal').style.display = 'none';
     $('success-pel-content').innerHTML = buildReciboHtmlPel(p);
     $('success-pel-modal').style.display = 'flex';
@@ -1384,7 +1442,7 @@ async function confirmarPagoPel() {
 function imprimirReciboPel() {
   const html = $('success-pel-content').innerHTML;
   const w = window.open('', '_blank', 'width=400,height=700');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;font-size:12px;padding:10px;color:#000;background:#fff}.rc{text-align:center;margin-bottom:3px}.rhr{border:none;border-top:1px dashed #000;margin:5px 0}.rr{display:flex;justify-content:space-between;margin:1px 0}.rb{font-weight:700}img{max-height:50px;max-width:160px;object-fit:contain;display:block;margin:0 auto 4px}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo</title><style>@page{size:72mm auto;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{width:72mm;font-family:'Courier New',monospace;font-size:14px;padding:8px;color:#000;background:#fff}.rc{text-align:center;margin-bottom:3px}.rhr{border:none;border-top:1px dashed #000;margin:5px 0}.rr{display:flex;justify-content:space-between;margin:1px 0}.rb{font-weight:700}img{max-height:50px;max-width:160px;object-fit:contain;display:block;margin:0 auto 4px}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
   w.document.close();
 }
 
@@ -1696,7 +1754,7 @@ function switchTab(tab) {
 }
 
 /* ──────── PRODUCTOS EN VENTA ──────── */
-let _productosVenta = [], _carrito = [], _prodSelId = null;
+let _productosVenta = [], _carrito = [];
 
 async function cargarProductosPOS() {
   try {
@@ -1722,38 +1780,31 @@ function filtrarProductosPOS() {
   grid.innerHTML = lista.map(p => {
     const stock = parseInt(p.stock_actual||0);
     const agotado = stock <= 0;
-    const sel = _prodSelId === p.id;
     const stockCol = agotado ? 'var(--red)' : stock <= parseInt(p.stock_minimo||0) ? 'var(--amber)' : 'var(--green)';
-    return `<div onclick="selProducto('${p.id}')"
-      style="background:var(--bg);border:0.5px solid ${sel?'var(--acc)':'var(--border)'};border-radius:var(--rl);padding:11px 13px;cursor:pointer;transition:.12s;${agotado?'opacity:.5':''}">
-      <div style="font-size:13px;font-weight:700">${esc(p.nombre)}</div>
-      <div id="prod-det-${p.id}" style="display:${sel?'block':'none'};margin-top:8px">
-        ${p.categoria_nombre?`<div style="font-size:10px;color:var(--text3);margin-bottom:4px">${esc(p.categoria_nombre)}</div>`:''}
-        <div style="font-size:17px;font-weight:700;color:var(--acc);margin-bottom:6px">${fmtCOP(parseFloat(p.precio_venta||0))}</div>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:11px;color:${stockCol};font-weight:600">Stock: ${stock} ${esc(p.unidad||'und')}</span>
-          ${!agotado
-            ? `<button class="btn btn-xs btn-acc" onclick="event.stopPropagation();agregarAlCarrito('${p.id}','${esc(p.nombre)}',${p.precio_venta},'${esc(p.unidad||'und')}')">+ Agregar</button>`
-            : `<span style="font-size:11px;color:var(--red);font-weight:600">Sin stock</span>`}
+    return `<div class="prod-card${agotado?' agotado':''}" ${!agotado?`onclick="agregarAlCarrito('${p.id}','${esc(p.nombre)}',${p.precio_venta},'${esc(p.unidad||'und')}',${parseFloat(p.iva_pct)||0})"`:''}
+      style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;${agotado?'opacity:.5':'cursor:pointer'}">
+      ${p.imagen_url
+        ? `<div style="width:100%;height:64px;background:var(--bg2);display:flex;align-items:center;justify-content:center"><img src="${API.replace('/api/peluqueria','')}${p.imagen_url}" style="max-width:100%;max-height:100%;object-fit:contain;display:block" alt="${esc(p.nombre)}" onerror="this.parentElement.style.display='none'"></div>`
+        : `<div style="width:100%;height:64px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:22px">🧴</div>`}
+      <div style="padding:7px 9px">
+        <div style="font-size:12px;font-weight:700;line-height:1.25">${esc(p.nombre)}</div>
+        ${p.categoria_nombre?`<div style="font-size:9px;color:var(--text3);margin:1px 0 3px">${esc(p.categoria_nombre)}</div>`:''}
+        ${p.descripcion?`<div style="font-size:10px;color:var(--text2);margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(p.descripcion)}</div>`:''}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px;gap:4px">
+          <span style="font-size:13px;font-weight:700;color:var(--acc)">${fmtCOP(parseFloat(p.precio_venta||0))}</span>
+          <span style="font-size:10px;color:${stockCol};font-weight:600;white-space:nowrap">${agotado?'Sin stock':`Stock: ${stock}`}</span>
         </div>
       </div>
     </div>`;
   }).join('');
 }
 
-function selProducto(id) {
-  const prev = _prodSelId;
-  _prodSelId = (prev === id) ? null : id;
-  // toggle detalles sin re-render completo
-  if (prev) { const d=$(`prod-det-${prev}`); if(d){d.style.display='none'; d.closest('div')?.style && (d.closest('[onclick]').style.borderColor='var(--border)');} }
-  if (_prodSelId) { const d=$(`prod-det-${_prodSelId}`); if(d){d.style.display='block'; d.closest('[onclick]').style.borderColor='var(--acc)';} }
-}
-
-function agregarAlCarrito(id, nombre, precio, unidad) {
+function agregarAlCarrito(id, nombre, precio, unidad, ivaPct) {
   precio = parseFloat(precio||0);
+  const iva_pct = parseFloat(ivaPct||0);
   const ex = _carrito.find(c=>c.id===id);
   if (ex) ex.cantidad++;
-  else _carrito.push({id, nombre, precio, unidad, cantidad:1});
+  else _carrito.push({id, nombre, precio, unidad, cantidad:1, iva_pct});
   renderCarrito();
   showToast(`✅ ${nombre}`);
 }
@@ -1800,6 +1851,9 @@ function cobrarProductos() {
   if (!_carrito.length) return;
   if (!_cajaId) { showToast('⚠️ Abre la caja primero'); switchTab('caja'); return; }
   const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad, 0);
+  limpiarClientePPay();
+  const selEmp = $('ppay-empleado');
+  if (selEmp) selEmp.innerHTML = '<option value="">— Sin asignar —</option>' + (_empleados||[]).map(e=>`<option value="${e.id}">${esc(e.nombre)}${e.apellido?' '+esc(e.apellido):''}</option>`).join('');
   // Resumen
   $('ppay-resumen').innerHTML = _carrito.map(c=>`
     <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:0.5px solid var(--border)">
@@ -1859,10 +1913,10 @@ function calcPPVueltas() {
   const rec = parseFloat($('ppay-recibido').value)||0;
   const vueltas = rec - total;
   if (rec <= 0) { $('ppay-vueltas').style.display='none'; $('ppay-err').style.display='none'; return; }
-  if (vueltas < 0) { $('ppay-vueltas').style.display='none'; $('ppay-err').style.display=''; return; }
+  if (vueltas < 0) { $('ppay-vueltas').style.display='none'; $('ppay-err-val').textContent=fmtCOP(-vueltas); $('ppay-err').style.display='block'; return; }
   $('ppay-err').style.display='none';
   $('ppay-vueltas-val').textContent = fmtCOP(vueltas);
-  $('ppay-vueltas').style.display = '';
+  $('ppay-vueltas').style.display = 'block';
 }
 
 function calcPPSplit() {
@@ -1881,7 +1935,81 @@ function ppmResto(m) {
   calcPPSplit();
 }
 
-async function procesarPagoProductos() {
+// ── Cliente en cobro de productos ─────────────────────────────
+async function apiAdmin(method, path, body) {
+  const opts = { method, headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch('/api/admin' + path, opts);
+  if (r.status === 401) { salir(); throw new Error('Sesión expirada'); }
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || data.message || 'Error');
+  return data;
+}
+let _ppCliTimer = null, _ppCliCache = {}, _ppCliSelId = null, _ppCliSelNombre = null, _ppCliSelData = null;
+function buscarClientePPay() {
+  const q = $('ppay-cli-input').value.trim();
+  clearTimeout(_ppCliTimer);
+  if (q.length < 2) { $('ppay-cli-dropdown').style.display = 'none'; return; }
+  _ppCliTimer = setTimeout(async () => {
+    try {
+      const data = await apiAdmin('GET', `/clientes/buscar?q=${encodeURIComponent(q)}`);
+      data.forEach(c => { _ppCliCache[c.id] = c; });
+      const dd = $('ppay-cli-dropdown');
+      dd.innerHTML = (data.length ? data.map(c => `
+        <div onclick="selClientePPay('${c.id}')" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)">
+          <b>${esc(c.nombre)}</b>${c.telefono?` <span style="color:var(--text2)">${esc(c.telefono)}</span>`:''}${c.documento?` <span style="color:var(--text2)">Doc: ${esc(c.documento)}</span>`:''}
+        </div>`).join('') : `<div style="padding:10px 12px;font-size:13px;color:var(--text2)">Sin resultados — usa "+ Nuevo" para registrarlo</div>`);
+      dd.style.display = 'block';
+    } catch (e) {}
+  }, 300);
+}
+function selClientePPay(id) {
+  const c = _ppCliCache[id] || {};
+  _ppCliSelId = id; _ppCliSelNombre = c.nombre || ''; _ppCliSelData = c;
+  $('ppay-cli-sel-nombre').textContent = c.nombre + (c.telefono?` · ${c.telefono}`:'') + (c.documento?` · ${c.documento}`:'');
+  $('ppay-cli-sel-box').style.display = 'flex';
+  $('ppay-cli-search-wrap').style.display = 'none';
+  $('ppay-cli-input').value = '';
+  $('ppay-cli-dropdown').style.display = 'none';
+  $('ppay-cli-nuevo-wrap').style.display = 'none';
+}
+function limpiarClientePPay() {
+  _ppCliSelId = null; _ppCliSelNombre = null; _ppCliSelData = null;
+  const box=$('ppay-cli-sel-box'); if(box) box.style.display = 'none';
+  const sw=$('ppay-cli-search-wrap'); if(sw) sw.style.display = '';
+  const inp=$('ppay-cli-input'); if(inp) inp.value = '';
+  const nw=$('ppay-cli-nuevo-wrap'); if(nw) nw.style.display = 'none';
+}
+function mostrarNuevoClientePPay() {
+  $('ppay-cli-dropdown').style.display = 'none';
+  $('ppay-cli-nuevo-nombre').value = $('ppay-cli-input').value.trim();
+  ['ppay-cli-nuevo-tel','ppay-cli-nuevo-doc','ppay-cli-nuevo-email','ppay-cli-nuevo-dir','ppay-cli-nuevo-notas'].forEach(id=>{$(id).value='';});
+  $('ppay-cli-nuevo-wrap').style.display = 'block';
+}
+function cerrarNuevoClientePPay() { $('ppay-cli-nuevo-wrap').style.display = 'none'; }
+async function registrarNuevoClientePPay() {
+  const nombre = $('ppay-cli-nuevo-nombre').value.trim();
+  if (!nombre) { showToast('El nombre es obligatorio'); return; }
+  try {
+    const telefono = $('ppay-cli-nuevo-tel').value.trim() || null;
+    const documento = $('ppay-cli-nuevo-doc').value.trim() || null;
+    const email = $('ppay-cli-nuevo-email').value.trim() || null;
+    const direccion = $('ppay-cli-nuevo-dir').value.trim() || null;
+    const notas = $('ppay-cli-nuevo-notas').value.trim() || null;
+    const c = await apiAdmin('POST', '/clientes', { nombre, telefono, documento, email, direccion, notas });
+    _ppCliCache[c.id] = { id: c.id, nombre, telefono, documento, email, direccion, notas };
+    selClientePPay(c.id);
+    showToast('Cliente registrado ✓');
+  } catch (e) { showToast('Error: ' + e.message); }
+}
+document.addEventListener('click', e => {
+  if (!$('ppay-cli-wrap')?.contains(e.target)) {
+    const dd = $('ppay-cli-dropdown'); if (dd) dd.style.display = 'none';
+  }
+});
+
+function procesarPagoProductos() {
+  if (!_ppCliSelId) { showToast('⚠️ Selecciona o registra un cliente antes de cobrar'); $('ppay-cli-input')?.focus(); return; }
   const total = _carrito.reduce((a,c)=>a+c.precio*c.cantidad,0);
   let pagos = [];
   if (_ppMixto) {
@@ -1895,25 +2023,69 @@ async function procesarPagoProductos() {
   } else {
     if (_ppMetodo === 'efectivo') {
       const rec = parseFloat($('ppay-recibido').value)||0;
-      if (rec < total) { $('ppay-err').style.display=''; return; }
+      if (rec < total) { $('ppay-err-val').textContent=fmtCOP(total-rec); $('ppay-err').style.display='block'; return; }
     }
     pagos = [{ metodo: _ppMetodo.charAt(0).toUpperCase()+_ppMetodo.slice(1), monto: total }];
   }
-  const btn = $('ppay-procesar');
-  btn.disabled = true; btn.textContent = '...';
+  let subtotalSinIva = 0, ivaTotal = 0;
+  _carrito.forEach(c => {
+    const lineTotal = c.precio*c.cantidad;
+    const ivaPct = parseFloat(c.iva_pct||0);
+    if (ivaPct > 0) {
+      const base = lineTotal/(1+ivaPct/100);
+      subtotalSinIva += base;
+      ivaTotal += lineTotal-base;
+    } else {
+      subtotalSinIva += lineTotal;
+    }
+  });
+  const empSelId = $('ppay-empleado')?.value || null;
+  const empSel = empSelId ? (_empleados||[]).find(e=>e.id===empSelId) : null;
+  _pendingVentaPel = {
+    tipo: 'producto',
+    carrito: [..._carrito],
+    pagos,
+    clienteId: _ppCliSelId || null,
+    clienteNombre: _ppCliSelNombre || '',
+    clienteData: _ppCliSelData || null,
+    empleadoId: empSelId,
+    empleadoNombre: empSel ? (empSel.nombre + (empSel.apellido?' '+empSel.apellido:'')) : '',
+    total, subtotalSinIva, ivaTotal,
+    items: _carrito.map(c=>({ nombre: c.cantidad>1?`${c.nombre} x${c.cantidad}`:c.nombre, precio: c.precio*c.cantidad, iva_pct: parseFloat(c.iva_pct||0) })),
+    descuento: 0,
+    metodoPago: _ppMixto ? 'mixto' : pagos[0].metodo,
+    pagosRows: _ppMixto ? pagos : [],
+    fecha: new Date()
+  };
+  $('preview-pel-content').innerHTML = buildReciboHtmlPel(_pendingVentaPel, 'PRODUCTOS');
+  cerrarPPay();
+  $('preview-pel-modal').style.display = 'flex';
+}
+
+async function confirmarPagoProductos() {
+  const btn = $('btn-confirmar-pago-pel');
+  btn.disabled = true;
   try {
-    await api('POST', '/ventas', {
-      items: _carrito.map(c=>({ nombre:c.nombre, precio:c.precio, cantidad:c.cantidad, tipo:'producto', refId:c.id })),
-      pagos
+    const p = _pendingVentaPel;
+    const r = await api('POST', '/ventas', {
+      items: p.carrito.map(c=>({ nombre:c.nombre, precio:c.precio, cantidad:c.cantidad, tipo:'producto', refId:c.id, ivaPct:c.iva_pct||0 })),
+      pagos: p.pagos,
+      clienteId: p.clienteId,
+      empleadoId: p.empleadoId || null
     });
-    cerrarPPay();
-    showToast(`✅ Venta de ${fmtCOP(total)} registrada`);
+    p.numeroFactura = r?.numeroFactura;
+    $('preview-pel-modal').style.display = 'none';
+    $('success-pel-content').innerHTML = buildReciboHtmlPel(p, 'PRODUCTOS');
+    $('success-pel-modal').style.display = 'flex';
     limpiarCarrito();
     cargarProductosPOS();
+    _pendingVentaPel = null;
   } catch(e) {
+    $('preview-pel-modal').style.display = 'none';
+    $('ppayModal').style.display = 'flex';
     showToast('Error: '+e.message);
   } finally {
-    btn.disabled=false; btn.textContent='✓ Procesar pago';
+    btn.disabled = false;
   }
 }
 
