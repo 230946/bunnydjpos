@@ -708,6 +708,14 @@ const toISO = v => {
   }
   return String(v).replace(' ', 'T');
 };
+const _fechaYMD = v => {
+  if (!v) return null;
+  if (v instanceof Date) {
+    const pad = n => String(n).padStart(2,'0');
+    return `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}`;
+  }
+  return String(v).slice(0,10);
+};
 const localDate = (tz = 'America/Bogota') => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 const localDateTime = (tz = 'America/Bogota') => {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }).formatToParts(new Date());
@@ -1995,6 +2003,99 @@ router.get('/cajas/historial', requirePermiso('pos_cobro'), async (req, res) => 
       [nid(req)]
     );
     res.json(rows.map(r => ({ ...r, fecha_apertura: toISO(r.fecha_apertura), fecha_cierre: toISO(r.fecha_cierre) })));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════
+// NÓMINA — liquidación de horas + sueldo prorrateado + comisiones
+// ════════════════════════════════════════════════════════════════
+
+router.get('/nomina', async (req, res) => {
+  try {
+    const { desde, hasta, empleadoId } = req.query;
+    if (!desde || !hasta) return res.status(400).json({ error: 'desde y hasta requeridos' });
+    const negocioId = nid(req);
+
+    let empSql = `SELECT id, nombre, apellido, sueldo_base, tarifa_hora FROM pel_empleados WHERE negocio_id=? AND activo=1`;
+    const empParams = [negocioId];
+    if (empleadoId) { empSql += ` AND id=?`; empParams.push(empleadoId); }
+    const { rows: empleados } = await pool.query(empSql, empParams);
+
+    const { rows: turnos } = await pool.query(
+      `SELECT empleado_pel_id, fecha, hora_entrada, hora_salida FROM horarios
+       WHERE negocio_id=? AND activo=1 AND es_libre=0 AND fecha BETWEEN ? AND ?
+       AND empleado_pel_id IS NOT NULL AND hora_entrada IS NOT NULL AND hora_salida IS NOT NULL`,
+      [negocioId, desde, hasta]
+    );
+    const { rows: pausas } = await pool.query(
+      `SELECT empleado_id, inicio, fin FROM pel_pausas_turno
+       WHERE negocio_id=? AND fin IS NOT NULL AND DATE(inicio) BETWEEN ? AND ?`,
+      [negocioId, desde, hasta]
+    );
+    const { rows: comisiones } = await pool.query(
+      `SELECT cd.empleado_id, cd.monto_comision, cd.estado
+       FROM pel_comision_detalle cd
+       JOIN pel_venta_detalle d ON d.id=cd.venta_detalle_id
+       JOIN pel_ventas v ON v.id=d.venta_id
+       WHERE cd.negocio_id=? AND DATE(v.fecha) BETWEEN ? AND ?`,
+      [negocioId, desde, hasta]
+    );
+
+    // horas brutas por (empleado, fecha)
+    const brutasPorDia = {}; // key = empleado_pel_id + '|' + fecha
+    turnos.forEach(t => {
+      const fechaYMD = _fechaYMD(t.fecha);
+      const key = t.empleado_pel_id + '|' + fechaYMD;
+      const [eh, em] = String(t.hora_entrada).split(':').map(Number);
+      const [sh, sm] = String(t.hora_salida).split(':').map(Number);
+      const horas = Math.max(0, (sh * 60 + sm - (eh * 60 + em)) / 60);
+      brutasPorDia[key] = (brutasPorDia[key] || 0) + horas;
+    });
+    // horas de pausa por (empleado, fecha)
+    const pausasPorDia = {};
+    pausas.forEach(p => {
+      const fechaYMD = _fechaYMD(p.inicio);
+      const key = p.empleado_id + '|' + fechaYMD;
+      const horas = (new Date(p.fin) - new Date(p.inicio)) / 3600000;
+      pausasPorDia[key] = (pausasPorDia[key] || 0) + Math.max(0, horas);
+    });
+    // comisiones por empleado
+    const comisionPorEmp = {};
+    comisiones.forEach(c => {
+      if (!comisionPorEmp[c.empleado_id]) comisionPorEmp[c.empleado_id] = { pendiente: 0, pagada: 0 };
+      comisionPorEmp[c.empleado_id][c.estado === 'pagada' ? 'pagada' : 'pendiente'] += parseFloat(c.monto_comision || 0);
+    });
+
+    const resultado = empleados.map(e => {
+      let horasNetasTotal = 0, diasTrabajados = 0;
+      Object.keys(brutasPorDia).forEach(key => {
+        if (!key.startsWith(e.id + '|')) return;
+        const brutas = brutasPorDia[key];
+        if (brutas <= 0) return;
+        diasTrabajados++;
+        const pausaHoras = pausasPorDia[key] || 0;
+        horasNetasTotal += Math.max(0, brutas - pausaHoras);
+      });
+      const tarifaHora = parseFloat(e.tarifa_hora) || 0;
+      const sueldoBase = parseFloat(e.sueldo_base) || 0;
+      const pagoTarifa = tarifaHora ? horasNetasTotal * tarifaHora : 0;
+      const pagoSueldo = sueldoBase ? Math.round(sueldoBase / 30 * diasTrabajados) : 0;
+      const com = comisionPorEmp[e.id] || { pendiente: 0, pagada: 0 };
+      return {
+        empleadoId: e.id,
+        nombre: e.nombre + (e.apellido ? ' ' + e.apellido : ''),
+        diasTrabajados,
+        horasNetas: Math.round(horasNetasTotal * 100) / 100,
+        tarifaHora,
+        pagoTarifa: Math.round(pagoTarifa),
+        sueldoBase,
+        pagoSueldo,
+        comisionPendiente: Math.round(com.pendiente),
+        comisionPagada: Math.round(com.pagada),
+        totalAPagar: Math.round(pagoTarifa) + pagoSueldo + Math.round(com.pendiente)
+      };
+    });
+    res.json(resultado);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

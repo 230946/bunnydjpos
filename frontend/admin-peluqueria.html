@@ -3297,7 +3297,7 @@ function _fechaParaDia(dia){
   const d=new Date(hoy);d.setDate(hoy.getDate()+offset);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-let _horOffset=0, _horModoExcepcion=false;
+let _horOffset=0, _horModoExcepcion=false, _horVista='calendario';
 function _horSemanaFechas(offset){
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const domingo=new Date(hoy);domingo.setDate(hoy.getDate()-hoy.getDay()+offset*7);
@@ -3314,22 +3314,31 @@ function horSemanaNav(delta){
   _horOffset=delta===0?0:_horOffset+delta;
   cargarHorarios();
 }
+function _horCambiarVista(v){
+  _horVista=v;
+  renderHorarios();
+}
 function renderHorarios(){
   _horOffset=0;
+  const esCal=_horVista==='calendario';
   document.getElementById('content').innerHTML=`
     <div class="card">
       <div class="card-header" style="flex-wrap:wrap;gap:10px">
         <h3>Distribución de horarios</h3>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:4px">
+          <button class="btn-sm-outline" onclick="_horCambiarVista('calendario')" style="${esCal?'background:var(--acc-l);border-color:var(--acc);font-weight:600':''}">📅 Calendario</button>
+          <button class="btn-sm-outline" onclick="_horCambiarVista('nomina')" style="${esCal?'':'background:var(--acc-l);border-color:var(--acc);font-weight:600'}">💰 Nómina</button>
+        </div>
+        ${esCal?`<div style="display:flex;align-items:center;gap:8px">
           <button class="btn-sm-outline" onclick="horSemanaNav(-1)" title="Semana anterior">◀</button>
           <span id="hor-semana-label" style="font-size:13px;font-weight:600;min-width:120px;text-align:center"></span>
           <button class="btn-sm-outline" onclick="horSemanaNav(1)" title="Semana siguiente">▶</button>
           <button class="btn-sm-outline" onclick="horSemanaNav(0)">Hoy</button>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="abrirHorarioModal()">+ Turno</button>
+        <button class="btn btn-primary btn-sm" onclick="abrirHorarioModal()">+ Turno</button>`:''}
       </div>
       <div class="card-body" id="horarios-container"></div></div>`;
-  cargarHorarios();
+  if(esCal) cargarHorarios(); else renderNomina();
 }
 async function cargarHorarios(){
   try{
@@ -3373,6 +3382,59 @@ async function cargarHorarios(){
       return `<div class="dia-col"><div class="dia-label" style="${esPasado?'color:var(--text3)':''}">${diaLbl}</div><div class="dia-slot ${t?'activo':'vacio'} ${claseExtra}" style="${esPasado?'opacity:.35;cursor:default':'cursor:pointer'}" ${onclickAttr}>${contenido}</div></div>`;
     }).join('')}</div></div>`).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">Sin horarios configurados. Agrega empleados primero en la sección Empleados.</div>';
   }catch(e){showToast(e.message,'err');}
+}
+function renderNomina(){
+  const hoy=new Date().toISOString().split('T')[0];
+  const primerDia=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0];
+  const el=_gel('horarios-container');
+  if(!el)return;
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <input type="date" id="nom-desde" value="${primerDia}" onchange="cargarNomina()">
+      <input type="date" id="nom-hasta" value="${hoy}" onchange="cargarNomina()">
+      <select id="nom-emp" onchange="cargarNomina()" style="min-width:160px">
+        <option value="">Todos los empleados</option>
+        ${(_empsCat||[]).map(e=>`<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('')}
+      </select>
+    </div>
+    <div id="nomina-list"><div style="color:var(--text2)">Cargando...</div></div>`;
+  cargarNomina();
+}
+async function cargarNomina(){
+  const desde=_gel('nom-desde')?.value||'';
+  const hasta=_gel('nom-hasta')?.value||'';
+  const empleadoId=_gel('nom-emp')?.value||'';
+  const el=_gel('nomina-list');if(!el)return;
+  el.innerHTML='<div style="color:var(--text2)">Cargando...</div>';
+  try{
+    let url=`${API}/peluqueria/nomina?desde=${desde}&hasta=${hasta}`;
+    if(empleadoId)url+=`&empleadoId=${encodeURIComponent(empleadoId)}`;
+    const data=await apiFetch(url)||[];
+    if(!data.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">Sin empleados activos.</div>';return;}
+    const totalGeneral=data.reduce((s,r)=>s+r.totalAPagar,0);
+    el.innerHTML=`<div class="table-wrap"><table style="width:100%;font-size:13px">
+      <thead><tr>
+        <th style="text-align:left">Empleado</th>
+        <th>Días</th><th>Horas</th><th>Sueldo</th><th>Tarifa×hora</th>
+        <th>Comisión pend.</th><th>Total a pagar</th>
+      </tr></thead>
+      <tbody>
+        ${data.map(r=>`<tr>
+          <td>${esc(r.nombre)}</td>
+          <td style="text-align:center">${r.diasTrabajados}</td>
+          <td style="text-align:center">${r.horasNetas}</td>
+          <td style="text-align:right">${r.sueldoBase?fmt(r.pagoSueldo):'—'}</td>
+          <td style="text-align:right">${r.tarifaHora?fmt(r.pagoTarifa):'—'}</td>
+          <td style="text-align:right">${r.comisionPendiente?fmt(r.comisionPendiente):'—'}</td>
+          <td style="text-align:right;font-weight:700;color:var(--green)">${fmt(r.totalAPagar)}</td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot><tr style="font-weight:700">
+        <td colspan="6" style="text-align:right">Total general</td>
+        <td style="text-align:right;color:var(--green)">${fmt(totalGeneral)}</td>
+      </tr></tfoot>
+    </table></div>`;
+  }catch(e){el.innerHTML='';showToast(e.message,'err');}
 }
 async function _cargarPersonalHorario(){
   const personal=await apiFetch(`${API}/peluqueria/empleados?soloActivos=true`)||[];
