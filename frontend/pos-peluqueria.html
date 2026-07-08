@@ -101,7 +101,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cita-card:hover{border-color:var(--border2);box-shadow:var(--shadow)}
 .cita-card.selected{border-color:var(--acc);border-width:1.5px;background:var(--acc-ll);box-shadow:0 0 0 2px rgba(11,132,87,.1)}
 .cita-card.estado-Completada{opacity:.6}
+.cita-card.estado-Completada.pendiente-cobro{opacity:1;border:1.5px solid #f97316;background:#fff7ed}
+.cita-card.estado-Completada.pendiente-cobro .cc-hora{background:#f97316}
+.cita-card.estado-Completada.pendiente-cobro .status-badge{background:#ffe4cc!important;color:#c2560c!important}
 .cita-card.estado-Cancelada{opacity:.45}
+.pendiente-cobro-pulse{animation:pulseCobro 1.6s ease-in-out infinite}
+@keyframes pulseCobro{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.45)}50%{box-shadow:0 0 0 7px rgba(249,115,22,0)}}
 .cc-top{display:flex;align-items:flex-start;gap:10px}
 .cc-hora{background:var(--acc);color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;font-weight:700;flex-shrink:0;min-width:54px;text-align:center;line-height:1.1}
 .cc-hora small{display:block;font-size:9px;font-weight:400;opacity:.85}
@@ -441,9 +446,6 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
         <div class="fil-btns" id="filBtns">
           <button class="fil-btn active" onclick="setFiltro(this,'')">Todas</button>
           <button class="fil-btn" onclick="setFiltro(this,'Pendiente')">Pendiente</button>
-          <button class="fil-btn" onclick="setFiltro(this,'PorConfirmar')">Por confirmar</button>
-          <button class="fil-btn" onclick="setFiltro(this,'Confirmada')">Confirmada</button>
-          <button class="fil-btn" onclick="setFiltro(this,'EnProceso')">En proceso</button>
           <button class="fil-btn" onclick="setFiltro(this,'Completada')">Completada</button>
         </div>
         <select class="emp-sel" id="filEmp" onchange="renderCitas()">
@@ -571,7 +573,30 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <div id="cobro-err" style="display:none;background:var(--red-l);color:var(--red);border-radius:var(--r);padding:9px 12px;font-size:12px;margin-top:8px"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('cobroModal')">Cancelar</button>
-      <button class="btn btn-green" id="confirmarBtn" onclick="previewCobroPel()">✓ Confirmar</button>
+      <button class="btn btn-green" id="confirmarBtn" onclick="confirmarCobroPel()">✓ Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DATOS DEL CLIENTE (obligatorio antes de facturar un servicio) -->
+<div class="modal-bg" id="citaClienteModal" style="display:none">
+  <div class="modal" style="max-width:380px;position:relative">
+    <h3>Datos del cliente</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Completa todos los campos para poder facturar este servicio.</div>
+    <div id="cc-cli-search-wrap" style="position:relative;margin-bottom:8px">
+      <input id="cc-cli-buscar" placeholder="Buscar cliente existente..." oninput="buscarClienteCita()"
+        style="width:100%;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+      <div id="cc-cli-dropdown" style="display:none;position:absolute;left:0;right:0;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);margin-top:4px;max-height:160px;overflow-y:auto;z-index:5;box-shadow:0 4px 10px rgba(0,0,0,.15)"></div>
+    </div>
+    <input id="cc-cli-nombre" placeholder="Nombre *" style="width:100%;margin-bottom:6px;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+    <input id="cc-cli-tel" placeholder="Teléfono *" style="width:100%;margin-bottom:6px;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+    <input id="cc-cli-doc" placeholder="Documento *" style="width:100%;margin-bottom:6px;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+    <input id="cc-cli-email" type="email" placeholder="Email *" style="width:100%;margin-bottom:6px;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+    <input id="cc-cli-dir" placeholder="Dirección *" style="width:100%;margin-bottom:6px;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+    <div id="cc-cli-err" style="display:none;background:var(--red-l);color:var(--red);border-radius:var(--r);padding:8px 10px;font-size:12px;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('citaClienteModal')">Cancelar</button>
+      <button class="btn btn-green" onclick="guardarClienteCitaYFacturar()">Guardar y facturar</button>
     </div>
   </div>
 </div>
@@ -737,6 +762,18 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
   </div>
 </div>
 
+<!-- MODAL SELECCIONAR PRODUCTO (para agregar al cobro de una cita) -->
+<div class="modal-bg" id="pickProdCobroModal" style="display:none">
+  <div class="modal" style="max-width:380px">
+    <h3>Seleccionar producto</h3>
+    <input class="svc-search-inp" id="prodCobroSearchInp" placeholder="Buscar producto..." oninput="filtrarPickProdCobro()">
+    <div class="svc-pick-list" id="prodCobroPickList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('pickProdCobroModal')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CAJA -->
 <div class="modal-bg" id="cajaModal" style="display:none">
   <div class="modal">
@@ -782,7 +819,9 @@ let USER_ROL = sessionStorage.getItem('pos_pel_rol') || '';
 let _citas = [], _empleados = [], _servicios = [];
 let _filtroEstado = '', _filtroEmp = '';
 let _citaSel = null;
+let _citaClienteData = null, _citaClienteEditId = null, _ccCliTimer = null, _ccCliCache = {};
 let _extraItems = [];
+let _extraProductos = [];
 let _metodoPago = 'Efectivo';
 let _pagosRows = [];
 let _cajaId = null, _cajaData = null;
@@ -962,11 +1001,12 @@ function renderCitas() {
   }
   $('citasList').innerHTML = lista.map(c => {
     const esSel = _citaSel?.id === c.id;
+    const pendCobro = c.estado === 'Completada' && !c.venta_id;
     const svcsNombres = (c.servicios || []).map(s => s.nombre).join(', ') || c.servicioNombre || c.servicio_nombre || '—';
     const emp = c.empleadoNombre || c.empleado_nombre || '';
     const hora = c.fechaHora || c.fecha_hora;
     return `
-    <div class="cita-card estado-${c.estado}${esSel?' selected':''}" id="cc-${c.id}" onclick="selCita('${c.id}')">
+    <div class="cita-card estado-${c.estado}${esSel?' selected':''}${pendCobro?' pendiente-cobro pendiente-cobro-pulse':''}" id="cc-${c.id}" onclick="selCita('${c.id}')">
       <div class="cc-top">
         <div class="cc-hora">${fmtHora(hora)}<small>${new Date(String(hora).replace(' ','T')).toLocaleDateString('es-CO',{weekday:'short'})}</small></div>
         <div class="cc-body">
@@ -975,7 +1015,7 @@ function renderCitas() {
           ${emp ? `<div class="cc-emp">👤 ${esc(emp)}</div>` : `<div class="cc-emp" style="color:var(--amber);font-size:11px">⏳ Sin asignar — disponible en cola</div>`}
         </div>
         <div class="cc-right">
-          <span class="status-badge s-${c.estado}">${estadoLabel(c.estado)}</span>
+          <span class="status-badge s-${c.estado}">${c.estado==='Completada'&&c.venta_id?'Pagada':estadoLabel(c.estado)}</span>
           ${c.precio ? `<span class="cc-precio">${fmtCOP(c.precio)}</span>` : ''}
         </div>
       </div>
@@ -994,7 +1034,17 @@ function renderCitas() {
 function renderCitasResumen() {
   const cont = document.getElementById('citasResumen');
   if (!cont) return;
-  const todas = (_citas || []).filter(c => c.estado !== 'Cancelada' && c.estado !== 'NoAsistio');
+  const ahora = new Date();
+  let todas = (_citas || []).filter(c => {
+    if (c.estado === 'Cancelada' || c.estado === 'NoAsistio') return false;
+    if (c.estado === 'Pendiente') {
+      const hora = c.fechaHora || c.fecha_hora;
+      if (hora && new Date(String(hora).replace(' ','T')) < ahora) return false;
+    }
+    return true;
+  });
+  if (_filtroEstado) todas = todas.filter(c => c.estado === _filtroEstado);
+  if (_filtroEmp) todas = todas.filter(c => c.empleado_id === _filtroEmp || c.empleadoId === _filtroEmp);
   if (!todas.length) { cont.innerHTML = ''; return; }
   const colMap = {Pendiente:'#d97706',PorConfirmar:'#7c3aed',Confirmada:'var(--blue)',EnProceso:'var(--acc)',Completada:'var(--green)'};
   cont.innerHTML = `
@@ -1006,14 +1056,14 @@ function renderCitasResumen() {
         const esSel  = _citaSel?.id === c.id;
         const svcs   = (c.servicios||[]).length ? c.servicios.map(s=>esc(s.nombre)).join(' · ') : esc(c.servicioNombre||c.servicio_nombre||'Sin servicio');
         const precio  = (c.servicios||[]).length ? c.servicios.reduce((a,s)=>a+parseFloat(s.precio||0),0) : parseFloat(c.precio||0);
-        const col    = colMap[c.estado] || 'var(--border)';
-        const clases = 'resumen-card' + (esComp?' completada':' muted') + (esSel?' sel-cobro':'');
+        const col    = esComp ? '#f97316' : (colMap[c.estado] || 'var(--border)');
+        const clases = 'resumen-card' + (esComp?' completada pendiente-cobro-pulse':' muted') + (esSel?' sel-cobro':'');
         const onclick= esComp ? `onclick="selCitaDesdeResumen('${c.id}')"` : (yaFacturada ? 'title="Esta cita ya fue facturada"' : `title="Completa la cita para poder facturarla"`);
         const emp = c.empleadoNombre||c.empleado_nombre||'';
         return `<div class="${clases}" ${onclick} style="border-left-color:${col}">
           <div class="resumen-top">
             <span class="resumen-name">${esc(c.clienteNombre||c.cliente_nombre||'—')}</span>
-            <span class="resumen-badge" style="background:${col}">${yaFacturada ? 'Facturada ✓' : estadoLabel(c.estado)}</span>
+            <span class="resumen-badge" style="background:${col}">${yaFacturada ? 'Pagada ✓' : estadoLabel(c.estado)}</span>
           </div>
           <div class="resumen-svc">${svcs}</div>
           <div class="resumen-foot">
@@ -1070,6 +1120,8 @@ function selCita(id) {
   if (!cita) return;
   _citaSel = cita;
   _extraItems = [];
+  _extraProductos = [];
+  _citaClienteData = null;
   renderCobroPanel();
   renderCitasResumen();
   // Highlight card
@@ -1092,7 +1144,7 @@ function renderCobroPanel() {
     $('cobroEmpty').style.display = 'flex';
     $('cobroContent').style.display = 'none';
     $('cobroEmptyTit').textContent = _citaSel.clienteNombre || _citaSel.cliente_nombre || 'Cita seleccionada';
-    $('cobroEmptyMsg').innerHTML = `<span style="color:var(--green);font-weight:700">✓ Esta cita ya fue facturada</span>`;
+    $('cobroEmptyMsg').innerHTML = `<span style="color:var(--green);font-weight:700">✓ Esta cita ya fue pagada</span>`;
     $('cobroSub').textContent = '';
     return;
   }
@@ -1113,10 +1165,12 @@ function renderCobroPanel() {
   // Todos los ítems: de la cita + extras
   const citaItems = (c.servicios || []).length ? c.servicios : (c.precio ? [{id:null,nombre:c.servicioNombre||c.servicio_nombre||'Servicio',precio:c.precio}] : []);
   const todosItems = [...citaItems, ..._extraItems];
-  const subtotal = todosItems.reduce((a,s) => a + parseFloat(s.precio||0), 0);
+  const subtotalProductos = _extraProductos.reduce((a,p) => a + parseFloat(p.precio||0)*parseFloat(p.cantidad||1), 0);
+  const subtotal = todosItems.reduce((a,s) => a + parseFloat(s.precio||0), 0) + subtotalProductos;
   const descPct = parseFloat($('cobro-desc')?.value || 0) || 0;
   const descMonto = subtotal * descPct / 100;
   const total = subtotal - descMonto;
+  const prodEmpSelId = $('cobro-prod-emp')?.value || '';
 
   $('cobroBody').innerHTML = `
     <!-- Cliente -->
@@ -1154,6 +1208,35 @@ function renderCobroPanel() {
         </div>`;
       }).join('')}
       <button class="btn-add-svc" onclick="abrirPickSvcModal('cobro')">+ Agregar servicio</button>
+    </div>
+
+    <!-- Productos -->
+    <div class="cobro-svcs">
+      <div class="cs-head">
+        <span>Productos</span>
+        <span style="font-size:11px;color:var(--text3)">${_extraProductos.length} ítem(s)</span>
+      </div>
+      ${_extraProductos.map((p,i) => `<div class="cs-item">
+          <span style="font-size:15px;flex-shrink:0;margin-right:2px">🧴</span>
+          <div class="cs-info">
+            <div class="cs-name">${esc(p.nombre)}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+              <button class="btn-xs btn-outline" style="padding:0 7px" onclick="cambiarCantExtraProd(${i},-1)">−</button>
+              <span style="font-size:12px;min-width:16px;text-align:center">${p.cantidad}</span>
+              <button class="btn-xs btn-outline" style="padding:0 7px" onclick="cambiarCantExtraProd(${i},1)">+</button>
+            </div>
+          </div>
+          <span class="cs-price">${fmtCOP(p.precio*p.cantidad)}</span>
+          <button class="cs-del" onclick="quitarExtraProd(${i})">✕</button>
+        </div>`).join('')}
+      <button class="btn-add-svc" onclick="abrirPickProdCobro()">+ Agregar producto</button>
+      ${_extraProductos.length ? `<div style="margin-top:8px">
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Vendido por <span style="font-weight:400;color:var(--text3)">(opcional, aplica a los productos)</span></label>
+        <select id="cobro-prod-emp" style="width:100%;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+          <option value="">— Usar estilista de la cita —</option>
+          ${_empleados.map(e=>`<option value="${e.id}" ${prodEmpSelId===e.id?'selected':''}>${esc(e.nombre+(e.apellido?' '+e.apellido:''))}</option>`).join('')}
+        </select>
+      </div>` : ''}
     </div>
 
     <!-- Totales -->
@@ -1224,6 +1307,40 @@ function updateExtraItemEmp(idx, empId) {
 }
 
 function quitarExtra(i) { _extraItems.splice(i, 1); renderCobroPanel(); }
+
+/* ──────── PICK PRODUCTO (agregar al cobro de una cita) ──────── */
+async function abrirPickProdCobro() {
+  if (!_productosVenta.length) { try { await cargarProductosPOS(); } catch (e) {} }
+  $('prodCobroSearchInp').value = '';
+  filtrarPickProdCobro();
+  $('pickProdCobroModal').style.display = 'flex';
+}
+function filtrarPickProdCobro() {
+  const q = $('prodCobroSearchInp').value.toLowerCase();
+  const lista = (_productosVenta||[]).filter(p => (!q || p.nombre.toLowerCase().includes(q)) && parseInt(p.stock_actual||0) > 0);
+  $('prodCobroPickList').innerHTML = lista.map(p => `
+    <div class="svc-pick-item" onclick="pickProdCobro('${p.id}')">
+      <div class="spi-name">${esc(p.nombre)}</div>
+      <span class="spi-dur">Stock: ${parseInt(p.stock_actual||0)}</span>
+      <span class="spi-price">${fmtCOP(p.precio_venta)}</span>
+    </div>`).join('') || '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sin productos disponibles</div>';
+}
+function pickProdCobro(id) {
+  const p = (_productosVenta||[]).find(x => x.id === id);
+  if (!p) return;
+  cerrarModal('pickProdCobroModal');
+  const ex = _extraProductos.find(x => x.id === id);
+  if (ex) ex.cantidad++;
+  else _extraProductos.push({ id: p.id, nombre: p.nombre, precio: parseFloat(p.precio_venta||0), cantidad: 1, iva_pct: parseFloat(p.iva_pct||0) });
+  renderCobroPanel();
+}
+function cambiarCantExtraProd(i, delta) {
+  const p = _extraProductos[i];
+  if (!p) return;
+  p.cantidad = Math.max(1, p.cantidad + delta);
+  renderCobroPanel();
+}
+function quitarExtraProd(i) { _extraProductos.splice(i, 1); renderCobroPanel(); }
 
 /* ──────── PICK SERVICIO ──────── */
 function abrirPickSvcModal(target) {
@@ -1300,7 +1417,8 @@ function getTotal() {
   if (!_citaSel) return 0;
   const citaItems = (_citaSel.servicios||[]).length ? _citaSel.servicios : (_citaSel.precio?[{precio:_citaSel.precio}]:[]);
   const items = [...citaItems, ..._extraItems];
-  const sub = items.reduce((a,s) => a + parseFloat(s.precio||0), 0);
+  const subProductos = _extraProductos.reduce((a,p) => a + parseFloat(p.precio||0)*parseFloat(p.cantidad||1), 0);
+  const sub = items.reduce((a,s) => a + parseFloat(s.precio||0), 0) + subProductos;
   const desc = parseFloat($('cobro-desc')?.value||0)||0;
   return { subtotal: sub, descuento: sub*desc/100, total: sub - sub*desc/100 };
 }
@@ -1379,18 +1497,123 @@ function buildReciboHtmlPel(data, tipoLabel='SERVICIOS') {
   return h;
 }
 
+const _CC_CAMPOS = ['nombre','telefono','documento','email','direccion'];
+function _clienteCompleto(c) {
+  return !!c && _CC_CAMPOS.every(k => (c[k]||'').toString().trim());
+}
+async function confirmarCobroPel() {
+  if (!requireCaja()) return;
+  const c = _citaSel;
+  if (!c) return;
+  if (c.cliente_id) {
+    try {
+      const cli = await apiAdmin('GET', `/clientes/${c.cliente_id}`);
+      if (_clienteCompleto(cli)) { _citaClienteData = cli; previewCobroPel(); return; }
+      abrirCitaClienteModal(cli, c.cliente_id);
+      return;
+    } catch (e) { /* si falla la consulta, cae a pedir los datos igual */ }
+  }
+  abrirCitaClienteModal({ nombre: c.clienteNombre||c.cliente_nombre||'', telefono: c.clienteTelefono||c.cliente_tel||'' }, null);
+}
+function abrirCitaClienteModal(datos, clienteId) {
+  _citaClienteEditId = clienteId;
+  $('cc-cli-buscar').value = '';
+  $('cc-cli-dropdown').style.display = 'none';
+  $('cc-cli-nombre').value = datos?.nombre || '';
+  $('cc-cli-tel').value = datos?.telefono || '';
+  $('cc-cli-doc').value = datos?.documento || '';
+  $('cc-cli-email').value = datos?.email || '';
+  $('cc-cli-dir').value = datos?.direccion || '';
+  $('cc-cli-err').style.display = 'none';
+  $('citaClienteModal').style.display = 'flex';
+}
+function buscarClienteCita() {
+  const q = $('cc-cli-buscar').value.trim();
+  clearTimeout(_ccCliTimer);
+  if (q.length < 2) { $('cc-cli-dropdown').style.display = 'none'; return; }
+  _ccCliTimer = setTimeout(async () => {
+    try {
+      const data = await apiAdmin('GET', `/clientes/buscar?q=${encodeURIComponent(q)}`);
+      data.forEach(cl => { _ccCliCache[cl.id] = cl; });
+      const dd = $('cc-cli-dropdown');
+      dd.innerHTML = data.length ? data.map(cl => `
+        <div onclick="selClienteCita('${cl.id}')" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)">
+          <b>${esc(cl.nombre)}</b>${cl.telefono?` <span style="color:var(--text2)">${esc(cl.telefono)}</span>`:''}${cl.documento?` <span style="color:var(--text2)">Doc: ${esc(cl.documento)}</span>`:''}
+        </div>`).join('') : `<div style="padding:10px 12px;font-size:13px;color:var(--text2)">Sin resultados</div>`;
+      dd.style.display = 'block';
+    } catch (e) {}
+  }, 300);
+}
+function selClienteCita(id) {
+  const cl = _ccCliCache[id] || {};
+  _citaClienteEditId = id;
+  $('cc-cli-nombre').value = cl.nombre || '';
+  $('cc-cli-tel').value = cl.telefono || '';
+  $('cc-cli-doc').value = cl.documento || '';
+  $('cc-cli-email').value = cl.email || '';
+  $('cc-cli-dir').value = cl.direccion || '';
+  $('cc-cli-dropdown').style.display = 'none';
+  $('cc-cli-buscar').value = '';
+}
+async function guardarClienteCitaYFacturar() {
+  const nombre = $('cc-cli-nombre').value.trim();
+  const telefono = $('cc-cli-tel').value.trim();
+  const documento = $('cc-cli-doc').value.trim();
+  const email = $('cc-cli-email').value.trim();
+  const direccion = $('cc-cli-dir').value.trim();
+  if (!nombre || !telefono || !documento || !email || !direccion) {
+    $('cc-cli-err').textContent = 'Todos los campos son obligatorios';
+    $('cc-cli-err').style.display = 'block';
+    return;
+  }
+  try {
+    const r = await api('PATCH', `/citas/${_citaSel.id}/cliente`, {
+      clienteId: _citaClienteEditId, nombre, telefono, documento, email, direccion,
+    });
+    _citaSel.cliente_id = r.clienteId;
+    _citaSel.clienteNombre = r.nombre;
+    _citaSel.clienteTelefono = r.telefono;
+    _citaClienteData = r;
+    $('citaClienteModal').style.display = 'none';
+    previewCobroPel();
+  } catch (e) {
+    $('cc-cli-err').textContent = e.message;
+    $('cc-cli-err').style.display = 'block';
+  }
+}
+document.addEventListener('click', e => {
+  if (!$('cc-cli-search-wrap')?.contains(e.target)) {
+    const dd = $('cc-cli-dropdown'); if (dd) dd.style.display = 'none';
+  }
+});
+
 function previewCobroPel() {
   if (!requireCaja()) return;
   const { subtotal, descuento, total } = getTotal();
   const c = _citaSel || {};
   const citaItems = (c.servicios||[]).length ? c.servicios : (c.precio?[{nombre:'Servicio',precio:c.precio}]:[]);
-  const items = [...citaItems, ..._extraItems];
-  const clienteNombre = c.clienteNombre || c.cliente_nombre || '';
+  const prodItems = _extraProductos.map(p => ({
+    nombre: p.cantidad>1 ? `${p.nombre} x${p.cantidad}` : p.nombre,
+    precio: p.precio*p.cantidad, iva_pct: parseFloat(p.iva_pct||0),
+  }));
+  const items = [...citaItems, ..._extraItems, ...prodItems];
+  let subtotalSinIva = 0, ivaTotal = 0;
+  items.forEach(it => {
+    const lineTotal = parseFloat(it.precio||0);
+    const ivaPct = parseFloat(it.iva_pct||0);
+    if (ivaPct > 0) {
+      const base = lineTotal/(1+ivaPct/100);
+      subtotalSinIva += base; ivaTotal += lineTotal-base;
+    } else { subtotalSinIva += lineTotal; }
+  });
+  const clienteNombre = _citaClienteData?.nombre || c.clienteNombre || c.cliente_nombre || '';
   const empleadoNombre = c.empleadoNombre || c.empleado_nombre || '';
+  const productosEmpleadoId = $('cobro-prod-emp')?.value || null;
   _pendingVentaPel = {
     tipo: 'cita', cita: c, extraItems: [..._extraItems], subtotal, descuento, total,
     metodoPago: _metodoPago, pagosRows: [..._pagosRows],
-    items, clienteNombre, empleadoNombre, fecha: new Date(),
+    items, subtotalSinIva, ivaTotal, clienteNombre, clienteData: _citaClienteData, empleadoNombre, fecha: new Date(),
+    productos: [..._extraProductos], productosEmpleadoId,
   };
   $('preview-pel-content').innerHTML = buildReciboHtmlPel(_pendingVentaPel);
   cerrarModal('cobroModal');
@@ -1414,6 +1637,7 @@ async function confirmarPagoPel() {
       const citaItems = (c.servicios||[]).length ? c.servicios : [];
       const todosItems = [...citaItems, ...p.extraItems];
       await api('PUT', `/citas/${c.id}`, {
+        clienteId: c.cliente_id,
         clienteNombre: c.clienteNombre || c.cliente_nombre,
         clienteTelefono: c.clienteTelefono || c.cliente_tel,
         empleadoId: c.empleado_id,
@@ -1424,12 +1648,14 @@ async function confirmarPagoPel() {
     const pagos = p.metodoPago === 'mixto' ? p.pagosRows : [{ metodo: p.metodoPago, monto: p.total }];
     const r = await api('PATCH', `/citas/${c.id}/completar`, {
       metodoPago: p.metodoPago, descuento: p.descuento, pagos,
+      productos: (p.productos||[]).map(pr => ({ id: pr.id, nombre: pr.nombre, precio: pr.precio, cantidad: pr.cantidad, ivaPct: pr.iva_pct })),
+      productosEmpleadoId: p.productosEmpleadoId || null,
     });
     p.numeroFactura = r?.numeroFactura;
     $('preview-pel-modal').style.display = 'none';
     $('success-pel-content').innerHTML = buildReciboHtmlPel(p);
     $('success-pel-modal').style.display = 'flex';
-    _citaSel = null; _extraItems = []; _pagosRows = []; _pendingVentaPel = null;
+    _citaSel = null; _extraItems = []; _extraProductos = []; _pagosRows = []; _pendingVentaPel = null;
     $('cobroEmpty').style.display = 'flex';
     $('cobroContent').style.display = 'none';
   } catch(e) {
