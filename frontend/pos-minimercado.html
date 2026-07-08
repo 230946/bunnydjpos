@@ -290,7 +290,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
       <!-- Productos -->
       <div class="prod-panel">
         <div class="search-bar">
-          <input id="search" placeholder="🔍 Buscar producto o código..." oninput="renderProducts()" autofocus>
+          <input id="search" placeholder="🔍 Buscar producto o escanear código de barras..." oninput="renderProducts()" onkeydown="if(event.key==='Enter')_scanBarcode()" autofocus>
         </div>
         <div class="cat-tabs" id="cat-tabs">
           <button class="cat-tab active" onclick="selCat(null,this)">Todos</button>
@@ -616,11 +616,22 @@ function selCat(id, btn){
   renderProducts();
 }
 
+function _scanBarcode() {
+  const q = ($('search')?.value || '').trim();
+  if (!q) return;
+  const p = allProds.find(x => (x.codigo_barras||'').trim() === q || (x.codigo||'').trim().toLowerCase() === q.toLowerCase());
+  if (!p) return; // sin match exacto: se deja como búsqueda normal
+  const st = stockEfectivo(p);
+  if (st !== null && st <= 0) { toast('Sin stock disponible'); return; }
+  addToCart(p.id, p.nombre, p.precio);
+  $('search').value = '';
+  renderProducts();
+}
 function renderProducts(){
   const q = $('search').value.toLowerCase();
   let items = allProds;
   if (catId) items = items.filter(p=>p.categoria_id===catId);
-  if (q) items = items.filter(p=>p.nombre.toLowerCase().includes(q)||(p.codigo||'').toLowerCase().includes(q));
+  if (q) items = items.filter(p=>p.nombre.toLowerCase().includes(q)||(p.codigo||'').toLowerCase().includes(q)||(p.codigo_barras||'').toLowerCase().includes(q));
   const g = $('prod-grid');
   if (!items.length) { g.innerHTML='<div class="empty-state">Sin productos</div>'; return; }
   const inCart = Object.fromEntries(cart.map(i=>[i.id,i.qty]));
@@ -918,7 +929,7 @@ function imprimirRecibo(){
   const html=$('success-content')?.innerHTML||'';
   const w=window.open('','_blank','width=400,height=700');
   if(!w) return;
-  w.document.write(`<html><head><meta charset="UTF-8"><style>@page{size:72mm auto;margin:0}body{width:72mm;font-family:monospace;font-size:12px;padding:8px;margin:0}</style></head><body>${html}</body></html>`);
+  w.document.write(`<html><head><meta charset="UTF-8"><!-- src:JMFR-BUNNYDJPOS-2026 --><style>@page{size:72mm auto;margin:0}body{width:72mm;font-family:monospace;font-size:12px;padding:8px;margin:0}</style></head><body>${html}</body></html>`);
   w.document.close(); w.focus(); w.print(); w.close();
 }
 

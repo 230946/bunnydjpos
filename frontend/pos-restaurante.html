@@ -415,7 +415,9 @@ table.inv tr:hover td{background:var(--bg2)}
       <div class="panel" id="panel-menu">
         <div class="panel-topbar">
           <span class="panel-title" id="menu-panel-title">Menú</span>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="menu-search" placeholder="🔍 Buscar o escanear código..." oninput="renderMenuItems()" onkeydown="if(event.key==='Enter')_scanMenuBarcode()"
+              style="padding:5px 9px;border:0.5px solid var(--border2,rgba(0,0,0,.15));border-radius:6px;font-size:12px;background:var(--bg2,#f5f5f5);color:inherit;width:170px">
             <span id="mesa-sel-label" style="font-size:12px;color:var(--text2);align-self:center"></span>
           </div>
         </div>
@@ -1183,8 +1185,20 @@ function _posPosTip(e){
 }
 function _hidePosTip(){ $('pos-tip').style.display='none'; }
 
+function _scanMenuBarcode() {
+  const q = ($('menu-search')?.value || '').trim();
+  if (!q) return;
+  const item = menuItems.find(x => (x.codigo_barras||'').trim() === q || (x.codigo||'').trim().toLowerCase() === q.toLowerCase());
+  if (!item) return; // sin match exacto: se deja como búsqueda normal
+  if (!esAgotado(item)) addToPedido(item);
+  else toast(`⚠️ "${item.nombre}" agotado`);
+  $('menu-search').value = '';
+  renderMenuItems();
+}
 function renderMenuItems(){
-  const items=selCatId?menuItems.filter(i=>i.categoria_id===selCatId):menuItems;
+  const q = ($('menu-search')?.value || '').toLowerCase();
+  let items=selCatId?menuItems.filter(i=>i.categoria_id===selCatId):menuItems;
+  if (q) items = items.filter(i => i.nombre.toLowerCase().includes(q) || (i.codigo_barras||'').toLowerCase().includes(q) || (i.codigo||'').toLowerCase().includes(q));
   const g=$('menu-items-grid'); g.innerHTML='';
   items.forEach(item=>{
     const agotado=esAgotado(item);
@@ -2145,7 +2159,7 @@ function imprimirRecibo(){
   }
   const estilos = `<style>@page{size:72mm auto;margin:0}body{width:72mm;font-family:'Courier New',monospace;font-size:12px;padding:8px;margin:auto}.recibo-row{display:flex;justify-content:space-between;margin:2px 0}.recibo-hr{border:none;border-top:1px dashed #aaa;margin:7px 0}.recibo-center{text-align:center}.recibo-total{font-weight:700;font-size:13px}.recibo-cambio{font-weight:700;color:#0a6e4a}img{display:block;margin:0 auto}</style>`;
   const win=window.open('','_blank','width=380,height=620');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">${estilos}</head><body>${contenido}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><!-- src:JMFR-BUNNYDJPOS-2026 -->${estilos}</head><body>${contenido}</body></html>`);
   win.document.close();
   setTimeout(()=>{ win.focus(); win.print(); win.close(); }, 300);
 }

@@ -520,7 +520,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <!-- Catálogo -->
     <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px;border-right:0.5px solid var(--border)">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-        <input id="prod-busq" placeholder="Buscar producto..." oninput="filtrarProductosPOS()"
+        <input id="prod-busq" placeholder="Buscar producto o escanear código de barras..." oninput="filtrarProductosPOS()" onkeydown="if(event.key==='Enter')buscarPorCodigoBarras()"
           style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:6px;font-size:13px;background:var(--bg2);color:var(--text);flex:1;min-width:120px">
         <span id="prod-count" style="font-size:12px;color:var(--text3);flex-shrink:0"></span>
       </div>
@@ -839,7 +839,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 <div class="modal-bg" id="pickProdCobroModal" style="display:none">
   <div class="modal" style="max-width:380px">
     <h3>Seleccionar producto</h3>
-    <input class="svc-search-inp" id="prodCobroSearchInp" placeholder="Buscar producto..." oninput="filtrarPickProdCobro()">
+    <input class="svc-search-inp" id="prodCobroSearchInp" placeholder="Buscar producto o escanear código de barras..." oninput="filtrarPickProdCobro()" onkeydown="if(event.key==='Enter')_scanPickProdCobro()">
     <div class="svc-pick-list" id="prodCobroPickList"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('pickProdCobroModal')">Cerrar</button>
@@ -1402,9 +1402,17 @@ async function abrirPickProdCobro() {
   filtrarPickProdCobro();
   $('pickProdCobroModal').style.display = 'flex';
 }
+function _scanPickProdCobro() {
+  const q = ($('prodCobroSearchInp')?.value || '').trim();
+  if (!q) return;
+  const p = (_productosVenta||[]).find(x => (x.codigo_barras||'').trim() === q || (x.sku||'').trim().toLowerCase() === q.toLowerCase());
+  if (!p) return;
+  if (parseInt(p.stock_actual||0) <= 0) { showToast(`⚠️ ${p.nombre} sin stock`); return; }
+  pickProdCobro(p.id);
+}
 function filtrarPickProdCobro() {
   const q = $('prodCobroSearchInp').value.toLowerCase();
-  const lista = (_productosVenta||[]).filter(p => (!q || p.nombre.toLowerCase().includes(q)) && parseInt(p.stock_actual||0) > 0);
+  const lista = (_productosVenta||[]).filter(p => (!q || p.nombre.toLowerCase().includes(q) || (p.codigo_barras||'').toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q)) && parseInt(p.stock_actual||0) > 0);
   $('prodCobroPickList').innerHTML = lista.map(p => `
     <div class="svc-pick-item" onclick="pickProdCobro('${p.id}')">
       <div class="spi-name">${esc(p.nombre)}</div>
@@ -1803,7 +1811,7 @@ async function confirmarPagoPel() {
 function imprimirReciboPel() {
   const html = $('success-pel-content').innerHTML;
   const w = window.open('', '_blank', 'width=400,height=700');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo</title><style>@page{size:72mm auto;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{width:72mm;font-family:'Courier New',monospace;font-size:14px;padding:8px;color:#000;background:#fff}.rc{text-align:center;margin-bottom:3px}.rhr{border:none;border-top:1px dashed #000;margin:5px 0}.rr{display:flex;justify-content:space-between;margin:1px 0}.rb{font-weight:700}img{max-height:50px;max-width:160px;object-fit:contain;display:block;margin:0 auto 4px}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><!-- src:JMFR-BUNNYDJPOS-2026 --><title>Recibo</title><style>@page{size:72mm auto;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{width:72mm;font-family:'Courier New',monospace;font-size:14px;padding:8px;color:#000;background:#fff}.rc{text-align:center;margin-bottom:3px}.rhr{border:none;border-top:1px dashed #000;margin:5px 0}.rr{display:flex;justify-content:space-between;margin:1px 0}.rb{font-weight:700}img{max-height:50px;max-width:160px;object-fit:contain;display:block;margin:0 auto 4px}</style></head><body>${html}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
   w.document.close();
 }
 
@@ -2141,7 +2149,7 @@ async function cargarProductosPOS() {
 
 function filtrarProductosPOS() {
   const q = ($('prod-busq')?.value || '').toLowerCase();
-  const lista = q ? _productosVenta.filter(p => p.nombre.toLowerCase().includes(q)) : _productosVenta;
+  const lista = q ? _productosVenta.filter(p => p.nombre.toLowerCase().includes(q) || (p.codigo_barras||'').toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q)) : _productosVenta;
   const cnt = $('prod-count');
   if (cnt) cnt.textContent = `${lista.length} producto${lista.length!==1?'s':''}`;
   const grid = $('prod-grid');
@@ -2175,6 +2183,16 @@ function filtrarProductosPOS() {
   }).join('');
 }
 
+function buscarPorCodigoBarras() {
+  const q = ($('prod-busq')?.value || '').trim();
+  if (!q) return;
+  const p = _productosVenta.find(x => (x.codigo_barras||'').trim() === q || (x.sku||'').trim().toLowerCase() === q.toLowerCase());
+  if (!p) return; // sin match exacto: se deja como búsqueda normal por nombre
+  if (parseInt(p.stock_actual||0) <= 0) { showToast(`⚠️ ${p.nombre} sin stock`); return; }
+  agregarAlCarrito(p.id, p.nombre, p.precio_venta, p.unidad||'und', parseFloat(p.iva_pct)||0);
+  $('prod-busq').value = '';
+  filtrarProductosPOS();
+}
 function agregarAlCarrito(id, nombre, precio, unidad, ivaPct) {
   precio = parseFloat(precio||0);
   const iva_pct = parseFloat(ivaPct||0);
