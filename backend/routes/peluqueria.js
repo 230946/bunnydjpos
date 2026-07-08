@@ -1696,6 +1696,39 @@ router.patch('/citas/:id/empleado', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Completa o vincula los datos del cliente de una cita antes de facturar
+// (crea o actualiza el registro en la tabla compartida `clientes`, sin
+// requerir permiso de admin — a diferencia de PUT /clientes/:id en clientes.js)
+router.patch('/citas/:id/cliente', async (req, res) => {
+  try {
+    const { clienteId, nombre, telefono, documento, email, direccion } = req.body;
+    if (!nombre || !telefono || !documento || !email || !direccion) {
+      return res.status(400).json({ error: 'Nombre, teléfono, documento, email y dirección son obligatorios' });
+    }
+    const negocioId = nid(req);
+    let id = clienteId;
+    if (id) {
+      await pool.query(
+        `UPDATE clientes SET nombre=?,telefono=?,documento=?,email=?,direccion=?
+         WHERE id=? AND negocio_id=?`,
+        [nombre, telefono, documento, email, direccion, id, negocioId]
+      );
+    } else {
+      id = uuid();
+      await pool.query(
+        `INSERT INTO clientes (id,negocio_id,nombre,telefono,documento,email,direccion)
+         VALUES (?,?,?,?,?,?,?)`,
+        [id, negocioId, nombre, telefono, documento, email, direccion]
+      );
+    }
+    await pool.query(
+      `UPDATE pel_citas SET cliente_id=?, cliente_nombre=?, cliente_tel=? WHERE id=? AND negocio_id=?`,
+      [id, nombre, telefono, req.params.id, negocioId]
+    );
+    res.json({ clienteId: id, nombre, telefono, documento, email, direccion });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.patch('/citas/:id/estado', async (req, res) => {
   try {
     const { estado } = req.body;

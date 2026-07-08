@@ -27,6 +27,19 @@ router.get('/clientes/buscar', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Obtener uno (POS y admin — necesario para validar completitud antes de facturar)
+router.get('/clientes/:id', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, nombre, telefono, email, documento, direccion FROM clientes
+       WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, req.user.negocio_id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Listar todos (solo admin)
 router.get('/clientes', requirePermiso('clientes'), async (req, res) => {
   try {
