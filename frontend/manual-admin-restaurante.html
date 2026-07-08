@@ -184,6 +184,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de cierre</strong><p>Cuánto dinero en efectivo hay físicamente al terminar el turno.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cierre</strong><p>El sistema calcula automáticamente el total de ventas, métodos de pago y diferencia con el efectivo.</p></div></div>
       </div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span><strong>No dejes la caja abierta de un día para otro.</strong> Si al día siguiente sigue abierta, el POS del cajero muestra una alerta bloqueante y no deja facturar hasta cerrarla — el botón "Cerrar caja" cierra automáticamente la más antigua que haya quedado pendiente, no necesariamente la de hoy.</span></div>
 
       <h3 class="sub">Historial de cajas</h3>
       <table>
@@ -277,6 +278,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
       <h3 class="sub">Agregar producto al inventario</h3>
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo ítem</strong><p>Nombre del ingrediente o producto, unidad de medida (kg, litros, unidades) y stock inicial.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Código interno vs. código de barras</strong><p>Son dos campos separados: el <strong>código interno</strong> se autogenera (COD-001, COD-002...); el <strong>código de barras</strong> es el del fabricante, para escanearlo con pistola lectora — por ejemplo al crear un producto nuevo desde un pedido a proveedor.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Stock mínimo</strong><p>Define el umbral de alerta — el dashboard te avisará cuando el stock baje de este nivel.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Vincular a recetas</strong><p>En Editar menú, cada plato puede tener ingredientes con cantidades; al venderse, el inventario se descuenta automáticamente.</p></div></div>
       </div>

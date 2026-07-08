@@ -136,6 +136,7 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li><strong>Filtro por fecha</strong> — cambia el campo de fecha para consultar días anteriores.</li>
   </ul>
   <div class="tip">El cajero abre y cierra la caja desde el POS Minimercado. Aquí solo se consulta el historial.</div>
+  <div class="warn">⚠️ Si un cajero deja la caja abierta de un día para otro, al siguiente día el POS muestra una alerta bloqueante y no deja facturar hasta cerrarla — el botón "Cerrar caja" cierra automáticamente la más antigua pendiente, no necesariamente la de hoy.</div>
 
   <h2 id="gastos">Gastos</h2>
   <p>Registra los egresos del negocio (servicios, insumos, otros).</p>
@@ -189,6 +190,7 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   <ol class="steps">
     <li>Haz clic en <strong>Nuevo producto</strong>.</li>
     <li>Llena nombre, categoría, precio de venta, precio de costo y stock inicial.</li>
+    <li><strong>Código interno</strong> (se autogenera tipo COD-001) y <strong>código de barras</strong> (el del fabricante, para escanear con pistola lectora) son dos campos separados.</li>
     <li>Opcionalmente define el stock mínimo para alertas.</li>
     <li>Guarda — el producto aparece de inmediato en el POS.</li>
   </ol>

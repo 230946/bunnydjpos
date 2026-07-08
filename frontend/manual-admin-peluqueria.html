@@ -171,6 +171,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
           <tr><td><strong>Estado</strong></td><td><span class="tag tag-green">abierta</span> o <span class="tag" style="background:var(--bg2);color:var(--text2)">cerrada</span></td></tr>
         </tbody>
       </table>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Si un empleado deja la caja abierta y no la cierra ese mismo día, al día siguiente el POS muestra una alerta bloqueante y <strong>no deja facturar</strong> hasta que esa caja se cierre manualmente (contando el efectivo) y se abra una nueva.</span></div>
     </div>
 
     <div class="section" id="gastos">
@@ -206,13 +207,19 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     </div>
 
     <div class="section" id="paquetes">
-      <div class="section-header"><div class="section-icon">🎁</div><div><h2>Paquetes</h2><p>Combos de servicios con precio especial</p></div></div>
-      <p style="color:var(--text2);margin-bottom:12px">Crea paquetes de múltiples servicios a un precio especial — ideal para promociones.</p>
+      <div class="section-header"><div class="section-icon">🎁</div><div><h2>Paquetes</h2><p>Combos de servicios con precio especial y vigencia</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Crea paquetes de múltiples servicios a un precio especial — ideal para promociones y membresías.</p>
       <div class="steps">
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo paquete</strong><p>Nombre, precio total del paquete y vigencia en días.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo paquete</strong><p>Nombre, precio total del paquete y vigencia en días (a partir de la fecha de compra del cliente).</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Agregar servicios</strong><p>Selecciona qué servicios incluye el paquete y cuántas sesiones de cada uno.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Vender el paquete</strong><p>Al cobrar, el empleado puede seleccionar "Paquete" y el cliente va descontando sesiones.</p></div></div>
       </div>
+      <h3 class="sub">Cómo se vende y se canjea</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Venta del paquete</strong><p>Se vende desde el POS, en la pestaña <strong>🎁 Paquetes</strong> — se busca o registra al cliente, se elige el paquete y se cobra. Ahí se crea la vigencia del cliente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Canje de una sesión</strong><p>Cuando el cliente viene a un servicio incluido en su paquete activo, al facturar la cita el POS ofrece la opción <strong>"Cobrar con paquete"</strong> — esa línea queda en $0 y se descuenta una sesión del saldo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ver vigencia y saldo</strong><p>En <strong>Clientes</strong>, al editar un cliente que tiene paquetes se muestra su estado (Activo/Vencido/Agotado), la fecha de vencimiento con días restantes, y cuántas sesiones lleva usadas de cada servicio.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>El paquete vence solo — cuando pasan los días de vigencia configurados, el sistema lo marca automáticamente como "Vencido" y ya no se puede canjear, aunque le queden sesiones sin usar.</span></div>
     </div>
 
     <div class="section" id="inventario">
@@ -220,6 +227,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
       <p style="color:var(--text2);margin-bottom:12px">Controla el stock de tintes, champús, herramientas y demás insumos del local.</p>
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Agregar producto</strong><p>Nombre, unidad (ml, unidad, kg), stock actual y stock mínimo de alerta.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Código interno vs. código de barras</strong><p>Son dos campos separados: el <strong>código interno</strong> se autogenera (COD-001, COD-002...) para uso interno; el <strong>código de barras</strong> es el código real del fabricante, para escanearlo con pistola lectora. La tabla los muestra antes del nombre.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ajustar stock</strong><p>Registra entradas (compras) o salidas (uso, merma) manualmente.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Alertas de stock bajo</strong><p>El dashboard te avisa cuando un producto baja del stock mínimo configurado.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Activar en POS (En venta)</strong><p>Marca el checkbox <strong>En POS</strong> en la columna de la tabla para que el producto aparezca en la pestaña 🛍️ Productos del POS y pueda venderse directamente sin necesidad de cita.</p></div></div>
@@ -241,6 +249,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a Comisiones → 📋 Ver comisiones</strong><p>Selecciona el período y el empleado para ver el resumen de comisiones.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Exportar</strong><p>Descarga el reporte de comisiones para liquidar quincena o mes.</p></div></div>
       </div>
+      <div class="alert alert-tip">💡 <span>Cada comisión queda marcada como pendiente o pagada, y en la tabla se distingue de un vistazo si viene de la venta de un <strong>producto</strong> o de un <strong>servicio</strong>. La forma más rápida de pagarlas es desde <strong>Horarios → Nómina</strong>, que las liquida junto con el sueldo del empleado.</span></div>
     </div>
 
     <div class="section" id="proveedores">
@@ -258,9 +267,10 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
       <p style="color:var(--text2);margin-bottom:12px">Registra clientes frecuentes para asociarlos a sus citas, ver su historial y generar facturas con sus datos.</p>
       <div class="cards">
         <div class="card"><div class="card-icon">📋</div><h4>Historial de citas</h4><p>Todas las visitas del cliente con servicios y montos</p></div>
-        <div class="card"><div class="card-icon">📦</div><h4>Paquetes activos</h4><p>Sesiones restantes de los paquetes que tiene el cliente</p></div>
-        <div class="card"><div class="card-icon">📧</div><h4>Datos de contacto</h4><p>Teléfono y correo para comunicaciones y recordatorios</p></div>
+        <div class="card"><div class="card-icon">🎁</div><h4>Paquetes activos</h4><p>Estado, vigencia restante y sesiones usadas de cada paquete que tiene el cliente</p></div>
+        <div class="card"><div class="card-icon">📧</div><h4>Datos de contacto</h4><p>Teléfono, documento, correo y dirección</p></div>
       </div>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Nombre, documento, teléfono, email y dirección son obligatorios para poder facturar un servicio — si a un cliente le falta algún dato, el POS lo pide en el momento de cobrar la cita, no hace falta completarlo aquí de antemano.</span></div>
     </div>
 
     <div class="section" id="empleados">
@@ -287,13 +297,30 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     </div>
 
     <div class="section" id="horarios">
-      <div class="section-header"><div class="section-icon">🕐</div><div><h2>Horarios</h2><p>Turnos laborales del personal</p></div></div>
+      <div class="section-header"><div class="section-icon">🕐</div><div><h2>Horarios</h2><p>Turnos laborales del personal y nómina</p></div></div>
       <p style="color:var(--text2);margin-bottom:12px">Define los días y horas en que cada empleado trabaja. Esto controla su disponibilidad en el calendario de reservas online.</p>
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar horario</strong><p>Empleado, día de la semana, hora de entrada y salida.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Días libres</strong><p>Si un empleado no trabaja un día específico, no aparecerá disponible para reservas ese día.</p></div></div>
       </div>
       <div class="alert alert-tip">💡 <span>Es importante mantener los horarios actualizados — si un empleado está de vacaciones, desactiva sus días para que los clientes no puedan reservarle citas.</span></div>
+
+      <h3 class="sub">💰 Nómina — liquidar el pago del empleado</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Dentro de "Distribución de horarios" hay un selector <strong>📅 Calendario / 💰 Nómina</strong>. La vista Nómina calcula, para el rango de fechas que elijas, cuánto se le debe pagar a cada empleado.</p>
+      <table>
+        <thead><tr><th>Columna</th><th>Cómo se calcula</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Días / Horas</strong></td><td>Con base en los turnos reales que el empleado registró (no la plantilla semanal), restando el tiempo que estuvo en pausa</td></tr>
+          <tr><td><strong>Sueldo</strong></td><td>El sueldo básico mensual del empleado, prorrateado por los días efectivamente trabajados en el rango</td></tr>
+          <tr><td><strong>Tarifa×hora</strong></td><td>Horas netas trabajadas × la tarifa por hora configurada al empleado</td></tr>
+          <tr><td><strong>Comisión</strong></td><td>Comisiones generadas en el rango, desglosadas en pagadas / pendientes</td></tr>
+          <tr><td><strong>Total a pagar</strong></td><td>Suma de sueldo + tarifa + comisión pendiente</td></tr>
+        </tbody>
+      </table>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Botón "Pagar"</strong><p>Liquida el sueldo, la tarifa por hora y las comisiones pendientes de ese empleado en un solo pago, y queda registrado en el historial.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Evita pagar dos veces</strong><p>Si vuelves a consultar un rango que se solapa con un pago ya hecho, esos días no se vuelven a contar — el sistema recuerda qué ya se liquidó.</p></div></div>
+      </div>
     </div>
 
     <div class="section" id="cfg-factura">

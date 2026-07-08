@@ -106,7 +106,8 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     <a href="#cobro" onclick="setActive(this)">💳 Cobrar cita</a>
     <a href="#productos" onclick="setActive(this)">🛍️ Venta de productos</a>
     <a href="#nueva-cita" onclick="setActive(this)">➕ Crear nueva cita</a>
-    <a href="#extras" onclick="setActive(this)">➕ Servicios extra</a>
+    <a href="#extras" onclick="setActive(this)">➕ Servicios/productos extra</a>
+    <a href="#paquetes" onclick="setActive(this)">🎁 Vender paquete</a>
     <div class="toc-section">Pagos</div>
     <a href="#pago-efectivo" onclick="setActive(this)">💵 Efectivo</a>
     <a href="#pago-otros" onclick="setActive(this)">💳 Tarjeta / Nequi</a>
@@ -135,14 +136,15 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
 
     <div class="section" id="pantalla">
       <div class="section-header"><div class="section-icon">🖥️</div><div><h2>Pantalla principal</h2><p>Descripción de la interfaz</p></div></div>
-      <p style="color:var(--text2);margin-bottom:12px">En la parte superior hay <strong>cuatro pestañas</strong>:</p>
+      <p style="color:var(--text2);margin-bottom:12px">En la parte superior hay <strong>cinco pestañas</strong>:</p>
       <div class="cards">
         <div class="card"><div class="card-icon">📋</div><h4>Citas</h4><p>Tarjetas resumen y lista de citas del día. Al seleccionar una cita se activa el panel de cobro.</p></div>
         <div class="card"><div class="card-icon">🔄</div><h4>Pool</h4><p>Cola de servicios disponibles para asignar empleado desde el POS.</p></div>
         <div class="card"><div class="card-icon">🛍️</div><h4>Productos</h4><p>Catálogo de productos en venta con carrito independiente — sin necesidad de cita.</p></div>
+        <div class="card"><div class="card-icon">🎁</div><h4>Paquetes</h4><p>Vender un paquete/membresía a un cliente.</p></div>
         <div class="card"><div class="card-icon">💰</div><h4>Caja</h4><p>Apertura, resumen del día y cierre de caja.</p></div>
       </div>
-      <p style="color:var(--text2);font-size:13px;margin-top:12px">En la pestaña <strong>📋 Citas</strong> verás las tarjetas de las citas de hoy en la parte superior. Las citas <span class="tag tag-green">Completadas</span> son clickeables para ir directamente al cobro.</p>
+      <p style="color:var(--text2);font-size:13px;margin-top:12px">En la pestaña <strong>📋 Citas</strong> verás las tarjetas de las citas de hoy en la parte superior. Las citas <span class="tag" style="background:#ffe4cc;color:#c2560c">Completada, sin cobrar</span> parpadean en naranja para que no se pasen por alto; una vez cobradas se muestran como <span class="tag tag-green">Pagada</span>.</p>
     </div>
 
     <div class="section" id="caja">
@@ -171,7 +173,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
 
     <div class="section" id="citas">
       <div class="section-header"><div class="section-icon">📋</div><div><h2>Citas del día</h2><p>Lista de citas programadas</p></div></div>
-      <p style="color:var(--text2);margin-bottom:12px">En la pestaña <strong>📋 Citas</strong> verás primero las tarjetas resumen en la parte superior (desplazables horizontalmente) y luego la lista detallada debajo.</p>
+      <p style="color:var(--text2);margin-bottom:12px">En la pestaña <strong>📋 Citas</strong> verás primero las tarjetas resumen en la parte superior (desplazables horizontalmente) y luego la lista detallada debajo. Los filtros rápidos son <strong>Todas / Pendiente / Completada</strong>, más el selector de empleado.</p>
       <table>
         <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
         <tbody>
@@ -179,11 +181,12 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
           <tr><td><span class="tag tag-purple">Por confirmar</span></td><td>Un empleado tomó el servicio, pendiente de confirmar con el cliente</td></tr>
           <tr><td><span class="tag tag-blue">Confirmada</span></td><td>Cliente confirmado, en espera de atención</td></tr>
           <tr><td><span class="tag" style="background:#fae8ff;color:#86198f">En proceso</span></td><td>El servicio está siendo atendido en este momento</td></tr>
-          <tr><td><span class="tag tag-green">Completada</span></td><td>Todos los servicios terminados — lista para cobrar</td></tr>
+          <tr><td><span class="tag" style="background:#ffe4cc;color:#c2560c">Completada</span></td><td>Todos los servicios terminados y <strong>aún sin cobrar</strong> — la tarjeta parpadea en naranja</td></tr>
+          <tr><td><span class="tag tag-green">Pagada</span></td><td>Ya se cobró — es la misma cita Completada, una vez facturada</td></tr>
           <tr><td><span class="tag tag-red">Cancelada</span></td><td>La cita fue cancelada</td></tr>
         </tbody>
       </table>
-      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Las tarjetas de citas <span class="tag tag-green">Completadas</span> en la parte superior son clickeables — te llevan directamente al panel de cobro.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Las tarjetas de citas <strong>Completada</strong> (naranja, parpadeando) en la parte superior son clickeables — te llevan directamente al panel de cobro. Una vez pagadas dejan de parpadear y se ven en verde.</span></div>
     </div>
 
     <div class="section" id="estados">
@@ -211,9 +214,10 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona la cita completada</strong><p>Toca su tarjeta en la lista o en el resumen superior.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Revisa el panel de cobro (derecha)</strong><p>Verás los servicios con ✅ de completado, el total a cobrar y los ítems extra si los hay.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Cobrar $X.XXX"</strong><p>Se abre el modal de pago.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "✓ Confirmar"</strong><p>Si el cliente no tiene documento, teléfono, email y dirección completos, el sistema los pide en ese momento (con buscador de clientes ya registrados) antes de dejarte continuar.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>¿Tiene un paquete con sesiones disponibles?</strong><p>Si el cliente tiene un paquete activo que cubre alguno de los servicios de la cita, aparece un aviso "🎁 Paquetes disponibles" para marcar cuáles se cobran gratis con el paquete.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el método de pago</strong><p>Efectivo, Tarjeta, Nequi, Transferencia o Mixto.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro</strong><p>La venta se registra en la caja y se genera la factura.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro</strong><p>La venta se registra en la caja y se genera la factura, con el nombre y datos completos del cliente.</p></div></div>
       </div>
       <div class="alert alert-warn">⚠️ <span>Si el botón "Cobrar" muestra "X servicios pendientes de completar", uno o más empleados aún no han marcado su servicio como listo en el Portal del Empleado.</span></div>
     </div>
@@ -245,14 +249,26 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     </div>
 
     <div class="section" id="extras">
-      <div class="section-header"><div class="section-icon">➕</div><div><h2>Agregar servicios extra</h2><p>Añadir servicios adicionales al cobro</p></div></div>
-      <p style="color:var(--text2);margin-bottom:12px">Si durante la atención el cliente solicita un servicio adicional no incluido en la cita, puedes agregarlo antes de cobrar.</p>
+      <div class="section-header"><div class="section-icon">➕</div><div><h2>Agregar servicios o productos extra</h2><p>Añadir ítems adicionales al cobro de una cita</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">Si durante la atención el cliente solicita algo adicional a lo agendado, puedes agregarlo antes de cobrar — ya sea otro servicio o un producto del inventario, en la misma factura.</p>
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona la cita (en Completada)</strong><p>En el panel de cobro verás los servicios originales con sus checkmarks.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "+ Agregar servicio"</strong><p>Se abre un selector con todos los servicios disponibles.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el servicio extra</strong><p>Se suma al total automáticamente.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cobrar con el total actualizado</strong><p>El total ya incluye los servicios extra.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>"+ Agregar servicio"</strong><p>Abre un selector con todos los servicios disponibles y se suma al total.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>"+ Agregar producto"</strong><p>Abre el catálogo de productos del inventario — se pueden agregar varios y ajustar la cantidad con − / +. Opcionalmente se puede indicar "Vendido por" un empleado distinto al de la cita, para que la comisión del producto quede a su nombre.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cobrar con el total actualizado</strong><p>El total ya incluye los servicios y productos extra en una sola venta.</p></div></div>
       </div>
+      <div class="alert alert-tip">💡 <span>Antes había que cobrar los productos aparte en la pestaña 🛍️ Productos — ahora se puede hacer todo en un solo cobro desde el panel de la cita.</span></div>
+    </div>
+
+    <div class="section" id="paquetes">
+      <div class="section-header"><div class="section-icon">🎁</div><div><h2>Vender un paquete</h2><p>Registrar la compra de un paquete/membresía</p></div></div>
+      <p style="color:var(--text2);margin-bottom:12px">La pestaña <strong>🎁 Paquetes</strong> permite venderle a un cliente un paquete configurado por el administrador (ej. "3 sesiones de manicure").</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Busca o registra al cliente</strong><p>Igual que en Productos — por nombre, teléfono o documento, o "+ Nuevo" si no existe.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elige el paquete</strong><p>El selector muestra el precio y, al elegirlo, qué servicios incluye y su vigencia en días.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el método de pago y confirma</strong><p>Se genera la venta y queda registrada la vigencia del cliente, contada desde hoy.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Una vez vendido, cuando ese cliente venga a un servicio incluido en el paquete, el POS lo detecta solo al cobrar la cita y ofrece "Cobrar con paquete" (ver sección "Cobrar cita").</span></div>
     </div>
 
     <div class="section" id="pago-efectivo">
@@ -291,6 +307,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cuenta el efectivo físico</strong><p>Suma todo el dinero en caja al terminar el turno.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "Cerrar caja"</strong><p>Ingresa el monto contado y confirma. El resumen queda guardado para el administrador.</p></div></div>
       </div>
+      <div class="alert alert-warn">⚠️ <span><strong>No dejes la caja abierta de un día para otro.</strong> Si al día siguiente todavía sigue abierta, el sistema muestra una alerta que no se puede cerrar y no deja facturar nada hasta que se cierre esa caja atrasada.</span></div>
     </div>
 
     <div class="section" id="alertas">
@@ -304,6 +321,8 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
           <tr><td>⚠️ Error al cambiar estado</td><td>Verifica tu conexión a internet y vuelve a intentarlo</td></tr>
           <tr><td>⚠️ Monto insuficiente</td><td>El efectivo ingresado es menor al total — verifica el billete</td></tr>
           <tr><td>Sin stock</td><td>El producto no tiene stock disponible — comunícate con el administrador para reponerlo</td></tr>
+          <tr><td>"Todos los campos son obligatorios" (datos del cliente)</td><td>Completa nombre, teléfono, documento, email y dirección antes de poder facturar el servicio</td></tr>
+          <tr><td>⚠️ Caja abierta del [fecha]</td><td>Quedó una caja de un día anterior sin cerrar — ve a 💰 Caja, cuenta el efectivo y ciérrala antes de poder facturar</td></tr>
         </tbody>
       </table>
     </div>

@@ -88,6 +88,7 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <a class="toc-link" href="#pausa">Pausar y retomar</a>
     <div class="toc-section">Mis citas</div>
     <a class="toc-link" href="#citas-hoy">Citas del día</a>
+    <a class="toc-link" href="#historial-citas">Historial de citas</a>
     <a class="toc-link" href="#proximas">Próximas citas</a>
     <div class="toc-section">Ayuda</div>
     <a class="toc-link" href="#salir">Cerrar sesión</a>
@@ -225,7 +226,7 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   <div class="warn">⚠️ Mientras estás en pausa no puedes ver ni tomar servicios de la cola. Debes retomar el turno primero.</div>
 
   <h2 id="citas-hoy">Citas del día</h2>
-  <p>La sección <strong>Citas de hoy</strong> muestra todas las citas en las que participas hoy — tanto las que tomaste de la cola como las que te asignó el administrador.</p>
+  <p>La sección <strong>Citas de hoy</strong> muestra las citas de hoy que <strong>todavía necesitan una acción tuya</strong> — tanto las que tomaste de la cola como las que te asignó el administrador.</p>
   <ul>
     <li><strong>Hora</strong> — hora de inicio de la cita.</li>
     <li><strong>Cliente</strong> — nombre del cliente.</li>
@@ -233,6 +234,16 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li><strong>Servicios</strong> — lista de todos los servicios de la cita con indicador de completado (⬜ / ✅) y botón "✓ Listo" para los que son tuyos.</li>
   </ul>
   <div class="tip">Si una cita tiene servicios de varios empleados, verás el nombre de cada compañero junto a su servicio.</div>
+  <div class="tip">Apenas una cita queda <strong>Completada</strong> y se cobra, desaparece de esta lista y pasa al Historial de citas — así esta sección solo muestra lo que aún falta por hacer.</div>
+
+  <h2 id="historial-citas">Historial de citas</h2>
+  <p>Muestra tus citas ya completadas como una <strong>gráfica de tendencia</strong> (cuántas citas atendiste por día) más una lista compacta debajo, en vez de una tarjeta grande por cada una.</p>
+  <ul>
+    <li><strong>Rango de fechas</strong> — por defecto muestra los últimos 7 días; puedes cambiar el rango y pulsar "Filtrar".</li>
+    <li><strong>Gráfica</strong> — un punto por día con el total de citas completadas ese día.</li>
+    <li><strong>Lista</strong> — hora, cliente y servicios de cada cita del rango elegido.</li>
+  </ul>
+  <div class="tip">Si necesitas el detalle completo de un período más amplio o un reporte formal, pídeselo al administrador — él tiene la vista completa en Reportes/Facturas.</div>
 
   <h2 id="proximas">Próximas citas</h2>
   <p>Debajo de las citas de hoy aparece una sección con las citas programadas para los próximos días, agrupadas por fecha.</p>
