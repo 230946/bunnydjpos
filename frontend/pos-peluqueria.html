@@ -1839,7 +1839,8 @@ async function checkCaja() {
   }
   const modal = $('cajaAtrasadaModal');
   if (modal) {
-    if (_cajaBloqueada) {
+    const enTabCaja = $('tabCaja')?.classList.contains('active');
+    if (_cajaBloqueada && !enTabCaja) {
       const fEl = $('caja-atrasada-fecha');
       if (fEl) fEl.textContent = _fechaYMD(new Date(_cajaData.fecha_apertura));
       modal.style.display = 'flex';

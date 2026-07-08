@@ -967,7 +967,8 @@ async function loadCaja(){
 function _actualizarAlertaCajaAtrasada(){
   const modal = $('cajaAtrasadaModal');
   if (!modal) return;
-  if (_cajaPendiente) {
+  const enPanelCaja = $('panel-caja')?.classList.contains('active');
+  if (_cajaPendiente && !enPanelCaja) {
     const fEl = $('caja-atrasada-fecha');
     if (fEl) fEl.textContent = String(_cajaPendiente.fecha).slice(0,10);
     modal.style.display = 'flex';
