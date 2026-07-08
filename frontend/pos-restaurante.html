@@ -654,6 +654,16 @@ table.inv tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- ALERTA BLOQUEANTE: caja abierta de un día anterior -->
+<div class="modal-bg" id="cajaAtrasadaModal" style="display:none">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:40px;margin-bottom:8px">⚠️</div>
+    <h3 style="margin-bottom:8px">Caja abierta del <span id="caja-atrasada-fecha"></span></h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Quedó una caja sin cerrar de un día anterior. No puedes facturar hasta cerrarla y abrir una nueva.</p>
+    <button class="btn btn-success btn-block" onclick="_irACerrarCajaAtrasada()">Ir a cerrar caja</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="pedido-cliente-modal" style="display:none">
   <div class="modal" style="max-width:400px">
     <h3>🔔 Pedido desde la mesa <span id="pc-mesa-label"></span></h3>
@@ -861,10 +871,12 @@ async function initApp(){
   _askNotifPermission();
   connectWS();
   setInterval(pollAlertaPedidosCliente, 20000); // respaldo si el WebSocket se desconecta
-  // Si no hay caja abierta, mostrar el panel de caja primero
+  // Si no hay caja abierta (o hay una atrasada sin cerrar), mostrar el panel de caja primero
   try {
-    const caja = await api('/admin/caja');
-    cajaAbierta = !!(caja && caja.estado === 'abierta');
+    const [caja, pendiente] = await Promise.all([ api('/admin/caja'), api('/admin/caja/pendiente').catch(()=>null) ]);
+    _cajaPendiente = pendiente || null;
+    cajaAbierta = !_cajaPendiente && !!(caja && caja.estado === 'abierta');
+    _actualizarAlertaCajaAtrasada();
     if(!cajaAbierta){
       nav('caja', document.querySelector('.nav-icon[title="Caja diaria"]'));
     } else {
@@ -2138,17 +2150,21 @@ let cajaTimer = null;
 let cajaAbierta = false;
 let pendPago = null;
 let _ventaConfirmadaId = null;
+let _cajaPendiente = null;
 
 async function loadCaja(){
   try {
-    const [caja, ventas, dom] = await Promise.all([
+    const [caja, ventas, dom, pendiente] = await Promise.all([
       api('/admin/caja'),
       api('/admin/ventas/recientes').catch(()=>[]),
       api('/domicilios/reportes/resumen').catch(()=>null),
+      api('/admin/caja/pendiente').catch(()=>null),
     ]);
     cajaActual = caja;
-    cajaAbierta = !!(caja && caja.estado === 'abierta');
+    _cajaPendiente = pendiente || null;
+    cajaAbierta = !_cajaPendiente && !!(caja && caja.estado === 'abierta');
     renderCajaPanel(ventas, dom);
+    _actualizarAlertaCajaAtrasada();
   } catch(e){ toast('Error cargando caja: '+e.message); }
   // Refresco automático cada 30 s si el panel está visible
   clearTimeout(cajaTimer);
@@ -2157,8 +2173,43 @@ async function loadCaja(){
   }
 }
 
+function _actualizarAlertaCajaAtrasada(){
+  const modal = $('cajaAtrasadaModal');
+  if (!modal) return;
+  if (_cajaPendiente) {
+    const fEl = $('caja-atrasada-fecha');
+    if (fEl) fEl.textContent = String(_cajaPendiente.fecha).slice(0,10);
+    modal.style.display = 'flex';
+  } else {
+    modal.style.display = 'none';
+  }
+}
+function _irACerrarCajaAtrasada(){
+  $('cajaAtrasadaModal').style.display = 'none';
+  nav('caja', document.querySelector('.nav-icon[title="Caja diaria"]'));
+}
+
 function renderCajaPanel(ventasRec=[], dom=null){
   const body = $('caja-body');
+  if(_cajaPendiente){
+    body.innerHTML = `
+      <div class="cobro-card" style="max-width:440px;margin:0 auto">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:8px;color:var(--red,#dc2626)">⚠️ Caja abierta del ${esc(String(_cajaPendiente.fecha).slice(0,10))}</h3>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Quedó sin cerrar. Cuenta el efectivo e ingresa el monto de cierre para poder abrir la caja de hoy.</p>
+        <div class="field">
+          <label>Efectivo contado ($)</label>
+          <input id="caja-cierre" type="number" min="0" placeholder="0"
+            style="width:100%;padding:10px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:16px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none">
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Observaciones (opcional)</label>
+          <input id="caja-notas" type="text" placeholder="Observaciones opcionales..."
+            style="width:100%;padding:10px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none">
+        </div>
+        <button class="btn btn-danger btn-block" style="margin-top:12px;padding:13px;font-size:14px" onclick="cerrarCaja()">🔒 Cerrar caja atrasada</button>
+      </div>`;
+    return;
+  }
   if(!cajaActual){
     body.innerHTML = `
       <div class="cobro-card" style="max-width:440px;margin:0 auto">

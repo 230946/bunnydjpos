@@ -417,6 +417,16 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
   </div>
 </div>
 
+<!-- ALERTA BLOQUEANTE: caja abierta de un día anterior -->
+<div class="modal-bg" id="cajaAtrasadaModal" style="display:none">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:40px;margin-bottom:8px">⚠️</div>
+    <h3 style="margin-bottom:8px">Caja abierta del <span id="caja-atrasada-fecha"></span></h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Quedó una caja sin cerrar de un día anterior. No puedes facturar hasta cerrarla y abrir una nueva.</p>
+    <button class="btn-ok" style="width:100%;padding:12px;font-size:14px" onclick="_irACerrarCajaAtrasada()">Ir a cerrar caja</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -531,11 +541,13 @@ async function iniciar(){
   $('h-user').textContent = _ur ? `${_un} · ${_ur}` : _un;
   if(_urlNeg) checkContrato(_urlNeg);
   await cargarProductos();
-  // Verificar caja — si no está abierta, ir al panel de caja primero
+  // Verificar caja — si no está abierta (o hay una atrasada sin cerrar), ir al panel de caja primero
   try {
-    const caja = await api('/admin/caja');
+    const [caja, pendiente] = await Promise.all([ api('/admin/caja'), api('/admin/caja/pendiente').catch(()=>null) ]);
     cajaActual = caja;
-    cajaAbierta = !!(caja && caja.estado === 'abierta');
+    _cajaPendiente = pendiente || null;
+    cajaAbierta = !_cajaPendiente && !!(caja && caja.estado === 'abierta');
+    _actualizarAlertaCajaAtrasada();
     if (!cajaAbierta) switchTab('caja');
     else renderCajaBtnState();
   } catch(e) {
@@ -915,21 +927,40 @@ function renderCajaBtnState(){
   if(lbl) lbl.textContent = cajaAbierta ? '🟢 Caja abierta' : '🔴 Caja cerrada';
 }
 
+let _cajaPendiente = null;
 async function loadCaja(){
   try {
-    const [caja, ventas] = await Promise.all([
+    const [caja, ventas, pendiente] = await Promise.all([
       api('/admin/caja'),
       api('/admin/ventas/recientes').catch(()=>[]),
+      api('/admin/caja/pendiente').catch(()=>null),
     ]);
     cajaActual = caja;
-    cajaAbierta = !!(caja && caja.estado === 'abierta');
+    _cajaPendiente = pendiente || null;
+    cajaAbierta = !_cajaPendiente && !!(caja && caja.estado === 'abierta');
     renderCajaBtnState();
     renderCajaPanel(ventas);
+    _actualizarAlertaCajaAtrasada();
   } catch(e){ toast('Error cargando caja: '+e.message); }
   clearTimeout(_cajaTimer);
   if($('panel-caja').classList.contains('active')){
     _cajaTimer = setTimeout(loadCaja, 30000);
   }
+}
+function _actualizarAlertaCajaAtrasada(){
+  const modal = $('cajaAtrasadaModal');
+  if (!modal) return;
+  if (_cajaPendiente) {
+    const fEl = $('caja-atrasada-fecha');
+    if (fEl) fEl.textContent = String(_cajaPendiente.fecha).slice(0,10);
+    modal.style.display = 'flex';
+  } else {
+    modal.style.display = 'none';
+  }
+}
+function _irACerrarCajaAtrasada(){
+  $('cajaAtrasadaModal').style.display = 'none';
+  switchTab('caja');
 }
 
 function renderCajaPanel(ventasRec=[]){
@@ -948,6 +979,21 @@ function renderCajaPanel(ventasRec=[]){
         </tr>`).join('')}</tbody></table>`
     : `<div style="color:var(--text2);font-size:12px;padding:12px 0;text-align:center">Sin ventas registradas hoy</div>`;
 
+  if(_cajaPendiente){
+    body.innerHTML = `
+      <div style="max-width:400px;margin:24px auto;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:6px;color:#dc2626">⚠️ Caja abierta del ${esc(String(_cajaPendiente.fecha).slice(0,10))}</h3>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Quedó sin cerrar. Cuenta el efectivo e ingresa el monto de cierre para poder abrir la caja de hoy.</p>
+        <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Efectivo contado ($)</label>
+        <input id="caja-cierre" type="number" min="0" placeholder="0"
+          style="width:100%;padding:10px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:16px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-bottom:8px">
+        <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Observaciones (opcional)</label>
+        <input id="caja-notas" type="text" placeholder="Observaciones opcionales..."
+          style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-bottom:12px">
+        <button onclick="cerrarCaja()" style="width:100%;padding:11px;background:#ef4444;color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer">🔒 Cerrar caja atrasada</button>
+      </div>`;
+    return;
+  }
   if(!cajaActual){
     body.innerHTML = `
       <div style="max-width:400px;margin:24px auto;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px">
