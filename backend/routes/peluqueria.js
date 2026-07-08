@@ -1745,7 +1745,7 @@ router.patch('/citas/:id/estado', async (req, res) => {
 // Completar cita → genera venta automáticamente
 router.patch('/citas/:id/completar', async (req, res) => {
   try {
-    const { metodoPago = 'Efectivo', descuento = 0, pagos = [] } = req.body;
+    const { metodoPago = 'Efectivo', descuento = 0, pagos = [], productos = [], productosEmpleadoId } = req.body;
     const { rows: cr } = await pool.query(
       `SELECT c.*, n.negocio_id FROM pel_citas c JOIN pel_citas n ON n.id=c.id WHERE c.id=? AND c.negocio_id=?`,
       [req.params.id, nid(req)]
@@ -1768,7 +1768,9 @@ router.patch('/citas/:id/completar', async (req, res) => {
     );
     const cajaId = cajaRows[0]?.id || null;
 
-    const subtotal = parseFloat(cita.precio || 0);
+    const empProd = productosEmpleadoId || cita.empleado_id || null;
+    const subtotalProductos = productos.reduce((a, p) => a + parseFloat(p.precio || 0) * parseFloat(p.cantidad || 1), 0);
+    const subtotal = parseFloat(cita.precio || 0) + subtotalProductos;
     const desc = parseFloat(descuento || 0);
     const total = subtotal - desc;
     const numeroFactura = await _nextNumeroFactura(nid(req));
@@ -1829,6 +1831,44 @@ router.patch('/citas/:id/completar', async (req, res) => {
               `INSERT INTO pel_comision_detalle (id,negocio_id,venta_detalle_id,empleado_id,base_calculo,pct_aplicado,monto_comision)
                VALUES (?,?,?,?,?,?,?)`,
               [uuid(), nid(req), detId, cita.empleado_id, subDet, pctAplicado, montoComision]
+            );
+          }
+        }
+      }
+    }
+
+    // Insertar productos agregados al cobrar (además de los servicios de la cita)
+    for (const p of productos) {
+      const detId = uuid();
+      const subDet = parseFloat(p.precio || 0) * parseFloat(p.cantidad || 1);
+      await pool.query(
+        `INSERT INTO pel_venta_detalle (id,venta_id,tipo_item,ref_id,empleado_id,descripcion,cantidad,precio_unitario,descuento,subtotal,iva_pct)
+         VALUES (?,?,'producto',?,?,?,?,?,0,?,?)`,
+        [detId, ventaId, p.id || null, empProd, p.nombre, p.cantidad || 1, p.precio || 0, subDet, parseFloat(p.ivaPct || 0)]
+      );
+      if (p.id) {
+        await pool.query(
+          `UPDATE pel_productos SET stock_actual = stock_actual - ? WHERE id=? AND negocio_id=?`,
+          [parseInt(p.cantidad || 1), p.id, nid(req)]
+        );
+        await pool.query(
+          `INSERT INTO pel_movimientos_inv (id,negocio_id,producto_id,tipo,cantidad,referencia_id,motivo)
+           VALUES (?,?,?,'salida_venta',?,?,'Venta POS')`,
+          [uuid(), nid(req), p.id, parseInt(p.cantidad || 1), ventaId]
+        );
+      }
+      if (empProd) {
+        const { rows: empR } = await pool.query(
+          `SELECT pct_comision_producto FROM pel_empleados WHERE id=?`, [empProd]
+        );
+        if (empR.length) {
+          const pctProd = parseFloat(empR[0].pct_comision_producto || 0);
+          if (pctProd > 0) {
+            const montoComision = subDet * pctProd / 100;
+            await pool.query(
+              `INSERT INTO pel_comision_detalle (id,negocio_id,venta_detalle_id,empleado_id,base_calculo,pct_aplicado,monto_comision)
+               VALUES (?,?,?,?,?,?,?)`,
+              [uuid(), nid(req), detId, empProd, subDet, pctProd, montoComision]
             );
           }
         }
