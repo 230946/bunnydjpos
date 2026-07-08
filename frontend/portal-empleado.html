@@ -678,8 +678,6 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
           acciones.push(`<button class="btn-cita btn-cita-conf" onclick="accionCita('${c.id}','Confirmada',this)">✓ Confirmar</button>`);
         if (c.estado === 'Pendiente' || c.estado === 'PorConfirmar' || c.estado === 'Confirmada')
           acciones.push(`<button class="btn-cita btn-cita-ini" onclick="accionCita('${c.id}','EnProceso',this)">▶ Iniciar servicio</button>`);
-        if (c.estado === 'EnProceso')
-          acciones.push(`<button class="btn-cita" style="background:#16a34a;color:#fff" onclick="if(confirm('¿Marcar esta cita como completada?'))accionCita('${c.id}','Completada',this)">✓ Completar y cobrar</button>`);
         if (!['Completada','Cancelada','NoAsistio'].includes(c.estado))
           acciones.push(`<button class="btn-cita" style="background:transparent;color:#dc2626;border:1px solid #dc2626" onclick="if(confirm('¿Cancelar esta cita?'))accionCita('${c.id}','Cancelada',this)">Cancelar</button>`);
 

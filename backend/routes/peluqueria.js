@@ -321,12 +321,26 @@ router.post('/portal-empleado/:empId/completar-servicio', async (req, res) => {
 // ── Ruta pública: cambiar estado de cita desde portal empleado ───
 const ESTADOS_PERMITIDOS_PORTAL = ['PorConfirmar', 'Confirmada', 'EnProceso', 'Cancelada', 'Completada'];
 
+// Antes de marcar una cita como Completada por esta vía "directa", exige que
+// todos sus servicios (pel_cita_detalle) ya estén marcados como listos —
+// si no, el ciclo queda roto: la cita desaparece de "Citas de hoy" (se
+// filtra por estar Completada) pero el POS sigue bloqueando el cobro
+// porque algún servicio individual nunca se marcó como completado.
+async function _puedeMarcarCompletada(citaId) {
+  const { rows } = await pool.query(
+    `SELECT COUNT(*) AS n FROM pel_cita_detalle WHERE cita_id=? AND completado=0`, [citaId]
+  );
+  return parseInt(rows[0]?.n || 0) === 0;
+}
+
 router.post('/portal-negocio/:negocioId/cita-estado', async (req, res) => {
   try {
     const { cedula, citaId, estado } = req.body;
     const negocioId = req.params.negocioId;
     if (!ESTADOS_PERMITIDOS_PORTAL.includes(estado))
       return res.status(400).json({ error: 'Estado no permitido' });
+    if (estado === 'Completada' && !(await _puedeMarcarCompletada(citaId)))
+      return res.status(400).json({ error: 'Aún hay servicios de esta cita sin marcar como "Listo"' });
     const { rows: empR } = await pool.query(
       `SELECT id FROM pel_empleados WHERE negocio_id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
       [negocioId, cedula]
@@ -348,6 +362,8 @@ router.post('/portal-empleado/:empId/cita-estado', async (req, res) => {
     const { cedula, citaId, estado } = req.body;
     if (!ESTADOS_PERMITIDOS_PORTAL.includes(estado))
       return res.status(400).json({ error: 'Estado no permitido' });
+    if (estado === 'Completada' && !(await _puedeMarcarCompletada(citaId)))
+      return res.status(400).json({ error: 'Aún hay servicios de esta cita sin marcar como "Listo"' });
     const { rows: empR } = await pool.query(
       `SELECT id, negocio_id FROM pel_empleados WHERE BINARY id=? AND TRIM(cedula)=TRIM(?) AND activo=1 LIMIT 1`,
       [req.params.empId, cedula]
@@ -1747,6 +1763,12 @@ router.patch('/citas/:id/estado', async (req, res) => {
       `UPDATE pel_citas SET estado=? WHERE id=? AND negocio_id=?`,
       [estado, req.params.id, nid(req)]
     );
+    // El admin tiene autoridad para forzar el estado directamente; si la marca
+    // Completada, se refleja también en cada servicio para que el POS no la
+    // siga viendo con ítems "pendientes de completar" al momento de cobrar.
+    if (estado === 'Completada') {
+      await pool.query(`UPDATE pel_cita_detalle SET completado=1 WHERE cita_id=?`, [req.params.id]);
+    }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
