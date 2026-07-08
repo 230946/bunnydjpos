@@ -436,6 +436,20 @@ async function _gestionarPausa(empId, negocioId, accion, motivo) {
   }
 }
 
+// Evita que un empleado finalice su turno mientras todavía tiene citas
+// de hoy sin completar/cancelar — para que no se vaya dejando clientes
+// asignados sin atender.
+async function _tieneCitasPendientesHoy(empId, negocioId) {
+  const { rows } = await pool.query(
+    `SELECT COUNT(*) AS n FROM pel_citas
+     WHERE negocio_id=? AND DATE(fecha_hora)=CURDATE()
+       AND estado NOT IN ('Completada','Cancelada','NoAsistio')
+       AND (empleado_id=? OR id IN (SELECT cita_id FROM pel_cita_detalle WHERE BINARY empleado_id=?))`,
+    [negocioId, empId, empId]
+  );
+  return parseInt(rows[0]?.n || 0) > 0;
+}
+
 // ── Ruta pública: gestión de turno propio del empleado ───────────
 async function _gestionarTurno(empId, negocioId, accion, horaEntrada, horaSalida, fecha, horarioId) {
   const now = new Date();
@@ -478,6 +492,8 @@ router.post('/portal-negocio/:negocioId/turno', async (req, res) => {
       [req.params.negocioId, cedula]
     );
     if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    if (accion === 'finalizar' && await _tieneCitasPendientesHoy(empR[0].id, req.params.negocioId))
+      return res.status(400).json({ error: 'Tienes citas de hoy sin completar. Termínalas o cancélalas antes de finalizar tu turno.' });
     await _gestionarTurno(empR[0].id, req.params.negocioId, accion, horaEntrada, horaSalida, fecha, horarioId);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -492,6 +508,8 @@ router.post('/portal-empleado/:empId/turno', async (req, res) => {
       [req.params.empId, cedula]
     );
     if (!empR[0]) return res.status(403).json({ error: 'No autorizado' });
+    if (accion === 'finalizar' && await _tieneCitasPendientesHoy(empR[0].id, empR[0].negocio_id))
+      return res.status(400).json({ error: 'Tienes citas de hoy sin completar. Termínalas o cancélalas antes de finalizar tu turno.' });
     await _gestionarTurno(empR[0].id, empR[0].negocio_id, accion, horaEntrada, horaSalida, fecha, horarioId);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
