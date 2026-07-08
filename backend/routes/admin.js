@@ -155,19 +155,26 @@ router.get('/caja', async (req, res) => {
   try {
     const { fecha } = req.query;
     const f = fecha || localDate(req.user.zona_horaria);
-    // Cerrar cajas de días anteriores que quedaron abiertas
-    if (!fecha) {
-      await pool.query(
-        `UPDATE cajas SET estado='cerrada', cierre_en=NOW()
-         WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND fecha<${ph(3)} AND estado='abierta'`,
-        [nid(req), req.user.id, f]
-      );
-    }
     const { rows } = await pool.query(
       `SELECT c.*, u.nombre AS usuario_nombre
        FROM cajas c LEFT JOIN usuarios u ON u.id = c.usuario_id
        WHERE c.negocio_id=${ph(1)} AND c.fecha=${ph(2)} AND c.usuario_id=${ph(3)}`,
       [nid(req), f, req.user.id]
+    );
+    res.json(rows[0] || null);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Caja abierta de un día anterior que el usuario dejó sin cerrar — bloquea
+// la facturación en el POS hasta que se cierre manualmente (ver /caja/cerrar).
+router.get('/caja/pendiente', async (req, res) => {
+  try {
+    const hoy = localDate(req.user.zona_horaria);
+    const { rows } = await pool.query(
+      `SELECT id, fecha FROM cajas
+       WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta' AND fecha<${ph(3)}
+       ORDER BY fecha ASC LIMIT 1`,
+      [nid(req), req.user.id, hoy]
     );
     res.json(rows[0] || null);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -206,12 +213,16 @@ router.post('/caja/abrir', async (req, res) => {
   try {
     const { monto_apertura } = req.body;
     const fecha = localDate(req.user.zona_horaria);
-    // Cerrar automáticamente cajas de días anteriores que quedaron abiertas
-    await pool.query(
-      `UPDATE cajas SET estado='cerrada', cierre_en=NOW()
-       WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND fecha<${ph(3)} AND estado='abierta'`,
+    // Bloquear si quedó una caja de un día anterior sin cerrar
+    const { rows: pendiente } = await pool.query(
+      `SELECT fecha FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta' AND fecha<${ph(3)}
+       ORDER BY fecha ASC LIMIT 1`,
       [nid(req), req.user.id, fecha]
     );
+    if (pendiente.length) {
+      const fPend = new Intl.DateTimeFormat('en-CA', { timeZone: req.user.zona_horaria || 'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(pendiente[0].fecha));
+      return res.status(400).json({ error: `Tienes una caja abierta del ${fPend} sin cerrar. Ciérrala antes de abrir una nueva.` });
+    }
     // Verificar si ya hay caja para este usuario hoy
     const { rows: existe } = await pool.query(
       `SELECT id, estado FROM cajas WHERE negocio_id=${ph(1)} AND fecha=${ph(2)} AND usuario_id=${ph(3)}`,
@@ -251,12 +262,19 @@ router.post('/caja/reabrir', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Cerrar caja
+// Cerrar caja — cierra la caja abierta más antigua de este usuario (hoy o
+// atrasada de un día anterior), no asume que siempre es la de hoy.
 router.post('/caja/cerrar', async (req, res) => {
   try {
     const { monto_cierre, notas } = req.body;
-    const fecha = localDate(req.user.zona_horaria);
-    // Solo ventas procesadas por este cajero
+    const { rows: abiertas } = await pool.query(
+      `SELECT * FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta' ORDER BY fecha ASC LIMIT 1`,
+      [nid(req), req.user.id]
+    );
+    if (!abiertas.length) return res.status(400).json({ error: 'No tienes ninguna caja abierta' });
+    const caja = abiertas[0];
+    const fecha = String(caja.fecha).slice(0, 10);
+    // Solo ventas procesadas por este cajero, del día de esa caja
     const { rows: ventas } = await pool.query(`
       SELECT
         COALESCE(SUM(total),0) AS total_ventas,
@@ -265,7 +283,7 @@ router.post('/caja/cerrar', async (req, res) => {
         COALESCE(SUM(CASE WHEN monto_nequi>0    THEN monto_nequi    WHEN metodo_pago='nequi'    THEN total ELSE 0 END),0) AS nequi
       FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado)=${ph(2)} AND cajero_id=${ph(3)} AND estado!='anulada'
     `, [nid(req), fecha, req.user.id]);
-    // Solo gastos registrados por este usuario
+    // Solo gastos registrados por este usuario, del día de esa caja
     const { rows: gastos } = await pool.query(
       `SELECT COALESCE(SUM(monto),0) AS total FROM gastos WHERE negocio_id=${ph(1)} AND fecha=${ph(2)} AND usuario_id=${ph(3)}`,
       [nid(req), fecha, req.user.id]
@@ -277,9 +295,9 @@ router.post('/caja/cerrar', async (req, res) => {
         total_ventas=${ph(3)}, total_gastos=${ph(4)},
         total_efectivo=${ph(5)}, total_tarjeta=${ph(6)}, total_nequi=${ph(7)},
         cierre_en=NOW()
-      WHERE negocio_id=${ph(8)} AND fecha=${ph(9)} AND usuario_id=${ph(10)} AND estado='abierta'
+      WHERE id=${ph(8)}
     `, [monto_cierre||0, notas||'', v.total_ventas, gastos[0].total,
-        v.efectivo, v.tarjeta, v.nequi, nid(req), fecha, req.user.id]);
+        v.efectivo, v.tarjeta, v.nequi, caja.id]);
     res.json({ ok: true, resumen: { ...v, total_gastos: gastos[0].total } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
