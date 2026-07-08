@@ -227,7 +227,10 @@ function puedeAdmin(user){
   return ADMIN_ACCESS_KEYS.some(k => p[k]);
 }
 
-// Guarda las claves de sessionStorage que cada portal espera encontrar
+// Guarda las claves de sessionStorage que cada portal espera encontrar.
+// Solo se guarda la sesión del Panel Administrativo — el POS siempre debe
+// pedir usuario y clave por separado, sin heredar la sesión del admin,
+// para que quede claro qué persona operó la caja.
 function guardarSesion(token, user){
   const t = _tipo;
   if(t === 'peluqueria'){
@@ -237,17 +240,10 @@ function guardarSesion(token, user){
     sessionStorage.setItem('pel_permisos',    JSON.stringify(user.permisos||{}));
     sessionStorage.setItem('pel_superadmin',  user.es_superadmin?'1':'0');
     sessionStorage.setItem('pel_negocio_id',  user.negocio_id||nid||'');
-    sessionStorage.setItem('pos_pel_token',   token);
-    sessionStorage.setItem('pos_pel_user',    user.nombre||'');
-    sessionStorage.setItem('pos_pel_rol',     user.rol_nombre||'');
   } else if(t === 'minimercado'){
     sessionStorage.setItem('bdj_adm_token',   token);
-    sessionStorage.setItem('mini_pos_tok',    token);
-    sessionStorage.setItem('mini_pos_nombre', user.nombre||'');
-    sessionStorage.setItem('mini_pos_rol',    user.rol_nombre||'');
   } else {
     sessionStorage.setItem('bdj_adm_token',   token);
-    sessionStorage.setItem('bdj_pos_token',   token);
   }
 }
 
