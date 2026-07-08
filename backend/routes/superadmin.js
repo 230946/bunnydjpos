@@ -84,6 +84,18 @@ async function logAct(negocio_id, negocio_nombre, usuario_id, usuario_nombre, ac
   } catch {}
 }
 
+// Al crear/renovar (editar) un contrato, el Plan del negocio (neg_planes)
+// se actualiza automáticamente para reflejar plan/precio/fechas del contrato.
+async function _syncPlanDesdeContrato(negocio_id, plan, valor, fecha_inicio, fecha_fin, notaContrato) {
+  await pool.query(`
+    INSERT INTO neg_planes (negocio_id,plan,precio,fecha_inicio,fecha_fin,notas)
+    VALUES (?,?,?,?,?,?)
+    ON DUPLICATE KEY UPDATE plan=VALUES(plan),precio=VALUES(precio),
+      fecha_inicio=VALUES(fecha_inicio),fecha_fin=VALUES(fecha_fin),
+      notas=VALUES(notas),actualizado=NOW()
+  `, [negocio_id, plan||'free', parseFloat(valor)||0, fecha_inicio||null, fecha_fin||null, notaContrato||null]);
+}
+
 // ════════════════════════════════════════════════════════════════
 // NEGOCIOS
 // ════════════════════════════════════════════════════════════════
@@ -400,6 +412,7 @@ router.post('/contratos', async (req, res) => {
       [id, negocio_id, autoNum, tipo||'mensual', plan||'basic', parseFloat(valor)||0,
        fecha_inicio, fecha_fin||null, estado||'pendiente', notas||null]
     );
+    await _syncPlanDesdeContrato(negocio_id, plan, valor, fecha_inicio, fecha_fin, `Sincronizado desde contrato ${autoNum}`);
     const { rows: neg } = await pool.query(`SELECT nombre FROM negocios WHERE id=?`, [negocio_id]);
     logAct(negocio_id, neg[0]?.nombre, req.user?.id, req.user?.nombre, 'contrato_creado', `N° ${autoNum}`, req.ip);
     res.status(201).json({ id, numero: autoNum });
@@ -415,6 +428,9 @@ router.put('/contratos/:id', async (req, res) => {
       [negocio_id, numero, tipo||'mensual', plan||'basic', parseFloat(valor)||0,
        fecha_inicio, fecha_fin||null, estado||'pendiente', notas||null, req.params.id]
     );
+    await _syncPlanDesdeContrato(negocio_id, plan, valor, fecha_inicio, fecha_fin, `Sincronizado desde contrato ${numero||''}`);
+    const { rows: neg } = await pool.query(`SELECT nombre FROM negocios WHERE id=?`, [negocio_id]);
+    logAct(negocio_id, neg[0]?.nombre, req.user?.id, req.user?.nombre, 'contrato_editado', `N° ${numero||''}`, req.ip);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
