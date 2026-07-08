@@ -167,13 +167,22 @@ p{margin:0}
   backdrop-filter:blur(10px);
   border-bottom:1px solid var(--line-soft);
 }
-.nav-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 0}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;letter-spacing:-.01em}
-.brand-mark{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:block}
+.nav-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:10px 0}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:1.28rem;letter-spacing:-.01em}
+.brand-mark{width:54px;height:54px;border-radius:50%;flex-shrink:0;display:block}
 .nav-links{display:flex;gap:28px;font-size:.87rem;font-weight:500;color:var(--ink-soft)}
 .nav-links a{text-decoration:none;transition:color .15s}
 .nav-links a:hover{color:var(--forest)}
 @media (max-width:760px){.nav-links{display:none}}
+.nav-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.nav-login-short{display:none}
+@media (max-width:480px){
+  .brand-mark{width:40px;height:40px}
+  .brand{font-size:1.05rem}
+  .nav-actions .btn{padding:9px 14px;font-size:.8rem}
+  .nav-login-full{display:none}
+  .nav-login-short{display:inline}
+}
 .btn{
   display:inline-flex;align-items:center;gap:8px;
   font-family:'Work Sans Body',sans-serif;font-weight:600;font-size:.87rem;
@@ -361,7 +370,7 @@ p{margin:0}
 /* ── FOOTER ──────────────────────────────────────── */
 footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px}
 .foot-row{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
-.foot-brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:.92rem}
+.foot-brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:1.05rem}
 .foot-links{display:flex;gap:22px;font-size:.82rem;color:var(--ink-soft)}
 .foot-fine{margin-top:22px;font-size:.76rem;color:var(--ink-soft)}
 </style>
@@ -384,7 +393,10 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <a href="#minimercado">Minimercado</a>
       <a href="#plataforma">Plataforma</a>
     </nav>
-    <a class="btn btn-forest" href="#contacto">Agendar una demo</a>
+    <div class="nav-actions">
+      <a class="btn btn-ghost" href="/login"><span class="nav-login-full">Acceso corporativo</span><span class="nav-login-short">Ingresar</span></a>
+      <a class="btn btn-forest" href="#contacto">Agendar una demo</a>
+    </div>
   </div>
 </div>
 
@@ -611,7 +623,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
 
 <footer class="shell">
   <div class="foot-row">
-    <div class="foot-brand"><img class="brand-mark" src="/img/logo.png" alt="DJPOS" style="width:28px;height:28px">DJPOS</div>
+    <div class="foot-brand"><img class="brand-mark" src="/img/logo.png" alt="DJPOS" style="width:42px;height:42px">DJPOS</div>
     <div class="foot-links">
       <a href="#peluqueria">Peluquería</a>
       <a href="#restaurante">Restaurante</a>
