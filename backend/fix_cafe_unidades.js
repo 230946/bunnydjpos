@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Corrige la unidad base de "Cafe" de "kg" a "g"
  * y "Leche en Bolsa" si su unidad base está mal.
  * Ejecutar: node fix_cafe_unidades.js

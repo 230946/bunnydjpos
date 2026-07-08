@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Diagnóstico de recetas: muestra qué items del menú tienen receta
  * y qué porciones calcula el motor.
  * Ejecutar: node diag_recetas.js  (desde la carpeta backend/)

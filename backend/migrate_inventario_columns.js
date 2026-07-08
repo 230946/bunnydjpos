@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Agrega columnas faltantes a la tabla inventario:
  * descripcion, margen, es_paquete, cantidad_paquete, modulo
  * Ejecutar: node migrate_inventario_columns.js  (desde la carpeta backend/)

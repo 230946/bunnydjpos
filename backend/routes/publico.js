@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * routes/publico.js
  * Endpoints públicos (sin login) para el autopedido por QR desde la mesa.
  * Sin authMiddleware a propósito — el cliente que escanea el QR no tiene cuenta.

@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Agrega el permiso "clientes" a todos los roles existentes que ya tengan otros permisos.
  * Ejecutar: node migrate_add_clientes_permiso.js  (desde la carpeta backend/)
  */

@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Agrega tabla 'clientes' y columna 'cliente_id' a ventas.
  * Ejecutar: node migrate_clientes.js  (desde la carpeta backend/)
  */

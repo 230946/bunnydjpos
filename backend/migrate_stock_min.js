@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * migrate_stock_min.js
  * Agrega stock_min a menu_items si no existe.
  * Ejecutar una sola vez: node backend/migrate_stock_min.js

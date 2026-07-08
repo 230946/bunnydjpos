@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Agrega permiso 'inventario_borrar: true' a todos los roles
  * que ya tienen 'inventario: true'.
  * Ejecutar: node backend/migrate_inventario_borrar.js

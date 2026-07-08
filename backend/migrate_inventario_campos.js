@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Agrega columnas: descripcion, margen, es_paquete, cantidad_paquete
  * a la tabla inventario.
  * Ejecutar: node backend/migrate_inventario_campos.js

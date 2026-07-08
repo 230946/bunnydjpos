@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Agrega columna 'unidad_compra' a inventario
  * Permite definir la unidad de compra (ej: kg, litro, caja) con su factor de conversión
  * Ejecutar: node migrate_unidad_compra.js  (desde la carpeta backend/)

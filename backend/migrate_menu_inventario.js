@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Agrega columna 'inventario_id' a menu_items para vincular
  * cada producto del menú a un artículo del inventario del admin.
  * Ejecutar: node migrate_menu_inventario.js  (desde la carpeta backend/)

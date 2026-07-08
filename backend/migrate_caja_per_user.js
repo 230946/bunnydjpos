@@ -1,4 +1,10 @@
 /**
+ * BUNNYDJPOS / DJPOS
+ * © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+ * Software de uso propietario y registrado. Prohibida su reproducción,
+ * distribución o modificación sin autorización expresa del autor.
+ */
+/**
  * Cambia la restricción UNIQUE de cajas de (negocio_id, fecha)
  * a (negocio_id, fecha, usuario_id) para permitir una caja por usuario por día.
  * Ejecutar: node backend/migrate_caja_per_user.js
