@@ -10,8 +10,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="DJPOS es el sistema de punto de venta para peluquerías, restaurantes y minimercados en Colombia. Agenda, caja, inventario y reportes en un solo lugar — cada negocio 100% independiente.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://djpos.damaca.com.co/">
   <title>DJPOS — un sistema, tres negocios, cero descuadres</title>
   <link rel="icon" href="/img/logo.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_CO">
+  <meta property="og:url" content="https://djpos.damaca.com.co/">
+  <meta property="og:site_name" content="DJPOS">
+  <meta property="og:title" content="DJPOS — un sistema, tres negocios, cero descuadres">
+  <meta property="og:description" content="El punto de venta para peluquerías, restaurantes y minimercados en Colombia. Agenda, caja, inventario y reportes — cada negocio 100% independiente.">
+  <meta property="og:image" content="https://djpos.damaca.com.co/img/logo.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="DJPOS — un sistema, tres negocios, cero descuadres">
+  <meta name="twitter:description" content="El punto de venta para peluquerías, restaurantes y minimercados en Colombia. Cada negocio 100% independiente.">
+  <meta name="twitter:image" content="https://djpos.damaca.com.co/img/logo.png">
   <style>
 @font-face{font-family:'Fraunces Disp';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/fraunces-disp-600.woff2') format('woff2');}
 @font-face{font-family:'Fraunces Disp';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/fraunces-disp-700.woff2') format('woff2');}
@@ -208,6 +222,15 @@ p{margin:0}
 .hero-sub{margin-top:22px;font-size:1.12rem;color:var(--ink-soft);max-width:46ch;line-height:1.6}
 .hero-ctas{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 .hero-note{margin-top:16px;font-size:.82rem;color:var(--ink-soft)}
+@media (max-width:640px){
+  .hero{padding:36px 0 44px}
+  .hero .eyebrow{font-size:.66rem;margin-bottom:14px}
+  .hero h1{font-size:1.95rem;line-height:1.18;letter-spacing:-.015em}
+  .hero-sub{font-size:.96rem;margin-top:16px;line-height:1.55}
+  .hero-ctas{margin-top:22px;gap:10px}
+  .hero-ctas .btn{flex:1 1 auto;justify-content:center}
+  .hero-note{font-size:.74rem;margin-top:12px}
+}
 
 .hero-visual{position:relative;display:flex;justify-content:center}
 .mock-caja{
@@ -258,19 +281,22 @@ p{margin:0}
 @media (max-width:640px){.section{padding:64px 0}}
 
 /* ── INDEPENDENCIA DE NEGOCIOS ────────────────────── */
+/* Franja de contraste fijo (como .cta-band): no usa --ink/--paper porque
+   esos tokens se invierten en modo oscuro, y aquí necesitamos que el
+   fondo siga siendo oscuro y el texto siga siendo claro en ambos modos. */
 .indep-band{
-  background:var(--ink);color:var(--paper);
+  background:#0F2A22;color:#F1F8F4;
   border-radius:var(--r-l);padding:56px 48px;
 }
 .indep-head{max-width:600px}
-.indep-head h2{color:var(--paper);font-size:clamp(1.7rem,3vw,2.3rem);margin-top:12px}
-.indep-head p{margin-top:16px;color:rgba(245,250,246,.72);font-size:1.02rem}
-.indep-grid{margin-top:44px;display:grid;grid-template-columns:repeat(3,1fr);gap:28px;padding-top:36px;border-top:1px solid rgba(245,250,246,.14)}
+.indep-head h2{color:#F1F8F4;font-size:clamp(1.7rem,3vw,2.3rem);margin-top:12px}
+.indep-head p{margin-top:16px;color:rgba(241,248,244,.72);font-size:1.02rem}
+.indep-grid{margin-top:44px;display:grid;grid-template-columns:repeat(3,1fr);gap:28px;padding-top:36px;border-top:1px solid rgba(241,248,244,.14)}
 @media (max-width:760px){.indep-grid{grid-template-columns:1fr;gap:30px}}
 .indep-ic{width:38px;height:38px;border-radius:10px;background:var(--lime-bright);color:var(--lime-ink);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
 .indep-ic svg{width:19px;height:19px}
-.indep-item h4{font-family:'Work Sans Body';font-size:1rem;font-weight:700;margin-bottom:8px;color:var(--paper)}
-.indep-item p{font-size:.87rem;color:rgba(245,250,246,.66);line-height:1.6}
+.indep-item h4{font-family:'Work Sans Body';font-size:1rem;font-weight:700;margin-bottom:8px;color:#F1F8F4}
+.indep-item p{font-size:.87rem;color:rgba(241,248,244,.66);line-height:1.6}
 @media (max-width:640px){.indep-band{padding:40px 26px}}
 
 /* ── VERTICAL SHOWCASE (peluqueria/restaurante/minimercado) ── */
@@ -409,7 +435,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <div>
       <div class="eyebrow">Un sistema · tres tipos de negocio</div>
       <h1>El mismo software lleva tu <em>peluquería</em>, tu <em>restaurante</em> o tu <em>minimercado</em> — sin descuadres.</h1>
-      <p class="hero-sub">DJPOS es un punto de venta hecho para pequeños negocios colombianos: agenda y comisiones si tienes un salón, mesas y cocina si tienes un restaurante, código de barras e inventario si tienes un minimercado. Un solo sistema, la caja siempre cuadrada.</p>
+      <p class="hero-sub">Punto de venta para negocios colombianos: cada tipo de negocio tiene su propia versión, hecha a su medida — y la caja siempre queda cuadrada.</p>
       <div class="hero-ctas">
         <a class="btn btn-forest btn-lg" href="#contacto">Ver una demo en vivo</a>
         <a class="btn btn-ghost btn-lg" href="#plataforma">Cómo funciona ↓</a>
@@ -458,7 +484,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
 <section class="section shell" id="independencia">
   <div class="indep-band">
     <div class="indep-head">
-      <div class="eyebrow" style="color:var(--lime)">Un solo software, cero mezcla de datos</div>
+      <div class="eyebrow" style="color:var(--lime-bright)">Un solo software, cero mezcla de datos</div>
       <h2>Cada negocio es 100% independiente.</h2>
       <p>Peluquería, restaurante y minimercado no son "modos" de la misma pantalla — son negocios separados dentro de DJPOS, cada uno con su propia caja, su propio inventario y su propio equipo. Nada de uno se cruza con el otro.</p>
     </div>

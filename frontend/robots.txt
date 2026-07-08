@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /$
+Allow: /img/
+Allow: /fonts/
+Disallow: /
+
+Sitemap: https://djpos.damaca.com.co/sitemap.xml
