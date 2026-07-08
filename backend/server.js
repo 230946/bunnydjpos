@@ -51,7 +51,7 @@ const frontendPath = path.join(__dirname, '..', 'frontend');
 app.disable('etag');  // sin cache en desarrollo
 app.use(express.static(frontendPath, { etag: false, lastModified: false }));
 // Rutas directas para cada panel
-app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
+app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'inicio.html')));
 app.get('/login',            (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
 // POS
 app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'pos-restaurante.html')));
