@@ -99,38 +99,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .emp-sel:focus{border-color:var(--acc)}
 .btn-nueva-cita{margin-left:auto;flex-shrink:0}
 
-.citas-list{flex:1;min-height:0;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .cita-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
-
-/* TARJETA DE CITA */
-.cita-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:11px 13px;cursor:pointer;transition:.12s;position:relative}
-.cita-card:hover{border-color:var(--border2);box-shadow:var(--shadow)}
-.cita-card.selected{border-color:var(--acc);border-width:1.5px;background:var(--acc-ll);box-shadow:0 0 0 2px rgba(11,132,87,.1)}
-.cita-card.estado-Completada{opacity:.6}
-.cita-card.estado-Completada.pendiente-cobro{opacity:1;border:1.5px solid #f97316;background:#fff7ed}
-.cita-card.estado-Completada.pendiente-cobro .cc-hora{background:#f97316}
-.cita-card.estado-Completada.pendiente-cobro .status-badge{background:#ffe4cc!important;color:#c2560c!important}
-.cita-card.estado-Cancelada{opacity:.45}
 .pendiente-cobro-pulse{animation:pulseCobro 1.6s ease-in-out infinite}
 @keyframes pulseCobro{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.45)}50%{box-shadow:0 0 0 7px rgba(249,115,22,0)}}
-.cc-top{display:flex;align-items:flex-start;gap:10px}
-.cc-hora{background:var(--acc);color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;font-weight:700;flex-shrink:0;min-width:54px;text-align:center;line-height:1.1}
-.cc-hora small{display:block;font-size:9px;font-weight:400;opacity:.85}
-.cc-body{flex:1;min-width:0}
-.cc-cliente{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cc-svc{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cc-emp{font-size:11px;color:var(--text3);margin-top:2px}
-.cc-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
-.cc-precio{font-size:13px;font-weight:700;color:var(--acc)}
-.status-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
-.s-Pendiente{background:#f3f4f6;color:#6b7280}
-.s-PorConfirmar{background:#ede9fe;color:#7c3aed}
-.s-Confirmada{background:var(--blue-l);color:var(--blue)}
-.s-EnProceso{background:var(--amber-l);color:var(--amber)}
-.s-Completada{background:var(--acc-l);color:var(--acc)}
-.s-Cancelada{background:var(--red-l);color:var(--red)}
-.s-NoAsistio{background:var(--red-l);color:var(--red)}
-.cc-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
 
 /* ── COBRO PANEL ────────────────────────────────────── */
 .cobro-panel{width:340px;flex-shrink:0;background:var(--bg2);border-left:0.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
@@ -377,10 +348,10 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 .resumen-scroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 .resumen-scroll::-webkit-scrollbar{height:3px}
 .resumen-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.resumen-card{background:var(--bg);border:0.5px solid var(--border);border-left:3px solid var(--border);border-radius:var(--rl);padding:10px 12px;min-width:175px;max-width:195px;flex-shrink:0;transition:transform .12s,box-shadow .12s}
+.resumen-card{background:var(--bg);border:0.5px solid var(--border);border-left:3px solid var(--border);border-radius:var(--rl);padding:10px 12px;min-width:195px;max-width:225px;flex-shrink:0;transition:transform .12s,box-shadow .12s}
 .resumen-card.completada{cursor:pointer}
 .resumen-card.completada:hover{transform:translateY(-2px);box-shadow:0 4px 14px #0002}
-.resumen-card.muted{opacity:.45;cursor:default}
+.resumen-card.muted{cursor:default}
 .resumen-card.sel-cobro{box-shadow:0 0 0 2px var(--acc);background:var(--bg2)}
 .resumen-top{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin-bottom:3px}
 .resumen-name{font-size:13px;font-weight:700;line-height:1.2}
@@ -389,6 +360,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 .resumen-foot{display:flex;justify-content:space-between;font-size:11px}
 .resumen-hora{color:var(--text2)}
 .resumen-precio{font-weight:700}
+.resumen-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
 /* ── Alertas de citas próximas ── */
 #alerts-container{position:fixed;top:52px;right:12px;z-index:9000;display:flex;flex-direction:column;gap:8px;width:300px;pointer-events:none}
 .cita-alert{background:#fffbeb;border:1px solid #d97706;border-left:4px solid #d97706;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;box-shadow:0 6px 24px #0002;pointer-events:all;animation:pos-alert-in .3s ease}
@@ -455,7 +427,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
           <button class="fil-btn" onclick="setFiltro(this,'Pendiente')">Pendiente</button>
           <button class="fil-btn" onclick="setFiltro(this,'Completada')">Completada</button>
         </div>
-        <select class="emp-sel" id="filEmp" onchange="renderCitas()">
+        <select class="emp-sel" id="filEmp" onchange="renderCitasResumen()">
           <option value="">Todos los empleados</option>
         </select>
         <button class="btn btn-acc btn-sm btn-nueva-cita" id="btnNuevaCita" onclick="abrirNuevaCita()">+ Nueva cita</button>
@@ -464,9 +436,6 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
       <div class="sin-caja-aviso" id="sinCajaAviso">
         <span>⚠️ Abre la caja para habilitar todas las acciones</span>
         <button onclick="switchTab('caja');abrirCerrarCaja()">Abrir caja</button>
-      </div>
-      <div class="citas-list" id="citasList">
-        <div class="cita-empty">Cargando citas...</div>
       </div>
     </div>
 
@@ -1052,73 +1021,21 @@ async function cargarCitas() {
     const desde = hoy + 'T00:00:00'; const hasta = hoy + 'T23:59:59';
     const d = await api('GET', `/citas?desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}&tamPagina=100`);
     _citas = d.items || [];
-    renderCitas();
-  } catch { $('citasList').innerHTML = '<div class="cita-empty">Error al cargar citas</div>'; }
+    renderCitasResumen();
+  } catch { $('citasResumen').innerHTML = '<div class="cita-empty">Error al cargar citas</div>'; }
 }
 
 function setFiltro(btn, estado) {
   _filtroEstado = estado;
   document.querySelectorAll('.fil-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderCitas();
-}
-
-function renderCitas() {
-  _filtroEmp = $('filEmp').value;
-  const ahora = new Date();
-  let lista = _citas.filter(c => {
-    if (c.estado === 'Cancelada' || c.estado === 'NoAsistio') return false;
-    // Ocultar citas Pendientes cuya hora ya pasó
-    if (c.estado === 'Pendiente') {
-      const hora = c.fechaHora || c.fecha_hora;
-      if (hora && new Date(String(hora).replace(' ','T')) < ahora) return false;
-    }
-    return true;
-  });
-  if (_filtroEstado) lista = lista.filter(c => c.estado === _filtroEstado);
-  if (_filtroEmp) lista = lista.filter(c => c.empleado_id === _filtroEmp || c.empleadoId === _filtroEmp);
-
   renderCitasResumen();
-
-  if (!lista.length) {
-    $('citasList').innerHTML = `<div class="cita-empty">No hay citas${_filtroEstado ? ' con estado "' + _filtroEstado + '"' : ''} para hoy</div>`;
-    return;
-  }
-  $('citasList').innerHTML = lista.map(c => {
-    const esSel = _citaSel?.id === c.id;
-    const pendCobro = c.estado === 'Completada' && !c.venta_id;
-    const svcsNombres = (c.servicios || []).map(s => s.nombre).join(', ') || c.servicioNombre || c.servicio_nombre || '—';
-    const emp = c.empleadoNombre || c.empleado_nombre || '';
-    const hora = c.fechaHora || c.fecha_hora;
-    return `
-    <div class="cita-card estado-${c.estado}${esSel?' selected':''}${pendCobro?' pendiente-cobro pendiente-cobro-pulse':''}" id="cc-${c.id}" onclick="selCita('${c.id}')">
-      <div class="cc-top">
-        <div class="cc-hora">${fmtHora(hora)}<small>${new Date(String(hora).replace(' ','T')).toLocaleDateString('es-CO',{weekday:'short'})}</small></div>
-        <div class="cc-body">
-          <div class="cc-cliente">${esc(c.clienteNombre || c.cliente_nombre || '—')}</div>
-          <div class="cc-svc">✂️ ${esc(svcsNombres)}</div>
-          ${emp ? `<div class="cc-emp">👤 ${esc(emp)}</div>` : `<div class="cc-emp" style="color:var(--amber);font-size:11px">⏳ Sin asignar — disponible en cola</div>`}
-        </div>
-        <div class="cc-right">
-          <span class="status-badge s-${c.estado}">${c.estado==='Completada'&&c.venta_id?'Pagada':estadoLabel(c.estado)}</span>
-          ${c.precio ? `<span class="cc-precio">${fmtCOP(c.precio)}</span>` : ''}
-        </div>
-      </div>
-      ${c.estado !== 'Completada' && c.estado !== 'Cancelada' ? `
-      <div class="cc-actions">
-        ${c.estado === 'Pendiente' ? `<button class="btn btn-xs btn-amber" onclick="event.stopPropagation();cambiarEstado('${c.id}','Confirmada')">Confirmar</button>` : ''}
-        ${c.estado === 'PorConfirmar' ? `<button class="btn btn-xs" style="background:#7c3aed;color:#fff" onclick="event.stopPropagation();cambiarEstado('${c.id}','Confirmada')">✓ Confirmar</button>` : ''}
-        ${c.estado === 'Confirmada' ? `<button class="btn btn-xs btn-amber" onclick="event.stopPropagation();cambiarEstado('${c.id}','EnProceso')">▶ Iniciar</button>` : ''}
-        ${c.estado !== 'Completada' ? `<button class="btn btn-xs btn-acc" onclick="event.stopPropagation();selCita('${c.id}');setTimeout(abrirCobro,100)">💳 Cobrar</button>` : ''}
-        <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();cambiarEstado('${c.id}','Cancelada')" style="color:var(--red);border-color:var(--red)">✕ Cancelar</button>
-      </div>` : ''}
-    </div>`;
-  }).join('');
 }
 
 function renderCitasResumen() {
   const cont = document.getElementById('citasResumen');
   if (!cont) return;
+  _filtroEmp = $('filEmp').value;
   const ahora = new Date();
   let todas = (_citas || []).filter(c => {
     if (c.estado === 'Cancelada' || c.estado === 'NoAsistio') return false;
@@ -1130,7 +1047,10 @@ function renderCitasResumen() {
   });
   if (_filtroEstado) todas = todas.filter(c => c.estado === _filtroEstado);
   if (_filtroEmp) todas = todas.filter(c => c.empleado_id === _filtroEmp || c.empleadoId === _filtroEmp);
-  if (!todas.length) { cont.innerHTML = ''; return; }
+  if (!todas.length) {
+    cont.innerHTML = `<div class="cita-empty">No hay citas${_filtroEstado ? ' con estado "' + _filtroEstado + '"' : ''} para hoy</div>`;
+    return;
+  }
   const colMap = {Pendiente:'#d97706',PorConfirmar:'#7c3aed',Confirmada:'var(--blue)',EnProceso:'var(--acc)',Completada:'var(--green)'};
   cont.innerHTML = `
     <div class="resumen-label">Citas del día — toca una <span style="color:var(--green);font-weight:700">Completada</span> para facturar</div>
@@ -1145,6 +1065,13 @@ function renderCitasResumen() {
         const clases = 'resumen-card' + (esComp?' completada pendiente-cobro-pulse':' muted') + (esSel?' sel-cobro':'');
         const onclick= esComp ? `onclick="selCitaDesdeResumen('${c.id}')"` : (yaFacturada ? 'title="Esta cita ya fue facturada"' : `title="Completa la cita para poder facturarla"`);
         const emp = c.empleadoNombre||c.empleado_nombre||'';
+        const acciones = (c.estado !== 'Completada' && c.estado !== 'Cancelada') ? `
+          <div class="resumen-actions">
+            ${c.estado === 'Pendiente' ? `<button class="btn btn-xs btn-amber" onclick="event.stopPropagation();cambiarEstado('${c.id}','Confirmada')">Confirmar</button>` : ''}
+            ${c.estado === 'PorConfirmar' ? `<button class="btn btn-xs" style="background:#7c3aed;color:#fff" onclick="event.stopPropagation();cambiarEstado('${c.id}','Confirmada')">✓ Confirmar</button>` : ''}
+            ${c.estado === 'Confirmada' ? `<button class="btn btn-xs btn-amber" onclick="event.stopPropagation();cambiarEstado('${c.id}','EnProceso')">▶ Iniciar</button>` : ''}
+            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();cambiarEstado('${c.id}','Cancelada')" style="color:var(--red);border-color:var(--red)">✕ Cancelar</button>
+          </div>` : '';
         return `<div class="${clases}" ${onclick} style="border-left-color:${col}">
           <div class="resumen-top">
             <span class="resumen-name">${esc(c.clienteNombre||c.cliente_nombre||'—')}</span>
@@ -1156,6 +1083,7 @@ function renderCitasResumen() {
             ${precio>0?`<span class="resumen-precio">${fmtCOP(precio)}</span>`:''}
           </div>
           ${emp?`<div style="font-size:10px;color:var(--text3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">👤 ${esc(emp)}</div>`:'<div style="font-size:10px;color:var(--amber);margin-top:4px">⏳ Sin asignar</div>'}
+          ${acciones}
         </div>`;
       }).join('')}
     </div>`;
@@ -1211,10 +1139,6 @@ function selCita(id) {
   _paqueteUsos = {};
   renderCobroPanel();
   renderCitasResumen();
-  // Highlight card
-  document.querySelectorAll('.cita-card').forEach(c => c.classList.remove('selected'));
-  const el = $('cc-' + id);
-  if (el) { el.classList.add('selected'); el.scrollIntoView({block:'nearest',behavior:'smooth'}); }
 }
 
 /* ──────── PANEL DE COBRO ──────── */
