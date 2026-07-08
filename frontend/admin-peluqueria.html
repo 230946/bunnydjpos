@@ -667,6 +667,10 @@
       </div>
       <div class="field"><label>Notas</label><textarea id="cli-notas" rows="2" style="resize:vertical" placeholder="Preferencias, alergias, etc."></textarea></div>
       <div class="field"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input id="cli-activo" type="checkbox"> Activo</label></div>
+      <div id="cli-paquetes-sec" style="display:none">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin:14px 0 8px">Paquetes del cliente</div>
+        <div id="cli-paquetes-list"></div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="cerrarModal('cliente-modal')">Cancelar</button>
@@ -1490,6 +1494,7 @@ function abrirClienteModal(id){
   document.getElementById('cli-modal-title').textContent=id?'Editar cliente':'Nuevo cliente';
   ['cli-nombre','cli-tel','cli-doc','cli-email','cli-dir','cli-notas'].forEach(f=>document.getElementById(f).value='');
   document.getElementById('cli-activo').checked=true;
+  document.getElementById('cli-paquetes-sec').style.display='none';
   if(id){
     const c=_clientesData.find(x=>x.id===id);
     if(c){
@@ -1501,8 +1506,34 @@ function abrirClienteModal(id){
       document.getElementById('cli-notas').value=c.notas||'';
       document.getElementById('cli-activo').checked=!!c.activo;
     }
+    _cargarPaquetesCliente(id);
   }
   document.getElementById('cliente-modal').style.display='flex';
+}
+async function _cargarPaquetesCliente(clienteId){
+  const sec=document.getElementById('cli-paquetes-sec');
+  const list=document.getElementById('cli-paquetes-list');
+  try{
+    const data=await apiFetch(`${API}/peluqueria/clientes/${clienteId}/paquetes`)||[];
+    if(!data.length){sec.style.display='none';return;}
+    const badgeCls={activo:'badge-green',vencido:'badge-red',agotado:'badge-gray',cancelado:'badge-gray'};
+    const badgeTxt={activo:'Activo',vencido:'Vencido',agotado:'Agotado',cancelado:'Cancelado'};
+    list.innerHTML=data.map(cp=>{
+      const hoy=new Date();hoy.setHours(0,0,0,0);
+      const vence=new Date(cp.fecha_vencimiento+'T00:00:00');
+      const diasRest=Math.ceil((vence-hoy)/86400000);
+      const saldos=(cp.saldos||[]).map(s=>`<div style="font-size:12px;color:var(--text2)">${esc(s.servicio_nombre)}: ${s.cantidad_usada}/${s.cantidad_total} usadas</div>`).join('');
+      return `<div style="border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <b style="font-size:13px">${esc(cp.paquete_nombre)}</b>
+          <span class="badge ${badgeCls[cp.estado]||'badge-gray'}">${badgeTxt[cp.estado]||cp.estado}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Vence: ${vence.toLocaleDateString('es-CO')}${cp.estado==='activo'?` (${diasRest>=0?diasRest+' días':'vencido'})`:''}</div>
+        ${saldos}
+      </div>`;
+    }).join('');
+    sec.style.display='block';
+  }catch(e){sec.style.display='none';}
 }
 async function guardarCliente(){
   const nombre=document.getElementById('cli-nombre').value.trim();

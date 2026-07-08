@@ -1745,7 +1745,8 @@ router.patch('/citas/:id/estado', async (req, res) => {
 // Completar cita → genera venta automáticamente
 router.patch('/citas/:id/completar', async (req, res) => {
   try {
-    const { metodoPago = 'Efectivo', descuento = 0, pagos = [], productos = [], productosEmpleadoId } = req.body;
+    const { metodoPago = 'Efectivo', descuento = 0, pagos = [], productos = [], productosEmpleadoId, paqueteUsos = [] } = req.body;
+    const paqueteUsosMap = Object.fromEntries(paqueteUsos.map(u => [u.detalleId, u.clientePaqueteId]));
     const { rows: cr } = await pool.query(
       `SELECT c.*, n.negocio_id FROM pel_citas c JOIN pel_citas n ON n.id=c.id WHERE c.id=? AND c.negocio_id=?`,
       [req.params.id, nid(req)]
@@ -1770,7 +1771,8 @@ router.patch('/citas/:id/completar', async (req, res) => {
 
     const empProd = productosEmpleadoId || cita.empleado_id || null;
     const subtotalProductos = productos.reduce((a, p) => a + parseFloat(p.precio || 0) * parseFloat(p.cantidad || 1), 0);
-    const subtotal = parseFloat(cita.precio || 0) + subtotalProductos;
+    const subtotalServicios = det.reduce((a, d) => a + (paqueteUsosMap[d.id] ? 0 : parseFloat(d.precio || 0)), 0);
+    const subtotal = subtotalServicios + subtotalProductos;
     const desc = parseFloat(descuento || 0);
     const total = subtotal - desc;
     const numeroFactura = await _nextNumeroFactura(nid(req));
@@ -1794,15 +1796,19 @@ router.patch('/citas/:id/completar', async (req, res) => {
     // Insertar detalle de venta y calcular comisiones
     for (const d of det) {
       const detId = uuid();
-      const subDet = parseFloat(d.precio||0);
+      const clientePaqueteId = paqueteUsosMap[d.id] || null;
+      const subDet = clientePaqueteId ? 0 : parseFloat(d.precio||0);
       await pool.query(
-        `INSERT INTO pel_venta_detalle (id,venta_id,tipo_item,ref_id,empleado_id,descripcion,cantidad,precio_unitario,descuento,subtotal)
-         VALUES (?,?,'servicio',?,?,?,1,?,0,?)`,
-        [detId, ventaId, d.servicio_id||null, cita.empleado_id||null, d.nombre, subDet, subDet]
+        `INSERT INTO pel_venta_detalle (id,venta_id,tipo_item,ref_id,empleado_id,cliente_paquete_id,descripcion,cantidad,precio_unitario,descuento,subtotal)
+         VALUES (?,?,'servicio',?,?,?,?,1,?,0,?)`,
+        [detId, ventaId, d.servicio_id||null, cita.empleado_id||null, clientePaqueteId, d.nombre, subDet, subDet]
       );
+      if (clientePaqueteId) {
+        await _canjearSesionPaquete(clientePaqueteId, d.servicio_id);
+      }
 
-      // Calcular comisión si el empleado tiene configuración
-      if (cita.empleado_id) {
+      // Calcular comisión si el empleado tiene configuración (no aplica a sesiones canjeadas con paquete, sin cobro)
+      if (cita.empleado_id && !clientePaqueteId) {
         const { rows: emp } = await pool.query(
           `SELECT tipo_comision,pct_comision,monto_comision FROM pel_empleados WHERE id=?`, [cita.empleado_id]
         );
@@ -1885,6 +1891,26 @@ router.patch('/citas/:id/completar', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Canjea una sesión de un paquete de cliente (resta 1 al saldo del
+// servicio y marca el paquete 'agotado' si ya no queda saldo en ningún
+// servicio incluido). Usado tanto por POST /ventas como por
+// PATCH /citas/:id/completar cuando se cobra un servicio con paquete.
+async function _canjearSesionPaquete(clientePaqueteId, servicioId) {
+  await pool.query(
+    `UPDATE pel_cliente_paquete_saldo SET cantidad_usada = cantidad_usada + 1
+     WHERE cliente_paquete_id=? AND servicio_id=?`,
+    [clientePaqueteId, servicioId||null]
+  );
+  const { rows: saldos } = await pool.query(
+    `SELECT cantidad_total, cantidad_usada FROM pel_cliente_paquete_saldo WHERE cliente_paquete_id=?`,
+    [clientePaqueteId]
+  );
+  const agotado = saldos.every(s => parseInt(s.cantidad_usada) >= parseInt(s.cantidad_total));
+  if (agotado) {
+    await pool.query(`UPDATE pel_cliente_paquetes SET estado='agotado' WHERE id=?`, [clientePaqueteId]);
+  }
+}
+
 // ════════════════════════════════════════════════════════════════
 // VENTAS (POS directo sin cita previa)
 // ════════════════════════════════════════════════════════════════
@@ -1954,22 +1980,7 @@ router.post('/ventas', async (req, res) => {
 
       // Canjear sesión de paquete si aplica
       if (item.clientePaqueteId && item.tipo === 'paquete') {
-        await pool.query(
-          `UPDATE pel_cliente_paquete_saldo SET cantidad_usada = cantidad_usada + 1
-           WHERE cliente_paquete_id=? AND servicio_id=?`,
-          [item.clientePaqueteId, item.refId||null]
-        );
-        // Revisar si el paquete se agotó
-        const { rows: saldos } = await pool.query(
-          `SELECT cantidad_total, cantidad_usada FROM pel_cliente_paquete_saldo WHERE cliente_paquete_id=?`,
-          [item.clientePaqueteId]
-        );
-        const agotado = saldos.every(s => parseInt(s.cantidad_usada) >= parseInt(s.cantidad_total));
-        if (agotado) {
-          await pool.query(
-            `UPDATE pel_cliente_paquetes SET estado='agotado' WHERE id=?`, [item.clientePaqueteId]
-          );
-        }
+        await _canjearSesionPaquete(item.clientePaqueteId, item.refId);
       }
 
       // Comisión
