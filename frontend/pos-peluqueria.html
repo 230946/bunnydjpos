@@ -428,6 +428,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <button class="tab-btn active" id="tabCitas" onclick="switchTab('citas')">📋 Citas</button>
     <button class="tab-btn" id="tabPool" onclick="switchTab('pool')">🎯 Cola</button>
     <button class="tab-btn" id="tabProductos" onclick="switchTab('productos')">🛍️ Productos</button>
+    <button class="tab-btn" id="tabPaquetes" onclick="switchTab('paquetes')">🎁 Paquetes</button>
     <button class="tab-btn" id="tabCaja" onclick="switchTab('caja')">💰 Caja</button>
     <span id="cajaBadge" class="tb-caja caja-no no-print">Sin caja</span>
     <span class="tb-time tb-ml" id="topTime"></span>
@@ -540,6 +541,59 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     </div>
   </div>
 
+  <!-- VISTA VENDER PAQUETE -->
+  <div id="vistaPaquetes" style="display:none;flex:1;overflow-y:auto;justify-content:center;padding:20px">
+    <div style="width:100%;max-width:420px">
+      <h2 style="font-size:16px;margin-bottom:14px">🎁 Vender paquete</h2>
+      <!-- Cliente -->
+      <div class="ppay-card" id="pq-cli-wrap" style="position:relative;padding:10px 12px;margin-bottom:10px">
+        <h3 style="margin-bottom:6px;font-size:11px">Cliente *</h3>
+        <div id="pq-cli-sel-box" style="display:none;align-items:center;justify-content:space-between;background:var(--acc-ll);border:1px solid var(--acc);border-radius:var(--r);padding:6px 9px;font-size:12px">
+          <span id="pq-cli-sel-nombre"></span>
+          <button onclick="limpiarClientePQ()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:13px">✕</button>
+        </div>
+        <div id="pq-cli-search-wrap" style="display:flex;gap:6px">
+          <input id="pq-cli-input" placeholder="Buscar por nombre, teléfono o documento..." oninput="buscarClientePQ()"
+            style="flex:1;min-width:0;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+          <button onclick="mostrarNuevoClientePQ()" style="flex-shrink:0;padding:0 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:transparent;cursor:pointer;font-size:11px;color:var(--acc);font-weight:600;white-space:nowrap">+ Nuevo</button>
+          <div id="pq-cli-dropdown" style="display:none;position:absolute;left:12px;right:12px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);margin-top:4px;max-height:160px;overflow-y:auto;z-index:5;box-shadow:0 4px 10px rgba(0,0,0,.15)"></div>
+        </div>
+        <div id="pq-cli-nuevo-wrap" style="display:none;margin-top:6px;padding-top:6px;border-top:0.5px solid var(--border)">
+          <input id="pq-cli-nuevo-nombre" placeholder="Nombre *" style="width:100%;margin-bottom:5px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+          <div style="display:flex;gap:6px;margin-bottom:5px">
+            <input id="pq-cli-nuevo-tel" placeholder="Teléfono" style="flex:1;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+            <input id="pq-cli-nuevo-doc" placeholder="Documento" style="flex:1;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+          </div>
+          <input id="pq-cli-nuevo-email" type="email" placeholder="Email" style="width:100%;margin-bottom:5px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+          <input id="pq-cli-nuevo-dir" placeholder="Dirección" style="width:100%;margin-bottom:5px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+          <div style="display:flex;gap:6px">
+            <button onclick="cerrarNuevoClientePQ()" style="flex:1;padding:6px;border-radius:var(--r);border:0.5px solid var(--border2);background:transparent;cursor:pointer;font-size:11px;color:var(--text2)">Cancelar</button>
+            <button onclick="registrarNuevoClientePQ()" class="btn btn-acc" style="flex:1;padding:6px;font-size:11px">Registrar</button>
+          </div>
+        </div>
+      </div>
+      <!-- Paquete -->
+      <div class="ppay-card" style="padding:10px 12px;margin-bottom:10px">
+        <h3 style="margin-bottom:6px;font-size:11px">Paquete *</h3>
+        <select id="pq-select" onchange="renderPaqueteSel()" style="width:100%;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
+          <option value="">— Selecciona un paquete —</option>
+        </select>
+        <div id="pq-detalle" style="margin-top:8px;font-size:12px;color:var(--text2);display:none"></div>
+      </div>
+      <!-- Método de pago -->
+      <div class="ppay-card" style="margin-bottom:10px">
+        <h3 style="margin:0 0 6px">Método de pago</h3>
+        <div class="ppay-btns">
+          <button class="ppay-btn sel" id="pqb-efectivo" onclick="selPQPay('efectivo')"><span>💵</span>Efectivo</button>
+          <button class="ppay-btn" id="pqb-tarjeta"  onclick="selPQPay('tarjeta')"><span>💳</span>Tarjeta</button>
+          <button class="ppay-btn" id="pqb-nequi"    onclick="selPQPay('nequi')"><span>📱</span>QR/Nequi</button>
+        </div>
+      </div>
+      <button id="pq-procesar" onclick="venderPaquete()"
+        class="btn btn-green btn-block" style="padding:12px;font-size:14px" disabled>Selecciona cliente y paquete</button>
+    </div>
+  </div>
+
   <!-- VISTA CAJA -->
   <div id="vistaCaja" style="display:none" class="caja-view">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
@@ -597,6 +651,19 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('citaClienteModal')">Cancelar</button>
       <button class="btn btn-green" onclick="guardarClienteCitaYFacturar()">Guardar y facturar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USAR PAQUETE (el cliente tiene sesiones disponibles para uno o más servicios de la cita) -->
+<div class="modal-bg" id="citaPaqueteModal" style="display:none">
+  <div class="modal" style="max-width:380px">
+    <h3>🎁 Paquetes disponibles</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Este cliente tiene sesiones de paquete para pagar estos servicios sin costo.</div>
+    <div id="cp-lista"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="_saltarPaquetes()">No usar</button>
+      <button class="btn btn-green" onclick="_continuarConPaquetes()">Continuar</button>
     </div>
   </div>
 </div>
@@ -790,6 +857,16 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
   </div>
 </div>
 
+<!-- ALERTA BLOQUEANTE: caja abierta de un día anterior -->
+<div class="modal-bg" id="cajaAtrasadaModal" style="display:none">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:40px;margin-bottom:8px">⚠️</div>
+    <h3 style="margin-bottom:8px">Caja abierta del <span id="caja-atrasada-fecha"></span></h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Quedó una caja sin cerrar de un día anterior. No puedes facturar hasta cerrarla y abrir una nueva.</p>
+    <button class="btn btn-green btn-block" onclick="$('cajaAtrasadaModal').style.display='none';switchTab('caja');abrirCerrarCaja()">Ir a cerrar caja</button>
+  </div>
+</div>
+
 <script>
 // Si el navegador restaura esta página desde el bfcache (ej. botón
 // "atrás"), el estado de JS queda congelado tal como estaba en ese
@@ -822,9 +899,11 @@ let _citaSel = null;
 let _citaClienteData = null, _citaClienteEditId = null, _ccCliTimer = null, _ccCliCache = {};
 let _extraItems = [];
 let _extraProductos = [];
+let _paqueteUsos = {};
 let _metodoPago = 'Efectivo';
 let _pagosRows = [];
-let _cajaId = null, _cajaData = null;
+let _cajaId = null, _cajaData = null, _cajaBloqueada = false;
+const _fechaYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 let _tickInterval = null;
 let _pickSvcTarget = null;
 let _ncSvcs = [];
@@ -1101,6 +1180,7 @@ function showToast(msg) {
 }
 
 function requireCaja() {
+  if (_cajaBloqueada) { showToast('⚠️ Tienes una caja abierta de un día anterior — ciérrala primero'); $('cajaAtrasadaModal').style.display = 'flex'; return false; }
   if (_cajaId) return true;
   showToast('⚠️ Debes abrir la caja primero');
   return false;
@@ -1122,6 +1202,7 @@ function selCita(id) {
   _extraItems = [];
   _extraProductos = [];
   _citaClienteData = null;
+  _paqueteUsos = {};
   renderCobroPanel();
   renderCitasResumen();
   // Highlight card
@@ -1166,7 +1247,7 @@ function renderCobroPanel() {
   const citaItems = (c.servicios || []).length ? c.servicios : (c.precio ? [{id:null,nombre:c.servicioNombre||c.servicio_nombre||'Servicio',precio:c.precio}] : []);
   const todosItems = [...citaItems, ..._extraItems];
   const subtotalProductos = _extraProductos.reduce((a,p) => a + parseFloat(p.precio||0)*parseFloat(p.cantidad||1), 0);
-  const subtotal = todosItems.reduce((a,s) => a + parseFloat(s.precio||0), 0) + subtotalProductos;
+  const subtotal = todosItems.reduce((a,s) => a + (_paqueteUsos[s.id] ? 0 : parseFloat(s.precio||0)), 0) + subtotalProductos;
   const descPct = parseFloat($('cobro-desc')?.value || 0) || 0;
   const descMonto = subtotal * descPct / 100;
   const total = subtotal - descMonto;
@@ -1203,7 +1284,7 @@ function renderCobroPanel() {
                   ${_empleados.map(e=>`<option value="${e.id}" ${(s.empleado_id===e.id)?'selected':''}>${e.nombre}${e.apellido?' '+e.apellido:''}</option>`).join('')}
                 </select>`}
           </div>
-          <span class="cs-price">${fmtCOP(s.precio)}</span>
+          <span class="cs-price">${_paqueteUsos[s.id] ? `<span style="color:var(--acc);font-weight:700;font-size:11px">🎁 Paquete</span>` : fmtCOP(s.precio)}</span>
           ${!esDeCita ? `<button class="cs-del" onclick="quitarExtra(${i - citaItems.length})">✕</button>` : ''}
         </div>`;
       }).join('')}
@@ -1418,7 +1499,7 @@ function getTotal() {
   const citaItems = (_citaSel.servicios||[]).length ? _citaSel.servicios : (_citaSel.precio?[{precio:_citaSel.precio}]:[]);
   const items = [...citaItems, ..._extraItems];
   const subProductos = _extraProductos.reduce((a,p) => a + parseFloat(p.precio||0)*parseFloat(p.cantidad||1), 0);
-  const sub = items.reduce((a,s) => a + parseFloat(s.precio||0), 0) + subProductos;
+  const sub = items.reduce((a,s) => a + (_paqueteUsos[s.id] ? 0 : parseFloat(s.precio||0)), 0) + subProductos;
   const desc = parseFloat($('cobro-desc')?.value||0)||0;
   return { subtotal: sub, descuento: sub*desc/100, total: sub - sub*desc/100 };
 }
@@ -1508,7 +1589,7 @@ async function confirmarCobroPel() {
   if (c.cliente_id) {
     try {
       const cli = await apiAdmin('GET', `/clientes/${c.cliente_id}`);
-      if (_clienteCompleto(cli)) { _citaClienteData = cli; previewCobroPel(); return; }
+      if (_clienteCompleto(cli)) { _citaClienteData = cli; _checkPaquetesYPreview(c.cliente_id); return; }
       abrirCitaClienteModal(cli, c.cliente_id);
       return;
     } catch (e) { /* si falla la consulta, cae a pedir los datos igual */ }
@@ -1575,7 +1656,7 @@ async function guardarClienteCitaYFacturar() {
     _citaSel.clienteTelefono = r.telefono;
     _citaClienteData = r;
     $('citaClienteModal').style.display = 'none';
-    previewCobroPel();
+    _checkPaquetesYPreview(r.clienteId);
   } catch (e) {
     $('cc-cli-err').textContent = e.message;
     $('cc-cli-err').style.display = 'block';
@@ -1587,11 +1668,58 @@ document.addEventListener('click', e => {
   }
 });
 
+async function _checkPaquetesYPreview(clienteId) {
+  if (!clienteId) { previewCobroPel(); return; }
+  const servicios = (_citaSel?.servicios || []);
+  if (!servicios.length) { previewCobroPel(); return; }
+  try {
+    const paquetes = await api('GET', `/clientes/${clienteId}/paquetes`) || [];
+    const matches = [];
+    for (const s of servicios) {
+      if (!s.servicio_id || _paqueteUsos[s.id]) continue;
+      for (const cp of paquetes) {
+        if (cp.estado !== 'activo') continue;
+        const saldo = (cp.saldos||[]).find(sd => sd.servicio_id === s.servicio_id && parseInt(sd.cantidad_usada) < parseInt(sd.cantidad_total));
+        if (saldo) {
+          matches.push({ detalleId: s.id, servicioNombre: s.nombre, clientePaqueteId: cp.id, paqueteNombre: cp.paquete_nombre, restante: saldo.cantidad_total - saldo.cantidad_usada });
+          break;
+        }
+      }
+    }
+    if (!matches.length) { previewCobroPel(); return; }
+    _abrirCitaPaqueteModal(matches);
+  } catch (e) { previewCobroPel(); }
+}
+let _cpMatches = [];
+function _abrirCitaPaqueteModal(matches) {
+  _cpMatches = matches;
+  $('cp-lista').innerHTML = matches.map((m,i) => `
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer;font-size:13px">
+      <input type="checkbox" class="cp-chk" data-idx="${i}" checked style="accent-color:var(--acc)">
+      <span style="flex:1">${esc(m.servicioNombre)} — <span style="color:var(--text2)">paquete "${esc(m.paqueteNombre)}"</span></span>
+      <span style="font-size:11px;color:var(--acc);font-weight:600">quedan ${m.restante}</span>
+    </label>`).join('');
+  $('citaPaqueteModal').style.display = 'flex';
+}
+function _saltarPaquetes() {
+  $('citaPaqueteModal').style.display = 'none';
+  previewCobroPel();
+}
+function _continuarConPaquetes() {
+  document.querySelectorAll('.cp-chk').forEach(chk => {
+    const m = _cpMatches[+chk.dataset.idx];
+    if (chk.checked) _paqueteUsos[m.detalleId] = m.clientePaqueteId;
+  });
+  $('citaPaqueteModal').style.display = 'none';
+  previewCobroPel();
+}
+
 function previewCobroPel() {
   if (!requireCaja()) return;
   const { subtotal, descuento, total } = getTotal();
   const c = _citaSel || {};
-  const citaItems = (c.servicios||[]).length ? c.servicios : (c.precio?[{nombre:'Servicio',precio:c.precio}]:[]);
+  const citaItemsRaw = (c.servicios||[]).length ? c.servicios : (c.precio?[{nombre:'Servicio',precio:c.precio}]:[]);
+  const citaItems = citaItemsRaw.map(s => _paqueteUsos[s.id] ? { ...s, nombre: s.nombre + ' (paquete)', precio: 0 } : s);
   const prodItems = _extraProductos.map(p => ({
     nombre: p.cantidad>1 ? `${p.nombre} x${p.cantidad}` : p.nombre,
     precio: p.precio*p.cantidad, iva_pct: parseFloat(p.iva_pct||0),
@@ -1650,12 +1778,13 @@ async function confirmarPagoPel() {
       metodoPago: p.metodoPago, descuento: p.descuento, pagos,
       productos: (p.productos||[]).map(pr => ({ id: pr.id, nombre: pr.nombre, precio: pr.precio, cantidad: pr.cantidad, ivaPct: pr.iva_pct })),
       productosEmpleadoId: p.productosEmpleadoId || null,
+      paqueteUsos: Object.entries(_paqueteUsos).map(([detalleId, clientePaqueteId]) => ({ detalleId, clientePaqueteId })),
     });
     p.numeroFactura = r?.numeroFactura;
     $('preview-pel-modal').style.display = 'none';
     $('success-pel-content').innerHTML = buildReciboHtmlPel(p);
     $('success-pel-modal').style.display = 'flex';
-    _citaSel = null; _extraItems = []; _extraProductos = []; _pagosRows = []; _pendingVentaPel = null;
+    _citaSel = null; _extraItems = []; _extraProductos = []; _paqueteUsos = {}; _pagosRows = []; _pendingVentaPel = null;
     $('cobroEmpty').style.display = 'flex';
     $('cobroContent').style.display = 'none';
   } catch(e) {
@@ -1678,19 +1807,31 @@ async function checkCaja() {
     const d = await api('GET', '/cajas/actual');
     _cajaId = d?.id || null;
     _cajaData = d || null;
+    _cajaBloqueada = !!(_cajaId && _cajaData?.fecha_apertura && _fechaYMD(new Date(_cajaData.fecha_apertura)) !== localDate());
     const badge = $('cajaBadge');
-    if (_cajaId) { badge.textContent = '⬤ Caja abierta'; badge.className = 'tb-caja caja-ok no-print'; }
+    if (_cajaBloqueada) { badge.textContent = '⬤ Caja atrasada'; badge.className = 'tb-caja caja-no no-print'; }
+    else if (_cajaId) { badge.textContent = '⬤ Caja abierta'; badge.className = 'tb-caja caja-ok no-print'; }
     else { badge.textContent = '⬤ Sin caja'; badge.className = 'tb-caja caja-no no-print'; }
-  } catch { _cajaId = null; _cajaData = null; }
+  } catch { _cajaId = null; _cajaData = null; _cajaBloqueada = false; }
   // Mostrar/ocultar aviso y bloquear botón nueva cita
   const aviso = $('sinCajaAviso');
   const btnNC = $('btnNuevaCita');
-  if (_cajaId) {
+  if (_cajaId && !_cajaBloqueada) {
     aviso.classList.remove('visible');
     if (btnNC) { btnNC.disabled = false; btnNC.style.opacity = ''; }
   } else {
     aviso.classList.add('visible');
     if (btnNC) { btnNC.disabled = true; btnNC.style.opacity = '.4'; }
+  }
+  const modal = $('cajaAtrasadaModal');
+  if (modal) {
+    if (_cajaBloqueada) {
+      const fEl = $('caja-atrasada-fecha');
+      if (fEl) fEl.textContent = _fechaYMD(new Date(_cajaData.fecha_apertura));
+      modal.style.display = 'flex';
+    } else {
+      modal.style.display = 'none';
+    }
   }
 }
 
@@ -1969,14 +2110,17 @@ function switchTab(tab) {
   $('vistaCitas').style.display    = tab==='citas'     ? 'flex'   : 'none';
   $('vistaPool').style.display     = tab==='pool'      ? 'flex'   : 'none';
   $('vistaProductos').style.display= tab==='productos' ? 'flex'   : 'none';
+  $('vistaPaquetes').style.display = tab==='paquetes'  ? 'flex'   : 'none';
   $('vistaCaja').style.display     = tab==='caja'      ? 'block'  : 'none';
   $('tabCitas').classList.toggle('active',     tab==='citas');
   $('tabPool').classList.toggle('active',      tab==='pool');
   $('tabProductos').classList.toggle('active', tab==='productos');
+  $('tabPaquetes').classList.toggle('active',  tab==='paquetes');
   $('tabCaja').classList.toggle('active',      tab==='caja');
   if (tab === 'caja')      renderCaja();
   if (tab === 'pool')      cargarPool();
   if (tab === 'productos') cargarProductosPOS();
+  if (tab === 'paquetes')  cargarVistaPaquetes();
 }
 
 /* ──────── PRODUCTOS EN VENTA ──────── */
@@ -2317,6 +2461,142 @@ async function confirmarPagoProductos() {
 
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ──────── VENDER PAQUETE ──────── */
+let _pqPaquetes = [];
+let _pqCliTimer = null, _pqCliCache = {}, _pqCliSelId = null, _pqCliSelNombre = null, _pqCliSelData = null;
+let _pqMetodo = 'efectivo';
+
+async function cargarVistaPaquetes() {
+  limpiarClientePQ();
+  $('pq-select').value = '';
+  $('pq-detalle').style.display = 'none';
+  selPQPay('efectivo');
+  _actualizarBtnPQ();
+  try {
+    _pqPaquetes = await api('GET', '/paquetes?soloActivos=true') || [];
+    $('pq-select').innerHTML = '<option value="">— Selecciona un paquete —</option>' +
+      _pqPaquetes.map(p => `<option value="${p.id}">${esc(p.nombre)} — ${fmtCOP(p.precio)}</option>`).join('');
+  } catch (e) { showToast('Error: ' + e.message); }
+}
+function renderPaqueteSel() {
+  const p = _pqPaquetes.find(x => x.id === $('pq-select').value);
+  const det = $('pq-detalle');
+  if (!p) { det.style.display = 'none'; _actualizarBtnPQ(); return; }
+  const svcs = (p.servicios || []).map(s => `${esc(s.servicio_nombre)} x${s.cantidad_incluida}`).join(', ') || 'Sin servicios configurados';
+  det.innerHTML = `${p.descripcion ? esc(p.descripcion) + '<br>' : ''}<b>Incluye:</b> ${svcs}<br><b>Vigencia:</b> ${p.vigencia_dias} días`;
+  det.style.display = 'block';
+  _actualizarBtnPQ();
+}
+function buscarClientePQ() {
+  const q = $('pq-cli-input').value.trim();
+  clearTimeout(_pqCliTimer);
+  if (q.length < 2) { $('pq-cli-dropdown').style.display = 'none'; return; }
+  _pqCliTimer = setTimeout(async () => {
+    try {
+      const data = await apiAdmin('GET', `/clientes/buscar?q=${encodeURIComponent(q)}`);
+      data.forEach(c => { _pqCliCache[c.id] = c; });
+      const dd = $('pq-cli-dropdown');
+      dd.innerHTML = (data.length ? data.map(c => `
+        <div onclick="selClientePQ('${c.id}')" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)">
+          <b>${esc(c.nombre)}</b>${c.telefono?` <span style="color:var(--text2)">${esc(c.telefono)}</span>`:''}${c.documento?` <span style="color:var(--text2)">Doc: ${esc(c.documento)}</span>`:''}
+        </div>`).join('') : `<div style="padding:10px 12px;font-size:13px;color:var(--text2)">Sin resultados — usa "+ Nuevo" para registrarlo</div>`);
+      dd.style.display = 'block';
+    } catch (e) {}
+  }, 300);
+}
+function selClientePQ(id) {
+  const c = _pqCliCache[id] || {};
+  _pqCliSelId = id; _pqCliSelNombre = c.nombre || ''; _pqCliSelData = c;
+  $('pq-cli-sel-nombre').textContent = c.nombre + (c.telefono?` · ${c.telefono}`:'') + (c.documento?` · ${c.documento}`:'');
+  $('pq-cli-sel-box').style.display = 'flex';
+  $('pq-cli-search-wrap').style.display = 'none';
+  $('pq-cli-input').value = '';
+  $('pq-cli-dropdown').style.display = 'none';
+  $('pq-cli-nuevo-wrap').style.display = 'none';
+  _actualizarBtnPQ();
+}
+function limpiarClientePQ() {
+  _pqCliSelId = null; _pqCliSelNombre = null; _pqCliSelData = null;
+  const box=$('pq-cli-sel-box'); if(box) box.style.display = 'none';
+  const sw=$('pq-cli-search-wrap'); if(sw) sw.style.display = '';
+  const inp=$('pq-cli-input'); if(inp) inp.value = '';
+  const nw=$('pq-cli-nuevo-wrap'); if(nw) nw.style.display = 'none';
+  _actualizarBtnPQ();
+}
+function mostrarNuevoClientePQ() {
+  $('pq-cli-dropdown').style.display = 'none';
+  $('pq-cli-nuevo-nombre').value = $('pq-cli-input').value.trim();
+  ['pq-cli-nuevo-tel','pq-cli-nuevo-doc','pq-cli-nuevo-email','pq-cli-nuevo-dir'].forEach(id=>{$(id).value='';});
+  $('pq-cli-nuevo-wrap').style.display = 'block';
+}
+function cerrarNuevoClientePQ() { $('pq-cli-nuevo-wrap').style.display = 'none'; }
+async function registrarNuevoClientePQ() {
+  const nombre = $('pq-cli-nuevo-nombre').value.trim();
+  if (!nombre) { showToast('El nombre es obligatorio'); return; }
+  try {
+    const telefono = $('pq-cli-nuevo-tel').value.trim() || null;
+    const documento = $('pq-cli-nuevo-doc').value.trim() || null;
+    const email = $('pq-cli-nuevo-email').value.trim() || null;
+    const direccion = $('pq-cli-nuevo-dir').value.trim() || null;
+    const c = await apiAdmin('POST', '/clientes', { nombre, telefono, documento, email, direccion });
+    _pqCliCache[c.id] = { id: c.id, nombre, telefono, documento, email, direccion };
+    selClientePQ(c.id);
+    showToast('Cliente registrado ✓');
+  } catch (e) { showToast('Error: ' + e.message); }
+}
+document.addEventListener('click', e => {
+  if (!$('pq-cli-wrap')?.contains(e.target)) {
+    const dd = $('pq-cli-dropdown'); if (dd) dd.style.display = 'none';
+  }
+});
+function selPQPay(m) {
+  _pqMetodo = m;
+  ['efectivo','tarjeta','nequi'].forEach(x => $(`pqb-${x}`)?.classList.toggle('sel', x===m));
+}
+function _actualizarBtnPQ() {
+  const btn = $('pq-procesar');
+  if (!btn) return;
+  const p = _pqPaquetes.find(x => x.id === $('pq-select')?.value);
+  if (_pqCliSelId && p) {
+    btn.disabled = false;
+    btn.textContent = `✓ Vender por ${fmtCOP(p.precio)}`;
+  } else {
+    btn.disabled = true;
+    btn.textContent = 'Selecciona cliente y paquete';
+  }
+}
+async function venderPaquete() {
+  if (!requireCaja()) return;
+  const p = _pqPaquetes.find(x => x.id === $('pq-select').value);
+  if (!_pqCliSelId || !p) return;
+  const btn = $('pq-procesar');
+  btn.disabled = true;
+  try {
+    const metodoLbl = _pqMetodo.charAt(0).toUpperCase()+_pqMetodo.slice(1);
+    const r = await api('POST', '/ventas', {
+      items: [{ nombre: p.nombre, precio: p.precio, cantidad: 1, tipo: 'paquete', refId: p.id }],
+      pagos: [{ metodo: metodoLbl, monto: p.precio }],
+      clienteId: _pqCliSelId,
+    });
+    await api('POST', `/clientes/${_pqCliSelId}/paquetes`, { paqueteId: p.id, ventaId: r.id });
+    const vence = new Date(Date.now() + p.vigencia_dias * 86400000);
+    const data = {
+      items: [{ nombre: p.nombre, precio: p.precio }],
+      total: p.precio, subtotal: p.precio, descuento: 0,
+      metodoPago: metodoLbl, pagosRows: [],
+      clienteNombre: _pqCliSelNombre, clienteData: _pqCliSelData,
+      numeroFactura: r.numeroFactura, fecha: new Date(),
+    };
+    $('success-pel-content').innerHTML = buildReciboHtmlPel(data, 'PAQUETE') +
+      `<div class="rc" style="margin-top:6px;font-size:12px"><b>Vigente hasta: ${vence.toLocaleDateString('es-CO')}</b></div>`;
+    $('success-pel-modal').style.display = 'flex';
+    showToast('Paquete vendido ✓');
+    cargarVistaPaquetes();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  } finally { btn.disabled = false; }
 }
 
 // ── Cobro móvil (drawer) ──────────────────────────────────────
