@@ -495,8 +495,11 @@
     <div class="modal-head"><h3 id="inv-modal-title">Nuevo producto</h3><button class="modal-close" onclick="cerrarModal('inv-modal')">✕</button></div>
     <div class="modal-body">
       <div class="frow">
+        <div class="fg" style="flex:1"><label>Código interno</label><input id="inv-sku" placeholder="Ej: COD-001"></div>
         <div class="fg" style="flex:2"><label>Nombre *</label><input id="inv-nombre" placeholder="Ej: Shampoo hidratante"></div>
-        <div class="fg" style="flex:1"><label>Código / SKU</label><input id="inv-sku" placeholder="Ej: COD-001"></div>
+      </div>
+      <div class="frow">
+        <div class="fg" style="flex:1"><label>Código de barras</label><input id="inv-barcode" placeholder="Escanea o escribe..."></div>
       </div>
       <div class="frow">
         <div class="fg"><label>Categoría</label>
@@ -712,9 +715,9 @@
             <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text2)">Nuevo producto para este proveedor</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <div class="fg" style="margin:0;grid-column:1/-1">
-                <label>Código / SKU</label>
+                <label>Código interno</label>
                 <div style="display:flex;gap:6px;align-items:center">
-                  <input id="ppn-codigo" placeholder="Escanea o escribe el código..." style="flex:1"
+                  <input id="ppn-codigo" placeholder="Escribe el código interno..." style="flex:1"
                     onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('ppn-nombre').focus();}">
                   <span style="font-size:18px;cursor:default;color:var(--text2)" title="Escanea con pistola o escribe manualmente">&#128290;</span>
                 </div>
@@ -2007,16 +2010,23 @@ async function cargarComisiones(){
       </div>`).join('')||'';
 
     if(!data.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">No hay comisiones en el período seleccionado.</div>';return;}
-    el.innerHTML=`<div class="tbl-wrap"><table>
-      <thead><tr><th>Fecha venta</th><th>Empleado</th><th>Servicio</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
-      <tbody>${data.map(r=>`<tr>
-        <td style="font-size:12px;color:var(--text2)">${fmtDate(r.venta_fecha)}</td>
-        <td style="font-weight:600">${esc(r.empleado_nombre)}</td>
-        <td style="font-size:12px;color:var(--text2)">${esc(r.servicio_desc||'—')}</td>
-        <td style="font-weight:700;color:var(--green)">${fmt(r.monto_comision)}</td>
-        <td><span class="badge ${r.estado==='pagada'?'badge-green':'badge-amber'}">${r.estado}</span></td>
-        <td>${r.estado==='pendiente'?`<button class="btn btn-sm" onclick="pagarComision('${r.id}')">Pagar</button>`:''}</td>
-      </tr>`).join('')}</tbody></table></div>`;
+    el.innerHTML=`<div class="tbl-wrap"><table style="border-collapse:separate;border-spacing:0">
+      <thead><tr><th>Fecha venta</th><th>Empleado</th><th>Servicio</th><th style="text-align:right">Monto</th><th style="text-align:center">Estado</th><th></th></tr></thead>
+      <tbody>${data.map(r=>{
+        const pag=r.estado==='pagada';
+        return `<tr>
+        <td data-label="Fecha" style="font-size:12px;color:var(--text2);border-left:3px solid ${pag?'var(--green)':'var(--amber)'}">${fmtDate(r.venta_fecha)}</td>
+        <td data-label="Empleado" style="font-weight:600">
+          <span style="display:inline-flex;align-items:center;gap:7px">
+            <span style="width:22px;height:22px;border-radius:50%;background:var(--acc-l);color:var(--acc);font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${esc((r.empleado_nombre||'?').charAt(0).toUpperCase())}</span>
+            ${esc(r.empleado_nombre)}
+          </span>
+        </td>
+        <td data-label="Servicio" style="font-size:12px;color:var(--text2)">${esc(r.servicio_desc||'—')}</td>
+        <td data-label="Monto" style="font-weight:700;color:var(--green);text-align:right;font-size:14px">${fmt(r.monto_comision)}</td>
+        <td data-label="Estado" style="text-align:center"><span class="badge ${pag?'badge-green':'badge-amber'}">${pag?'✓ Pagada':'⏳ Pendiente'}</span></td>
+        <td data-label="" style="text-align:right">${!pag?`<button class="btn btn-sm" onclick="pagarComision('${r.id}')">Pagar</button>`:''}</td>
+      </tr>`;}).join('')}</tbody></table></div>`;
   }catch(e){el.innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
 }
 
@@ -2179,7 +2189,7 @@ function filtrarInv(){
   const cnt=document.getElementById('inv-count');if(cnt)cnt.textContent=`${items.length} producto${items.length!==1?'s':''}`;
   if(!items.length){el.innerHTML='<div style="color:var(--text3);text-align:center;padding:40px">No hay productos en inventario.</div>';return;}
   el.innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th>IVA</th><th style="text-align:center">En POS</th><th></th></tr></thead>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th>IVA</th><th style="text-align:center">En POS</th><th></th></tr></thead>
     <tbody>${items.map(i=>{
       const bajo=parseInt(i.stock_actual)>0&&parseInt(i.stock_actual)<parseInt(i.stock_minimo);
       const agotado=parseInt(i.stock_actual)<=0;
@@ -2190,8 +2200,8 @@ function filtrarInv(){
       const margenColor=margen===null?'var(--text3)':margen<0?'var(--red)':margen<20?'var(--yellow)':'var(--green)';
       const enVenta=i.en_venta==1;
       return `<tr>
+        <td style="font-size:12px;color:var(--text2);font-family:monospace">${esc(i.sku||'—')}${i.codigo_barras?`<br><span style="font-size:10px;color:var(--text3)">🏷️ ${esc(i.codigo_barras)}</span>`:''}</td>
         <td style="font-weight:600">${esc(i.nombre)}</td>
-        <td style="font-size:12px;color:var(--text2);font-family:monospace">${esc(i.sku||'—')}</td>
         <td style="font-size:12px;color:var(--text2)">${esc(i.categoria_nombre||'—')}</td>
         <td style="font-weight:700;color:${stockColor}">${parseInt(i.stock_actual||0)}</td>
         <td style="font-size:12px;color:var(--text3)">${parseInt(i.stock_minimo||0)}</td>
@@ -2248,6 +2258,7 @@ async function abrirModalInv(id=null){
     const item=_invData.find(i=>i.id===id)||{};
     document.getElementById('inv-nombre').value=item.nombre||'';
     document.getElementById('inv-sku').value=item.sku||'';
+    document.getElementById('inv-barcode').value=item.codigo_barras||'';
     document.getElementById('inv-desc').value=item.descripcion||'';
     await _cargarCatsProd(item.categoria_id||'');
     document.getElementById('inv-unidad').value=item.unidad||'unidad';
@@ -2264,7 +2275,7 @@ async function abrirModalInv(id=null){
     const rIva=document.querySelector(`input[name="inv-tax"][value="${ivaVal}"]`);
     if(rIva){rIva.checked=true;invTaxChange(ivaVal);}
   }else{
-    ['inv-nombre','inv-sku','inv-desc'].forEach(id=>document.getElementById(id).value='');
+    ['inv-nombre','inv-sku','inv-barcode','inv-desc'].forEach(id=>document.getElementById(id).value='');
     await _cargarCatsProd('');
     document.getElementById('inv-unidad').value='unidad';
     ['inv-stock','inv-stock-min','inv-costo','inv-precio','inv-margen'].forEach(id=>document.getElementById(id).value=0);
@@ -2290,6 +2301,7 @@ async function guardarInv(){
   const body={
     nombre,
     sku:skuVal||null,
+    codigoBarras:document.getElementById('inv-barcode').value.trim()||null,
     descripcion:document.getElementById('inv-desc').value.trim()||null,
     categoriaId:document.getElementById('inv-cat').value||null,
     unidad:document.getElementById('inv-unidad').value.trim()||'unidad',
@@ -3415,8 +3427,9 @@ async function cargarNomina(){
     el.innerHTML=`<div class="table-wrap"><table style="width:100%;font-size:13px">
       <thead><tr>
         <th style="text-align:left">Empleado</th>
-        <th>Días</th><th>Horas</th><th>Sueldo</th><th>Tarifa×hora</th>
-        <th>Comisión pend.</th><th>Total a pagar</th>
+        <th style="text-align:center">Días</th><th style="text-align:center">Horas</th>
+        <th style="text-align:right">Sueldo</th><th style="text-align:right">Tarifa×hora</th>
+        <th style="text-align:right">Comisión</th><th style="text-align:right">Total a pagar</th><th></th>
       </tr></thead>
       <tbody>
         ${data.map(r=>`<tr>
@@ -3425,16 +3438,34 @@ async function cargarNomina(){
           <td style="text-align:center">${r.horasNetas}</td>
           <td style="text-align:right">${r.sueldoBase?fmt(r.pagoSueldo):'—'}</td>
           <td style="text-align:right">${r.tarifaHora?fmt(r.pagoTarifa):'—'}</td>
-          <td style="text-align:right">${r.comisionPendiente?fmt(r.comisionPendiente):'—'}</td>
+          <td style="text-align:right">${_celdaComisionNomina(r)}</td>
           <td style="text-align:right;font-weight:700;color:var(--green)">${fmt(r.totalAPagar)}</td>
+          <td style="text-align:right">${r.totalAPagar>0?`<button class="btn-sm-outline" onclick="pagarNomina('${r.empleadoId}')">Pagar</button>`:''}</td>
         </tr>`).join('')}
       </tbody>
       <tfoot><tr style="font-weight:700">
         <td colspan="6" style="text-align:right">Total general</td>
         <td style="text-align:right;color:var(--green)">${fmt(totalGeneral)}</td>
+        <td></td>
       </tr></tfoot>
     </table></div>`;
   }catch(e){el.innerHTML='';showToast(e.message,'err');}
+}
+function _celdaComisionNomina(r){
+  const totalProd=r.comisionProductoPagada+r.comisionProductoPendiente;
+  const totalServ=r.comisionServicioPagada+r.comisionServicioPendiente;
+  if(!totalProd&&!totalServ)return '—';
+  const linea=(label,total,pend)=>`<div>${label}: ${fmt(total)}${pend?` <span style="color:var(--yellow);font-size:11px">(pend. ${fmt(pend)})</span>`:` <span style="color:var(--text3);font-size:11px">(pagada)</span>`}</div>`;
+  return `${totalProd?linea('Producto',totalProd,r.comisionProductoPendiente):''}${totalServ?linea('Servicio',totalServ,r.comisionServicioPendiente):''}`;
+}
+async function pagarNomina(empleadoId){
+  const desde=_gel('nom-desde')?.value||'';
+  const hasta=_gel('nom-hasta')?.value||'';
+  try{
+    const r=await apiFetch(`${API}/peluqueria/nomina/pagar`,{method:'POST',body:JSON.stringify({empleadoId,desde,hasta})});
+    showToast(`Nómina pagada: ${fmt(r.totalAPagar)} ✓`);
+    cargarNomina();
+  }catch(e){showToast(e.message,'err');}
 }
 async function _cargarPersonalHorario(){
   const personal=await apiFetch(`${API}/peluqueria/empleados?soloActivos=true`)||[];
