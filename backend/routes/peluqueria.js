@@ -723,6 +723,9 @@ router.post('/booking/:negocioId/reservar', async (req, res) => {
     const { clienteNombre, clienteTelefono, servicios = [], empleadoId, fechaHora, notas } = req.body;
     if (!clienteNombre || !fechaHora || !servicios.length)
       return res.status(400).json({ error: 'Datos incompletos' });
+    const telDigits = String(clienteTelefono||'').replace(/\D/g,'');
+    if (telDigits.length < 7 || telDigits.length > 15)
+      return res.status(400).json({ error: 'Ingresa un número de teléfono válido' });
     const { rows: ng } = await pool.query(
       `SELECT id FROM negocios WHERE id=? AND activo=1 LIMIT 1`, [negocioId]
     );

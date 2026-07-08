@@ -287,7 +287,7 @@ textarea.f-inp{resize:none;height:76px}
     </div>
     <div class="f-group">
       <label class="field-label">Teléfono / WhatsApp *</label>
-      <input type="tel" class="f-inp" id="fTel" placeholder="Tu número de contacto" inputmode="tel" autocomplete="tel">
+      <input type="tel" class="f-inp" id="fTel" placeholder="Tu número de contacto" inputmode="tel" autocomplete="tel" maxlength="20" oninput="this.value=this.value.replace(/[^0-9+\-() ]/g,'')">
     </div>
     <div class="f-group">
       <label class="field-label">Notas <span style="font-weight:400;color:var(--text3)">(opcional)</span></label>
@@ -698,7 +698,14 @@ function fillResumen() {
 async function confirmar() {
   const nombre = document.getElementById('fNombre').value.trim();
   const tel    = document.getElementById('fTel').value.trim();
-  if (!nombre || !tel) { showErr('e4'); return; }
+  const errEl  = document.getElementById('e4');
+  if (!nombre || !tel) { errEl.textContent = 'Ingresa tu nombre y teléfono para continuar'; showErr('e4'); return; }
+  const telDigits = tel.replace(/\D/g, '');
+  if (telDigits.length < 7 || telDigits.length > 15) {
+    errEl.textContent = 'Ingresa un número de teléfono válido (solo números, 7 a 15 dígitos)';
+    showErr('e4');
+    return;
+  }
 
   const btn = document.getElementById('btnConf');
   btn.disabled = true; btn.textContent = 'Enviando...';
