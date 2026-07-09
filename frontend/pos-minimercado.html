@@ -620,7 +620,7 @@ function _scanBarcode() {
   const q = ($('search')?.value || '').trim();
   if (!q) return;
   const p = allProds.find(x => (x.codigo_barras||'').trim() === q || (x.codigo||'').trim().toLowerCase() === q.toLowerCase());
-  if (!p) return; // sin match exacto: se deja como búsqueda normal
+  if (!p) { if (/^\d{6,}$/.test(q)) toast(`Código "${q}" no encontrado`); return; } // si no parece código de barras, se deja como búsqueda normal
   const st = stockEfectivo(p);
   if (st !== null && st <= 0) { toast('Sin stock disponible'); return; }
   addToCart(p.id, p.nombre, p.precio);

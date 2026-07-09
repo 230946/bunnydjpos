@@ -1189,7 +1189,7 @@ function _scanMenuBarcode() {
   const q = ($('menu-search')?.value || '').trim();
   if (!q) return;
   const item = menuItems.find(x => (x.codigo_barras||'').trim() === q || (x.codigo||'').trim().toLowerCase() === q.toLowerCase());
-  if (!item) return; // sin match exacto: se deja como búsqueda normal
+  if (!item) { if (/^\d{6,}$/.test(q)) toast(`Código "${q}" no encontrado`); return; } // si no parece código de barras, se deja como búsqueda normal
   if (!esAgotado(item)) addToPedido(item);
   else toast(`⚠️ "${item.nombre}" agotado`);
   $('menu-search').value = '';

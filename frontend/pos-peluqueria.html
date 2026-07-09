@@ -1330,7 +1330,7 @@ function _scanPickProdCobro() {
   const q = ($('prodCobroSearchInp')?.value || '').trim();
   if (!q) return;
   const p = (_productosVenta||[]).find(x => (x.codigo_barras||'').trim() === q || (x.sku||'').trim().toLowerCase() === q.toLowerCase());
-  if (!p) return;
+  if (!p) { if (/^\d{6,}$/.test(q)) showToast(`Código "${q}" no encontrado`); return; }
   if (parseInt(p.stock_actual||0) <= 0) { showToast(`⚠️ ${p.nombre} sin stock`); return; }
   pickProdCobro(p.id);
 }
@@ -2112,7 +2112,7 @@ function buscarPorCodigoBarras() {
   const q = ($('prod-busq')?.value || '').trim();
   if (!q) return;
   const p = _productosVenta.find(x => (x.codigo_barras||'').trim() === q || (x.sku||'').trim().toLowerCase() === q.toLowerCase());
-  if (!p) return; // sin match exacto: se deja como búsqueda normal por nombre
+  if (!p) { if (/^\d{6,}$/.test(q)) showToast(`Código "${q}" no encontrado`); return; } // si no parece código de barras, se deja como búsqueda normal
   if (parseInt(p.stock_actual||0) <= 0) { showToast(`⚠️ ${p.nombre} sin stock`); return; }
   agregarAlCarrito(p.id, p.nombre, p.precio_venta, p.unidad||'und', parseFloat(p.iva_pct)||0);
   $('prod-busq').value = '';
