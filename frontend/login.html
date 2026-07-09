@@ -194,6 +194,7 @@ async function forgotPassword() {
     });
     const d = await r.json();
     msgEl.textContent = d.message || 'Si el usuario existe, se generó una contraseña temporal.';
+    if (d.tempPassword) msgEl.textContent += ` ${d.tempPassword}`;
   } catch (e) {
     msgEl.textContent = 'Error: ' + e.message;
   }

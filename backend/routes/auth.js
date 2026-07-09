@@ -14,6 +14,7 @@ const jwt     = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { pool, ph } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
+const { enviarPasswordTemporal } = require('../mailer');
 
 // ── POST /api/auth/login ─────────────────────────────────────────
 router.post('/login', async (req, res) => {
@@ -103,7 +104,19 @@ router.post('/forgot-password', async (req, res) => {
     const password_hash = await bcrypt.hash(tempPassword, 12);
     await pool.query(`UPDATE usuarios SET password_hash=${ph(1)}, actualizado=NOW() WHERE id=${ph(2)}`, [password_hash, user.id]);
 
-    res.json({ ok: true, message: 'Se generó una contraseña temporal.', tempPassword });
+    // Se intenta enviar por correo (el canal seguro pensado para esto); si el
+    // SMTP no está configurado o falla, se devuelve en la respuesta como
+    // respaldo — sin esto, la contraseña quedaba generada pero perdida y el
+    // usuario se quedaba sin forma de entrar.
+    if (user.email) {
+      try {
+        await enviarPasswordTemporal({ to: user.email, nombre: user.username, tempPassword });
+        return res.json({ ok: true, message: `Se envió una contraseña temporal a ${user.email}.` });
+      } catch (mailErr) {
+        console.error('No se pudo enviar el correo de recuperación:', mailErr.message);
+      }
+    }
+    res.json({ ok: true, message: 'No se pudo enviar el correo — aquí tienes tu contraseña temporal:', tempPassword });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Error interno' });
