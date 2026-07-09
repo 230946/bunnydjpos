@@ -457,9 +457,13 @@ async function _tieneCitasPendientesHoy(empId, negocioId) {
 
 // ── Ruta pública: gestión de turno propio del empleado ───────────
 async function _gestionarTurno(empId, negocioId, accion, horaEntrada, horaSalida, fecha, horarioId) {
-  const now = new Date();
-  const ahora = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:00`;
-  const fechaTarget = fecha || now.toISOString().slice(0,10); // YYYY-MM-DD
+  // "ahora" debe calcularse en hora de Colombia, no en la zona horaria del
+  // propio servidor (que corre en UTC) — si no, "Finalizar" deja la salida
+  // 5 horas adelantada y el turno nunca se ve como terminado hasta que el
+  // reloj de Colombia alcance esa hora "del futuro".
+  const [fechaHoy, horaHoy] = localDateTime().split(' ');
+  const ahora = horaHoy;
+  const fechaTarget = fecha || fechaHoy; // YYYY-MM-DD
   const diaSemana = new Date(fechaTarget + 'T12:00:00').getDay();
 
   if (accion === 'eliminar') {
