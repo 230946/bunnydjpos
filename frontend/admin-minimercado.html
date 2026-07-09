@@ -288,6 +288,20 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<div class="modal-bg" id="cambiar-pass-modal" style="display:none">
+  <div class="modal" style="max-width:360px">
+    <h3>Cambiar contraseña</h3>
+    <div class="field"><label>Contraseña actual *</label><input id="cp-actual" type="password" placeholder="••••••••"></div>
+    <div class="field"><label>Contraseña nueva *</label><input id="cp-nueva" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label>Repetir contraseña nueva *</label><input id="cp-nueva2" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div id="cp-err" style="display:none;color:var(--red,#dc2626);font-size:12px;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('cambiar-pass-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarCambiarPassword()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="forgot-modal" style="display:none">
   <div class="modal" style="max-width:360px">
     <h3>Recuperar contraseña</h3>
@@ -360,6 +374,7 @@ tr:hover td{background:var(--bg2)}
         <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
       </div>
       <button class="nav-btn" onclick="toggleFullscreenPOS()" title="Pantalla completa"><span class="nav-icon">⛶</span><span class="nav-label"> Pantalla</span></button>
+      <button class="nav-btn" onclick="abrirCambiarPassword()" title="Cambiar contraseña"><span class="nav-icon">🔑</span><span class="nav-label"> Contraseña</span></button>
       <button class="nav-btn" onclick="doLogout()" title="Salir"><span class="nav-icon">🚪</span><span class="nav-label"> Salir</span></button>
     </div>
   </div>
@@ -1759,6 +1774,28 @@ function doLogout(){
   sessionStorage.removeItem('bdj_adm_token');
   token=null; me=null;
   location.href='/login';
+}
+function abrirCambiarPassword(){
+  document.getElementById('cp-actual').value='';
+  document.getElementById('cp-nueva').value='';
+  document.getElementById('cp-nueva2').value='';
+  document.getElementById('cp-err').style.display='none';
+  document.getElementById('cambiar-pass-modal').style.display='flex';
+}
+async function guardarCambiarPassword(){
+  const actual=document.getElementById('cp-actual').value;
+  const nueva=document.getElementById('cp-nueva').value;
+  const nueva2=document.getElementById('cp-nueva2').value;
+  const errEl=document.getElementById('cp-err');
+  errEl.style.display='none';
+  if(!actual||!nueva||!nueva2){errEl.textContent='Completa todos los campos';errEl.style.display='block';return;}
+  if(nueva.length<6){errEl.textContent='La contraseña nueva debe tener mínimo 6 caracteres';errEl.style.display='block';return;}
+  if(nueva!==nueva2){errEl.textContent='Las contraseñas nuevas no coinciden';errEl.style.display='block';return;}
+  try{
+    await api('/auth/cambiar-password',{method:'POST',body:JSON.stringify({password_actual:actual,password_nuevo:nueva})});
+    closeModal('cambiar-pass-modal');
+    showToast('Contraseña actualizada ✓');
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
 }
 
 // ─── Contrato ────────────────────────────────────────────────

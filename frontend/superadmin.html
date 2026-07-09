@@ -229,6 +229,7 @@ tr:hover td{background:var(--bg2)}
     <button class="nav-btn" onclick="showPanel('contratos',this)">📄 Contratos</button>
     <div style="margin-top:auto;padding-top:16px;border-top:0.5px solid var(--border)">
       <button class="nav-btn" onclick="toggleFullscreenPOS()">⛶ Pantalla completa</button>
+      <button class="nav-btn" onclick="abrirCambiarPassword()">🔑 Cambiar contraseña</button>
       <button class="nav-btn" onclick="doLogout()">🚪 Cerrar sesión</button>
     </div>
   </div>
@@ -250,6 +251,7 @@ tr:hover td{background:var(--bg2)}
     <div class="mob-sidebar-bot">
       <button class="sa-nav-icon" onclick="toggleFullscreenPOS()">⛶<span class="lbl">Pantalla</span></button>
       <button class="sa-nav-icon" onclick="window.open('/manual-superadmin.html','_blank')">❓<span class="lbl">Ayuda</span></button>
+      <button class="sa-nav-icon" onclick="abrirCambiarPassword()">🔑<span class="lbl">Contraseña</span></button>
       <button class="sa-nav-icon" onclick="doLogout()" style="color:var(--red)">🚪<span class="lbl">Salir</span></button>
     </div>
   </nav>
@@ -652,6 +654,21 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL CAMBIAR CONTRASEÑA -->
+<div class="modal-bg" id="cambiar-pass-modal" style="display:none">
+  <div class="modal" style="max-width:380px">
+    <h3>Cambiar contraseña</h3>
+    <div class="field"><label>Contraseña actual *</label><input id="cp-actual" type="password" placeholder="••••••••"></div>
+    <div class="field"><label>Contraseña nueva *</label><input id="cp-nueva" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label>Repetir contraseña nueva *</label><input id="cp-nueva2" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div id="cp-err" style="display:none;color:var(--red);font-size:12px;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('cambiar-pass-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarCambiarPassword()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PLAN -->
 <div class="modal-bg" id="plan-modal" style="display:none">
   <div class="modal" style="max-width:400px">
@@ -750,6 +767,28 @@ function doLogout(){
   document.getElementById('login-screen').style.display='flex';
 }
 
+function abrirCambiarPassword(){
+  document.getElementById('cp-actual').value='';
+  document.getElementById('cp-nueva').value='';
+  document.getElementById('cp-nueva2').value='';
+  document.getElementById('cp-err').style.display='none';
+  document.getElementById('cambiar-pass-modal').style.display='flex';
+}
+async function guardarCambiarPassword(){
+  const actual = document.getElementById('cp-actual').value;
+  const nueva  = document.getElementById('cp-nueva').value;
+  const nueva2 = document.getElementById('cp-nueva2').value;
+  const errEl  = document.getElementById('cp-err');
+  errEl.style.display='none';
+  if(!actual || !nueva || !nueva2){ errEl.textContent='Completa todos los campos'; errEl.style.display='block'; return; }
+  if(nueva.length<6){ errEl.textContent='La contraseña nueva debe tener mínimo 6 caracteres'; errEl.style.display='block'; return; }
+  if(nueva!==nueva2){ errEl.textContent='Las contraseñas nuevas no coinciden'; errEl.style.display='block'; return; }
+  try{
+    await api('/auth/cambiar-password',{method:'POST',body:JSON.stringify({password_actual:actual,password_nuevo:nueva})});
+    closeModal('cambiar-pass-modal');
+    showToast('Contraseña actualizada ✓');
+  }catch(e){ errEl.textContent=e.message; errEl.style.display='block'; }
+}
 async function api(path,opts={}){
   const r = await fetch(`${API}${path}`,{
     ...opts,

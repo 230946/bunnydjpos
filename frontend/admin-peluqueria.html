@@ -303,7 +303,7 @@
       <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;padding-bottom:5px">Idioma</div>
       <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
     </div>
-    <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="toggleFullscreenPOS()" title="Pantalla completa" style="margin-bottom:4px">⛶ Pantalla completa</button><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
+    <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="toggleFullscreenPOS()" title="Pantalla completa" style="margin-bottom:4px">⛶ Pantalla completa</button><button class="btn-salir" onclick="abrirCambiarPassword()" style="margin-bottom:4px">🔑 Cambiar contraseña</button><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
   </nav>
   <div class="main">
     <div class="topbar">
@@ -363,6 +363,22 @@
 </div>
 
 <!-- MODAL SERVICIO -->
+<div class="modal-bg" id="cambiar-pass-modal" style="display:none">
+  <div class="modal" style="width:380px">
+    <div class="modal-head"><h3>Cambiar contraseña</h3><button class="modal-close" onclick="cerrarModal('cambiar-pass-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow col1"><div class="fg"><label>Contraseña actual *</label><input id="cp-actual" type="password" placeholder="••••••••"></div></div>
+      <div class="frow col1"><div class="fg"><label>Contraseña nueva *</label><input id="cp-nueva" type="password" placeholder="Mínimo 6 caracteres"></div></div>
+      <div class="frow col1"><div class="fg"><label>Repetir contraseña nueva *</label><input id="cp-nueva2" type="password" placeholder="Mínimo 6 caracteres"></div></div>
+      <div id="cp-err" style="display:none;color:var(--red,#dc2626);font-size:12px;margin-top:4px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="cerrarModal('cambiar-pass-modal')">Cancelar</button>
+      <button class="btn btn-acc" onclick="guardarCambiarPassword()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="svc-modal" style="display:none">
   <div class="modal" style="width:460px">
     <div class="modal-head"><h3 id="svc-modal-title">Nuevo servicio</h3><button class="modal-close" onclick="cerrarModal('svc-modal')">✕</button></div>
@@ -1084,6 +1100,28 @@ async function doLogin(){
   }catch(e){errEl.textContent=e.message||'Credenciales inválidas';errEl.style.display='block';}
 }
 function salir(){TOKEN='';sessionStorage.removeItem('pel_token');clearInterval(_alertInterval);_alertInterval=null;_alertedCitas.clear();location.href='/login';}
+function abrirCambiarPassword(){
+  document.getElementById('cp-actual').value='';
+  document.getElementById('cp-nueva').value='';
+  document.getElementById('cp-nueva2').value='';
+  document.getElementById('cp-err').style.display='none';
+  document.getElementById('cambiar-pass-modal').style.display='flex';
+}
+async function guardarCambiarPassword(){
+  const actual=document.getElementById('cp-actual').value;
+  const nueva=document.getElementById('cp-nueva').value;
+  const nueva2=document.getElementById('cp-nueva2').value;
+  const errEl=document.getElementById('cp-err');
+  errEl.style.display='none';
+  if(!actual||!nueva||!nueva2){errEl.textContent='Completa todos los campos';errEl.style.display='block';return;}
+  if(nueva.length<6){errEl.textContent='La contraseña nueva debe tener mínimo 6 caracteres';errEl.style.display='block';return;}
+  if(nueva!==nueva2){errEl.textContent='Las contraseñas nuevas no coinciden';errEl.style.display='block';return;}
+  try{
+    await apiFetch(`${API}/auth/cambiar-password`,{method:'POST',body:JSON.stringify({password_actual:actual,password_nuevo:nueva})});
+    cerrarModal('cambiar-pass-modal');
+    showToast('Contraseña actualizada ✓');
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+}
 const _PEL_PLAN_RATES  = {free:0,basic:0.09,plus:0.07,premium:0.05,personalizado:0.07};
 const _PEL_PLAN_LABELS = {free:'Free (demo)',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
 const _PEL_PLAN_COLORS = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
