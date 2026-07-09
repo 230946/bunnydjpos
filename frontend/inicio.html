@@ -400,6 +400,13 @@ p{margin:0}
 .trust-num{font-family:'Fraunces Disp';font-size:2rem;font-weight:600;color:var(--forest);font-variant-numeric:tabular-nums;line-height:1}
 .trust-lbl{margin-top:8px;font-size:.82rem;color:var(--ink-soft)}
 
+/* ── NOSOTROS: MISIÓN / VISIÓN ────────────────────── */
+.mv-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:760px){.mv-grid{grid-template-columns:1fr}}
+.mv-card{background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--r-m);padding:28px 26px}
+.mv-tag{display:inline-block;font-family:'Fraunces Disp';font-style:italic;font-size:1.15rem;color:var(--forest);margin-bottom:12px}
+.mv-card p{font-size:.95rem;color:var(--ink-soft);line-height:1.65}
+
 /* ── CTA ─────────────────────────────────────────── */
 .cta-band{
   background:linear-gradient(155deg,var(--forest),var(--forest-deep));
@@ -449,6 +456,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <a href="#restaurante">Restaurante</a>
       <a href="#minimercado">Minimercado</a>
       <a href="#plataforma">Plataforma</a>
+      <a href="#nosotros">Nosotros</a>
     </nav>
     <div class="nav-actions">
       <a class="btn btn-ghost" href="/login"><span class="nav-login-full">Acceso corporativo</span><span class="nav-login-short">Ingresar</span></a>
@@ -683,6 +691,27 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <div class="trust-item"><div class="trust-num">3</div><div class="trust-lbl">negocios independientes en un solo sistema — cada uno con su propia caja y su equipo</div></div>
     <div class="trust-item"><div class="trust-num">100%</div><div class="trust-lbl">en español, pensado para cómo se factura y se cobra en Colombia</div></div>
     <div class="trust-item"><div class="trust-num">0</div><div class="trust-lbl">instalaciones — funciona desde el navegador, en cualquier equipo</div></div>
+  </div>
+</section>
+
+<section class="section shell" id="nosotros">
+  <div class="section-head">
+    <div class="eyebrow">Quiénes somos</div>
+    <h2>Nuestra historia.</h2>
+    <div class="prose" style="margin-top:18px;max-width:68ch">
+      <p>Todo empezó en 2025, en <strong>Bunny Burger DJ</strong>, un restaurante de verdad — el nuestro. Necesitábamos algo que llevara mesas, cocina y domicilios sin pagarle de más a un software genérico por funciones que nunca íbamos a usar, y no lo encontramos. Así que lo construimos nosotros mismos.</p>
+      <p>Con el tiempo, otros negocios empezaron a pedir lo mismo — una peluquería, un minimercado — cada uno con sus propias necesidades. Así nació DJPOS: el mismo sistema que hoy sigue llevando nuestro restaurante, ahora hecho a la medida de cualquier negocio colombiano que lo necesite.</p>
+    </div>
+  </div>
+  <div class="mv-grid">
+    <div class="mv-card">
+      <div class="mv-tag">Misión</div>
+      <p>Darle a cada negocio colombiano — sin importar si es una peluquería, un restaurante o un minimercado — un sistema de punto de venta hecho a su medida, con precios justos y sin depender de instalaciones ni contratos complicados.</p>
+    </div>
+    <div class="mv-card">
+      <div class="mv-tag">Visión</div>
+      <p>Ser el sistema de punto de venta de referencia para los negocios independientes de Colombia, donde cada dueño pueda manejar su operación completa — ventas, caja, equipo y clientes — desde un solo lugar confiable.</p>
+    </div>
   </div>
 </section>
 
