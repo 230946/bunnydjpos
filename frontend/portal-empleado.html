@@ -552,7 +552,13 @@ function actualizarSecciones({horarios, citasHoy, proximas, cola, pausa}) {
     const [h,m]=(t||'00:00').split(':'); const hh=parseInt(h);
     return `${hh>12?hh-12:(hh||12)}:${m} ${hh>=12?'p.m.':'a.m.'}`;
   };
-  const turnoHoy = (horarios||[]).find(h => Number(h.dia_semana) === hoyNum);
+  // Prioriza el registro de la fecha exacta de hoy (el que realmente
+  // actualiza "Iniciar"/"Finalizar") sobre la plantilla semanal recurrente
+  // — si no, esta tarjeta puede seguir mostrando el horario genérico sin
+  // reflejar nunca los cambios hechos al turno de hoy.
+  const hoyISOStr = new Date().toLocaleDateString('en-CA');
+  const turnoHoy = (horarios||[]).find(h => h.fecha === hoyISOStr)
+    || (horarios||[]).find(h => Number(h.dia_semana) === hoyNum && !h.fecha);
   const nowH = String(new Date().getHours()).padStart(2,'0');
   const nowM = String(new Date().getMinutes()).padStart(2,'0');
   const nowStr = `${nowH}:${nowM}`;

@@ -281,13 +281,18 @@ async function _completarDetalle(emp, detalleId, negocioId) {
   const { rows: detR } = await pool.query(`SELECT cita_id FROM pel_cita_detalle WHERE id=?`, [detalleId]);
   if (!detR[0]) return;
   const citaId = detR[0].cita_id;
-  // Si todos los detalles de la cita están completados → Completada
-  const { rows: pendR } = await pool.query(
-    `SELECT COUNT(*) AS n FROM pel_cita_detalle WHERE cita_id=? AND completado=0`, [citaId]
+  // Si todos los detalles de la cita están completados → Completada.
+  // Se hace en una sola consulta atómica (no SELECT COUNT + UPDATE por
+  // separado) para que dos servicios marcados casi al mismo tiempo no se
+  // "pisen": cada uno revisaba el estado del otro antes de que terminara
+  // de guardarse, y la cita se quedaba atascada sin pasar a Completada
+  // aunque todos sus servicios ya estuvieran listos.
+  await pool.query(
+    `UPDATE pel_citas c SET estado='Completada'
+     WHERE c.id=? AND c.negocio_id=?
+       AND NOT EXISTS (SELECT 1 FROM pel_cita_detalle WHERE cita_id=c.id AND completado=0)`,
+    [citaId, negocioId]
   );
-  if (parseInt(pendR[0]?.n || 1) === 0) {
-    await pool.query(`UPDATE pel_citas SET estado='Completada' WHERE id=? AND negocio_id=?`, [citaId, negocioId]);
-  }
 }
 
 router.post('/portal-negocio/:negocioId/completar-servicio', async (req, res) => {
