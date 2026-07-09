@@ -201,13 +201,13 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
-<div class="mb" id="forgot-modal" style="display:none">
-  <div class="md" style="max-width:360px">
+<div class="modal-bg" id="forgot-modal" style="display:none">
+  <div class="modal" style="max-width:360px">
     <h3>Recuperar contraseña</h3>
-    <div class="fi"><label>Email o usuario</label><input id="fp-login" placeholder="usuario o correo"></div>
-    <div class="ma">
-      <button class="btn bo bsm" onclick="cm('forgot-modal')">Cancelar</button>
-      <button class="btn bp bsm" onclick="forgotPassword()">Enviar</button>
+    <div class="field"><label>Email o usuario</label><input id="fp-login" placeholder="usuario o correo"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('forgot-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="forgotPassword()">Enviar</button>
     </div>
     <div id="fp-message" style="font-size:13px;color:var(--text2);margin-top:10px"></div>
   </div>
