@@ -224,14 +224,20 @@ p{margin:0}
 .hero h1{font-size:clamp(2.3rem,4.6vw,3.6rem);line-height:1.06}
 .hero h1 em{font-style:italic;color:var(--forest);font-weight:600}
 .hero-sub{margin-top:22px;font-size:1.12rem;color:var(--ink-soft);max-width:46ch;line-height:1.6}
-.hero-ctas{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.hero-pills{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+.hero-pill{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:100px;font-size:.83rem;font-weight:700;border:1px solid transparent}
+.hero-pill-forest{background:var(--forest-tint);color:var(--forest-deep);border-color:color-mix(in srgb, var(--forest) 30%, transparent)}
+.hero-pill-lime{background:var(--lime-tint);color:var(--lime);border-color:color-mix(in srgb, var(--lime-bright) 45%, transparent)}
+.hero-ctas{margin-top:26px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 .hero-note{margin-top:16px;font-size:.82rem;color:var(--ink-soft)}
 @media (max-width:640px){
   .hero{padding:36px 0 44px}
   .hero .eyebrow{font-size:.66rem;margin-bottom:14px}
   .hero h1{font-size:1.95rem;line-height:1.18;letter-spacing:-.015em}
   .hero-sub{font-size:.96rem;margin-top:16px;line-height:1.55}
-  .hero-ctas{margin-top:22px;gap:10px}
+  .hero-pills{margin-top:14px;gap:8px}
+  .hero-pill{font-size:.76rem;padding:7px 12px}
+  .hero-ctas{margin-top:20px;gap:10px}
   .hero-ctas .btn{flex:1 1 auto;justify-content:center}
   .hero-note{font-size:.74rem;margin-top:12px}
 }
@@ -466,6 +472,10 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <div class="eyebrow">Un sistema · tres tipos de negocio</div>
       <h1>El mismo software lleva tu <em>peluquería</em>, tu <em>restaurante</em> o tu <em>minimercado</em> — sin descuadres.</h1>
       <p class="hero-sub">Punto de venta para negocios colombianos: cada tipo de negocio tiene su propia versión, hecha a su medida — y la caja siempre queda cuadrada.</p>
+      <div class="hero-pills">
+        <span class="hero-pill hero-pill-forest">🎯 Software a la medida</span>
+        <span class="hero-pill hero-pill-lime">💳 Pago por uso</span>
+      </div>
       <div class="hero-ctas">
         <a class="btn btn-forest btn-lg" href="#contacto">Ver una demo en vivo</a>
         <a class="btn btn-ghost btn-lg" href="#plataforma">Cómo funciona ↓</a>
@@ -502,12 +512,16 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <span class="strip-item"><b>Caja bloqueada</b> hasta cuadrar el día anterior</span>
     <span class="strip-item"><b>Reservas online</b> sin llamadas</span>
     <span class="strip-item"><b>Reportes en tiempo real</b> desde el celular</span>
+    <span class="strip-item"><b>Software a la medida</b> de tu negocio</span>
+    <span class="strip-item"><b>Pago por uso</b>, sin letra chiquita</span>
     <span class="strip-item"><b>Citas y comisiones</b> para peluquerías</span>
     <span class="strip-item"><b>Mesas y cocina</b> para restaurantes</span>
     <span class="strip-item"><b>Código de barras</b> para minimercados</span>
     <span class="strip-item"><b>Caja bloqueada</b> hasta cuadrar el día anterior</span>
     <span class="strip-item"><b>Reservas online</b> sin llamadas</span>
     <span class="strip-item"><b>Reportes en tiempo real</b> desde el celular</span>
+    <span class="strip-item"><b>Software a la medida</b> de tu negocio</span>
+    <span class="strip-item"><b>Pago por uso</b>, sin letra chiquita</span>
   </div>
 </div>
 
