@@ -615,7 +615,12 @@ function calcSlots(horario, citas, dur) {
 
 // Verifica si un empleado tiene horario disponible para una cita (excepción de fecha > plantilla semanal)
 async function _empleadoDisponible(empleadoId, fechaHoraStr, duracionMin) {
-  const fh = new Date(String(fechaHoraStr).replace(' ', 'T'));
+  // fechaHoraStr puede llegar como texto ("2026-07-09 15:30:00", desde el
+  // body de la petición) o como objeto Date (cuando viene directo de una
+  // columna DATETIME leída de la base de datos) — si se trata como texto
+  // sin convertir, new Date() queda inválida y getDay()/getHours() dan NaN,
+  // que termina metido crudo en una consulta SQL más abajo.
+  const fh = fechaHoraStr instanceof Date ? fechaHoraStr : new Date(String(fechaHoraStr).replace(' ', 'T'));
   const diaSemana = fh.getDay();
   const pad = n => String(n).padStart(2, '0');
   const fechaYMD = `${fh.getFullYear()}-${pad(fh.getMonth()+1)}-${pad(fh.getDate())}`;
