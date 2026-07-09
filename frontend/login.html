@@ -75,7 +75,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   </div>
 
   <div class="portal-footer" style="display:flex;align-items:center;justify-content:center;gap:6px">
-    <img src="/img/Damaca.jpeg" alt="Damaca" style="width:16px;height:16px;object-fit:contain;border-radius:4px;vertical-align:middle">
+    <img src="/img/logo.png" alt="DJPOS" style="width:16px;height:16px;object-fit:contain;border-radius:4px;vertical-align:middle">
     Powered by DJPOS
   </div>
 </div>
@@ -193,11 +193,23 @@ async function forgotPassword() {
       body: JSON.stringify({ login })
     });
     const d = await r.json();
-    msgEl.textContent = d.message || 'Si el usuario existe, se generó una contraseña temporal.';
-    if (d.tempPassword) msgEl.textContent += ` ${d.tempPassword}`;
+    const msg = d.message || 'Si el usuario existe, se generó una contraseña temporal.';
+    if (d.tempPassword) {
+      msgEl.innerHTML = `${msg} <code id="fp-temp-pass" style="font-weight:700">${d.tempPassword}</code> <button type="button" class="btn btn-outline btn-sm" onclick="copiarTempPass(this)">Copiar</button>`;
+    } else {
+      msgEl.textContent = msg;
+    }
   } catch (e) {
     msgEl.textContent = 'Error: ' + e.message;
   }
+}
+function copiarTempPass(btn) {
+  const pass = document.getElementById('fp-temp-pass').textContent;
+  navigator.clipboard.writeText(pass).then(() => {
+    const original = btn.textContent;
+    btn.textContent = '✓ Copiada';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
 }
 </script>
 </body>
