@@ -279,7 +279,7 @@ router.post('/caja/cerrar', async (req, res) => {
     );
     if (!abiertas.length) return res.status(400).json({ error: 'No tienes ninguna caja abierta' });
     const caja = abiertas[0];
-    const fecha = String(caja.fecha).slice(0, 10);
+    const fecha = new Intl.DateTimeFormat('en-CA', { timeZone: req.user.zona_horaria || 'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(caja.fecha));
     // Solo ventas procesadas por este cajero, del día de esa caja
     const { rows: ventas } = await pool.query(`
       SELECT

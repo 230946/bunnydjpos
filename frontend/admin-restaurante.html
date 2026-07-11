@@ -1210,6 +1210,14 @@ tr:hover td{background:var(--bg2)}
 </div>
 
 <!-- Menú: artículo -->
+<div class="modal-bg" id="venta-detalle-modal" style="display:none" onclick="if(event.target===this)closeModal('venta-detalle-modal')">
+  <div class="modal" style="max-width:380px">
+    <h3 style="margin-bottom:10px">🧾 Detalle de venta</h3>
+    <div id="venta-detalle-body" style="max-height:400px;overflow-y:auto"></div>
+    <button class="btn btn-outline btn-block" style="margin-top:14px" onclick="closeModal('venta-detalle-modal')">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="menu-item-modal" style="display:none">
   <div class="modal">
     <h3 id="mi-modal-title">Nuevo artículo</h3>
@@ -1231,6 +1239,31 @@ tr:hover td{background:var(--bg2)}
         <select id="mi-inventario" style="width:100%;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
           <option value="">— Sin vínculo —</option>
         </select>
+      </div>
+    </div>
+
+    <!-- Sección promoción -->
+    <div style="border-top:1px solid var(--border2);margin-top:14px;padding-top:14px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="mi-promo-activo" onchange="$('mi-promo-fields').style.display=this.checked?'grid':'none'">
+        🏷️ Promoción activa
+      </label>
+      <div id="mi-promo-fields" class="two-col" style="display:none;margin-top:10px">
+        <div class="field"><label>Precio promocional</label><input id="mi-promo-precio" type="number" min="0" placeholder="0"></div>
+        <div class="field"></div>
+        <div class="field"><label>Desde <span style="font-size:11px;color:var(--text2)">(opcional)</span></label><input id="mi-promo-desde" type="date"></div>
+        <div class="field"><label>Hasta <span style="font-size:11px;color:var(--text2)">(opcional)</span></label><input id="mi-promo-hasta" type="date"></div>
+      </div>
+    </div>
+
+    <!-- Sección destacado -->
+    <div style="border-top:1px solid var(--border2);margin-top:14px;padding-top:14px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="mi-destacado" onchange="$('mi-destacado-fields').style.display=this.checked?'block':'none'">
+        ⭐ Destacado/sugerido <span style="color:var(--text2);font-weight:400;font-size:11px">(sin cambiar el precio)</span>
+      </label>
+      <div id="mi-destacado-fields" style="display:none;margin-top:10px">
+        <div class="field"><label>Texto para mostrar/recomendar</label><input id="mi-destacado-texto" placeholder="Recomendado del chef..." maxlength="100"></div>
       </div>
     </div>
 
@@ -1574,6 +1607,26 @@ let invModuloActivo = 'restaurante';
 let invEditId = null;
 let adjItemId = null;
 let menuItemEditId = null;
+let _ventasRecActual = [];
+
+function verDetalleVentaId(id){
+  const v = _ventasRecActual.find(x=>x.id===id);
+  if(v) verDetalleVenta(v);
+}
+function verDetalleVenta(venta){
+  const items = typeof venta.items==='string'?JSON.parse(venta.items||'[]'):(venta.items||[]);
+  const rows = items.map(i=>{
+    const tieneDesc = i.precio_original!=null && parseFloat(i.precio_original) > parseFloat(i.precio);
+    const pct = tieneDesc ? Math.round((1 - i.precio/i.precio_original)*100) : 0;
+    return `<div class="recibo-row">
+      <span>${i.nombre} x${i.qty}</span>
+      <span>${fmt(i.precio*i.qty)}${tieneDesc?` <span style="font-size:11px;color:var(--text2);text-decoration:line-through">${fmt(i.precio_original*i.qty)}</span> <span style="font-size:10px;font-weight:700;background:var(--amber-l);color:var(--amber-d);padding:1px 6px;border-radius:8px">-${pct}%</span>`:''}</span>
+    </div>`;
+  }).join('');
+  $('venta-detalle-body').innerHTML = (rows || '<div style="color:var(--text2);font-size:13px">Sin ítems</div>')
+    + `<hr class="recibo-hr"><div class="recibo-row recibo-total"><span>TOTAL</span><span>${fmt(venta.total)}</span></div>`;
+  $('venta-detalle-modal').style.display='flex';
+}
 let miRecetaLocal = [];
 let miInvItems = [];
 let mesaAdminEditId = null;
@@ -2119,15 +2172,20 @@ async function loadDashboard(){
   const canalBadge  = t => t==='domicilio'
     ? `<span style="font-size:10px;font-weight:700;color:#f97316">🛵</span>`
     : `<span style="font-size:10px;font-weight:700;color:var(--blue,#3b82f6)">🍽️</span>`;
+  _ventasRecActual = ventas;
   $('dash-ventas-tbody').innerHTML = ventas.length
-    ? ventas.map(v=>`<tr>
+    ? ventas.map(v=>{
+        const its = typeof v.items==='string'?JSON.parse(v.items||'[]'):(v.items||[]);
+        const tieneDesc = its.some(i=>i.precio_original!=null && parseFloat(i.precio_original)>parseFloat(i.precio));
+        return `<tr style="cursor:pointer" onclick="verDetalleVentaId('${v.id}')">
         <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA})}</td>
         <td style="text-align:center">${canalBadge(v.tipo)}</td>
         <td>${v.lugar||(v.mesa_num?'Mesa '+v.mesa_num:'—')}</td>
         <td>${metodoBadge(v.metodo_pago)}</td>
-        <td><b>${fmt(v.total)}</b></td>
+        <td><b>${fmt(v.total)}</b>${tieneDesc?' <span style="font-size:10px;background:var(--amber-l);color:var(--amber-d);padding:1px 5px;border-radius:8px">🏷️</span>':''}</td>
         <td style="color:var(--text2)">${v.usuario_nombre||'—'}</td>
-      </tr>`).join('')
+      </tr>`;
+      }).join('')
     : '<tr><td colspan="6" style="color:var(--text2);text-align:center;padding:16px">Sin ventas registradas hoy</td></tr>';
 
   // Inventario: resumen + alertas
@@ -3652,7 +3710,11 @@ async function loadEditarMenu(){
         <div style="padding:10px">
           <div style="font-weight:500;font-size:13px">${item.emoji||''} ${item.nombre}</div>
           <div style="font-size:11px;color:var(--text2);margin:2px 0">${item.categoria_nombre||''}</div>
-          <div style="font-size:14px;font-weight:600;color:var(--green-d);margin-bottom:8px">${fmt(item.precio)}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--green-d);margin-bottom:4px">${fmt(item.precio)}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+            ${item.promo_vigente?'<span style="font-size:10px;background:var(--amber-l);color:var(--amber-d);padding:1px 6px;border-radius:8px">🏷️ Promo</span>':''}
+            ${item.destacado?'<span style="font-size:10px;background:var(--amber-l);color:var(--amber-d);padding:1px 6px;border-radius:8px">⭐ Sugerido</span>':''}
+          </div>
           <div style="display:flex;gap:5px;flex-wrap:wrap">
             <button class="btn btn-outline btn-sm" onclick="openMenuItemModal('${item.id}')">Editar</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer">📷<input type="file" accept="image/*" style="display:none" onchange="subirFotoMenu('${item.id}',this)"></label>
@@ -3685,7 +3747,9 @@ async function subirFotoMenu(id,input){
 async function openMenuItemModal(id){
   menuItemEditId=id; miRecetaLocal=[];
   $('mi-modal-title').textContent=id?'Editar artículo':'Nuevo artículo';
-  ['mi-nombre','mi-nombre-zh','mi-desc','mi-desc-zh','mi-precio','mi-tiempo'].forEach(f=>$(f).value='');
+  ['mi-nombre','mi-nombre-zh','mi-desc','mi-desc-zh','mi-precio','mi-tiempo','mi-promo-precio','mi-promo-desde','mi-promo-hasta','mi-destacado-texto'].forEach(f=>$(f).value='');
+  $('mi-promo-activo').checked=false; $('mi-promo-fields').style.display='none';
+  $('mi-destacado').checked=false; $('mi-destacado-fields').style.display='none';
   $('mi-foto-preview').style.display='none'; $('mi-foto-preview').src='';
   $('mi-foto-file').value=''; $('mi-receta-inv').value=''; $('mi-receta-cant').value='';
   renderRecetaList();
@@ -3704,6 +3768,14 @@ async function openMenuItemModal(id){
       $('mi-cat').value=item.categoria_id||''; $('mi-tiempo').value=item.tiempo_prep||15;
       $('mi-inventario').value=item.inventario_id||'';
       if(item.foto_url){ $('mi-foto-preview').src=API.replace('/api','')+item.foto_url; $('mi-foto-preview').style.display='block'; }
+      $('mi-promo-activo').checked=!!item.promo_activo;
+      $('mi-promo-fields').style.display=item.promo_activo?'grid':'none';
+      $('mi-promo-precio').value=item.promo_precio||'';
+      $('mi-promo-desde').value=item.promo_desde?String(item.promo_desde).slice(0,10):'';
+      $('mi-promo-hasta').value=item.promo_hasta?String(item.promo_hasta).slice(0,10):'';
+      $('mi-destacado').checked=!!item.destacado;
+      $('mi-destacado-fields').style.display=item.destacado?'block':'none';
+      $('mi-destacado-texto').value=item.destacado_texto||'';
       miRecetaLocal=receta; renderRecetaList();
     }catch(e){ toast('No se pudo cargar el artículo'); }
   }
@@ -3801,7 +3873,10 @@ async function saveMenuItem(){
   try {
     const b={nombre:$('mi-nombre').value,descripcion:$('mi-desc').value,precio:+$('mi-precio').value||0,
              categoria_id:$('mi-cat').value,tiempo_prep:+$('mi-tiempo').value||15,inventario_id:$('mi-inventario').value||null,
-             nombre_zh:$('mi-nombre-zh').value||null,descripcion_zh:$('mi-desc-zh').value||null};
+             nombre_zh:$('mi-nombre-zh').value||null,descripcion_zh:$('mi-desc-zh').value||null,
+             promo_activo:$('mi-promo-activo').checked,promo_precio:+$('mi-promo-precio').value||null,
+             promo_desde:$('mi-promo-desde').value||null,promo_hasta:$('mi-promo-hasta').value||null,
+             destacado:$('mi-destacado').checked,destacado_texto:$('mi-destacado-texto').value||null};
     if(menuItemEditId) await api(`/pos/menu/items/${menuItemEditId}`,{method:'PUT',body:JSON.stringify(b)});
     else {
       const r=await api('/pos/menu/items',{method:'POST',body:JSON.stringify(b)}); menuItemEditId=r.id;
@@ -4211,6 +4286,13 @@ const DOM_SIGUIENTE = {
   listo:          [{label:'🛵 En camino', estado:'en_camino',     cls:'btn-primary'}],
   en_camino:      [{label:'🎉 Entregado', estado:'entregado',     cls:'btn-success'}],
 };
+// Para "recoge en tienda" no hay domiciliario ni "en camino": de "listo" se
+// pasa directo a "entregado" cuando el cliente pasa a recoger su pedido.
+function domSiguientes(estado, tipoEntrega) {
+  if (estado === 'listo' && tipoEntrega === 'recoge_tienda')
+    return [{label:'✅ Entregado (recogido)', estado:'entregado', cls:'btn-success'}];
+  return DOM_SIGUIENTE[estado] || [];
+}
 
 async function loadDomPedidos() {
   const estado = document.getElementById('dom-fil-estado')?.value || 'pendiente';
@@ -4244,17 +4326,19 @@ function renderDomPedidos(pedidos) {
     const st  = DOM_ESTADOS[p.estado] || DOM_ESTADOS.pendiente;
     const items = p.items || [];
     const ridersOpts = _domRiders.map(r => `<option value="${r.id}" ${p.rider_id===r.id?'selected':''}>${r.nombre}</option>`).join('');
-    const siguientes = DOM_SIGUIENTE[p.estado] || [];
+    const siguientes = domSiguientes(p.estado, p.tipo_entrega);
     const waLink = (() => {
       const tel = (p.cliente_tel||'').replace(/\D/g,'');
       const msg = encodeURIComponent(`Hola ${p.cliente_nombre}, su pedido por ${fmtCOP(p.total)} fue aceptado. Pronto se lo despachamos. ¡Gracias!`);
       return tel ? `https://wa.me/${tel.startsWith('57')?'':57}${tel}?text=${msg}` : null;
     })();
+    const esRecoge = p.tipo_entrega === 'recoge_tienda';
     return `<div class="card" style="border-left:3px solid ${st.color}">
       <div class="card-header" style="flex-wrap:wrap;gap:8px">
         <div style="flex:1;min-width:180px">
           <span style="font-weight:700">${p.cliente_nombre}</span>
-          <span style="font-size:11px;margin-left:8px;background:${st.bg};color:${st.color};border-radius:12px;padding:2px 8px">${st.label}</span><br>
+          <span style="font-size:11px;margin-left:8px;background:${st.bg};color:${st.color};border-radius:12px;padding:2px 8px">${st.label}</span>
+          <span style="font-size:11px;margin-left:4px;background:${esRecoge?'var(--amber-l)':'var(--blue-l,#dbeafe)'};color:${esRecoge?'var(--amber-d)':'var(--blue,#3b82f6)'};border-radius:12px;padding:2px 8px">${esRecoge?'🏪 Recoge en tienda':'🛵 Domicilio'}</span><br>
           <span style="font-size:12px;color:var(--text3)">#${p.id.slice(0,8).toUpperCase()} · ${new Date(p.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA})}</span>
         </div>
         <div style="text-align:right">
@@ -4273,7 +4357,7 @@ function renderDomPedidos(pedidos) {
         <div style="font-size:13px;margin-bottom:10px">
           ${items.map(it=>`<div style="display:flex;justify-content:space-between"><span>${it.nombre} x${it.qty}</span><span>${fmtCOP(it.subtotal)}</span></div>`).join('')}
         </div>
-        ${_domRiders.length ? `
+        ${(_domRiders.length && !esRecoge) ? `
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
           <label style="font-size:12px;color:var(--text2);white-space:nowrap">🛵 Domiciliario:</label>
           <select onchange="assignDomRider('${p.id}',this.value)" style="flex:1;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">

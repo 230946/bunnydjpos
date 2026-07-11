@@ -103,15 +103,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .cat-item{padding:10px 12px;cursor:pointer;border-bottom:0.5px solid var(--border);font-size:13px;color:var(--text2);transition:.1s}
 .cat-item.active{background:var(--blue-l);color:var(--blue-d);font-weight:500;border-left:3px solid var(--blue)}
 .cat-item:hover:not(.active){background:var(--bg2)}
-.menu-items-grid{flex:1;min-height:0;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-content:start}
-.menu-item-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;cursor:pointer;transition:.12s}
+/* CSS Grid con grid-template-columns:repeat(auto-fill,minmax(...)) tiene un
+   bug real en Chrome: con ciertos anchos (~5 columnas) calcula mal la altura
+   de las filas y las tarjetas de filas distintas terminan superpuestas
+   (confirmado con getBoundingClientRect — no es solo un glitch visual).
+   Flexbox con wrap no tiene ese bug: cada línea se dimensiona de forma
+   confiable según la tarjeta más alta de ESA línea. */
+.menu-items-grid{flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;flex-wrap:wrap;align-content:start;gap:10px}
+.menu-item-card{flex:1 1 150px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;cursor:pointer;transition:.12s}
 .menu-item-card:hover{border-color:var(--border2);transform:translateY(-1px)}
 .menu-item-card.agotado{opacity:.45;cursor:not-allowed}
 .menu-item-img{width:100%;height:100px;object-fit:cover;background:var(--bg2)}
 .menu-item-img-placeholder{width:100%;height:100px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:36px}
 .menu-item-body{padding:10px}
 .menu-item-name{font-size:13px;font-weight:500;margin-bottom:4px;line-height:1.3}
-.menu-item-desc{font-size:11px;color:var(--text2);margin-bottom:6px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* height fija (no solo line-clamp): así el grid conoce la altura real de
+   la tarjeta de antemano en vez de calcularla mal a partir del recorte de
+   texto, que es lo que causaba que las tarjetas se superpusieran entre sí. */
+.menu-item-desc{font-size:11px;color:var(--text2);margin-bottom:6px;line-height:1.3;height:28.6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .menu-item-price{font-size:14px;font-weight:600;color:var(--green-d)}
 .menu-item-badge{font-size:10px;background:var(--red-l);color:var(--red-d);padding:1px 6px;border-radius:8px;display:inline-block;margin-top:3px}
 
@@ -249,7 +258,7 @@ table.inv tr:hover td{background:var(--bg2)}
   .sidebar{width:64px}
   .nav-icon span.lbl{display:none}
   .pedido-panel{width:240px}
-  .menu-items-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .menu-item-card{flex-basis:130px}
   .cobro-right{width:260px}
 }
 
@@ -288,7 +297,8 @@ table.inv tr:hover td{background:var(--bg2)}
      que dejaba las tarjetas sin texto). */
   .menu-layout{flex:none;min-height:auto}
   .menu-cats{width:80px;overflow-y:visible;align-self:flex-start;position:sticky;top:0}
-  .menu-items-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));padding:8px;overflow-y:visible;flex:1;min-height:auto}
+  .menu-items-grid{padding:8px;overflow-y:visible;flex:1;min-height:auto}
+  .menu-item-card{flex-basis:130px}
 
   /* Cobro stack vertical — sin scroll interno propio en cada columna:
      que todo se desplace junto con el scroll normal de la página (el de
@@ -663,6 +673,14 @@ table.inv tr:hover td{background:var(--bg2)}
 </div>
 
 <!-- ALERTA BLOQUEANTE: caja abierta de un día anterior -->
+<div class="modal-bg" id="venta-detalle-modal" style="display:none" onclick="if(event.target===this)closeModal('venta-detalle-modal')">
+  <div class="modal" style="max-width:380px">
+    <h3 style="margin-bottom:10px">🧾 Detalle de venta</h3>
+    <div id="venta-detalle-body" style="max-height:400px;overflow-y:auto"></div>
+    <button class="btn btn-outline btn-block" style="margin-top:14px" onclick="closeModal('venta-detalle-modal')">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="cajaAtrasadaModal" style="display:none">
   <div class="modal" style="max-width:380px;text-align:center">
     <div style="font-size:40px;margin-bottom:8px">⚠️</div>
@@ -954,7 +972,7 @@ function nav(p,btn){
   const labels={mesas:'Mesas',menu:'Menú',cocina:'Cocina',cobro:'Caja',caja:'Caja Diaria'};
   const mt=$('mob-panel-title');if(mt)mt.textContent=labels[p]||p;
   if(p==='mesas') loadMesas();
-  if(p==='menu') { loadMenuCats(); loadMenuItems(); }
+  if(p==='menu') { loadMenu(); }
   if(p==='cocina') loadCocina();
   if(p==='cobro'){
     if(!cajaAbierta){ toast('⚠️ Debes abrir tu caja antes de cobrar'); nav('caja', document.querySelector('.nav-icon[title="Caja diaria"]')); return; }
@@ -1128,6 +1146,9 @@ async function liberarMesaManual(){
 
 // ─── MENÚ ─────────────────────────────────────────────────────
 let cats=[], menuItems=[], selCatId=null;
+async function loadMenu(){
+  await Promise.all([loadMenuCats(), loadMenuItems()]);
+}
 async function loadMenuCats(){
   cats = await api('/pos/menu/categorias');
   const el=$('menu-cats'); el.innerHTML='<div class="cat-item active" style="font-weight:500" onclick="filtrarCat(null,this)">Todos</div>';
@@ -1144,7 +1165,10 @@ function filtrarCat(id,el){
   el.classList.add('active');
   renderMenuItems();
 }
-async function loadMenuItems(){ menuItems=await api('/pos/menu/items'); renderMenuItems(); }
+async function loadMenuItems(){
+  menuItems=await api('/pos/menu/items');
+  renderMenuItems();
+}
 function esAgotado(item){
   if(!item.disponible) return true;
   if(item.receta_count > 0) return item.receta_porciones === null || item.receta_porciones <= 0;
@@ -1204,7 +1228,11 @@ function renderMenuItems(){
     const agotado=esAgotado(item);
     const d=document.createElement('div');
     d.className='menu-item-card'+(agotado?' agotado':'');
-    d.innerHTML=`${item.foto_url?`<img src="${API.replace('/api','')}${item.foto_url}" class="menu-item-img" alt="${esc(item.nombre)}" onerror="this.style.display='none'">`:`<div class="menu-item-img-placeholder">${esc(item.emoji)||'🍽️'}</div>`}<div class="menu-item-body"><div class="menu-item-name">${esc(item.nombre)}</div>${item.descripcion?`<div class="menu-item-desc">${esc(item.descripcion)}</div>`:''}<div class="menu-item-price">${fmt(item.precio)}</div>${stockLabel(item)}${agotado?'<span class="menu-item-badge">Agotado</span>':''}</div>`;
+    const precioMostrar = item.precio_efectivo != null ? item.precio_efectivo : item.precio;
+    const precioHtml = item.promo_vigente
+      ? `<div class="menu-item-price">${fmt(precioMostrar)} <span style="font-size:11px;font-weight:400;color:var(--text2);text-decoration:line-through">${fmt(item.precio)}</span></div>`
+      : `<div class="menu-item-price">${fmt(precioMostrar)}</div>`;
+    d.innerHTML=`${item.foto_url?`<img src="${API.replace('/api','')}${item.foto_url}" class="menu-item-img" alt="${esc(item.nombre)}" onerror="this.style.display='none'">`:`<div class="menu-item-img-placeholder">${esc(item.emoji)||'🍽️'}</div>`}<div class="menu-item-body"><div class="menu-item-name">${esc(item.nombre)}</div>${item.descripcion?`<div class="menu-item-desc">${esc(item.descripcion)}</div>`:''}${precioHtml}${stockLabel(item)}${item.promo_vigente?'<span class="menu-item-badge" style="background:var(--amber-l);color:var(--amber-d)">🏷️ Promo</span>':''}${item.destacado?'<span class="menu-item-badge" style="background:var(--amber-l);color:var(--amber-d)">⭐ Sugerido</span>':''}${agotado?'<span class="menu-item-badge">Agotado</span>':''}</div>`;
     if(item.descripcion||item.receta_count>0||item.inventario_id!=null){
       d.addEventListener('mouseenter', e=>_showPosTip(item,e));
       d.addEventListener('mousemove',  e=>_posPosTip(e));
@@ -1233,7 +1261,8 @@ function addToPedido(item){
     }
   }
   const ex=pedido.find(i=>i.id===item.id);
-  if(ex) ex.qty++; else pedido.push({id:item.id,nombre:item.nombre,nombre_zh:item.nombre_zh||null,emoji:item.emoji,precio:item.precio,qty:1,enviado:0});
+  const precioAgregar = item.precio_efectivo != null ? item.precio_efectivo : item.precio;
+  if(ex) ex.qty++; else pedido.push({id:item.id,nombre:item.nombre,nombre_zh:item.nombre_zh||null,emoji:item.emoji,precio:precioAgregar,precio_original:item.precio,qty:1,enviado:0});
   Sound.add();
   renderPedido();
   // Guardar en backend
@@ -1977,7 +2006,7 @@ async function confirmarPago(){
     try {
       const r=await api('/pos/ventas',{method:'POST',body:JSON.stringify({
         tipo:'domicilio', dom_id:domId, lugar:`Domicilio — ${dom.cliente_dir}`,
-        items:items.map(i=>({item_id:i.id||null,nombre:i.nombre,qty:i.qty,precio:parseFloat(i.precio)||0,subtotal:parseFloat(i.subtotal)||i.precio*i.qty})),
+        items:items.map(i=>({item_id:i.id||null,nombre:i.nombre,qty:i.qty,precio:parseFloat(i.precio)||0,precio_original:i.precio_original!=null?parseFloat(i.precio_original):undefined,subtotal:parseFloat(i.subtotal)||i.precio*i.qty})),
         subtotal:sub, iva:0, total, metodo_pago:metodo, recibido, cambio,
         monto_efectivo:pagos?.efectivo||0, monto_tarjeta:pagos?.tarjeta||0, monto_nequi:pagos?.nequi||0,
         cliente_id:clienteId||null, cliente_nombre:clienteNombre||dom.cliente_nombre
@@ -2033,7 +2062,7 @@ async function confirmarPago(){
   try {
     const r=await api('/pos/ventas',{method:'POST',body:JSON.stringify({
       mesa_id:mesaId, mesa_num:mesa.numero, tipo:'pos',
-      items:items.map(i=>({item_id:i.id,nombre:i.nombre,qty:i.qty,precio:i.precio,subtotal:i.precio*i.qty})),
+      items:items.map(i=>({item_id:i.id,nombre:i.nombre,qty:i.qty,precio:i.precio,precio_original:i.precio_original,subtotal:i.precio*i.qty})),
       subtotal:sub, iva, total, metodo_pago:metodo, recibido, cambio,
       monto_efectivo:pagos?.efectivo||0, monto_tarjeta:pagos?.tarjeta||0, monto_nequi:pagos?.nequi||0,
       cliente_id:clienteId||null, cliente_nombre:clienteNombre||null
@@ -2171,6 +2200,26 @@ let cajaAbierta = false;
 let pendPago = null;
 let _ventaConfirmadaId = null;
 let _cajaPendiente = null;
+let _ventasRecActual = [];
+
+function verDetalleVentaId(id){
+  const v = _ventasRecActual.find(x=>x.id===id);
+  if(v) verDetalleVenta(v);
+}
+function verDetalleVenta(venta){
+  const items = typeof venta.items==='string'?JSON.parse(venta.items||'[]'):(venta.items||[]);
+  const rows = items.map(i=>{
+    const tieneDesc = i.precio_original!=null && parseFloat(i.precio_original) > parseFloat(i.precio);
+    const pct = tieneDesc ? Math.round((1 - i.precio/i.precio_original)*100) : 0;
+    return `<div class="recibo-row">
+      <span>${i.nombre} x${i.qty}</span>
+      <span>${fmt(i.precio*i.qty)}${tieneDesc?` <span style="font-size:11px;color:var(--text2);text-decoration:line-through">${fmt(i.precio_original*i.qty)}</span> <span style="font-size:10px;font-weight:700;background:var(--amber-l);color:var(--amber-d);padding:1px 6px;border-radius:8px">-${pct}%</span>`:''}</span>
+    </div>`;
+  }).join('');
+  $('venta-detalle-body').innerHTML = (rows || '<div style="color:var(--text2);font-size:13px">Sin ítems</div>')
+    + `<hr class="recibo-hr"><div class="recibo-row recibo-total"><span>TOTAL</span><span>${fmt(venta.total)}</span></div>`;
+  $('venta-detalle-modal').style.display='flex';
+}
 
 async function loadCaja(){
   try {
@@ -2251,15 +2300,20 @@ function renderCajaPanel(ventasRec=[], dom=null){
   const fechaDisplay = c.fecha ? new Date(c.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'}) : '';
   const ahora = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const mBadge = m => m==='tarjeta'?`<span class="m-ta">tarjeta</span>`:m==='nequi'?`<span class="m-ne">nequi</span>`:`<span class="m-ef">efectivo</span>`;
+  _ventasRecActual = ventasRec;
   const ventasHtml = ventasRec.length
     ? `<table class="ventas-rec-table">
         <thead><tr><th>Hora</th><th>Mesa</th><th>Método</th><th>Total</th></tr></thead>
-        <tbody>${ventasRec.map(v=>`<tr>
+        <tbody>${ventasRec.map(v=>{
+          const its = typeof v.items==='string'?JSON.parse(v.items||'[]'):(v.items||[]);
+          const tieneDesc = its.some(i=>i.precio_original!=null && parseFloat(i.precio_original)>parseFloat(i.precio));
+          return `<tr style="cursor:pointer" onclick="verDetalleVentaId('${v.id}')">
           <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA})}</td>
           <td>Mesa ${v.mesa_num||'—'}</td>
           <td>${mBadge(v.metodo_pago)}</td>
-          <td><b>${fmt(v.total)}</b></td>
-        </tr>`).join('')}</tbody>
+          <td><b>${fmt(v.total)}</b>${tieneDesc?' <span style="font-size:10px;background:var(--amber-l);color:var(--amber-d);padding:1px 5px;border-radius:8px">🏷️</span>':''}</td>
+        </tr>`;
+        }).join('')}</tbody>
       </table>`
     : `<div style="color:var(--text2);font-size:12px;padding:12px 0;text-align:center">Sin ventas registradas hoy</div>`;
 

@@ -34,9 +34,12 @@ if (DB_TYPE === 'mysql' || DB_TYPE === 'mariadb') {
       if (field.type === 'TINY' && field.length === 1) {
         return field.string() === '1';
       }
-      // Parsear campos JSON automáticamente
+      // Parsear campos JSON automáticamente — mysql2 reporta las columnas
+      // JSON con collation "binary", así que field.string() sin encoding
+      // decodifica mal cualquier caracter multibyte (emojis, tildes) dentro
+      // del JSON. Forzar utf8 explícito evita ese mojibake.
       if (field.type === 'JSON') {
-        const val = field.string();
+        const val = field.string('utf8');
         if (val === null) return null;
         try { return JSON.parse(val); } catch { return val; }
       }

@@ -30,6 +30,7 @@ const clientesRouter    = require('./routes/clientes');
 const peluqueriaRouter  = require('./routes/peluqueria');
 const domiciliosRouter  = require('./routes/domicilios');
 const publicoRouter     = require('./routes/publico');
+const hotelRouter       = require('./routes/hotel');
 
 const app    = express();
 const server = http.createServer(app);
@@ -67,6 +68,7 @@ app.get('/rider',            (_, res) => res.sendFile(path.join(frontendPath, 'r
 app.get('/admin',            (_, res) => res.sendFile(path.join(frontendPath, 'admin-restaurante.html')));
 app.get('/minimercado-admin',(_, res) => res.sendFile(path.join(frontendPath, 'admin-minimercado.html')));
 app.get('/peluqueria-admin', (_, res) => res.sendFile(path.join(frontendPath, 'admin-peluqueria.html')));
+app.get('/hotel-admin',      (_, res) => res.sendFile(path.join(frontendPath, 'admin-hotel.html')));
 app.get('/superadmin',       (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
 // Portales
 app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'portal.html')));
@@ -120,6 +122,7 @@ app.use('/api/inventario', inventarioRouter);
 app.use('/api/peluqueria', peluqueriaRouter);
 app.use('/api/domicilios', domiciliosRouter);
 app.use('/api/publico',   publicoRouter);
+app.use('/api/hotel',     hotelRouter);
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {
@@ -293,7 +296,14 @@ async function runMigrations() {
     { table: 'domicilios_pedidos', column: 'monto_tarjeta',  sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'domicilios_pedidos', column: 'monto_nequi',    sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'domicilios_pedidos', column: 'llego_en',       sql: `ALTER TABLE domicilios_pedidos ADD COLUMN llego_en TIMESTAMP NULL` },
+    { table: 'domicilios_pedidos', column: 'tipo_entrega',   sql: `ALTER TABLE domicilios_pedidos ADD COLUMN tipo_entrega VARCHAR(20) NOT NULL DEFAULT 'domicilio'` },
     { table: 'mesa_estado', column: 'sesion_token', sql: `ALTER TABLE mesa_estado ADD COLUMN sesion_token VARCHAR(36) NULL` },
+    { table: 'menu_items', column: 'promo_activo',    sql: `ALTER TABLE menu_items ADD COLUMN promo_activo TINYINT(1) NOT NULL DEFAULT 0` },
+    { table: 'menu_items', column: 'promo_precio',    sql: `ALTER TABLE menu_items ADD COLUMN promo_precio DECIMAL(10,2) NULL` },
+    { table: 'menu_items', column: 'promo_desde',     sql: `ALTER TABLE menu_items ADD COLUMN promo_desde DATE NULL` },
+    { table: 'menu_items', column: 'promo_hasta',     sql: `ALTER TABLE menu_items ADD COLUMN promo_hasta DATE NULL` },
+    { table: 'menu_items', column: 'destacado',       sql: `ALTER TABLE menu_items ADD COLUMN destacado TINYINT(1) NOT NULL DEFAULT 0` },
+    { table: 'menu_items', column: 'destacado_texto', sql: `ALTER TABLE menu_items ADD COLUMN destacado_texto VARCHAR(100) NULL` },
     {
       table: 'domicilios_pedidos', column: '__create__',
       createSql: `CREATE TABLE IF NOT EXISTS domicilios_pedidos (

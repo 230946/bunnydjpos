@@ -10,13 +10,28 @@
  */
 const express = require('express');
 const { v4: uuid } = require('uuid');
+const Anthropic = require('@anthropic-ai/sdk');
 const { pool, ph } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 const verifyToken = authMiddleware;
 
 const router = express.Router();
+const anthropic = new Anthropic();
+const CHAT_MODEL = 'claude-haiku-4-5';
 
 // ── Helpers ────────────────────────────────────────────────────────
+
+// Promo realmente vigente HOY (activa + precio + dentro del rango de fechas),
+// evaluado en SQL con CURDATE() (no en JS) para evitar desajustes de
+// timezone/Date con mysql2. `promo_activo` es solo el interruptor que puso
+// el negocio; esto es si de verdad aplica ahora mismo.
+const PROMO_VIGENTE_SQL = `
+  (mi.promo_activo=1 AND mi.promo_precio IS NOT NULL
+   AND (mi.promo_desde IS NULL OR mi.promo_desde<=CURDATE())
+   AND (mi.promo_hasta IS NULL OR mi.promo_hasta>=CURDATE()))
+`;
+const PRECIO_EFECTIVO_SQL = `CASE WHEN ${PROMO_VIGENTE_SQL} THEN mi.promo_precio ELSE mi.precio END`;
+
 function fmtMoney(n) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
 }
@@ -117,169 +132,358 @@ function buildWhatsAppText(pedido, negocio) {
 // RUTAS PÚBLICAS (sin JWT)
 // ══════════════════════════════════════════════════════════════════
 
+// Info del negocio + catálogo disponible. Usado por GET /menu/:negocioId y por
+// el chatbot (para construir el system prompt con el menú real).
+async function obtenerMenuData(nid) {
+  const { rows: neg } = await pool.query(
+    `SELECT id, nombre, tipo, logo_url, telefono, direccion, ciudad, color_primario, moneda FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+    [nid]
+  );
+  if (!neg[0]) return null;
+
+  // Color corporativo: campo explícito o default por tipo de negocio
+  const COLOR_TIPO = {
+    restaurante: '#e65c00', bar: '#7c1f3e', minimercado: '#0B8457',
+    peluqueria: '#0B8457', veterinaria: '#0ea5e9', farmacia: '#dc2626',
+    taller: '#374151', lavanderia: '#0284c7', gimnasio: '#7c3aed',
+  };
+  neg[0].color_primario = neg[0].color_primario || COLOR_TIPO[neg[0].tipo] || '#6c4ff6';
+
+  const tipo = neg[0].tipo;
+  let productos = [];
+
+  if (tipo === 'restaurante' || tipo === 'bar') {
+    // Restaurante/bar → menu_items con verificación de stock de receta e inventario
+    const { rows } = await pool.query(
+      `SELECT mi.id, mi.nombre, mi.nombre_zh, mi.descripcion, mi.descripcion_zh,
+              mi.precio, COALESCE(mi.foto_url, mi.emoji) AS imagen_url,
+              COALESCE(mc.nombre, 'General') AS categoria, 0 AS iva_pct, NULL AS unidad,
+              mi.disponible, mi.stock AS item_stock,
+              mi.promo_activo, mi.destacado, mi.destacado_texto,
+              ${PROMO_VIGENTE_SQL} AS promo_vigente,
+              ${PRECIO_EFECTIVO_SQL} AS precio_efectivo,
+              inv.stock AS inv_stock,
+              (SELECT COUNT(*) FROM menu_item_recetas r WHERE r.menu_item_id = mi.id) AS receta_count,
+              (SELECT FLOOR(MIN(inv2.stock / r2.cantidad))
+               FROM menu_item_recetas r2
+               JOIN inventario inv2 ON inv2.id = r2.inventario_id
+               WHERE r2.menu_item_id = mi.id) AS receta_porciones
+       FROM menu_items mi
+       LEFT JOIN menu_categorias mc ON mc.id = mi.categoria_id
+       LEFT JOIN inventario inv ON inv.id = mi.inventario_id
+       WHERE mi.negocio_id=?
+       ORDER BY mc.nombre, mi.orden, mi.nombre`,
+      [nid]
+    );
+    productos = rows.map(r => {
+      let agotado = !r.disponible;
+      if (!agotado) {
+        if (r.receta_count > 0) agotado = (r.receta_porciones === null || r.receta_porciones <= 0);
+        else if (r.inv_stock !== null && r.inv_stock !== undefined) agotado = r.inv_stock <= 0;
+        else if (r.item_stock !== null && r.item_stock !== undefined) agotado = r.item_stock <= 0;
+      }
+      return { ...r, agotado };
+    });
+  } else {
+    // Minimercado y otros → inventario (incluye inactivos como agotados)
+    const { rows } = await pool.query(
+      `SELECT id, nombre, descripcion, precio_venta AS precio, categoria,
+              NULL AS imagen_url, COALESCE(iva_pct,0) AS iva_pct, unidad, activo
+       FROM inventario
+       WHERE negocio_id=? AND es_producto=1
+       ORDER BY categoria, nombre`,
+      [nid]
+    );
+    productos = rows.map(r => ({ ...r, agotado: !r.activo }));
+  }
+
+  return { negocio: neg[0], productos };
+}
+
 // GET /api/domicilios/menu/:negocioId
 // Retorna productos disponibles para mostrar al cliente
 router.get('/menu/:negocioId', async (req, res) => {
   try {
-    const nid = req.params.negocioId;
-
-    // Info del negocio
-    const { rows: neg } = await pool.query(
-      `SELECT id, nombre, tipo, logo_url, telefono, direccion, ciudad, color_primario, moneda FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
-      [nid]
-    );
-    if (!neg[0]) return res.status(404).json({ error: 'Negocio no encontrado' });
-
-    // Color corporativo: campo explícito o default por tipo de negocio
-    const COLOR_TIPO = {
-      restaurante: '#e65c00', bar: '#7c1f3e', minimercado: '#0B8457',
-      peluqueria: '#0B8457', veterinaria: '#0ea5e9', farmacia: '#dc2626',
-      taller: '#374151', lavanderia: '#0284c7', gimnasio: '#7c3aed',
-    };
-    neg[0].color_primario = neg[0].color_primario || COLOR_TIPO[neg[0].tipo] || '#6c4ff6';
-
-    const tipo = neg[0].tipo;
-    let productos = [];
-
-    if (tipo === 'restaurante' || tipo === 'bar') {
-      // Restaurante/bar → menu_items con verificación de stock de receta e inventario
-      const { rows } = await pool.query(
-        `SELECT mi.id, mi.nombre, mi.nombre_zh, mi.descripcion, mi.descripcion_zh,
-                mi.precio, COALESCE(mi.foto_url, mi.emoji) AS imagen_url,
-                COALESCE(mc.nombre, 'General') AS categoria, 0 AS iva_pct, NULL AS unidad,
-                mi.disponible, mi.stock AS item_stock,
-                inv.stock AS inv_stock,
-                (SELECT COUNT(*) FROM menu_item_recetas r WHERE r.menu_item_id = mi.id) AS receta_count,
-                (SELECT FLOOR(MIN(inv2.stock / r2.cantidad))
-                 FROM menu_item_recetas r2
-                 JOIN inventario inv2 ON inv2.id = r2.inventario_id
-                 WHERE r2.menu_item_id = mi.id) AS receta_porciones
-         FROM menu_items mi
-         LEFT JOIN menu_categorias mc ON mc.id = mi.categoria_id
-         LEFT JOIN inventario inv ON inv.id = mi.inventario_id
-         WHERE mi.negocio_id=?
-         ORDER BY mc.nombre, mi.orden, mi.nombre`,
-        [nid]
-      );
-      productos = rows.map(r => {
-        let agotado = !r.disponible;
-        if (!agotado) {
-          if (r.receta_count > 0) agotado = (r.receta_porciones === null || r.receta_porciones <= 0);
-          else if (r.inv_stock !== null && r.inv_stock !== undefined) agotado = r.inv_stock <= 0;
-          else if (r.item_stock !== null && r.item_stock !== undefined) agotado = r.item_stock <= 0;
-        }
-        return { ...r, agotado };
-      });
-    } else {
-      // Minimercado y otros → inventario (incluye inactivos como agotados)
-      const { rows } = await pool.query(
-        `SELECT id, nombre, descripcion, precio_venta AS precio, categoria,
-                NULL AS imagen_url, COALESCE(iva_pct,0) AS iva_pct, unidad, activo
-         FROM inventario
-         WHERE negocio_id=? AND es_producto=1
-         ORDER BY categoria, nombre`,
-        [nid]
-      );
-      productos = rows.map(r => ({ ...r, agotado: !r.activo }));
-    }
-
-    res.json({ negocio: neg[0], productos });
+    const data = await obtenerMenuData(req.params.negocioId);
+    if (!data) return res.status(404).json({ error: 'Negocio no encontrado' });
+    res.json(data);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Valida precios/stock desde DB e inserta el pedido. Usado tanto por
+// POST /pedido (formulario manual) como por el chatbot (tool crear_pedido) —
+// misma lógica de verificación de precios en ambos caminos.
+async function crearPedidoValidado({ negocio_id, cliente_nombre, cliente_tel, cliente_dir, items, notas, metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi, tipo_entrega, broadcast }) {
+  tipo_entrega = tipo_entrega === 'recoge_tienda' ? 'recoge_tienda' : 'domicilio';
+
+  if (!negocio_id || !cliente_nombre || !cliente_tel || !items?.length)
+    return { error: 'Faltan datos requeridos', status: 400 };
+  if (tipo_entrega === 'domicilio' && !cliente_dir)
+    return { error: 'Falta la dirección de entrega', status: 400 };
+
+  if (!['efectivo', 'tarjeta', 'nequi', 'mixto'].includes(metodo_pago)) metodo_pago = 'efectivo';
+  monto_efectivo = parseFloat(monto_efectivo) || 0;
+  monto_tarjeta  = parseFloat(monto_tarjeta) || 0;
+  monto_nequi    = parseFloat(monto_nequi) || 0;
+
+  const { rows: neg } = await pool.query(
+    `SELECT id, nombre, tipo, telefono, direccion FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+    [negocio_id]
+  );
+  if (!neg[0]) return { error: 'Negocio no encontrado', status: 404 };
+
+  const dirFinal = tipo_entrega === 'recoge_tienda'
+    ? (neg[0].direccion ? `Recoge en tienda — ${neg[0].direccion}` : 'Recoge en tienda')
+    : cliente_dir.trim();
+
+  let subtotal = 0, totalIva = 0;
+  const itemsValidados = [];
+  const esRestaurante = ['restaurante','bar'].includes(neg[0].tipo);
+
+  for (const it of items) {
+    let prod = null;
+    if (esRestaurante) {
+      const { rows } = await pool.query(
+        `SELECT id, nombre, nombre_zh, mi.precio AS precio_original, ${PRECIO_EFECTIVO_SQL} AS precio, 0 AS iva_pct FROM menu_items mi WHERE id=? AND negocio_id=? AND disponible=1 LIMIT 1`,
+        [it.id, negocio_id]
+      );
+      prod = rows[0];
+    } else {
+      const { rows } = await pool.query(
+        `SELECT id, nombre, NULL AS nombre_zh, precio_venta AS precio, COALESCE(iva_pct,0) AS iva_pct FROM inventario WHERE id=? AND negocio_id=? AND es_producto=1 AND activo=1 LIMIT 1`,
+        [it.id, negocio_id]
+      );
+      prod = rows[0];
+    }
+    if (!prod) continue;
+    const precio = parseFloat(prod.precio) || 0;
+    const qty    = parseInt(it.qty) || 1;
+    const ivaPct = parseFloat(prod.iva_pct) || 0;
+    const sub    = precio * qty;
+    const iva    = sub * (ivaPct / 100);
+    subtotal += sub;
+    totalIva += iva;
+    itemsValidados.push({ id: prod.id, nombre: prod.nombre, nombre_zh: prod.nombre_zh || null, precio,
+      precio_original: prod.precio_original != null ? parseFloat(prod.precio_original) : precio,
+      qty, subtotal: sub, iva_pct: ivaPct });
+  }
+
+  if (!itemsValidados.length) return { error: 'Ningún producto válido', status: 400 };
+
+  const total = subtotal + totalIva;
+  const id    = uuid();
+  const tipo  = neg[0].tipo || 'restaurante';
+
+  if (metodo_pago === 'mixto') {
+    if (Math.round((monto_efectivo + monto_tarjeta + monto_nequi) * 100) !== Math.round(total * 100))
+      return { error: 'El pago mixto debe sumar el total del pedido', status: 400 };
+  } else {
+    monto_efectivo = metodo_pago === 'efectivo' ? total : 0;
+    monto_tarjeta  = metodo_pago === 'tarjeta'  ? total : 0;
+    monto_nequi    = metodo_pago === 'nequi'    ? total : 0;
+  }
+
+  await pool.query(
+    `INSERT INTO domicilios_pedidos (id, negocio_id, tipo, tipo_entrega, cliente_nombre, cliente_tel, cliente_dir, items, notas, subtotal, total, estado, metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,'pendiente',?,?,?,?)`,
+    [id, negocio_id, tipo, tipo_entrega, cliente_nombre.trim(), cliente_tel.trim(), dirFinal,
+     JSON.stringify(itemsValidados), notas?.trim() || null, subtotal, total,
+     metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi]
+  );
+
+  const telNegocio = (neg[0].telefono || '').replace(/\D/g, '');
+  const waLink = telNegocio
+    ? `https://wa.me/${telNegocio.startsWith('57') ? '' : '57'}${telNegocio}?text=${buildWhatsAppText({ id, cliente_nombre, cliente_tel, cliente_dir: dirFinal, notas, items: itemsValidados, total }, neg[0])}`
+    : null;
+
+  if (broadcast) {
+    broadcast(negocio_id, 'domicilio_nuevo', {
+      id, cliente_nombre: cliente_nombre.trim(), cliente_tel: cliente_tel.trim(),
+      cliente_dir: dirFinal, tipo_entrega, notas: notas?.trim() || null,
+      items: itemsValidados, total, negocio_nombre: neg[0].nombre
+    });
+  }
+
+  return { ok: true, id, total, wa_link: waLink, tipo_entrega };
+}
+
 // POST /api/domicilios/pedido
-// Crear nuevo pedido de domicilio (cliente)
+// Crear nuevo pedido de domicilio (cliente, formulario manual)
 router.post('/pedido', async (req, res) => {
   try {
-    const { negocio_id, cliente_nombre, cliente_tel, cliente_dir, items, notas } = req.body;
-    let { metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi } = req.body;
-
-    if (!negocio_id || !cliente_nombre || !cliente_tel || !cliente_dir || !items?.length)
-      return res.status(400).json({ error: 'Faltan datos requeridos' });
-
-    if (!['efectivo', 'tarjeta', 'nequi', 'mixto'].includes(metodo_pago)) metodo_pago = 'efectivo';
-    monto_efectivo = parseFloat(monto_efectivo) || 0;
-    monto_tarjeta  = parseFloat(monto_tarjeta) || 0;
-    monto_nequi    = parseFloat(monto_nequi) || 0;
-
-    // Verificar negocio existe
-    const { rows: neg } = await pool.query(
-      `SELECT id, nombre, tipo, telefono FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
-      [negocio_id]
-    );
-    if (!neg[0]) return res.status(404).json({ error: 'Negocio no encontrado' });
-
-    // Calcular totales verificando precios desde DB
-    let subtotal = 0, totalIva = 0;
-    const itemsValidados = [];
-    const esRestaurante = ['restaurante','bar'].includes(neg[0].tipo);
-
-    for (const it of items) {
-      let prod = null;
-      if (esRestaurante) {
-        const { rows } = await pool.query(
-          `SELECT id, nombre, nombre_zh, precio, 0 AS iva_pct FROM menu_items WHERE id=? AND negocio_id=? AND disponible=1 LIMIT 1`,
-          [it.id, negocio_id]
-        );
-        prod = rows[0];
-      } else {
-        const { rows } = await pool.query(
-          `SELECT id, nombre, NULL AS nombre_zh, precio_venta AS precio, COALESCE(iva_pct,0) AS iva_pct FROM inventario WHERE id=? AND negocio_id=? AND es_producto=1 AND activo=1 LIMIT 1`,
-          [it.id, negocio_id]
-        );
-        prod = rows[0];
-      }
-      if (!prod) continue;
-      const precio = parseFloat(prod.precio) || 0;
-      const qty    = parseInt(it.qty) || 1;
-      const ivaPct = parseFloat(prod.iva_pct) || 0;
-      const sub    = precio * qty;
-      const iva    = sub * (ivaPct / 100);
-      subtotal += sub;
-      totalIva += iva;
-      itemsValidados.push({ id: prod.id, nombre: prod.nombre, nombre_zh: prod.nombre_zh || null, precio, qty, subtotal: sub, iva_pct: ivaPct });
-    }
-
-    if (!itemsValidados.length) return res.status(400).json({ error: 'Ningún producto válido' });
-
-    const total = subtotal + totalIva;
-    const id    = uuid();
-    const tipo  = neg[0].tipo || 'restaurante';
-
-    if (metodo_pago === 'mixto') {
-      if (Math.round((monto_efectivo + monto_tarjeta + monto_nequi) * 100) !== Math.round(total * 100))
-        return res.status(400).json({ error: 'El pago mixto debe sumar el total del pedido' });
-    } else {
-      monto_efectivo = metodo_pago === 'efectivo' ? total : 0;
-      monto_tarjeta  = metodo_pago === 'tarjeta'  ? total : 0;
-      monto_nequi    = metodo_pago === 'nequi'    ? total : 0;
-    }
-
-    await pool.query(
-      `INSERT INTO domicilios_pedidos (id, negocio_id, tipo, cliente_nombre, cliente_tel, cliente_dir, items, notas, subtotal, total, estado, metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi)
-       VALUES (?,?,?,?,?,?,?,?,?,?,'pendiente',?,?,?,?)`,
-      [id, negocio_id, tipo, cliente_nombre.trim(), cliente_tel.trim(), cliente_dir.trim(),
-       JSON.stringify(itemsValidados), notas?.trim() || null, subtotal, total,
-       metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi]
-    );
-
-    // Construir link WhatsApp para el negocio (se usará en el panel admin)
-    const telNegocio = (neg[0].telefono || '').replace(/\D/g, '');
-    const waLink = telNegocio
-      ? `https://wa.me/${telNegocio.startsWith('57') ? '' : '57'}${telNegocio}?text=${buildWhatsAppText({ id, cliente_nombre, cliente_tel, cliente_dir, notas, items: itemsValidados, total }, neg[0])}`
-      : null;
-
-    // Notificar cocina y caja via WebSocket
-    if (req.app?.locals?.broadcast) {
-      req.app.locals.broadcast(negocio_id, 'domicilio_nuevo', {
-        id, cliente_nombre: cliente_nombre.trim(), cliente_tel: cliente_tel.trim(),
-        cliente_dir: cliente_dir.trim(), notas: notas?.trim() || null,
-        items: itemsValidados, total, negocio_nombre: neg[0].nombre
-      });
-    }
-
-    res.json({ ok: true, id, total, wa_link: waLink });
+    const result = await crearPedidoValidado({ ...req.body, broadcast: req.app?.locals?.broadcast });
+    if (result.error) return res.status(result.status || 500).json({ error: result.error });
+    res.json(result);
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Chatbot de pedidos (alternativa al formulario manual) ──────────
+
+function buildChatSystemPrompt(negocio, productos, clienteTel) {
+  const disponibles = productos.filter(p => !p.agotado);
+  const lineas = disponibles.map(p => {
+    const precio = p.precio_efectivo != null ? p.precio_efectivo : p.precio;
+    const promoTag = p.promo_vigente ? ` (EN PROMOCIÓN, antes ${fmtMoney(p.precio)})` : '';
+    return `- id:${p.id} | ${p.nombre} | ${fmtMoney(precio)}${promoTag} | ${p.categoria || 'General'}${p.descripcion ? ' | ' + p.descripcion : ''}`;
+  });
+  const destacados = disponibles.filter(p => p.destacado);
+  let prompt = `Eres el asistente de pedidos a domicilio de "${negocio.nombre}". Ayudas al cliente a armar su pedido conversando por chat, en español, de forma breve, cálida y directa.
+
+MENÚ DISPONIBLE (usa el "id" EXACTO al llamar la herramienta; nunca inventes ids ni precios):
+${lineas.join('\n')}`;
+
+  if (destacados.length) {
+    prompt += `\n\nPRODUCTOS DESTACADOS/SUGERIDOS (recomiéndalos con gusto cuando el cliente pregunte qué le recomiendas, qué hay de especial, o no sepa qué pedir):
+${destacados.map(p => `- ${p.nombre}: ${p.destacado_texto || 'recomendado'}`).join('\n')}`;
+  }
+
+  prompt += `
+
+Reglas:
+- Solo puedes ofrecer productos de esta lista. Si piden algo que no está, dilo y sugiere algo parecido del menú.
+- En cuanto sepas qué quiere pedir el cliente, pregúntale pronto si es para domicilio o si va a recoger en tienda — usa mostrar_opciones con exactamente estas dos alternativas: "🛵 A domicilio" (mensaje: "Es para domicilio") y "🏪 Recoger en tienda" (mensaje: "Voy a recoger en tienda").
+- Si es a domicilio, necesitas además la dirección de entrega completa. Si es para recoger en tienda, NO pidas dirección.
+- Antes de crear el pedido necesitas: productos y cantidades, nombre del cliente, tipo de entrega (y dirección si es a domicilio), y método de pago (efectivo, tarjeta o nequi).
+- Confirma el resumen (productos, cantidades, tipo de entrega y total) con el cliente antes de llamar a la herramienta crear_pedido.
+- Cuando el cliente confirme, llama a crear_pedido con los datos exactos, incluyendo tipo_entrega.
+- No hables de temas ajenos al pedido.
+- Escribe en texto plano: nunca uses markdown (nada de **negrita**, guiones de lista, #, etc.), el chat solo muestra texto simple.
+- Usa SIEMPRE la herramienta mostrar_opciones cuando le des al cliente una lista corta para elegir: productos del menú, sabores/tamaños, cantidades sugeridas, tipo de entrega, método de pago, o confirmar/cancelar. Así el cliente toca un botón en vez de escribir. No la uses para pedir texto libre (nombre, dirección). Cuando la opción sea un producto puntual del menú, incluye siempre su "producto_id" (el id exacto) para que se muestre con foto y precio, como una tarjeta de producto.`;
+  if (clienteTel) prompt += `\n\nEl teléfono del cliente ya se conoce: ${clienteTel}. No se lo vuelvas a preguntar, úsalo directamente en la herramienta.`;
+  return prompt;
+}
+
+const CREAR_PEDIDO_TOOL = {
+  name: 'crear_pedido',
+  description: 'Crea el pedido de domicilio una vez el cliente confirmó productos, nombre, dirección y método de pago.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      cliente_nombre: { type: 'string', description: 'Nombre del cliente' },
+      cliente_tel: { type: 'string', description: 'Teléfono/WhatsApp del cliente (10 dígitos)' },
+      tipo_entrega: { type: 'string', enum: ['domicilio', 'recoge_tienda'], description: 'Si el cliente quiere que se lo lleven (domicilio) o si va a recogerlo en tienda' },
+      cliente_dir: { type: 'string', description: 'Dirección de entrega completa. Solo requerida si tipo_entrega es "domicilio"; omite este campo si es "recoge_tienda"' },
+      items: {
+        type: 'array',
+        description: 'Productos del pedido, usando el id exacto del menú',
+        items: {
+          type: 'object',
+          properties: { id: { type: 'string' }, qty: { type: 'integer', minimum: 1 } },
+          required: ['id', 'qty'],
+        },
+      },
+      notas: { type: 'string', description: 'Notas u observaciones del pedido (opcional)' },
+      metodo_pago: { type: 'string', enum: ['efectivo', 'tarjeta', 'nequi'] },
+    },
+    required: ['cliente_nombre', 'cliente_tel', 'tipo_entrega', 'items', 'metodo_pago'],
+  },
+};
+
+const MOSTRAR_OPCIONES_TOOL = {
+  name: 'mostrar_opciones',
+  description: 'Muestra botones táctiles para que el cliente elija con un toque en vez de escribir. Llámala SIEMPRE que le presentes al cliente una lista corta de productos o alternativas para elegir (máx. 5). Después de llamarla, continúa tu respuesta normal en texto explicando esas opciones.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      opciones: {
+        type: 'array',
+        maxItems: 5,
+        description: 'Opciones para mostrar como botones',
+        items: {
+          type: 'object',
+          properties: {
+            label: { type: 'string', description: 'Texto corto del botón, ej: "Empanadas Papa Carne"' },
+            mensaje: { type: 'string', description: 'Lo que el cliente "dice" al tocar el botón, ej: "Quiero Empanadas Papa Carne"' },
+            producto_id: { type: 'string', description: 'Si la opción es un producto puntual del menú, su "id" EXACTO — así se muestra con foto y precio. Omite este campo para opciones que no son un producto (método de pago, cantidades, sí/no, etc.)' },
+          },
+          required: ['label', 'mensaje'],
+        },
+      },
+    },
+    required: ['opciones'],
+  },
+};
+
+// POST /api/domicilios/chat
+// Turno de chat con Claude para armar el pedido conversacionalmente.
+// Sin estado en el servidor: el frontend reenvía el historial completo (raw,
+// incluye bloques tool_use/tool_result) en cada turno.
+router.post('/chat', async (req, res) => {
+  try {
+    const { negocio_id, messages, cliente_tel } = req.body;
+    if (!negocio_id || !Array.isArray(messages) || !messages.length)
+      return res.status(400).json({ error: 'Faltan datos' });
+
+    const data = await obtenerMenuData(negocio_id);
+    if (!data) return res.status(404).json({ error: 'Negocio no encontrado' });
+
+    const system = buildChatSystemPrompt(data.negocio, data.productos, cliente_tel);
+    const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
+
+    let pedidoCreado = null;
+    let opcionesSugeridas = null;
+    let response;
+    let vueltas = 0;
+    const textosAcumulados = [];
+
+    do {
+      response = await anthropic.messages.create({
+        model: CHAT_MODEL,
+        max_tokens: 1024,
+        system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+        tools: [CREAR_PEDIDO_TOOL, MOSTRAR_OPCIONES_TOOL],
+        messages: apiMessages,
+      });
+
+      // Claude a veces incluye texto explicativo en el MISMO turno donde llama
+      // a una herramienta (no solo en el turno final) — se acumula de todos
+      // los turnos para no perder esa explicación.
+      const textoTurno = response.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+      if (textoTurno) textosAcumulados.push(textoTurno);
+
+      if (response.stop_reason !== 'tool_use') break;
+
+      apiMessages.push({ role: 'assistant', content: response.content });
+      const toolUses = response.content.filter(b => b.type === 'tool_use');
+      const toolResults = [];
+
+      for (const toolUse of toolUses) {
+        let toolResult;
+        if (toolUse.name === 'crear_pedido' && !pedidoCreado) {
+          const args = toolUse.input || {};
+          const result = await crearPedidoValidado({
+            negocio_id, cliente_nombre: args.cliente_nombre, cliente_tel: args.cliente_tel,
+            cliente_dir: args.cliente_dir, items: args.items, notas: args.notas,
+            metodo_pago: args.metodo_pago, tipo_entrega: args.tipo_entrega,
+            monto_efectivo: 0, monto_tarjeta: 0, monto_nequi: 0,
+            broadcast: req.app?.locals?.broadcast,
+          });
+          if (result.error) toolResult = { error: result.error };
+          else {
+            pedidoCreado = { id: result.id, total: result.total, cliente_nombre: args.cliente_nombre, cliente_tel: args.cliente_tel };
+            toolResult = { ok: true, id: result.id, total: result.total };
+          }
+        } else if (toolUse.name === 'mostrar_opciones') {
+          opcionesSugeridas = toolUse.input?.opciones || [];
+          toolResult = { ok: true };
+        } else {
+          toolResult = pedidoCreado ? { error: 'Ya se creó este pedido, no lo repitas' } : { error: 'Herramienta desconocida' };
+        }
+        toolResults.push({ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(toolResult) });
+      }
+
+      apiMessages.push({ role: 'user', content: toolResults });
+      vueltas++;
+    } while (vueltas < 4);
+
+    apiMessages.push({ role: 'assistant', content: response.content });
+    const textoFinal = textosAcumulados.join('\n\n');
+
+    res.json({ reply: textoFinal, messages: apiMessages, pedido: pedidoCreado, opciones: opcionesSugeridas });
+  } catch (e) {
+    console.error('[domicilios/chat] Error:', e.message);
+    res.status(500).json({ error: 'No se pudo procesar el mensaje. Intenta de nuevo.' });
+  }
 });
 
 // GET /api/domicilios/pedido/:id
@@ -291,7 +495,7 @@ router.get('/pedido/:id', async (req, res) => {
     let whereExtra = '';
     if (negocioId) { whereExtra = ' AND p.negocio_id=?'; params.push(negocioId); }
     const { rows } = await pool.query(
-      `SELECT p.id, p.estado, p.negocio_id, p.cliente_nombre, p.items, p.subtotal, p.total, p.created_at, p.llego_en,
+      `SELECT p.id, p.estado, p.negocio_id, p.cliente_nombre, p.items, p.subtotal, p.total, p.created_at, p.llego_en, p.tipo_entrega,
               COALESCE(r.nombre, e.nombre) AS rider_nombre,
               COALESCE(r.telefono, e.celular) AS rider_tel,
               e.lat AS rider_lat, e.lng AS rider_lng, e.gps_at AS rider_gps_at,
@@ -357,7 +561,7 @@ router.get('/rider/disponibles', requireEmpleado, async (req, res) => {
       `SELECT id, cliente_nombre, cliente_dir, cliente_tel, total, estado, items, notas, created_at
        FROM domicilios_pedidos
        WHERE negocio_id=? AND domiciliario_id IS NULL
-         AND estado='listo' AND pago_estado='pagado'
+         AND estado='listo' AND pago_estado='pagado' AND tipo_entrega='domicilio'
        ORDER BY created_at ASC`,
       [req.empleado.negocio_id]
     );
@@ -581,7 +785,7 @@ router.get('/pedidos', verifyToken, async (req, res) => {
   try {
     const nid   = req.user.negocio_id;
     const { estado, desde, q } = req.query;
-    let sql = `SELECT p.id, p.cliente_nombre, p.cliente_tel, p.cliente_dir,
+    let sql = `SELECT p.id, p.cliente_nombre, p.cliente_tel, p.cliente_dir, p.tipo_entrega,
                       p.items, p.notas, p.subtotal, p.total, p.estado,
                       COALESCE(p.pago_estado,'pendiente') AS pago_estado,
                       p.metodo_pago, p.monto_efectivo, p.monto_tarjeta, p.monto_nequi,

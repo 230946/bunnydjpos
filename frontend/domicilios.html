@@ -327,6 +327,110 @@ body{display:flex;flex-direction:column;min-height:100vh}
   padding:14px 20px;font-size:15px;font-weight:700;cursor:pointer;
   display:flex;align-items:center;justify-content:space-between
 }
+
+/* Chat: botón flotante + panel */
+#chat-fab{
+  position:fixed;right:16px;bottom:calc(84px + var(--safe-bot));z-index:60;
+  width:54px;height:54px;border-radius:50%;border:none;background:var(--pri);color:#fff;
+  font-size:24px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;
+  align-items:center;justify-content:center;transition:transform .15s
+}
+#chat-fab.show{display:flex}
+#chat-fab:active{transform:scale(.92)}
+@keyframes chatFabPulse{0%,100%{box-shadow:0 4px 14px rgba(0,0,0,.25),0 0 0 0 rgba(108,79,246,.45)}50%{box-shadow:0 4px 14px rgba(0,0,0,.25),0 0 0 8px rgba(108,79,246,0)}}
+#chat-fab.pulse{animation:chatFabPulse 1.6s ease-out 3}
+#chat-tooltip{
+  position:fixed;right:16px;bottom:calc(146px + var(--safe-bot));z-index:59;
+  background:#1a1a2e;color:#fff;padding:10px 14px;border-radius:14px 14px 4px 14px;
+  font-size:13px;font-weight:600;max-width:200px;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  display:none;align-items:center;gap:8px;opacity:0;transform:translateY(6px);
+  transition:opacity .25s,transform .25s;cursor:pointer
+}
+#chat-tooltip.show{display:flex;opacity:1;transform:translateY(0)}
+#chat-tooltip button{background:none;border:none;color:#fff;opacity:.6;font-size:13px;cursor:pointer;padding:0;flex-shrink:0}
+
+@keyframes chatCtaShine{0%{left:-60%}60%,100%{left:130%}}
+
+/* Vista previa del chat en la pantalla de bienvenida — mockup con un
+   producto real del menú, a modo de "gancho" visual (estilo chat comercial). */
+#chat-preview-mock{
+  margin:28px 4px 0;border-radius:18px;overflow:hidden;cursor:pointer;
+  border:1px solid var(--border);box-shadow:0 10px 28px rgba(0,0,0,.10);
+  transition:transform .15s;display:none
+}
+#chat-preview-mock.show{display:block}
+#chat-preview-mock:active{transform:scale(.98)}
+.cpm-header{background:var(--pri);color:#fff;padding:10px 14px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.cpm-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;box-shadow:0 0 0 2px rgba(255,255,255,.3)}
+.cpm-body{background:var(--bg);padding:14px;display:flex;flex-direction:column;gap:8px}
+.cpm-bubble{align-self:flex-start;background:#fff;color:var(--text);font-size:12.5px;padding:8px 12px;border-radius:12px 12px 12px 3px;box-shadow:0 1px 3px rgba(0,0,0,.06);max-width:85%}
+.cpm-prodcard{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.cpm-prodcard-img{width:40px;height:40px;border-radius:9px;background:var(--pri-light);display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0}
+.cpm-prodcard-img img{width:100%;height:100%;object-fit:cover}
+.cpm-prodcard-info{flex:1;min-width:0}
+.cpm-prodcard-name{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cpm-prodcard-price{font-size:11.5px;font-weight:700;color:var(--pri)}
+.cpm-prodcard-btn{width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
+.cpm-cta{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;position:relative;overflow:hidden}
+.cpm-cta::after{content:'';position:absolute;top:0;left:-60%;width:35%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.35),transparent);animation:chatCtaShine 2.6s ease-in-out infinite}
+.cpm-cta span:first-child{position:relative;z-index:1}
+.cpm-cta span:last-child{position:relative;z-index:1;font-size:16px}
+#chat-overlay-2{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:120;display:none;opacity:0;transition:opacity .25s}
+#chat-overlay-2.show{display:block;opacity:1}
+#chat-panel{
+  position:fixed;bottom:0;left:0;right:0;background:#fff;z-index:121;
+  border-radius:20px 20px 0 0;height:78vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1.1,.6,1)
+}
+#chat-panel.show{transform:translateY(0)}
+.chat-header{
+  display:flex;align-items:center;justify-content:space-between;padding:14px 16px;
+  border-bottom:1px solid var(--border);flex-shrink:0
+}
+.chat-header span{font-size:15px;font-weight:700}
+.chat-header button{background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:4px}
+#chat-messages{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px}
+.chat-bubble{max-width:80%;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.45;white-space:pre-line}
+.chat-bubble.bot{align-self:flex-start;background:var(--bg);color:var(--text);border-bottom-left-radius:4px}
+.chat-bubble.user{align-self:flex-end;background:var(--pri);color:#fff;border-bottom-right-radius:4px}
+#chat-suggestions{display:flex;flex-direction:column;gap:8px;padding:0 4px 4px}
+.chat-chip{
+  align-self:flex-start;
+  background:var(--pri-light);color:var(--pri);border:1.5px solid var(--pri-light);
+  border-radius:18px;padding:8px 13px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s
+}
+.chat-chip:active{transform:scale(.96)}
+
+/* Tarjeta de producto tocable dentro del chat (foto + nombre + precio) */
+.chat-prod-card{
+  display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--border);
+  border-radius:14px;padding:8px;cursor:pointer;transition:.15s;box-shadow:0 1px 4px rgba(0,0,0,.05)
+}
+.chat-prod-card:active{transform:scale(.98);background:var(--bg)}
+.chat-prod-img{
+  width:44px;height:44px;border-radius:10px;background:var(--pri-light);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden
+}
+.chat-prod-img img{width:100%;height:100%;object-fit:cover}
+.chat-prod-info{flex:1;min-width:0}
+.chat-prod-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-prod-price{font-size:12.5px;font-weight:700;color:var(--pri);margin-top:1px}
+.chat-prod-price s{font-size:11px;color:var(--text3);font-weight:400;margin-left:4px}
+.chat-prod-btn{
+  width:28px;height:28px;border-radius:50%;background:var(--pri);color:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800
+}
+.chat-input-row{display:flex;gap:8px;padding:10px 12px calc(10px + var(--safe-bot));border-top:1px solid var(--border);flex-shrink:0}
+.chat-input-row input{
+  flex:1;border:1.5px solid var(--border);border-radius:22px;padding:11px 16px;font-size:14px;
+  outline:none;background:#fff;color:var(--text)
+}
+.chat-input-row input:focus{border-color:var(--pri)}
+.chat-input-row button{
+  width:42px;height:42px;border-radius:50%;border:none;background:var(--pri);color:#fff;
+  font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center
+}
+.chat-input-row button:disabled{opacity:.5;cursor:default}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -370,9 +474,16 @@ body{display:flex;flex-direction:column;min-height:100vh}
     <div class="res-total"><span>Total</span><span id="res-total-val"></span></div>
   </div>
   <button id="btn-volver" onclick="showCatalog()">← Seguir comprando</button>
+  <div class="fld">
+    <label>Tipo de entrega *</label>
+    <div class="pay-grid" id="entrega-grid" style="grid-template-columns:repeat(2,1fr)">
+      <button type="button" class="pay-opt sel" data-e="domicilio" onclick="selTipoEntrega('domicilio')"><span class="pay-opt-icon">🛵</span>A domicilio</button>
+      <button type="button" class="pay-opt" data-e="recoge_tienda" onclick="selTipoEntrega('recoge_tienda')"><span class="pay-opt-icon">🏪</span>Recoger en tienda</button>
+    </div>
+  </div>
   <div class="fld"><label>Tu nombre *</label><input id="f-nombre" type="text" placeholder="Juan Pérez" maxlength="80"></div>
   <div class="fld"><label>Teléfono / WhatsApp *</label><input id="f-tel" type="tel" inputmode="numeric" placeholder="3001234567" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"></div>
-  <div class="fld"><label>Dirección de entrega *</label><textarea id="f-dir" placeholder="Calle 10 # 5-20, Apto 301, Barrio Centro..."></textarea></div>
+  <div class="fld" id="fld-dir"><label>Dirección de entrega *</label><textarea id="f-dir" placeholder="Calle 10 # 5-20, Apto 301, Barrio Centro..."></textarea></div>
   <div class="fld"><label>Notas para el pedido</label><input id="f-notas" type="text" placeholder="Sin cebolla, doble salsa…" maxlength="200"></div>
   <div class="fld">
     <label>Medio de pago *</label>
@@ -435,6 +546,16 @@ body{display:flex;flex-direction:column;min-height:100vh}
            onkeydown="if(event.key==='Enter') continuar()">
   </div>
   <button id="btn-continuar" onclick="continuar()">Continuar →</button>
+
+  <div id="chat-preview-mock" onclick="openChat()">
+    <div class="cpm-header"><span class="cpm-dot"></span> Asistente de pedidos</div>
+    <div class="cpm-body">
+      <div class="cpm-bubble">¡Hola! 👋 ¿Qué se te antoja hoy?</div>
+      <div class="cpm-prodcard" id="cpm-prodcard"></div>
+    </div>
+    <div class="cpm-cta"><span>💬 No te compliques, pide por chat</span><span>→</span></div>
+  </div>
+
   <div id="phone-orders" style="display:none">
     <p class="phone-orders-title">📦 Tus pedidos activos</p>
     <div id="phone-orders-list"></div>
@@ -495,6 +616,26 @@ body{display:flex;flex-direction:column;min-height:100vh}
 
 <div id="toast"></div>
 
+<!-- Chat: alternativa al formulario manual, el cliente elige -->
+<div id="chat-tooltip" onclick="openChat()">
+  <span>💬 ¡Pide por nuestro chat!</span>
+  <button onclick="event.stopPropagation();dismissTooltip()">✕</button>
+</div>
+<button id="chat-fab" onclick="openChat()" title="Pedir por chat">💬</button>
+<div id="chat-overlay-2" onclick="if(event.target===this)closeChat()"></div>
+<div id="chat-panel">
+  <div class="chat-header">
+    <span>💬 Pedir por chat</span>
+    <button onclick="closeChat()">✕</button>
+  </div>
+  <div id="chat-messages"></div>
+  <div id="chat-suggestions"></div>
+  <div class="chat-input-row">
+    <input id="chat-input" type="text" placeholder="Escribe lo que quieres pedir…" maxlength="500" onkeydown="if(event.key==='Enter')sendChatMsg()">
+    <button id="chat-send-btn" onclick="sendChatMsg()">➤</button>
+  </div>
+</div>
+
 <script>
 function toggleFullscreenPOS(){
   if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
@@ -510,6 +651,7 @@ const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', 
 let productos = [];
 let cart = {}; // id → {item, qty}
 let metodoPago = 'efectivo';
+let tipoEntrega = 'domicilio';
 let currentPedidoId = null;
 let trackInterval = null;
 let _clientMap = null;
@@ -596,7 +738,14 @@ async function init() {
     }
     const data = await r.json();
     negocio = data.negocio;
-    productos = data.productos || [];
+    // El precio "de venta" es el promocional si está vigente, si no el normal.
+    // Se normaliza aquí una sola vez para que todo el carrito/total/resumen
+    // (que ya usan p.precio en todo el archivo) cobre lo correcto sin tocar
+    // cada punto de uso; se conserva precio_original para el tachado visual.
+    productos = (data.productos || []).map(p => {
+      const efectivo = p.precio_efectivo != null ? parseFloat(p.precio_efectivo) : parseFloat(p.precio);
+      return { ...p, precio_original: parseFloat(p.precio), precio: efectivo };
+    });
     NEG_MONEDA = negocio.moneda || 'COP';
 
     applyColor(negocio.color_primario);
@@ -618,6 +767,7 @@ async function init() {
     }
 
     renderCatalog();
+    renderChatPreviewMock();
     document.getElementById('loader').style.display = 'none';
 
     // Mostrar chip de usuario si tiene número guardado
@@ -697,12 +847,17 @@ function renderProducts(list) {
           : `<button class="prod-add-btn" onclick="changeQty('${p.id}',1,event)" title="Agregar">+</button>`;
 
       const infoBtn = !ago && descDisplay ? `<button class="prod-info-btn" onclick="openProdDetail('${p.id}',event)" title="Ver detalle">ℹ️</button>` : '';
+      const precioHtml = ago ? '<span style="font-size:12px;color:var(--text3)">No disponible</span>'
+        : p.promo_vigente
+          ? `${fmtCOP(p.precio)} <span style="font-size:11px;font-weight:400;color:var(--text3);text-decoration:line-through">${fmtCOP(p.precio_original)}</span>`
+          : fmtCOP(p.precio);
+      const badges = `${p.promo_vigente ? '<span class="agotado-badge" style="background:#f59e0b">🏷️ Promo</span>' : ''}${p.destacado ? `<span class="agotado-badge" style="background:#f59e0b;top:${p.promo_vigente?'32px':'8px'}" title="${p.destacado_texto||''}">⭐ Sugerido</span>` : ''}`;
       html += `<div class="prod-card${ago ? ' agotado' : ''}" ${ago ? '' : `onclick="changeQty('${p.id}',1,event)"`} data-id="${p.id}">
-        ${imgHtml}
+        ${imgHtml}${badges}
         <div class="prod-body">
           <div class="prod-nombre">${nomDisplay}</div>
           ${descDisplay ? `<div class="prod-desc">${descDisplay}</div>` : ''}
-          <div class="prod-precio">${ago ? '<span style="font-size:12px;color:var(--text3)">No disponible</span>' : fmtCOP(p.precio)}</div>
+          <div class="prod-precio">${precioHtml}</div>
         </div>
         ${ctrl}${infoBtn}
       </div>`;
@@ -796,13 +951,21 @@ function goToForm() {
   if (clienteTel    && !document.getElementById('f-tel').value)    document.getElementById('f-tel').value = clienteTel;
   if (clienteNombre && !document.getElementById('f-nombre').value) document.getElementById('f-nombre').value = clienteNombre;
   selMetodoPago('efectivo');
+  selTipoEntrega('domicilio');
   showView('form');
+}
+
+// ── Tipo de entrega ──────────────────────────────────────────────
+function selTipoEntrega(t) {
+  tipoEntrega = t;
+  document.querySelectorAll('#entrega-grid .pay-opt').forEach(b => b.classList.toggle('sel', b.dataset.e === t));
+  document.getElementById('fld-dir').style.display = t === 'domicilio' ? 'block' : 'none';
 }
 
 // ── Medio de pago ───────────────────────────────────────────────
 function selMetodoPago(m) {
   metodoPago = m;
-  document.querySelectorAll('.pay-opt').forEach(b => b.classList.toggle('sel', b.dataset.m === m));
+  document.querySelectorAll('#pay-grid .pay-opt').forEach(b => b.classList.toggle('sel', b.dataset.m === m));
   document.getElementById('pay-mixto-fields').style.display = m === 'mixto' ? 'block' : 'none';
   if (m === 'mixto') {
     document.getElementById('pm-efectivo').value = '';
@@ -834,6 +997,174 @@ function showView(v) {
   document.getElementById('view-rating').style.display   = v === 'rating'  ? 'block' : 'none';
   document.getElementById('bottom-bar').style.display    = v === 'catalog' && Object.keys(cart).length ? 'block' : 'none';
   document.getElementById('tabs').style.display          = v === 'catalog' ? 'flex' : 'none';
+  document.getElementById('chat-fab').classList.toggle('show', v === 'catalog');
+  if (v !== 'catalog') closeChat();
+  if (v === 'catalog') setTimeout(showChatTooltip, 1800);
+}
+
+// ── Chat: alternativa al formulario manual ─────────────────────────
+let chatHistory = [];  // mensajes raw (con bloques tool_use/tool_result) que se reenvían a la API
+let chatDisplay = [];  // burbujas simplificadas para renderizar
+let chatSending = false;
+
+const CHAT_SUGERENCIAS = [
+  { label: '📋 Ver el menú', mensaje: '¿Qué tienen en el menú?' },
+  { label: '⭐ ¿Qué me recomiendas?', mensaje: 'No sé qué pedir, ¿qué me recomiendas?' },
+  { label: '🛒 Quiero hacer un pedido', mensaje: 'Quiero hacer un pedido' },
+];
+
+// Vista previa del chat en la pantalla de bienvenida: muestra un producto
+// real del menú (destacado si hay uno) como "gancho" visual, similar a una
+// tarjeta de chat comercial.
+function renderChatPreviewMock() {
+  const el = document.getElementById('chat-preview-mock');
+  const prodEl = document.getElementById('cpm-prodcard');
+  if (!el || !prodEl) return;
+  const disponibles = productos.filter(p => !p.agotado);
+  const prod = disponibles.find(p => p.destacado) || disponibles[0];
+  if (!prod) return;
+  const isEmoji = prod.imagen_url && !prod.imagen_url.startsWith('/') && !prod.imagen_url.startsWith('http');
+  const imgHtml = prod.imagen_url && !isEmoji
+    ? `<img src="${prod.imagen_url}" alt="">`
+    : `<span>${isEmoji ? prod.imagen_url : '🍽️'}</span>`;
+  const precioHtml = prod.promo_vigente
+    ? `${fmtCOP(prod.precio)} <s style="font-size:10.5px;color:var(--text3);font-weight:400">${fmtCOP(prod.precio_original)}</s>`
+    : fmtCOP(prod.precio);
+  prodEl.innerHTML = `
+    <div class="cpm-prodcard-img">${imgHtml}</div>
+    <div class="cpm-prodcard-info">
+      <div class="cpm-prodcard-name">${prod.nombre}</div>
+      <div class="cpm-prodcard-price">${precioHtml}</div>
+    </div>
+    <div class="cpm-prodcard-btn">+</div>`;
+  el.classList.add('show');
+}
+
+function showChatTooltip() {
+  const tipKey = `djpos_dom_chat_tip_${NEG_ID}`;
+  if (sessionStorage.getItem(tipKey)) return;
+  if (document.getElementById('view-catalog').style.display !== 'block') return;
+  sessionStorage.setItem(tipKey, '1');
+  document.getElementById('chat-tooltip').classList.add('show');
+  document.getElementById('chat-fab').classList.add('pulse');
+  setTimeout(dismissTooltip, 6000);
+}
+function dismissTooltip() {
+  document.getElementById('chat-tooltip').classList.remove('show');
+}
+
+function openChat() {
+  dismissTooltip();
+  document.getElementById('chat-overlay-2').classList.add('show');
+  document.getElementById('chat-panel').classList.add('show');
+  if (!chatDisplay.length) {
+    chatDisplay.push({ role: 'bot', text: `¡Hola! Soy el asistente de ${negocio?.nombre || 'la tienda'} 👋 Cuéntame qué te gustaría pedir y te ayudo a armarlo.` });
+    renderChat();
+    renderChips(CHAT_SUGERENCIAS);
+  }
+  setTimeout(() => document.getElementById('chat-input')?.focus(), 300);
+}
+function closeChat() {
+  document.getElementById('chat-overlay-2').classList.remove('show');
+  document.getElementById('chat-panel').classList.remove('show');
+}
+
+function renderChat() {
+  const el = document.getElementById('chat-messages');
+  el.innerHTML = chatDisplay.map(m => `<div class="chat-bubble ${m.role}">${(m.text || '').replace(/</g,'&lt;')}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// Renderiza una lista de opciones tocables: si trae producto_id y el producto
+// existe en el catálogo ya cargado, se muestra como tarjeta con foto y precio
+// (estilo "chat commerce"); si no, como chip de texto simple.
+function renderChips(list) {
+  const el = document.getElementById('chat-suggestions');
+  if (!list || !list.length) { el.innerHTML = ''; el._pending = null; return; }
+  el._pending = list;
+  el.innerHTML = list.map((o, i) => {
+    const prod = o.producto_id ? productos.find(p => p.id === o.producto_id) : null;
+    if (prod) {
+      const isEmoji = prod.imagen_url && !prod.imagen_url.startsWith('/') && !prod.imagen_url.startsWith('http');
+      const imgHtml = prod.imagen_url && !isEmoji
+        ? `<img src="${prod.imagen_url}" alt="">`
+        : `<span>${isEmoji ? prod.imagen_url : '🍽️'}</span>`;
+      const precioHtml = prod.promo_vigente
+        ? `${fmtCOP(prod.precio)}<s>${fmtCOP(prod.precio_original)}</s>`
+        : fmtCOP(prod.precio);
+      return `<div class="chat-prod-card" onclick="sendChatChip(${i})">
+        <div class="chat-prod-img">${imgHtml}</div>
+        <div class="chat-prod-info">
+          <div class="chat-prod-name">${o.label}</div>
+          <div class="chat-prod-price">${precioHtml}</div>
+        </div>
+        <div class="chat-prod-btn">+</div>
+      </div>`;
+    }
+    return `<button class="chat-chip" onclick="sendChatChip(${i})">${o.label}</button>`;
+  }).join('');
+}
+function clearChatSuggestions() {
+  const el = document.getElementById('chat-suggestions');
+  el.innerHTML = '';
+  el._pending = null;
+}
+function sendChatChip(i) {
+  if (chatSending) return;
+  const item = document.getElementById('chat-suggestions')._pending?.[i];
+  if (!item) return;
+  document.getElementById('chat-input').value = item.mensaje;
+  sendChatMsg();
+}
+
+async function sendChatMsg() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || chatSending) return;
+  input.value = '';
+  clearChatSuggestions();
+  chatDisplay.push({ role: 'user', text });
+  chatHistory.push({ role: 'user', content: text });
+  renderChat();
+
+  chatSending = true;
+  document.getElementById('chat-send-btn').disabled = true;
+  chatDisplay.push({ role: 'bot', text: '…' });
+  renderChat();
+
+  try {
+    const r = await fetch(`${API}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ negocio_id: NEG_ID, messages: chatHistory, cliente_tel: clienteTel })
+    });
+    const data = await r.json();
+    chatDisplay.pop();
+    if (!r.ok) throw new Error(data.error || 'Error al enviar el mensaje');
+
+    chatHistory = data.messages;
+    if (data.reply) chatDisplay.push({ role: 'bot', text: data.reply });
+    renderChat();
+    if (data.opciones?.length) renderChips(data.opciones);
+
+    if (data.pedido?.id) {
+      currentPedidoId = data.pedido.id;
+      localStorage.setItem(`djpos_dom_pedido_${NEG_ID}`, data.pedido.id);
+      if (data.pedido.cliente_tel) { clienteTel = data.pedido.cliente_tel; localStorage.setItem(PHONE_KEY, clienteTel); }
+      if (data.pedido.cliente_nombre) { clienteNombre = data.pedido.cliente_nombre; localStorage.setItem(NAME_KEY, clienteNombre); }
+      const chip = document.getElementById('user-chip');
+      if (chip && clienteTel) { chip.style.display = 'flex'; document.getElementById('user-chip-tel').textContent = clienteTel; }
+      cart = {}; updateCartDrawer(); updateBottomBar();
+      setTimeout(() => { closeChat(); showTracking(data.pedido.id); }, 1400);
+    }
+  } catch (e) {
+    chatDisplay.pop();
+    chatDisplay.push({ role: 'bot', text: '❌ ' + e.message });
+    renderChat();
+  } finally {
+    chatSending = false;
+    document.getElementById('chat-send-btn').disabled = false;
+  }
 }
 
 async function confirmarPedido() {
@@ -844,7 +1175,7 @@ async function confirmarPedido() {
 
   if (!nombre) { toast('Ingresa tu nombre'); document.getElementById('f-nombre').focus(); return; }
   if (!/^\d{10}$/.test(tel)) { toast('Ingresa un número de celular válido (10 dígitos)'); document.getElementById('f-tel').focus(); return; }
-  if (!dir)    { toast('Ingresa la dirección de entrega'); document.getElementById('f-dir').focus(); return; }
+  if (tipoEntrega === 'domicilio' && !dir) { toast('Ingresa la dirección de entrega'); document.getElementById('f-dir').focus(); return; }
 
   let pagos = { efectivo: 0, tarjeta: 0, nequi: 0 };
   if (metodoPago === 'mixto') {
@@ -868,6 +1199,7 @@ async function confirmarPedido() {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         negocio_id: NEG_ID, cliente_nombre: nombre, cliente_tel: tel, cliente_dir: dir, items, notas,
+        tipo_entrega: tipoEntrega,
         metodo_pago: metodoPago, monto_efectivo: pagos.efectivo, monto_tarjeta: pagos.tarjeta, monto_nequi: pagos.nequi
       })
     });
@@ -906,6 +1238,14 @@ const ESTADOS = {
 };
 const PASOS = ['pendiente','aceptado','en_preparacion','listo','en_camino','entregado'];
 
+// Variante para pedidos "recoge en tienda": sin domiciliario ni "en camino".
+const ESTADOS_RECOGE = {
+  ...ESTADOS,
+  listo:     { icon:'📦', title:'¡Listo para recoger!', sub:'Tu pedido está listo. Pasa por el negocio cuando quieras.' },
+  entregado: { icon:'🎉', title:'¡Recogido!',           sub:'Gracias por tu compra 😋' },
+};
+const PASOS_RECOGE = ['pendiente','aceptado','en_preparacion','listo','entregado'];
+
 async function showTracking(id) {
   showView('track');
   document.getElementById('tr-id').textContent = 'Pedido #' + id.slice(0,8).toUpperCase();
@@ -921,9 +1261,12 @@ async function refreshTracking(idOverride) {
     const r = await fetch(`${API}/pedido/${id}?n=${NEG_ID}`);
     if (!r.ok) return;
     const p = await r.json();
-    const info = ESTADOS[p.estado] || ESTADOS.pendiente;
+    const esRecoge = p.tipo_entrega === 'recoge_tienda';
+    const estadosMap = esRecoge ? ESTADOS_RECOGE : ESTADOS;
+    const pasosMap = esRecoge ? PASOS_RECOGE : PASOS;
+    const info = estadosMap[p.estado] || estadosMap.pendiente;
     const trIcon = document.getElementById('tr-icon');
-    const enCamino = p.estado === 'en_camino' || p.estado === 'recogido';
+    const enCamino = !esRecoge && (p.estado === 'en_camino' || p.estado === 'recogido');
     trIcon.innerHTML = enCamino ? `<img src="/img/moto-de-reparto.png" alt="En camino">` : info.icon;
     trIcon.classList.toggle('moving', enCamino);
     document.getElementById('tr-title').textContent = info.title;
@@ -946,12 +1289,12 @@ async function refreshTracking(idOverride) {
     }
 
     // Stepper
-    const stepIdx = PASOS.indexOf(p.estado);
-    document.getElementById('stepper').innerHTML = PASOS.map((s, i) => {
-      const info2 = ESTADOS[s];
+    const stepIdx = pasosMap.indexOf(p.estado);
+    document.getElementById('stepper').innerHTML = pasosMap.map((s, i) => {
+      const info2 = estadosMap[s];
       const cls = i < stepIdx ? 'done' : i === stepIdx ? 'active' : 'wait';
       const icon = i < stepIdx ? '✓' : i + 1;
-      const line = i < PASOS.length - 1 ? `<div class="step-line ${i < stepIdx ? 'done' : ''}"></div>` : '';
+      const line = i < pasosMap.length - 1 ? `<div class="step-line ${i < stepIdx ? 'done' : ''}"></div>` : '';
       return `<div>
         <div class="step">
           <div class="step-dot ${cls}">${cls === 'done' ? '✓' : info2.icon}</div>
@@ -1051,7 +1394,9 @@ function openProdDetail(id, e) {
   }
   document.getElementById('detail-nombre').textContent = nomDisplay;
   document.getElementById('detail-desc').textContent = descDisplay || '';
-  document.getElementById('detail-precio').textContent = fmtCOP(p.precio);
+  document.getElementById('detail-precio').innerHTML = p.promo_vigente
+    ? `${fmtCOP(p.precio)} <span style="font-size:14px;font-weight:400;color:var(--text3);text-decoration:line-through">${fmtCOP(p.precio_original)}</span>`
+    : fmtCOP(p.precio);
   const btn = document.getElementById('detail-add-btn');
   btn.onclick = () => { changeQty(id, 1, null); closeProdDetail(); };
   document.getElementById('prod-detail-overlay').classList.add('open');

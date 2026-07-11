@@ -20,6 +20,17 @@ router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
 const localDate = (tz = 'America/Bogota') => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 
+// Promo realmente vigente HOY (activa + precio + dentro del rango de fechas),
+// evaluado en SQL con CURDATE() (no en JS) para evitar desajustes de
+// timezone/Date con mysql2. `promo_activo` es solo el interruptor que puso
+// el negocio; esto es si de verdad aplica ahora mismo.
+const PROMO_VIGENTE_SQL = `
+  (mi.promo_activo=1 AND mi.promo_precio IS NOT NULL
+   AND (mi.promo_desde IS NULL OR mi.promo_desde<=CURDATE())
+   AND (mi.promo_hasta IS NULL OR mi.promo_hasta>=CURDATE()))
+`;
+const PRECIO_EFECTIVO_SQL = `CASE WHEN ${PROMO_VIGENTE_SQL} THEN mi.promo_precio ELSE mi.precio END`;
+
 // Multer para fotos de menú
 const storage = multer.diskStorage({
   destination: process.env.UPLOADS_DIR || './uploads',
@@ -189,6 +200,8 @@ router.get('/menu/items', async (req, res) => {
     const { categoria_id, disponible, modulo } = req.query;
     let sql = `
       SELECT mi.*, mc.nombre AS categoria_nombre, mc.modulo AS categoria_modulo,
+             ${PROMO_VIGENTE_SQL} AS promo_vigente,
+             ${PRECIO_EFECTIVO_SQL} AS precio_efectivo,
              inv.stock AS inv_stock, inv.nombre AS inv_nombre,
              inv.codigo AS codigo, inv.codigo_barras AS codigo_barras,
              (SELECT COUNT(*) FROM menu_item_recetas r WHERE r.menu_item_id = mi.id) AS receta_count,
@@ -245,14 +258,19 @@ router.get('/menu/items/:id', requirePermiso(['pos_menu','personal']), async (re
 
 router.post('/menu/items', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
-    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, inventario_id, nombre_zh, descripcion_zh } = req.body;
+    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, inventario_id, nombre_zh, descripcion_zh,
+            promo_activo, promo_precio, promo_desde, promo_hasta, destacado, destacado_texto } = req.body;
     const id = uuid();
     await pool.query(
-      `INSERT INTO menu_items (id,negocio_id,categoria_id,nombre,descripcion,precio,emoji,disponible,tiempo_prep,orden,inventario_id,nombre_zh,descripcion_zh)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)})`,
+      `INSERT INTO menu_items (id,negocio_id,categoria_id,nombre,descripcion,precio,emoji,disponible,tiempo_prep,orden,inventario_id,nombre_zh,descripcion_zh,
+       promo_activo,promo_precio,promo_desde,promo_hasta,destacado,destacado_texto)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)},
+       ${ph(14)},${ph(15)},${ph(16)},${ph(17)},${ph(18)},${ph(19)})`,
       [id, nid(req), categoria_id||null, nombre, descripcion||null, precio, emoji||'🍽️',
        disponible!==false, tiempo_prep||15, orden||0, inventario_id||null,
-       nombre_zh||null, descripcion_zh||null]
+       nombre_zh||null, descripcion_zh||null,
+       !!promo_activo, promo_precio||null, promo_desde||null, promo_hasta||null,
+       !!destacado, destacado_texto||null]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -260,15 +278,20 @@ router.post('/menu/items', requirePermiso(['pos_menu','personal']), async (req, 
 
 router.put('/menu/items/:id', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
-    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, stock_min, inventario_id, nombre_zh, descripcion_zh } = req.body;
+    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, stock_min, inventario_id, nombre_zh, descripcion_zh,
+            promo_activo, promo_precio, promo_desde, promo_hasta, destacado, destacado_texto } = req.body;
     await pool.query(
       `UPDATE menu_items SET nombre=${ph(1)},descripcion=${ph(2)},precio=${ph(3)},
        categoria_id=${ph(4)},emoji=${ph(5)},disponible=${ph(6)},tiempo_prep=${ph(7)},orden=${ph(8)},stock_min=${ph(9)},
-       inventario_id=${ph(10)},nombre_zh=${ph(11)},descripcion_zh=${ph(12)}
-       WHERE id=${ph(13)} AND negocio_id=${ph(14)}`,
+       inventario_id=${ph(10)},nombre_zh=${ph(11)},descripcion_zh=${ph(12)},
+       promo_activo=${ph(13)},promo_precio=${ph(14)},promo_desde=${ph(15)},promo_hasta=${ph(16)},
+       destacado=${ph(17)},destacado_texto=${ph(18)}
+       WHERE id=${ph(19)} AND negocio_id=${ph(20)}`,
       [nombre, descripcion, precio, categoria_id||null, emoji||'🍽️',
        disponible!==false, tiempo_prep||15, orden||0, stock_min||0,
        inventario_id||null, nombre_zh||null, descripcion_zh||null,
+       !!promo_activo, promo_precio||null, promo_desde||null, promo_hasta||null,
+       !!destacado, destacado_texto||null,
        req.params.id, nid(req)]
     );
     res.json({ ok: true });
