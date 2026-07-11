@@ -346,6 +346,16 @@ p{margin:0}
 .vfeat-list li{display:flex;gap:11px;font-size:.92rem;align-items:flex-start}
 .vfeat-check{flex-shrink:0;width:19px;height:19px;border-radius:6px;display:flex;align-items:center;justify-content:center;margin-top:1px}
 .vfeat-check svg{width:11px;height:11px}
+.vfeat-text{flex:1}
+.vfeat-list li.vfeat-highlight{
+  background:var(--lime-tint);border:1px solid var(--lime-bright);
+  border-radius:12px;padding:10px 13px;margin:0 -13px;align-items:center;
+}
+.vfeat-badge{
+  flex-shrink:0;font-size:.66rem;font-weight:800;letter-spacing:.02em;
+  background:var(--lime-bright);color:var(--lime-ink);padding:4px 10px;border-radius:100px;
+  white-space:nowrap;
+}
 .vcard-pel .vfeat-check{background:var(--berry-tint);color:var(--berry)}
 .vcard-res .vfeat-check{background:var(--paprika-tint);color:var(--paprika)}
 .vcard-min .vfeat-check{background:var(--indigo-tint);color:var(--indigo)}
@@ -608,7 +618,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
           <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Mapa de mesas en vivo, pedido directo a cocina</li>
           <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Pantalla de cocina por estación, sin comandas de papel</li>
           <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Domicilios y autopedido por QR, aprobados antes de cocinar</li>
-          <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Chat con IA: el cliente pide solo, sin llamadas ni WhatsApp</li>
+          <li class="vfeat-highlight"><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="vfeat-text">Chat con IA: el cliente pide solo, sin llamadas ni WhatsApp</span><span class="vfeat-badge">✨ Nuevo</span></li>
           <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Cuentas divididas y pagos mixtos (efectivo + tarjeta)</li>
         </ul>
       </div>
