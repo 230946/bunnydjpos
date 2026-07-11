@@ -319,18 +319,32 @@ router.post('/pedido', async (req, res) => {
 
 // ── Chatbot de pedidos (alternativa al formulario manual) ──────────
 
+// a,b,c...z,aa,ab... (mismo esquema de letras que usa el catálogo visual)
+function letraItem(n) {
+  let s = '';
+  while (n > 0) { n--; s = String.fromCharCode(97 + (n % 26)) + s; n = Math.floor(n / 26); }
+  return s;
+}
+
 function buildChatSystemPrompt(negocio, productos, clienteTel) {
   const disponibles = productos.filter(p => !p.agotado);
-  const lineas = disponibles.map(p => {
-    const precio = p.precio_efectivo != null ? p.precio_efectivo : p.precio;
-    const promoTag = p.promo_vigente ? ` (EN PROMOCIÓN, antes ${fmtMoney(p.precio)})` : '';
-    return `- id:${p.id} | ${p.nombre} | ${fmtMoney(precio)}${promoTag} | ${p.categoria || 'General'}${p.descripcion ? ' | ' + p.descripcion : ''}`;
-  });
+  const categorias = [...new Set(disponibles.map(p => p.categoria || 'General'))];
+  let contadorItem = 0;
+  const menuFormateado = categorias.map((cat, catIdx) => {
+    const items = disponibles.filter(p => (p.categoria || 'General') === cat);
+    const lineasCat = items.map(p => {
+      contadorItem++;
+      const precio = p.precio_efectivo != null ? p.precio_efectivo : p.precio;
+      const promoTag = p.promo_vigente ? ` (EN PROMOCIÓN, antes ${fmtMoney(p.precio)})` : '';
+      return `${letraItem(contadorItem)}. id:${p.id} | ${p.nombre} | ${fmtMoney(precio)}${promoTag}${p.descripcion ? ' | ' + p.descripcion : ''}`;
+    });
+    return `${catIdx + 1}. ${cat.toUpperCase()}\n${lineasCat.join('\n')}`;
+  }).join('\n\n');
   const destacados = disponibles.filter(p => p.destacado);
   let prompt = `Eres el asistente de pedidos a domicilio de "${negocio.nombre}". Ayudas al cliente a armar su pedido conversando por chat, en español, de forma breve, cálida y directa.
 
-MENÚ DISPONIBLE (usa el "id" EXACTO al llamar la herramienta; nunca inventes ids ni precios):
-${lineas.join('\n')}`;
+MENÚ DISPONIBLE (usa el "id" EXACTO al llamar la herramienta; nunca inventes ids ni precios; el "id" es solo para ti, nunca lo muestres al cliente):
+${menuFormateado}`;
 
   if (destacados.length) {
     prompt += `\n\nPRODUCTOS DESTACADOS/SUGERIDOS (recomiéndalos con gusto cuando el cliente pregunte qué le recomiendas, qué hay de especial, o no sepa qué pedir):
@@ -341,14 +355,25 @@ ${destacados.map(p => `- ${p.nombre}: ${p.destacado_texto || 'recomendado'}`).jo
 
 Reglas:
 - Solo puedes ofrecer productos de esta lista. Si piden algo que no está, dilo y sugiere algo parecido del menú.
+- Cuando le muestres el menú (completo o por categoría) al cliente en texto, usa EXACTAMENTE este formato, igual al de arriba: cada categoría numerada en mayúsculas ("**1.** ENTRADAS") y cada producto debajo con letra ("**a.** Empanadas Papa Carne: $3.000"). Las letras son ÚNICAS para todo el menú (no se repiten por categoría, siguen a, b, c... de corrido) — así "a" siempre identifica un solo producto sin ambigüedad. Nunca muestres el "id".
+- Marca en negrilla con **así** ÚNICAMENTE el numeral o la letra de cada etiqueta, nada más — ni el nombre de la categoría, ni el nombre del producto, ni el nombre del negocio, ni ninguna otra palabra. Ejemplo EXACTO de cómo debe verse una línea: "**1.** ENTRADAS" (no "**1. ENTRADAS**") y "**a.** Empanadas Papa Carne: $3.000" (no "**a. Empanadas Papa Carne**: $3.000"). Es la única negrilla permitida en todo el chat — en el resto del texto nunca uses markdown (nada de **negrita** en frases normales, guiones de lista, #, etc.).
+- Si el cliente responde solo con una letra (ej. "la a", "quiero b"), identifica exactamente el producto de esa letra en el listado del menú de arriba.
+- Si el cliente quiere ver el menú de forma general (saluda, pregunta "qué tienen", o no menciona un producto o categoría concreta), NO le muestres todos los productos de una vez. Sigue este flujo de navegación por categorías:
+  1. Muéstrale primero solo las CATEGORÍAS como botones (mostrar_opciones, un botón por categoría, SIN producto_id, mensaje tipo "Quiero ver Platos Principales").
+  2. Cuando el cliente elija una categoría (toque el botón o la escriba), muéstrale TODOS los productos de esa categoría como tarjetas (mostrar_opciones, un botón por producto, cada uno CON su producto_id).
+  3. Cuando agregue lo que quiera de ahí, pregúntale "¿Quieres pedir algo más?" y vuelve a mostrarle las CATEGORÍAS de nuevo (mostrar_opciones) para que siga explorando otra o decida terminar.
+  4. Si dice que no quiere nada más, continúa pidiendo lo que falte para completar el pedido (nombre, tipo de entrega, etc.).
+  Si el cliente ya pide un producto concreto por su nombre desde el inicio, ve directo a confirmarlo — no lo obligues a pasar por las categorías.
 - En cuanto sepas qué quiere pedir el cliente, pregúntale pronto si es para domicilio o si va a recoger en tienda — usa mostrar_opciones con exactamente estas dos alternativas: "🛵 A domicilio" (mensaje: "Es para domicilio") y "🏪 Recoger en tienda" (mensaje: "Voy a recoger en tienda").
 - Si es a domicilio, necesitas además la dirección de entrega completa. Si es para recoger en tienda, NO pidas dirección.
 - Antes de crear el pedido necesitas: productos y cantidades, nombre del cliente, tipo de entrega (y dirección si es a domicilio), y método de pago (efectivo, tarjeta o nequi).
 - Confirma el resumen (productos, cantidades, tipo de entrega y total) con el cliente antes de llamar a la herramienta crear_pedido.
 - Cuando el cliente confirme, llama a crear_pedido con los datos exactos, incluyendo tipo_entrega.
 - No hables de temas ajenos al pedido.
-- Escribe en texto plano: nunca uses markdown (nada de **negrita**, guiones de lista, #, etc.), el chat solo muestra texto simple.
-- Usa SIEMPRE la herramienta mostrar_opciones cuando le des al cliente una lista corta para elegir: productos del menú, sabores/tamaños, cantidades sugeridas, tipo de entrega, método de pago, o confirmar/cancelar. Así el cliente toca un botón en vez de escribir. No la uses para pedir texto libre (nombre, dirección). Cuando la opción sea un producto puntual del menú, incluye siempre su "producto_id" (el id exacto) para que se muestre con foto y precio, como una tarjeta de producto.`;
+- Usa SIEMPRE la herramienta mostrar_opciones cuando le des al cliente una lista corta para elegir: categorías, productos del menú, sabores/tamaños, cantidades sugeridas, tipo de entrega, método de pago, o continuar/finalizar. Así el cliente toca un botón en vez de escribir. No la uses para pedir texto libre (nombre, dirección). Cuando la opción sea un producto puntual del menú, incluye siempre su "producto_id" (el id exacto) para que se muestre con foto y precio, como una tarjeta de producto.
+- Toda opción que NO sea un producto puntual (categorías, sí/no, continuar/finalizar, método de pago, tipo de entrega, etc.) debe numerarse igual que el menú: en el campo "label" de mostrar_opciones escribe el número primero, ej. "1. Platos Principales", "2. Super Combos" — y en tu texto de respuesta presenta esas mismas opciones numeradas con negrilla solo en el número, ej. "**1.** Platos Principales" / "**2.** Super Combos", en el mismo orden que los botones. Los productos puntuales (con producto_id) no llevan número, ya se muestran como tarjeta con foto.
+- Si el cliente dice que no quiere nada, que cancela, que quiere cerrar el chat, o que ya no necesita ayuda (y no hay un pedido a medias que confirmar), llama a la herramienta finalizar_chat y despídete brevemente y con calidez.
+- Si el cliente ya confirmó un pedido en esta conversación y luego dice que se arrepintió, que quiere cancelarlo o cambiarlo, llama a la herramienta cancelar_pedido. Si funciona, avísale que quedó cancelado. Si da error porque ya fue aceptado por el negocio, dile con calidez que ya no se puede cancelar desde el chat y que debe contactar directamente al negocio.`;
   if (clienteTel) prompt += `\n\nEl teléfono del cliente ya se conoce: ${clienteTel}. No se lo vuelvas a preguntar, úsalo directamente en la herramienta.`;
   return prompt;
 }
@@ -381,13 +406,13 @@ const CREAR_PEDIDO_TOOL = {
 
 const MOSTRAR_OPCIONES_TOOL = {
   name: 'mostrar_opciones',
-  description: 'Muestra botones táctiles para que el cliente elija con un toque en vez de escribir. Llámala SIEMPRE que le presentes al cliente una lista corta de productos o alternativas para elegir (máx. 5). Después de llamarla, continúa tu respuesta normal en texto explicando esas opciones.',
+  description: 'Muestra botones táctiles para que el cliente elija con un toque en vez de escribir. Llámala SIEMPRE que le presentes al cliente una lista de productos o alternativas para elegir (categorías, o todos los productos de una categoría, hasta 12). Después de llamarla, continúa tu respuesta normal en texto explicando esas opciones.',
   input_schema: {
     type: 'object',
     properties: {
       opciones: {
         type: 'array',
-        maxItems: 5,
+        maxItems: 12,
         description: 'Opciones para mostrar como botones',
         items: {
           type: 'object',
@@ -403,6 +428,43 @@ const MOSTRAR_OPCIONES_TOOL = {
     required: ['opciones'],
   },
 };
+
+const FINALIZAR_CHAT_TOOL = {
+  name: 'finalizar_chat',
+  description: 'Llama esta herramienta cuando el cliente diga explícitamente que no quiere nada, que quiere cancelar, cerrar el chat, o que ya no necesita más ayuda — y no hay un pedido a medias que confirmar. Después de llamarla, despídete brevemente y con calidez en tu respuesta de texto.',
+  input_schema: { type: 'object', properties: {}, required: [] },
+};
+
+const CANCELAR_PEDIDO_TOOL = {
+  name: 'cancelar_pedido',
+  description: 'Cancela el pedido que se creó hace un momento en esta misma conversación, cuando el cliente se arrepiente justo después de confirmarlo. Solo funciona si el negocio aún no lo ha aceptado — si ya lo aceptó o está en preparación, esta herramienta devolverá un error; en ese caso dile al cliente que contacte al negocio directamente.',
+  input_schema: { type: 'object', properties: {}, required: [] },
+};
+
+// Busca, en el historial crudo de la conversación, el id del último pedido
+// creado exitosamente (tool_use "crear_pedido" + su tool_result con ok:true).
+// Permite que "cancelar_pedido" sepa a cuál pedido se refiere el cliente sin
+// necesitar estado en el servidor (cada request re-procesa el historial).
+function buscarPedidoPrevioEnHistorial(messages) {
+  let pedidoId = null;
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    if (m.role !== 'assistant' || !Array.isArray(m.content)) continue;
+    for (const block of m.content) {
+      if (block.type !== 'tool_use' || block.name !== 'crear_pedido') continue;
+      const next = messages[i + 1];
+      const result = Array.isArray(next?.content)
+        ? next.content.find(b => b.type === 'tool_result' && b.tool_use_id === block.id)
+        : null;
+      if (!result) continue;
+      try {
+        const parsed = JSON.parse(typeof result.content === 'string' ? result.content : JSON.stringify(result.content));
+        if (parsed?.ok && parsed.id) pedidoId = parsed.id;
+      } catch { /* ignora resultados no parseables */ }
+    }
+  }
+  return pedidoId;
+}
 
 // POST /api/domicilios/chat
 // Turno de chat con Claude para armar el pedido conversacionalmente.
@@ -422,16 +484,19 @@ router.post('/chat', async (req, res) => {
 
     let pedidoCreado = null;
     let opcionesSugeridas = null;
+    let chatFinalizado = false;
+    let pedidoCancelado = null;
     let response;
     let vueltas = 0;
     const textosAcumulados = [];
+    const pedidoPrevioId = buscarPedidoPrevioEnHistorial(apiMessages);
 
     do {
       response = await anthropic.messages.create({
         model: CHAT_MODEL,
         max_tokens: 1024,
         system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
-        tools: [CREAR_PEDIDO_TOOL, MOSTRAR_OPCIONES_TOOL],
+        tools: [CREAR_PEDIDO_TOOL, MOSTRAR_OPCIONES_TOOL, FINALIZAR_CHAT_TOOL, CANCELAR_PEDIDO_TOOL],
         messages: apiMessages,
       });
 
@@ -466,6 +531,30 @@ router.post('/chat', async (req, res) => {
         } else if (toolUse.name === 'mostrar_opciones') {
           opcionesSugeridas = toolUse.input?.opciones || [];
           toolResult = { ok: true };
+        } else if (toolUse.name === 'finalizar_chat') {
+          chatFinalizado = true;
+          toolResult = { ok: true };
+        } else if (toolUse.name === 'cancelar_pedido') {
+          if (!pedidoPrevioId) {
+            toolResult = { error: 'No hay ningún pedido creado en esta conversación para cancelar' };
+          } else {
+            const { rows } = await pool.query(
+              `SELECT estado FROM domicilios_pedidos WHERE id=? AND negocio_id=? LIMIT 1`,
+              [pedidoPrevioId, negocio_id]
+            );
+            if (!rows[0]) {
+              toolResult = { error: 'Pedido no encontrado' };
+            } else if (rows[0].estado !== 'pendiente') {
+              toolResult = { error: 'El pedido ya fue aceptado por el negocio y no se puede cancelar desde aquí — debe contactar al negocio directamente' };
+            } else {
+              await pool.query(
+                `UPDATE domicilios_pedidos SET estado='cancelado' WHERE id=? AND negocio_id=? AND estado='pendiente'`,
+                [pedidoPrevioId, negocio_id]
+              );
+              pedidoCancelado = pedidoPrevioId;
+              toolResult = { ok: true };
+            }
+          }
         } else {
           toolResult = pedidoCreado ? { error: 'Ya se creó este pedido, no lo repitas' } : { error: 'Herramienta desconocida' };
         }
@@ -479,7 +568,7 @@ router.post('/chat', async (req, res) => {
     apiMessages.push({ role: 'assistant', content: response.content });
     const textoFinal = textosAcumulados.join('\n\n');
 
-    res.json({ reply: textoFinal, messages: apiMessages, pedido: pedidoCreado, opciones: opcionesSugeridas });
+    res.json({ reply: textoFinal, messages: apiMessages, pedido: pedidoCreado, opciones: opcionesSugeridas, finalizar: chatFinalizado, cancelado: pedidoCancelado });
   } catch (e) {
     console.error('[domicilios/chat] Error:', e.message);
     res.status(500).json({ error: 'No se pudo procesar el mensaje. Intenta de nuevo.' });

@@ -392,6 +392,7 @@ body{display:flex;flex-direction:column;min-height:100vh}
 #chat-messages{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px}
 .chat-bubble{max-width:80%;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.45;white-space:pre-line}
 .chat-bubble.bot{align-self:flex-start;background:var(--bg);color:var(--text);border-bottom-left-radius:4px}
+.chat-bubble.bot b{color:var(--pri);font-weight:800}
 .chat-bubble.user{align-self:flex-end;background:var(--pri);color:#fff;border-bottom-right-radius:4px}
 #chat-suggestions{display:flex;flex-direction:column;gap:8px;padding:0 4px 4px}
 .chat-chip{
@@ -622,11 +623,11 @@ body{display:flex;flex-direction:column;min-height:100vh}
   <button onclick="event.stopPropagation();dismissTooltip()">✕</button>
 </div>
 <button id="chat-fab" onclick="openChat()" title="Pedir por chat">💬</button>
-<div id="chat-overlay-2" onclick="if(event.target===this)closeChat()"></div>
+<div id="chat-overlay-2" onclick="if(event.target===this)closeChatReset()"></div>
 <div id="chat-panel">
   <div class="chat-header">
     <span>💬 Pedir por chat</span>
-    <button onclick="closeChat()">✕</button>
+    <button onclick="closeChatReset()">✕</button>
   </div>
   <div id="chat-messages"></div>
   <div id="chat-suggestions"></div>
@@ -668,6 +669,38 @@ const Sound = {
 // el AudioContext en la primera interacción para que la alerta repetitiva
 // (que dispara sola, sin clic) sí pueda sonar más adelante.
 document.addEventListener('click', () => Sound.ctx(), { once: true });
+
+// Pantalla completa: los navegadores bloquean requestFullscreen() sin un
+// gesto previo del usuario (no se puede activar sola al cargar la página).
+// Se activa en el primer toque en cualquier parte, para que sea casi
+// automática sin que el cliente tenga que buscar el botón ⛶.
+document.addEventListener('click', () => {
+  if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+}, { once: true });
+
+// Manifest dinámico por negocio (nombre/color/logo reales) para que al usar
+// "Agregar a pantalla de inicio" abra sin barra de navegador, como una app.
+function setupManifest() {
+  if (!negocio) return;
+  const manifest = {
+    name: negocio.nombre || 'Pedido a domicilio',
+    short_name: (negocio.nombre || 'Domicilios').slice(0, 20),
+    start_url: location.href,
+    display: 'fullscreen',
+    background_color: '#ffffff',
+    theme_color: negocio.color_primario || '#6c4ff6',
+    icons: negocio.logo_url ? [
+      { src: negocio.logo_url, sizes: '192x192', type: 'image/png' },
+      { src: negocio.logo_url, sizes: '512x512', type: 'image/png' },
+    ] : [],
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  let link = document.querySelector('link[rel="manifest"]');
+  if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
+  link.href = URL.createObjectURL(blob);
+}
 
 let arrivalAlarmInterval = null;
 function actualizarAlertaLlegada(activa){
@@ -768,6 +801,7 @@ async function init() {
 
     renderCatalog();
     renderChatPreviewMock();
+    setupManifest();
     document.getElementById('loader').style.display = 'none';
 
     // Mostrar chip de usuario si tiene número guardado
@@ -819,12 +853,22 @@ function filterCat(cat, el) {
   renderProducts(list);
 }
 
+// Convierte 1,2,3... en a,b,c...z,aa,ab... (como las columnas de una hoja de cálculo)
+function letraItem(n) {
+  let s = '';
+  while (n > 0) { n--; s = String.fromCharCode(97 + (n % 26)) + s; n = Math.floor(n / 26); }
+  return s;
+}
+
 function renderProducts(list) {
   const cats = [...new Set(list.map(p => p.categoria || 'General'))];
   let html = '';
-  cats.forEach(cat => {
-    html += `<div class="cat-header"><span>📂</span>${cat}</div>`;
+  cats.forEach((cat, catIdx) => {
+    html += `<div class="cat-header"><b>${catIdx + 1}.</b> ${cat}</div>`;
+    let itemIdx = 0;
     list.filter(p => (p.categoria||'General') === cat).forEach(p => {
+      itemIdx++;
+      const letra = letraItem(itemIdx);
       const qty = cart[p.id]?.qty || 0;
       const ago = !!p.agotado;
       const nomDisplay = (lang === 'zh' && p.nombre_zh) ? p.nombre_zh : p.nombre;
@@ -855,7 +899,7 @@ function renderProducts(list) {
       html += `<div class="prod-card${ago ? ' agotado' : ''}" ${ago ? '' : `onclick="changeQty('${p.id}',1,event)"`} data-id="${p.id}">
         ${imgHtml}${badges}
         <div class="prod-body">
-          <div class="prod-nombre">${nomDisplay}</div>
+          <div class="prod-nombre"><b>${letra}.</b> ${nomDisplay}</div>
           ${descDisplay ? `<div class="prod-desc">${descDisplay}</div>` : ''}
           <div class="prod-precio">${precioHtml}</div>
         </div>
@@ -1068,10 +1112,23 @@ function closeChat() {
   document.getElementById('chat-overlay-2').classList.remove('show');
   document.getElementById('chat-panel').classList.remove('show');
 }
+// Cerrar con la X reinicia la conversación — la próxima vez que se abra,
+// empieza de cero (saludo inicial + chips), no retoma lo anterior.
+function closeChatReset() {
+  closeChat();
+  chatHistory = [];
+  chatDisplay = [];
+  clearChatSuggestions();
+}
 
+// Único formato permitido en el chat: **texto** -> negrilla (usado solo
+// para las etiquetas de número/letra del menú, ej. **1.** / **a.**).
+function formatChatText(text) {
+  return (text || '').replace(/</g, '&lt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+}
 function renderChat() {
   const el = document.getElementById('chat-messages');
-  el.innerHTML = chatDisplay.map(m => `<div class="chat-bubble ${m.role}">${(m.text || '').replace(/</g,'&lt;')}</div>`).join('');
+  el.innerHTML = chatDisplay.map(m => `<div class="chat-bubble ${m.role}">${formatChatText(m.text)}</div>`).join('');
   el.scrollTop = el.scrollHeight;
 }
 
@@ -1156,6 +1213,16 @@ async function sendChatMsg() {
       if (chip && clienteTel) { chip.style.display = 'flex'; document.getElementById('user-chip-tel').textContent = clienteTel; }
       cart = {}; updateCartDrawer(); updateBottomBar();
       setTimeout(() => { closeChat(); showTracking(data.pedido.id); }, 1400);
+    } else if (data.cancelado) {
+      // Si el pedido cancelado es el que se estaba rastreando, limpiar el
+      // seguimiento para no seguir mostrando un pedido que ya no existe.
+      if (data.cancelado === currentPedidoId || data.cancelado === localStorage.getItem(`djpos_dom_pedido_${NEG_ID}`)) {
+        currentPedidoId = null;
+        localStorage.removeItem(`djpos_dom_pedido_${NEG_ID}`);
+        if (trackInterval) clearInterval(trackInterval);
+      }
+    } else if (data.finalizar) {
+      setTimeout(closeChatReset, 1800);
     }
   } catch (e) {
     chatDisplay.pop();
