@@ -289,6 +289,8 @@ body{display:flex;flex-direction:column;min-height:100vh}
 .phone-gate-icon{font-size:64px;margin-bottom:16px;display:flex;justify-content:center}
 .phone-gate-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px}
 .phone-gate-sub{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:28px;max-width:320px;margin-left:auto;margin-right:auto}
+.gate-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--text3);font-size:12px;font-weight:600}
+.gate-divider::before,.gate-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 .phone-input-wrap{display:flex;align-items:center;border:2px solid var(--border);border-radius:12px;background:#fff;overflow:hidden;margin-bottom:14px;transition:.15s}
 .phone-input-wrap:focus-within{border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-light)}
 .phone-prefix{padding:0 12px;font-size:16px;color:var(--text2);font-weight:600;border-right:1.5px solid var(--border);line-height:52px;background:#f8f8fc;white-space:nowrap}
@@ -539,22 +541,32 @@ body{display:flex;flex-direction:column;min-height:100vh}
     <span id="gate-emoji" style="font-size:64px">📱</span>
   </div>
   <div class="phone-gate-title" id="phone-gate-title">Bienvenido</div>
-  <div class="phone-gate-sub">Ingresa tu número de celular para ver el menú y hacer seguimiento a tu pedido.</div>
-  <div class="phone-input-wrap">
-    <span class="phone-prefix">+57</span>
-    <input id="gate-tel" type="tel" inputmode="numeric" placeholder="3001234567" maxlength="10"
-           oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
-           onkeydown="if(event.key==='Enter') continuar()">
-  </div>
-  <button id="btn-continuar" onclick="continuar()">Continuar →</button>
+  <div class="phone-gate-sub">¿Cómo prefieres hacer tu pedido? 👇</div>
 
+  <!-- Opción principal: chat -->
   <div id="chat-preview-mock" onclick="openChat()">
     <div class="cpm-header"><span class="cpm-dot"></span> Asistente de pedidos</div>
     <div class="cpm-body">
       <div class="cpm-bubble">¡Hola! 👋 ¿Qué se te antoja hoy?</div>
       <div class="cpm-prodcard" id="cpm-prodcard"></div>
     </div>
-    <div class="cpm-cta"><span>💬 No te compliques, pide por chat</span><span>→</span></div>
+    <div class="cpm-cta"><span>💬 Toca aquí para pedir por chat</span><span>→</span></div>
+  </div>
+
+  <div class="gate-divider"><span>o</span></div>
+
+  <!-- Opción secundaria: armar el pedido uno mismo (revela el campo de teléfono) -->
+  <button id="btn-ver-menu-manual" class="track-btn outline" onclick="mostrarFormManual()">📋 Prefiero ver el menú y pedir yo mismo</button>
+
+  <div id="phone-manual-section" style="display:none">
+    <div class="phone-input-wrap" style="margin-top:14px">
+      <span class="phone-prefix">+57</span>
+      <input id="gate-tel" type="tel" inputmode="numeric" placeholder="3001234567" maxlength="10"
+             oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
+             onkeydown="if(event.key==='Enter') continuar()">
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin:6px 2px 12px">Necesitamos tu celular para hacer seguimiento a tu pedido.</p>
+    <button id="btn-continuar" onclick="continuar()">Continuar →</button>
   </div>
 
   <div id="phone-orders" style="display:none">
@@ -1518,6 +1530,11 @@ function newOrder() {
 }
 
 // ── Gate de teléfono ──────────────────────────────────────────────
+function mostrarFormManual() {
+  document.getElementById('phone-manual-section').style.display = 'block';
+  document.getElementById('btn-ver-menu-manual').style.display = 'none';
+  setTimeout(() => document.getElementById('gate-tel')?.focus(), 200);
+}
 async function continuar() {
   const rawTel = document.getElementById('gate-tel').value.trim().replace(/[\s\-()]/g, '');
   if (!/^\d{10}$/.test(rawTel)) { toast('Ingresa un número de celular válido (10 dígitos)'); return; }
@@ -1587,6 +1604,8 @@ function cambiarNumero() {
   if (chip) chip.style.display = 'none';
   document.getElementById('gate-tel').value = '';
   document.getElementById('phone-orders').style.display = 'none';
+  document.getElementById('phone-manual-section').style.display = 'none';
+  document.getElementById('btn-ver-menu-manual').style.display = 'block';
   showView('phone');
 }
 
