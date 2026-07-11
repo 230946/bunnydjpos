@@ -30,7 +30,7 @@ const clientesRouter    = require('./routes/clientes');
 const peluqueriaRouter  = require('./routes/peluqueria');
 const domiciliosRouter  = require('./routes/domicilios');
 const publicoRouter     = require('./routes/publico');
-const hotelRouter       = require('./routes/hotel');
+// const hotelRouter       = require('./routes/hotel'); // módulo Hotel aún sin terminar/commitear
 
 const app    = express();
 const server = http.createServer(app);
@@ -68,7 +68,7 @@ app.get('/rider',            (_, res) => res.sendFile(path.join(frontendPath, 'r
 app.get('/admin',            (_, res) => res.sendFile(path.join(frontendPath, 'admin-restaurante.html')));
 app.get('/minimercado-admin',(_, res) => res.sendFile(path.join(frontendPath, 'admin-minimercado.html')));
 app.get('/peluqueria-admin', (_, res) => res.sendFile(path.join(frontendPath, 'admin-peluqueria.html')));
-app.get('/hotel-admin',      (_, res) => res.sendFile(path.join(frontendPath, 'admin-hotel.html')));
+// app.get('/hotel-admin',      (_, res) => res.sendFile(path.join(frontendPath, 'admin-hotel.html'))); // módulo Hotel aún sin terminar/commitear
 app.get('/superadmin',       (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
 // Portales
 app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'portal.html')));
@@ -122,7 +122,7 @@ app.use('/api/inventario', inventarioRouter);
 app.use('/api/peluqueria', peluqueriaRouter);
 app.use('/api/domicilios', domiciliosRouter);
 app.use('/api/publico',   publicoRouter);
-app.use('/api/hotel',     hotelRouter);
+// app.use('/api/hotel',     hotelRouter); // módulo Hotel aún sin terminar/commitear
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {
