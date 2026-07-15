@@ -30,6 +30,7 @@ const clientesRouter    = require('./routes/clientes');
 const peluqueriaRouter  = require('./routes/peluqueria');
 const domiciliosRouter  = require('./routes/domicilios');
 const publicoRouter     = require('./routes/publico');
+const turnoRouter       = require('./routes/turno');
 // const hotelRouter       = require('./routes/hotel'); // módulo Hotel aún sin terminar/commitear
 
 const app    = express();
@@ -73,6 +74,7 @@ app.get('/superadmin',       (_, res) => res.sendFile(path.join(frontendPath, 's
 // Portales
 app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'portal.html')));
 app.get('/portal-empleado',  (_, res) => res.sendFile(path.join(frontendPath, 'portal-empleado.html')));
+app.get('/turno',            (_, res) => res.sendFile(path.join(frontendPath, 'portal-turno.html')));
 app.get('/reservas',         (_, res) => res.sendFile(path.join(frontendPath, 'reservas-peluqueria.html')));
 
 // ── Multer para logos ─────────────────────────────────────────────
@@ -122,6 +124,7 @@ app.use('/api/inventario', inventarioRouter);
 app.use('/api/peluqueria', peluqueriaRouter);
 app.use('/api/domicilios', domiciliosRouter);
 app.use('/api/publico',   publicoRouter);
+app.use('/api/turno',     turnoRouter);
 // app.use('/api/hotel',     hotelRouter); // módulo Hotel aún sin terminar/commitear
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────

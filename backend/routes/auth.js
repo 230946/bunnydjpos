@@ -72,14 +72,6 @@ router.post('/login', async (req, res) => {
       [uuid(), user.id, token.slice(-20), req.ip]
     );
 
-    // Registrar entrada de asistencia (si tiene negocio)
-    if (user.negocio_id) {
-      await pool.query(
-        `INSERT INTO asistencia (id, usuario_id, negocio_id) VALUES (${ph(1)},${ph(2)},${ph(3)})`,
-        [uuid(), user.id, user.negocio_id]
-      );
-    }
-
     res.json({ token, user: payload });
   } catch (e) {
     console.error(e);
@@ -125,20 +117,7 @@ router.post('/forgot-password', async (req, res) => {
 
 // ── POST /api/auth/logout ────────────────────────────────────────
 router.post('/logout', authMiddleware, async (req, res) => {
-  try {
-    // Registrar salida de asistencia
-    if (req.user.negocio_id) {
-      await pool.query(
-        `UPDATE asistencia SET salida = NOW()
-         WHERE usuario_id = ${ph(1)} AND negocio_id = ${ph(2)} AND salida IS NULL
-         ORDER BY entrada DESC LIMIT 1`,
-        [req.user.id, req.user.negocio_id]
-      );
-    }
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: 'Error interno' });
-  }
+  res.json({ ok: true });
 });
 
 // ── GET /api/auth/me ─────────────────────────────────────────────

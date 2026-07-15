@@ -271,9 +271,9 @@
       <div class="nav-item" id="nav-toggle-comisiones" data-nav="comisiones" onclick="nav('comisiones')">💸 Comisiones</div>
       <div class="nav-item" data-nav="gastos" onclick="nav('gastos')">📋 Gastos</div>
       <div class="nav-item" data-nav="clientes" onclick="nav('clientes')">👤 Clientes</div>
-      <div class="nav-item" id="nav-facturas-fixed" data-nav="facturas" onclick="nav('facturas')">🖨️ Reimprimir</div>
+      <div class="nav-item" id="nav-facturas-fixed" data-nav="facturas" onclick="nav('facturas')">🖨️ Reimprimir / Facturas</div>
     </div>
-    <div class="nav-sep" onclick="toggleGrupo('grp-inventario')">Inventario / Servicios <span class="sep-arrow" id="arr-inventario">▼</span></div>
+    <div class="nav-sep" onclick="toggleGrupo('grp-inventario')">Inventarios / Servicios <span class="sep-arrow" id="arr-inventario">▼</span></div>
     <div class="nav-group" id="grp-inventario">
       <div class="nav-item" data-nav="inventario" onclick="nav('inventario')">📦 Inventario</div>
       <div class="nav-item" data-nav="servicios" onclick="nav('servicios')">📂 Servicios</div>
@@ -286,7 +286,7 @@
       <div class="nav-item" data-nav="empleados" onclick="nav('empleados')">👥 Empleados</div>
       <div class="nav-item" data-nav="personal" onclick="nav('personal')">🔑 Usuarios</div>
       <div class="nav-item" data-nav="roles" onclick="nav('roles')">🔐 Roles</div>
-      <div class="nav-item" data-nav="horarios" onclick="nav('horarios')">🕐 Horarios</div>
+      <div class="nav-item" data-nav="horarios" onclick="nav('horarios')">🕐 Horarios / Nómina</div>
     </div>
     <div class="nav-sep" onclick="toggleGrupo('grp-cfg')">Configuración <span class="sep-arrow" id="arr-cfg">▼</span></div>
     <div class="nav-group" id="grp-cfg">
@@ -303,7 +303,7 @@
       <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;padding-bottom:5px">Idioma</div>
       <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
     </div>
-    <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><button class="btn-salir" onclick="toggleFullscreenPOS()" title="Pantalla completa" style="margin-bottom:4px">⛶ Pantalla completa</button><button class="btn-salir" onclick="abrirCambiarPassword()" style="margin-bottom:4px">🔑 Cambiar contraseña</button><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
+    <div class="sb-user"><strong id="sbNombre">—</strong><span id="sbRol" class="sb-rol"></span><span id="sb-negocio-nombre" style="display:block;font-size:11px;color:var(--text3);margin-top:2px"></span><button class="btn-salir" onclick="toggleFullscreenPOS()" title="Pantalla completa" style="margin-bottom:4px">⛶ Pantalla completa</button><button class="btn-salir" onclick="abrirCambiarPassword()" style="margin-bottom:4px">🔑 Cambiar contraseña</button><button class="btn-salir" onclick="salir()">Cerrar sesión</button></div>
   </nav>
   <div class="main">
     <div class="topbar">
@@ -995,6 +995,7 @@ const urlNegocio=new URLSearchParams(window.location.search).get('n')||'';
 let TOKEN=sessionStorage.getItem('pel_token')||'';
 let USER_NOMBRE=sessionStorage.getItem('pel_nombre')||'';
 let USER_ROL=sessionStorage.getItem('pel_rol')||'';
+let USER_NEGOCIO_ID=sessionStorage.getItem('pel_negocio_id')||'';
 let PERMISOS=JSON.parse(sessionStorage.getItem('pel_permisos')||'{}');
 let IS_SUPERADMIN=sessionStorage.getItem('pel_superadmin')==='1';
 
@@ -1041,6 +1042,7 @@ function aplicarPermisos(){
   });
 }
 // Prellenar y ocultar campo negocio si viene en URL + mostrar nombre del negocio
+let negocioNombreActual = '';
 (function(){
   if(urlNegocio){
     fetch(`/api/negocio-pub/${urlNegocio}`)
@@ -1049,9 +1051,12 @@ function aplicarPermisos(){
         if(!info)return;
         if(info.moneda) NEG_MONEDA=info.moneda;
         if(!info.nombre)return;
+        negocioNombreActual = info.nombre;
         const el=document.getElementById('login-neg-nombre');
         if(el){el.textContent=info.nombre;el.style.display='block';}
         document.title=`${info.nombre} — Admin`;
+        const sbEl=document.getElementById('sb-negocio-nombre');
+        if(sbEl) sbEl.textContent=info.nombre;
       })
       .catch(()=>{});
   }
@@ -1091,9 +1096,10 @@ async function doLogin(){
     }
     TOKEN=d.token;USER_NOMBRE=d.user?.nombre||'';
     USER_ROL=d.user?.rol_nombre||(d.user?.es_superadmin?'Super Admin':'');
+    USER_NEGOCIO_ID=d.user?.negocio_id||'';
     PERMISOS=_perms;IS_SUPERADMIN=d.user?.es_superadmin||false;
     sessionStorage.setItem('pel_token',TOKEN);sessionStorage.setItem('pel_nombre',USER_NOMBRE);
-    sessionStorage.setItem('pel_rol',USER_ROL);
+    sessionStorage.setItem('pel_rol',USER_ROL);sessionStorage.setItem('pel_negocio_id',USER_NEGOCIO_ID);
     sessionStorage.setItem('pel_permisos',JSON.stringify(PERMISOS));
     sessionStorage.setItem('pel_superadmin',IS_SUPERADMIN?'1':'0');
     iniciar();
@@ -1183,6 +1189,13 @@ async function iniciar(){
   document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';
   document.getElementById('sbNombre').textContent=USER_NOMBRE;
   const rolEl=document.getElementById('sbRol');if(rolEl)rolEl.textContent=USER_ROL;
+  const sbNegEl=document.getElementById('sb-negocio-nombre');
+  if(sbNegEl){
+    if(negocioNombreActual) sbNegEl.textContent=negocioNombreActual;
+    else if(USER_NEGOCIO_ID) fetch(`/api/negocio-pub/${USER_NEGOCIO_ID}`).then(r=>r.ok?r.json():null).then(info=>{
+      if(info?.nombre){ negocioNombreActual=info.nombre; sbNegEl.textContent=info.nombre; }
+    }).catch(()=>{});
+  }
   if(localStorage.getItem('pel_sb')==='0') document.querySelector('.sidebar').classList.add('collapsed');
   aplicarPermisos();
   const nid=sessionStorage.getItem('pel_negocio_id')||urlNegocio;

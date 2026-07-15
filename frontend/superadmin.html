@@ -1046,8 +1046,8 @@ async function loadNegocios(){
     const base = window.location.origin;
     const _tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
     const _negLinks = {
-      restaurante: [['Admin','/admin'],['POS','/pos'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
-      minimercado: [['Admin','/admin-minimercado.html'],['POS','/pos-minimercado.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
+      restaurante: [['Admin','/admin'],['POS','/pos'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario'],['🕐 Turno','/turno']],
+      minimercado: [['Admin','/admin-minimercado.html'],['POS','/pos-minimercado.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario'],['🕐 Turno','/turno']],
       peluqueria:  [['Admin','/admin-peluqueria.html'],['POS','/pos-peluqueria.html'],['Reservas','/reservas-peluqueria.html'],['Portal','/portal-empleado.html']],
       bar:         [['Admin','/bar-admin.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
       veterinaria: [['Admin','/vet-admin.html']],

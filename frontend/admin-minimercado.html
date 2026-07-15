@@ -325,14 +325,18 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-section" data-seccion="general" onclick="toggleNavGroup('general')"><span class="nav-label">General</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-general">
       <button class="nav-btn active" onclick="nav('dashboard',this)" title="Dashboard"><span class="nav-icon">📊</span><span class="nav-label"> Dashboard</span></button>
-      <button class="nav-btn" data-permiso="pos_cobro" onclick="nav('caja',this)" title="Caja del día"><span class="nav-icon">💰</span><span class="nav-label"> Caja del día</span></button>
-      <button class="nav-btn" data-permiso="gastos" onclick="nav('gastos',this)" title="Gastos"><span class="nav-icon">📋</span><span class="nav-label"> Gastos</span></button>
       <button class="nav-btn" data-permiso="reportes" onclick="nav('reportes',this)" title="Reportes"><span class="nav-icon">📈</span><span class="nav-label"> Reportes</span></button>
-      <button class="nav-btn" onclick="nav('clientes',this)" title="Clientes"><span class="nav-icon">👤</span><span class="nav-label"> Clientes</span></button>
-      <button class="nav-btn" id="nav-btn-facturas" data-permiso="facturacion" onclick="nav('facturas',this)" title="Reimprimir facturas"><span class="nav-icon">🖨️</span><span class="nav-label"> Reimprimir</span></button>
     </div>
 
-    <div class="nav-section" data-seccion="operacion" onclick="toggleNavGroup('operacion')"><span class="nav-label">Operación</span><span class="nav-group-arrow">›</span></div>
+    <div class="nav-section" data-seccion="finanzas" onclick="toggleNavGroup('finanzas')"><span class="nav-label">Finanzas</span><span class="nav-group-arrow">›</span></div>
+    <div class="nav-group" id="navg-finanzas">
+      <button class="nav-btn" data-permiso="pos_cobro" onclick="nav('caja',this)" title="Caja del día"><span class="nav-icon">💰</span><span class="nav-label"> Caja del día</span></button>
+      <button class="nav-btn" data-permiso="gastos" onclick="nav('gastos',this)" title="Gastos"><span class="nav-icon">📋</span><span class="nav-label"> Gastos</span></button>
+      <button class="nav-btn" onclick="nav('clientes',this)" title="Clientes"><span class="nav-icon">👤</span><span class="nav-label"> Clientes</span></button>
+      <button class="nav-btn" id="nav-btn-facturas" data-permiso="facturacion" onclick="nav('facturas',this)" title="Reimprimir facturas"><span class="nav-icon">🖨️</span><span class="nav-label"> Reimprimir / Facturas</span></button>
+    </div>
+
+    <div class="nav-section" data-seccion="operacion" onclick="toggleNavGroup('operacion')"><span class="nav-label">Inventarios / Servicios</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-operacion">
       <button class="nav-btn" data-permiso="inventario" onclick="nav('inventario',this)" title="Inventario"><span class="nav-icon">📦</span><span id="inv-badge" style="display:none;background:var(--amber);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;flex-shrink:0"></span><span class="nav-label"> Inventario</span></button>
       <button class="nav-btn" data-permiso="personal" 
@@ -344,10 +348,11 @@ tr:hover td{background:var(--bg2)}
 
     <div class="nav-section" data-seccion="rrhh" onclick="toggleNavGroup('rrhh')"><span class="nav-label">Personal</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-rrhh">
-      <button class="nav-btn" data-permiso="personal" onclick="nav('personal',this)" title="Usuarios"><span class="nav-icon">👥</span><span class="nav-label"> Usuarios</span></button>
+      <button class="nav-btn" data-permiso="personal" onclick="nav('personal',this)" title="Usuarios"><span class="nav-icon">👥</span><span class="nav-label"> Usuarios / Empleados</span></button>
       <button class="nav-btn" data-permiso="personal" onclick="nav('roles',this)" title="Roles"><span class="nav-icon">🔐</span><span class="nav-label"> Roles</span></button>
       <button class="nav-btn" data-permiso="horarios" onclick="nav('horarios',this)" title="Horarios"><span class="nav-icon">🕐</span><span class="nav-label"> Horarios</span></button>
       <button class="nav-btn" data-permiso="horarios" onclick="nav('asistencia',this)" title="Asistencia"><span class="nav-icon">📅</span><span class="nav-label"> Asistencia</span></button>
+      <button class="nav-btn" data-permiso="personal" onclick="nav('nomina',this)" title="Nómina"><span class="nav-icon">💵</span><span class="nav-label"> Nómina</span></button>
     </div>
 
     <div class="nav-section" data-seccion="config" onclick="toggleNavGroup('config')"><span class="nav-label">Configuración</span><span class="nav-group-arrow">›</span></div>
@@ -367,6 +372,7 @@ tr:hover td{background:var(--bg2)}
       <div style="padding:8px 12px" id="sb-user">
         <div style="font-size:13px;font-weight:600;color:var(--text)" id="sb-user-name"></div>
         <div style="font-size:10px;color:var(--accent);margin-top:2px" id="sb-user-rol"></div>
+        <div style="font-size:10px;color:var(--text2);margin-top:3px" id="sb-negocio-nombre"></div>
       </div>
       <button class="nav-btn" onclick="window.open('/manual-admin-minimercado.html','_blank')" title="Ayuda"><span class="nav-icon">❓</span><span class="nav-label"> Ayuda</span></button>
       <div id="lang-switcher" style="display:none;padding:6px 10px;border-top:0.5px solid var(--border);margin:4px 0">
@@ -388,7 +394,6 @@ tr:hover td{background:var(--bg2)}
         <span class="topbar-title" id="topbar-title">Dashboard</span>
       </div>
       <div style="font-size:12px;color:var(--text2)" id="topbar-fecha"></div>
-      <a id="link-pos" href="#" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;margin-left:8px">🛒 Abrir POS</a>
     </div>
 
     <div class="content">
@@ -822,6 +827,27 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
 
+      <!-- NÓMINA -->
+      <div class="panel" id="panel-nomina">
+        <div class="card">
+          <div class="card-header">
+            <h3>Nómina</h3>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span id="nom-estado-badge" class="badge badge-gray" style="font-size:11px;display:none"></span>
+              <input type="date" id="nom-periodo" class="btn btn-outline btn-sm" onchange="loadNomina()">
+            </div>
+          </div>
+          <div class="card-body" style="padding-bottom:0">
+            <p style="font-size:12px;color:var(--text2);margin-bottom:4px">Sueldo base + horas trabajadas (según el fichaje real en "Asistencia") × tarifa por hora, más bonificaciones y menos descuentos del período.</p>
+            <div id="nom-acciones" style="display:flex;gap:8px;margin:10px 0"></div>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Empleado</th><th>Sueldo base</th><th>Tarifa/hora</th><th>Horas</th><th>Horas extra</th><th>Pago por horas</th><th>Bonificaciones</th><th>Descuentos</th><th>Total</th><th></th></tr></thead>
+            <tbody id="nom-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
       <!-- CONFIG FACTURA -->
       <div class="panel" id="panel-cfg-factura">
         <div class="two-col">
@@ -1241,6 +1267,29 @@ tr:hover td{background:var(--bg2)}
 </div>
 
 <!-- Gasto -->
+<div class="modal-bg" id="nom-ajuste-modal" style="display:none">
+  <div class="modal">
+    <h3 id="nom-ajuste-title">Bonificación / Descuento</h3>
+    <input type="hidden" id="na-usuario-id">
+    <div class="field"><label id="na-empleado-label" style="font-weight:600;color:var(--text)"></label></div>
+    <div class="two-col">
+      <div class="field"><label>Tipo *</label>
+        <select id="na-tipo"><option value="bonificacion">Bonificación (+)</option><option value="descuento">Descuento (−)</option></select>
+      </div>
+      <div class="field"><label>Monto *</label><input id="na-monto" type="number" min="0" placeholder="0"></div>
+      <div class="field" style="grid-column:1/-1"><label>Concepto *</label><input id="na-concepto" placeholder="Ej. Bono de puntualidad, préstamo, etc."></div>
+    </div>
+    <div class="table-wrap" style="margin-top:6px">
+      <table><thead><tr><th>Tipo</th><th>Concepto</th><th>Monto</th><th></th></tr></thead>
+      <tbody id="na-lista-tbody"></tbody></table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('nom-ajuste-modal')">Cerrar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveNominaAjuste()">Agregar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="gasto-modal" style="display:none">
   <div class="modal">
     <h3 id="gasto-modal-title">Registrar gasto</h3>
@@ -1282,12 +1331,40 @@ tr:hover td{background:var(--bg2)}
       <span id="p-num-badge" style="display:none;font-size:12px;font-weight:700;color:var(--text2);background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:3px 10px"></span>
       <span id="p-status-badge" class="badge badge-green" style="font-size:11px;padding:4px 8px;line-height:1;">Activo</span>
     </div>
-    <div class="two-col">
+    <div class="two-col" style="max-height:60vh;overflow-y:auto;padding-right:4px">
+      <div class="field" style="grid-column:1/-1;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em">Datos personales</div>
       <div class="field" style="grid-column:1/-1"><label>Nombre completo *</label><input id="p-nombre"></div>
+      <div class="field"><label>Número de documento *</label><input id="p-documento" placeholder="Ej. 1012345678"></div>
+      <div class="field"><label>Fecha de nacimiento</label><input id="p-fnac" type="date"></div>
+      <div class="field"><label>Teléfono</label><input id="p-telefono" type="tel" placeholder="Ej. 3001234567"></div>
       <div class="field"><label>Email</label><input id="p-email" type="email"></div>
+      <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="p-direccion" placeholder="Ej. Cra 10 # 20-30, Bogotá"></div>
+
+      <div class="field" style="grid-column:1/-1;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em;margin-top:6px;padding-top:10px;border-top:1px solid var(--border)">Contacto de emergencia</div>
+      <div class="field"><label>Nombre del contacto</label><input id="p-emerg-nombre"></div>
+      <div class="field"><label>Teléfono del contacto</label><input id="p-emerg-telefono" type="tel"></div>
+
+      <div class="field" style="grid-column:1/-1;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em;margin-top:6px;padding-top:10px;border-top:1px solid var(--border)">Información laboral</div>
+      <div class="field"><label>Cargo</label><input id="p-cargo" placeholder="Ej. Cajero"></div>
+      <div class="field"><label>Fecha de inicio</label><input id="p-finicio" type="date"></div>
+      <div class="field"><label>Tipo de contrato</label>
+        <select id="p-contrato">
+          <option value="">Sin especificar</option>
+          <option value="Indefinido">Indefinido</option>
+          <option value="Término fijo">Término fijo</option>
+          <option value="Prestación de servicios">Prestación de servicios</option>
+          <option value="Aprendizaje">Aprendizaje</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="field"><label>Rol</label><select id="p-rol"></select></div>
+      <div class="field"><label>Sueldo base mensual</label><input id="p-sueldo" type="number" min="0" step="1000" placeholder="0"></div>
+      <div class="field"><label>Tarifa por hora</label><input id="p-tarifa" type="number" min="0" step="100" placeholder="0"></div>
+      <div class="field"><label>Multiplicador hora extra</label><input id="p-mult-extra" type="number" min="1" step="0.05" placeholder="1.5"></div>
+
+      <div class="field" style="grid-column:1/-1;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em;margin-top:6px;padding-top:10px;border-top:1px solid var(--border)">Acceso al sistema</div>
       <div class="field"><label>Usuario (para login)</label><input id="p-user"></div>
       <div class="field"><label>Contraseña</label><input id="p-pass" type="password" placeholder="Mín. 6 caracteres"></div>
-      <div class="field"><label>Rol</label><select id="p-rol"></select></div>
       <div class="field" style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:8px"><input id="p-activo" type="checkbox" onchange="updatePersonalStatusBadge()"> Activo</label></div>
     </div>
     <div class="modal-actions">
@@ -1551,14 +1628,18 @@ let _domPollTimer = null;
 let _domLastCount = 0;
 let _domRiders    = [];
 const urlNegocio = new URLSearchParams(window.location.search).get('n') || '';
+let negocioNombreActual = '';
 if(urlNegocio){
   fetch(`/api/negocio-pub/${urlNegocio}`)
     .then(r=>r.ok?r.json():null)
     .then(info=>{
       if(!info||!info.nombre)return;
+      negocioNombreActual = info.nombre;
       const el=document.getElementById('login-neg-nombre');
       if(el){el.textContent=info.nombre;el.style.display='block';}
       document.title=`${info.nombre} — Admin`;
+      const sbEl=document.getElementById('sb-negocio-nombre');
+      if(sbEl) sbEl.textContent=info.nombre;
     })
     .catch(()=>{});
 }
@@ -1904,6 +1985,13 @@ function showApp(){
   restoreNavGroups();
   $('sb-user-name').textContent = me?.nombre || '';
   $('sb-user-rol').textContent = me?.es_superadmin ? 'Super Admin' : (me?.rol_nombre || '');
+  if(negocioNombreActual){
+    $('sb-negocio-nombre').textContent = negocioNombreActual;
+  } else if(me?.negocio_id){
+    fetch(`/api/negocio-pub/${me.negocio_id}`).then(r=>r.ok?r.json():null).then(info=>{
+      if(info?.nombre){ negocioNombreActual=info.nombre; $('sb-negocio-nombre').textContent=info.nombre; }
+    }).catch(()=>{});
+  }
   $('topbar-fecha').textContent = new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   $('gastos-desde').value = today();
   $('asist-fecha').value  = today();
@@ -1911,7 +1999,6 @@ function showApp(){
   $('rep-desde').value = `${_d30.getFullYear()}-${String(_d30.getMonth()+1).padStart(2,'0')}-${String(_d30.getDate()).padStart(2,'0')}`;
   $('rep-hasta').value = today();
   aplicarPermisosNav();
-  if(me?.negocio_id) $('link-pos').href = `pos-minimercado.html?n=${me.negocio_id}`;
   if(me?.negocio_id) checkContrato(me.negocio_id);
   loadDashboard();
   startDashTimer();
@@ -1953,6 +2040,7 @@ const navLoaders = {
   roles:       loadRoles,
   horarios:    loadHorarios,
   asistencia:  loadAsistencia,
+  nomina:      loadNomina,
   'cfg-factura':   loadCfgFactura,
   'cfg-impresora': loadCfgImpresora,
 };
@@ -1967,7 +2055,7 @@ function nav(p, btn){
   expandNavGroupOf();
   const titles={dashboard:'Dashboard','mesas-admin':'Mesas','editar-menu':'Editar menú',inventario:'Inventario',caja:'Caja diaria',gastos:'Gastos',reportes:'Reportes',clientes:'Clientes',facturas:'Facturas',
     proveedores:'Proveedores','pedidos-prov':'Solicitudes a proveedores',domicilios:'Domicilios',personal:'Usuarios',
-    roles:'Roles y permisos',horarios:'Horarios de empleados',asistencia:'Asistencia',
+    roles:'Roles y permisos',horarios:'Horarios de empleados',asistencia:'Asistencia',nomina:'Nómina',
     'cfg-factura':'Configuración de factura','cfg-impresora':'Configuración de impresora'};
   $('topbar-title').textContent = titles[p]||p;
   if(p==='dashboard'){ loadDashboard(); startDashTimer(); }
@@ -3083,18 +3171,31 @@ async function loadPersonal(){
 async function openPersonalModal(id){
   personalEditId=id;
   $('pers-modal-title').textContent=id?'Editar empleado':'Nuevo empleado';
-  ['p-nombre','p-email','p-user','p-pass'].forEach(f=>$(f).value='');
+  ['p-nombre','p-documento','p-email','p-user','p-pass','p-sueldo','p-tarifa','p-mult-extra','p-fnac','p-telefono','p-direccion','p-emerg-nombre','p-emerg-telefono','p-cargo','p-finicio'].forEach(f=>$(f).value='');
+  $('p-contrato').value='';
   const roles=await api('/admin/roles');
   $('p-rol').innerHTML='<option value="">Sin rol</option>'+roles.map(r=>`<option value="${r.id}">${r.nombre}</option>`).join('');
   if (id) {
     try {
       const user = await api(`/admin/usuarios/${id}`);
       $('p-nombre').value = user.nombre || '';
+      $('p-documento').value = user.documento || '';
       $('p-email').value = user.email || '';
       $('p-user').value = user.username || '';
       $('p-rol').value = user.rol_id || '';
       $('p-activo').checked = !!user.activo;
       $('p-pass').value = '';
+      $('p-sueldo').value = user.sueldo_base != null ? user.sueldo_base : '';
+      $('p-tarifa').value = user.tarifa_hora != null ? user.tarifa_hora : '';
+      $('p-mult-extra').value = user.multiplicador_hora_extra != null ? user.multiplicador_hora_extra : '';
+      $('p-fnac').value = user.fecha_nacimiento ? String(user.fecha_nacimiento).slice(0,10) : '';
+      $('p-telefono').value = user.telefono || '';
+      $('p-direccion').value = user.direccion || '';
+      $('p-emerg-nombre').value = user.contacto_emergencia_nombre || '';
+      $('p-emerg-telefono').value = user.contacto_emergencia_telefono || '';
+      $('p-cargo').value = user.cargo || '';
+      $('p-finicio').value = user.fecha_inicio ? String(user.fecha_inicio).slice(0,10) : '';
+      $('p-contrato').value = user.tipo_contrato || '';
       const nb = $('p-num-badge');
       if (nb) { nb.textContent = '#' + (user.numero_empleado != null ? String(user.numero_empleado).padStart(3,'0') : '—'); nb.style.display = ''; }
     } catch (e) {
@@ -3116,13 +3217,26 @@ function updatePersonalStatusBadge(){
 }
 async function savePersonal(){
   try {
+    if(!$('p-documento').value.trim()){ showToast('El número de documento es obligatorio'); return; }
     const b={
       nombre:$('p-nombre').value,
+      documento:$('p-documento').value.trim(),
       email:$('p-email').value,
       username:$('p-user').value,
       password:$('p-pass').value,
       rol_id:$('p-rol').value||null,
-      activo:$('p-activo').checked
+      activo:$('p-activo').checked,
+      sueldo_base:$('p-sueldo').value?+$('p-sueldo').value:null,
+      tarifa_hora:$('p-tarifa').value?+$('p-tarifa').value:null,
+      multiplicador_hora_extra:$('p-mult-extra').value?+$('p-mult-extra').value:null,
+      fecha_nacimiento:$('p-fnac').value||null,
+      telefono:$('p-telefono').value||null,
+      direccion:$('p-direccion').value||null,
+      contacto_emergencia_nombre:$('p-emerg-nombre').value||null,
+      contacto_emergencia_telefono:$('p-emerg-telefono').value||null,
+      cargo:$('p-cargo').value||null,
+      fecha_inicio:$('p-finicio').value||null,
+      tipo_contrato:$('p-contrato').value||null
     };
     if(personalEditId) await api(`/admin/usuarios/${personalEditId}`,{method:'PUT',body:JSON.stringify(b)});
     else await api('/admin/usuarios',{method:'POST',body:JSON.stringify(b)});
@@ -3197,13 +3311,18 @@ async function loadHorarios(){
 }
 async function openHorarioModal(){
   const personal=await api('/admin/usuarios');
+  if(!personal.length){ showToast('Primero registra al menos un empleado en "Usuarios / Empleados"'); return; }
   $('h-empleado').innerHTML=personal.map(u=>`<option value="${u.id}">${u.nombre}</option>`).join('');
   $('h-entrada').value='08:00'; $('h-salida').value='17:00';
   $('horario-modal').style.display='flex';
 }
 async function saveHorario(){
+  const usuario_id=$('h-empleado').value;
+  const hora_entrada=$('h-entrada').value, hora_salida=$('h-salida').value;
+  if(!usuario_id){ showToast('Selecciona un empleado'); return; }
+  if(!hora_entrada || !hora_salida){ showToast('Indica hora de entrada y salida'); return; }
   try {
-    await api('/admin/horarios',{method:'POST',body:JSON.stringify({usuario_id:$('h-empleado').value,dia_semana:+$('h-dia').value,hora_entrada:$('h-entrada').value,hora_salida:$('h-salida').value})});
+    await api('/admin/horarios',{method:'POST',body:JSON.stringify({usuario_id,dia_semana:+$('h-dia').value,hora_entrada,hora_salida})});
     closeModal('horario-modal'); showToast('Turno guardado ✓'); loadHorarios();
   } catch(e){ showToast('Error: '+e.message); }
 }
@@ -3258,6 +3377,201 @@ async function loadAsistencia(){
       const h=dur?Math.floor(dur/60):0, m=dur?dur%60:0;
       return `<tr><td><b>${a.usuario_nombre}</b></td><td>${fmtTime(a.entrada)}</td><td>${a.salida?fmtTime(a.salida):'<span class="badge badge-green">En turno</span>'}</td><td>${dur?`${h}h ${m}m`:'—'}</td></tr>`;
     }).join('') || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text2)">Sin registros</td></tr>';
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ─── NÓMINA ──────────────────────────────────────────────────
+function _periodoActual(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function _periodoMes(){ return $('nom-periodo').value.slice(0,7); }
+const NOM_ESTADO_INFO = {
+  abierto:   {label:'Abierto',   clase:'badge-gray'},
+  calculado: {label:'Calculado', clase:'badge-amber'},
+  aprobado:  {label:'Aprobado',  clase:'badge-blue'},
+  pagado:    {label:'Pagado',    clase:'badge-green'},
+};
+let _nomEstado='abierto';
+async function loadNomina(){
+  if(!$('nom-periodo').value) $('nom-periodo').value=_periodoActual();
+  try {
+    const periodo=_periodoMes();
+    const data=await api(`/admin/nomina?periodo=${periodo}`);
+    _nomEstado=data.estado;
+    const info=NOM_ESTADO_INFO[data.estado]||NOM_ESTADO_INFO.abierto;
+    const badge=$('nom-estado-badge');
+    badge.textContent=info.label; badge.className='badge '+info.clase; badge.style.display='';
+
+    const editable=data.estado==='abierto';
+    $('nom-tbody').innerHTML=data.filas.map(n=>`
+      <tr>
+        <td><b>${n.nombre}</b></td>
+        <td>${fmt(n.sueldo_base)}</td>
+        <td>${n.tarifa_hora?fmt(n.tarifa_hora):'—'}</td>
+        <td>${n.horas_trabajadas}h</td>
+        <td style="color:var(--amber-d)">${n.horas_extra?n.horas_extra+'h':'—'}</td>
+        <td>${fmt(n.pago_horas)}</td>
+        <td style="color:var(--green-d)">${n.bonificaciones?'+'+fmt(n.bonificaciones):'—'}</td>
+        <td style="color:var(--red-d)">${n.descuentos?'−'+fmt(n.descuentos):'—'}</td>
+        <td><b>${fmt(n.total)}</b></td>
+        <td style="display:flex;gap:6px">${editable
+          ? `<button class="btn btn-outline btn-sm" onclick="abrirNominaAjuste('${n.usuario_id}','${n.nombre.replace(/'/g,"\\'")}')">Ajustar</button><button class="btn btn-outline btn-sm" onclick="verDesprendiblePreview('${n.usuario_id}')">🖨️ Desprendible</button>`
+          : `<button class="btn btn-outline btn-sm" onclick="verComprobante('${n.id}')">🖨️ Desprendible</button>`}</td>
+      </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text2)">Sin empleados activos</td></tr>';
+
+    const acc=$('nom-acciones');
+    if(data.estado==='abierto'){
+      acc.innerHTML=`<button class="btn btn-primary btn-sm" onclick="cerrarPeriodoNomina()">🔒 Cerrar período</button>`;
+    } else if(data.estado==='calculado'){
+      acc.innerHTML=`<button class="btn btn-primary btn-sm" onclick="aprobarPeriodoNomina()">✓ Aprobar período</button><button class="btn btn-outline btn-sm" onclick="reabrirPeriodoNomina()">↺ Reabrir</button>`;
+    } else if(data.estado==='aprobado'){
+      acc.innerHTML=`<button class="btn btn-primary btn-sm" onclick="pagarPeriodoNomina()">💵 Marcar como pagado</button>`;
+    } else {
+      acc.innerHTML=`<span style="font-size:12px;color:var(--text2)">Período pagado — se registró el gasto en Finanzas y se generaron los comprobantes.</span>`;
+    }
+  } catch(e){ showToast('Error: '+e.message); }
+}
+async function cerrarPeriodoNomina(){
+  if(!confirm('¿Cerrar este período? Los montos quedarán congelados y ya no se podrán agregar más bonificaciones o descuentos.')) return;
+  try {
+    await api(`/admin/nomina/periodos/${_periodoMes()}/calcular`,{method:'POST'});
+    showToast('Período calculado ✓');
+    loadNomina();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+async function aprobarPeriodoNomina(){
+  try {
+    await api(`/admin/nomina/periodos/${_periodoMes()}/aprobar`,{method:'POST'});
+    showToast('Período aprobado ✓');
+    loadNomina();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+async function reabrirPeriodoNomina(){
+  if(!confirm('¿Reabrir este período? Se descartará el cálculo actual (incluyendo aprobaciones individuales) y podrás editarlo de nuevo.')) return;
+  try {
+    await api(`/admin/nomina/periodos/${_periodoMes()}/reabrir`,{method:'POST'});
+    showToast('Período reabierto ✓');
+    loadNomina();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+async function pagarPeriodoNomina(){
+  if(!confirm('¿Marcar este período como pagado? Se registrará un gasto en Finanzas por cada empleado y se generarán los comprobantes de pago.')) return;
+  try {
+    await api(`/admin/nomina/periodos/${_periodoMes()}/pagar`,{method:'POST'});
+    showToast('Período pagado ✓');
+    loadNomina();
+  } catch(e){ showToast('Error: '+e.message); }
+}
+function _fechaCorta(iso){ if(!iso) return '—'; return String(iso).slice(0,10).split('-').reverse().join('/'); }
+function _imprimirDesprendible(d, esVistaPrevia){
+  const totalDevengado = (+d.sueldo_base||0) + (+d.pago_horas||0) + (+d.bonificaciones||0);
+  const estadoTexto = esVistaPrevia ? 'Abierto (vista previa)' : (d.periodo_estado==='pagado'?'Pagado':'Aprobado');
+  const html=`
+    ${esVistaPrevia?'<div class="ds-preview-banner">VISTA PREVIA — el período sigue abierto, estos valores pueden cambiar</div>':''}
+    <div class="ds-header">
+      <div>
+        <div class="ds-negocio">${d.negocio_nombre}</div>
+        <div class="ds-negocio-sub">${d.negocio_nit?'NIT '+d.negocio_nit:''}${d.negocio_nit&&d.negocio_direccion?' — ':''}${d.negocio_direccion||''}${d.negocio_ciudad?', '+d.negocio_ciudad:''}</div>
+      </div>
+      <div class="ds-titulo">Desprendible de nómina<br><span class="ds-periodo">${d.periodo}</span></div>
+    </div>
+    <table class="ds-info">
+      <tr><td class="ds-lbl">Empleado</td><td>${d.nombre}</td><td class="ds-lbl">N° empleado</td><td>${d.numero_empleado!=null?String(d.numero_empleado).padStart(3,'0'):'—'}</td></tr>
+      <tr><td class="ds-lbl">Documento</td><td>${d.documento||'—'}</td><td class="ds-lbl">Cargo</td><td>${d.cargo||'—'}</td></tr>
+      <tr><td class="ds-lbl">Fecha de ingreso</td><td>${_fechaCorta(d.fecha_ingreso)}</td><td class="ds-lbl">Tipo de contrato</td><td>${d.tipo_contrato||'—'}</td></tr>
+      <tr><td class="ds-lbl">Estado del período</td><td>${estadoTexto}</td><td class="ds-lbl">Fecha de pago</td><td>${_fechaCorta(d.fecha_pagado)}</td></tr>
+    </table>
+    <table class="ds-tabla">
+      <thead><tr><th>Devengos</th><th class="ds-num">Valor</th><th>Deducciones</th><th class="ds-num">Valor</th></tr></thead>
+      <tbody>
+        <tr><td>Sueldo base</td><td class="ds-num">${fmt(d.sueldo_base)}</td><td>Descuentos</td><td class="ds-num">${fmt(d.total_deducciones)}</td></tr>
+        <tr><td>Pago por horas (${d.horas_trabajadas}h × ${fmt(d.tarifa_hora)})${d.horas_extra?` — incluye ${d.horas_extra}h extra`:''}</td><td class="ds-num">${fmt(d.pago_horas)}</td><td></td><td></td></tr>
+        <tr><td>Bonificaciones</td><td class="ds-num">${fmt(d.bonificaciones)}</td><td></td><td></td></tr>
+      </tbody>
+      <tfoot>
+        <tr><td><b>Total devengado</b></td><td class="ds-num"><b>${fmt(totalDevengado)}</b></td><td><b>Total deducido</b></td><td class="ds-num"><b>${fmt(d.total_deducciones)}</b></td></tr>
+      </tfoot>
+    </table>
+    <div class="ds-neto"><span>Neto a pagar</span><span>${fmt(d.neto_pagar)}</span></div>
+    <div class="ds-firma">
+      <div class="ds-firma-linea">Firma del empleador</div>
+      <div class="ds-firma-linea">Firma del empleado</div>
+    </div>`;
+  const w=window.open('','_blank','width=800,height=900');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Desprendible de nómina — ${d.nombre}</title><style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#111;background:#fff;padding:28px}
+    .ds-preview-banner{background:#FFF3CD;color:#7A5B00;border:1px solid #FFE28A;border-radius:6px;padding:8px 12px;font-size:11px;font-weight:700;text-align:center;margin-bottom:14px}
+    .ds-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:14px}
+    .ds-negocio{font-size:17px;font-weight:700}
+    .ds-negocio-sub{font-size:11px;color:#555;margin-top:2px}
+    .ds-titulo{text-align:right;font-size:13px;font-weight:700;line-height:1.4}
+    .ds-periodo{font-size:12px;font-weight:400;color:#555}
+    table{width:100%;border-collapse:collapse}
+    .ds-info{margin-bottom:14px;font-size:12px}
+    .ds-info td{padding:4px 6px}
+    .ds-lbl{color:#666;width:110px}
+    .ds-tabla{border:1px solid #ccc}
+    .ds-tabla th{background:#f2f2f2;text-align:left;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid #ccc}
+    .ds-tabla td{padding:7px 8px;border-bottom:1px solid #eee;font-size:12px}
+    .ds-tabla tfoot td{border-top:2px solid #ccc;border-bottom:none;padding-top:9px}
+    .ds-num{text-align:right;font-variant-numeric:tabular-nums}
+    .ds-neto{display:flex;justify-content:space-between;align-items:center;background:#0B8457;color:#fff;padding:14px 16px;border-radius:6px;margin:16px 0;font-size:16px;font-weight:700}
+    .ds-firma{display:flex;justify-content:space-between;margin-top:60px}
+    .ds-firma-linea{width:45%;border-top:1px solid #333;padding-top:6px;text-align:center;font-size:11px;color:#555}
+    @media print{body{padding:0}}
+  </style></head><body>${html}<script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);
+  w.document.close();
+}
+async function verComprobante(detalleId){
+  try {
+    const d=await api(`/admin/nomina/detalle/${detalleId}/comprobante`);
+    _imprimirDesprendible(d, false);
+  } catch(e){ showToast('Error: '+e.message); }
+}
+async function verDesprendiblePreview(usuarioId){
+  try {
+    const d=await api(`/admin/nomina/preview/${usuarioId}?periodo=${_periodoMes()}`);
+    _imprimirDesprendible(d, true);
+  } catch(e){ showToast('Error: '+e.message); }
+}
+let _naUsuarioId=null;
+async function abrirNominaAjuste(usuarioId, nombre){
+  _naUsuarioId=usuarioId;
+  $('na-usuario-id').value=usuarioId;
+  $('na-empleado-label').textContent=nombre;
+  $('na-tipo').value='bonificacion'; $('na-monto').value=''; $('na-concepto').value='';
+  await _renderNominaAjustesLista();
+  $('nom-ajuste-modal').style.display='flex';
+}
+async function _renderNominaAjustesLista(){
+  try {
+    const periodo=_periodoMes();
+    const lista=await api(`/admin/nomina/ajustes?usuario_id=${_naUsuarioId}&periodo=${periodo}`);
+    $('na-lista-tbody').innerHTML=lista.map(a=>`
+      <tr>
+        <td>${a.tipo==='bonificacion'?'Bonificación':'Descuento'}</td>
+        <td>${a.concepto}</td>
+        <td>${a.tipo==='bonificacion'?'+':'−'}${fmt(a.monto)}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="deleteNominaAjuste('${a.id}')">✕</button></td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:10px">Sin ajustes este período</td></tr>';
+  } catch(e){ showToast('Error: '+e.message); }
+}
+async function saveNominaAjuste(){
+  const tipo=$('na-tipo').value, concepto=$('na-concepto').value.trim(), monto=$('na-monto').value;
+  if(!concepto){ showToast('Escribe el concepto'); return; }
+  if(!monto || +monto<=0){ showToast('Ingresa un monto válido'); return; }
+  try {
+    await api('/admin/nomina/ajustes',{method:'POST',body:JSON.stringify({usuario_id:_naUsuarioId,periodo:_periodoMes(),tipo,concepto,monto})});
+    $('na-monto').value=''; $('na-concepto').value='';
+    await _renderNominaAjustesLista();
+    loadNomina();
+    showToast('Agregado ✓');
+  } catch(e){ showToast('Error: '+e.message); }
+}
+async function deleteNominaAjuste(id){
+  try {
+    await api(`/admin/nomina/ajustes/${id}`,{method:'DELETE'});
+    await _renderNominaAjustesLista();
+    loadNomina();
   } catch(e){ showToast('Error: '+e.message); }
 }
 

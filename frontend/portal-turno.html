@@ -1,0 +1,209 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marcar turno</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5FAF6;--card:#FFFFFF;--ink:#102A24;--ink2:#4A6459;
+  --border:rgba(16,42,36,.14);--forest:#0B8457;--forest-d:#086644;--forest-l:#E3F4EB;
+  --red:#C0392B;--red-l:#FBEAE8;
+  --r:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0D1A16;--card:#132420;--ink:#E8F3EC;--ink2:#A9C4B8;
+  --border:rgba(232,243,236,.14);--forest-l:rgba(43,196,136,.14);--red-l:rgba(192,57,43,.16);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px 30px;width:380px;max-width:100%;text-align:center;box-shadow:0 18px 40px -20px rgba(16,42,36,.3)}
+.logo{width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto 16px;display:block}
+h1{font-size:19px;margin-bottom:4px}
+.neg-nombre{font-size:13px;color:var(--ink2);margin-bottom:26px}
+.field{margin-bottom:16px;text-align:left}
+.field label{display:block;font-size:12px;color:var(--ink2);margin-bottom:6px;font-weight:600}
+.field input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--ink);font-size:20px;text-align:center;letter-spacing:.03em;font-family:inherit}
+.field input:focus{outline:none;border-color:var(--forest)}
+.btn{display:block;width:100%;padding:15px;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.btn-forest{background:var(--forest);color:#fff}
+.btn-forest:hover{background:var(--forest-d)}
+.btn-forest:disabled{opacity:.5;cursor:not-allowed}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--ink2);margin-top:14px}
+.err{background:var(--red-l);color:var(--red);padding:10px 14px;border-radius:var(--r);font-size:13px;margin-top:14px;display:none;text-align:left}
+.estado{margin-top:8px;text-align:left}
+.estado .saludo{font-size:17px;font-weight:700}
+.estado .detalle{font-size:13px;color:var(--ink2);margin-top:4px}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;margin-top:10px}
+.badge-en-turno{background:var(--forest-l);color:var(--forest)}
+.badge-sin-iniciar{background:var(--border);color:var(--ink2)}
+.badge-finalizado{background:var(--border);color:var(--ink2)}
+.pago-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pago-item:last-child{border-bottom:none}
+.pago-periodo{font-weight:600}
+.pago-fecha{font-size:11px;color:var(--ink2);margin-top:2px}
+.pago-monto{font-weight:700;color:var(--forest)}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <img class="logo" src="/img/logo.png" alt="DJPOS">
+  <h1>Marcar turno</h1>
+  <div class="neg-nombre" id="neg-nombre">Cargando negocio…</div>
+
+  <div id="paso-buscar">
+    <div class="field">
+      <label>Número de documento</label>
+      <input id="num-empleado" type="text" inputmode="numeric" placeholder="Ej. 1012345678" autofocus>
+    </div>
+    <button class="btn btn-forest" onclick="buscarEmpleado()">Continuar</button>
+    <div class="err" id="err-buscar"></div>
+  </div>
+
+  <div id="paso-estado" style="display:none">
+    <div class="estado">
+      <div class="saludo" id="est-nombre"></div>
+      <div class="detalle" id="est-detalle"></div>
+      <span class="badge" id="est-badge"></span>
+    </div>
+    <button class="btn btn-forest" id="btn-accion" onclick="marcarTurno()"></button>
+    <button class="btn btn-ghost" onclick="toggleMisPagos()" id="btn-mis-pagos">💵 Mis pagos</button>
+    <div id="mis-pagos" style="display:none;margin-top:14px;text-align:left"></div>
+    <button class="btn btn-ghost" onclick="volver()">← Otro empleado</button>
+    <div class="err" id="err-accion"></div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+const negocioId = new URLSearchParams(window.location.search).get('n') || '';
+let empleadoActual = null;
+
+if (!negocioId) {
+  document.getElementById('neg-nombre').textContent = 'Falta el negocio en el enlace';
+} else {
+  fetch(`${API}/negocio-pub/${negocioId}`).then(r=>r.ok?r.json():null).then(info=>{
+    document.getElementById('neg-nombre').textContent = info?.nombre || '';
+    document.title = `Marcar turno — ${info?.nombre || ''}`;
+  }).catch(()=>{ document.getElementById('neg-nombre').textContent = ''; });
+}
+
+document.getElementById('num-empleado').addEventListener('keydown', e => { if(e.key==='Enter') buscarEmpleado(); });
+
+async function buscarEmpleado(){
+  const numero = document.getElementById('num-empleado').value.trim();
+  const errEl = document.getElementById('err-buscar');
+  errEl.style.display = 'none';
+  if (!numero) { errEl.textContent = 'Ingresa tu número de documento'; errEl.style.display = 'block'; return; }
+
+  try {
+    const r = await fetch(`${API}/turno/${negocioId}?documento=${encodeURIComponent(numero)}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error');
+    empleadoActual = { numero, nombre: d.nombre, turnoHoy: d.turnoHoy };
+    mostrarEstado();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function mostrarEstado(){
+  document.getElementById('paso-buscar').style.display = 'none';
+  document.getElementById('paso-estado').style.display = 'block';
+  document.getElementById('err-accion').style.display = 'none';
+
+  const t = empleadoActual.turnoHoy;
+  document.getElementById('est-nombre').textContent = `Hola, ${empleadoActual.nombre}`;
+
+  const badge = document.getElementById('est-badge');
+  const detalle = document.getElementById('est-detalle');
+  const btn = document.getElementById('btn-accion');
+
+  if (!t || !t.hora_entrada) {
+    detalle.textContent = 'Todavía no has iniciado turno hoy.';
+    badge.textContent = 'Sin iniciar'; badge.className = 'badge badge-sin-iniciar';
+    btn.textContent = '▶ Iniciar turno'; btn.className = 'btn btn-forest';
+  } else if (!t.hora_salida) {
+    detalle.textContent = `En turno desde las ${t.hora_entrada.slice(0,5)}`;
+    badge.textContent = 'En turno'; badge.className = 'badge badge-en-turno';
+    btn.textContent = '■ Finalizar turno'; btn.className = 'btn btn-red';
+  } else {
+    detalle.textContent = `Turno de hoy: ${t.hora_entrada.slice(0,5)} — ${t.hora_salida.slice(0,5)}`;
+    badge.textContent = 'Turno finalizado'; badge.className = 'badge badge-finalizado';
+    btn.textContent = 'Turno ya finalizado'; btn.className = 'btn btn-forest'; btn.disabled = true;
+  }
+}
+
+async function marcarTurno(){
+  const t = empleadoActual.turnoHoy;
+  const accion = (!t || !t.hora_entrada) ? 'iniciar' : 'finalizar';
+  const errEl = document.getElementById('err-accion');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('btn-accion');
+  btn.disabled = true;
+
+  try {
+    const r = await fetch(`${API}/turno/${negocioId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documento: empleadoActual.numero, accion }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error');
+
+    // Vuelve a consultar el estado real (evita asumir la hora en el cliente)
+    const r2 = await fetch(`${API}/turno/${negocioId}?documento=${encodeURIComponent(empleadoActual.numero)}`);
+    const d2 = await r2.json();
+    empleadoActual.turnoHoy = d2.turnoHoy;
+    mostrarEstado();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+  }
+}
+
+function fmt(n){ return '$'+Math.round(n||0).toLocaleString('es-CO'); }
+
+let _pagosCargados=false;
+async function toggleMisPagos(){
+  const wrap = document.getElementById('mis-pagos');
+  if (wrap.style.display !== 'none') { wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  if (_pagosCargados) return;
+  wrap.innerHTML = '<div class="detalle">Cargando…</div>';
+  try {
+    const r = await fetch(`${API}/turno/${negocioId}/historial-pago?documento=${encodeURIComponent(empleadoActual.numero)}`);
+    const lista = await r.json();
+    if (!r.ok) throw new Error(lista.error || 'Error');
+    _pagosCargados = true;
+    wrap.innerHTML = lista.length
+      ? lista.map(p => `<div class="pago-item"><div><div class="pago-periodo">${p.periodo}</div><div class="pago-fecha">Pagado</div></div><div class="pago-monto">${fmt(p.neto_pagar)}</div></div>`).join('')
+      : '<div class="detalle">Todavía no tienes pagos registrados.</div>';
+  } catch(e) {
+    wrap.innerHTML = `<div class="detalle" style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+function volver(){
+  empleadoActual = null;
+  _pagosCargados = false;
+  document.getElementById('mis-pagos').style.display = 'none';
+  document.getElementById('num-empleado').value = '';
+  document.getElementById('paso-estado').style.display = 'none';
+  document.getElementById('paso-buscar').style.display = 'block';
+  document.getElementById('num-empleado').focus();
+}
+</script>
+</body>
+</html>

@@ -250,19 +250,14 @@ router.get('/exportar/excel', async (req, res) => {
       [nid(req)]
     );
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(rows.map(r => ({
-      'Código':          r.codigo||'',
-      'Código de barras': r.codigo_barras||'',
-      'Nombre':         r.nombre,
-      'Categoría':      r.categoria,
-      'Stock actual':   r.stock,
-      'Stock mínimo':   r.stock_min,
-      'Stock máximo':   r.stock_max||'',
-      'Unidad':         r.unidad,
-      'Costo':          r.costo,
-      'Precio venta':   r.precio_venta,
-      'Es producto':    r.es_producto?'Sí':'No',
-    })));
+    // aoa_to_sheet (en vez de json_to_sheet) para que el encabezado siempre
+    // se escriba, incluso con el inventario vacío — así el archivo exportado
+    // sirve de plantilla en blanco para llenar e importar.
+    const headers = ['Código','Código de barras','Nombre','Categoría','Stock actual','Stock mínimo','Stock máximo','Unidad','Costo','Precio venta','Es producto'];
+    const dataRows = rows.map(r => [
+      r.codigo||'', r.codigo_barras||'', r.nombre, r.categoria, r.stock, r.stock_min, r.stock_max||'', r.unidad, r.costo, r.precio_venta, r.es_producto?'Sí':'No',
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
     // Ancho de columnas
     ws['!cols'] = [8,16,30,20,14,14,14,12,14,14,12].map(w=>({wch:w}));
     XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
