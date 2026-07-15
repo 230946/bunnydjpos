@@ -1327,9 +1327,8 @@ tr:hover td{background:var(--bg2)}
     <div class="field"><label>Icono (emoji)</label><input id="cm-icono" placeholder="🍽️" maxlength="4"></div>
     <div class="field"><label>Módulo</label>
       <select id="cm-modulo">
-        <option value="">Todos los módulos (POS + Minimercado + Bar)</option>
+        <option value="">Todos los módulos (POS + Bar)</option>
         <option value="pos">Solo POS (restaurante)</option>
-        <option value="minimercado">Solo Minimercado</option>
         <option value="bar">Solo Bar</option>
       </select>
     </div>
@@ -1383,12 +1382,7 @@ tr:hover td{background:var(--bg2)}
       </div>
       <input type="hidden" id="iv-es-paquete">
     </div>
-    <div class="field" style="margin-top:8px"><label>Módulo</label>
-      <select id="iv-modulo">
-        <option value="restaurante">🍽️ Restaurante</option>
-        <option value="minimercado">🛒 Minimercado</option>
-      </select>
-    </div>
+    <input type="hidden" id="iv-modulo" value="restaurante">
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:4px;cursor:pointer">
       <input type="checkbox" id="iv-es-prod"> Es producto de venta directa
     </label>
@@ -1599,7 +1593,7 @@ tr:hover td{background:var(--bg2)}
 <!-- Pedido proveedor -->
 <div class="modal-bg" id="pedido-prov-modal" style="display:none">
   <div class="modal" style="max-width:700px;width:100%;max-height:90vh;overflow-y:auto">
-    <h3>Nueva solicitud de pedido</h3>
+    <h3 id="pp-modal-title">Nueva solicitud de pedido</h3>
 
     <div class="field"><label>Proveedor *</label>
       <select id="pp-prov" onchange="ppProvChange()"></select>
@@ -1734,7 +1728,7 @@ tr:hover td{background:var(--bg2)}
 
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn btn-outline btn-sm" onclick="closeModal('pedido-prov-modal')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="savePedidoProv()">Enviar solicitud</button>
+      <button class="btn btn-primary btn-sm" id="pp-modal-submit" onclick="savePedidoProv()">Enviar solicitud</button>
     </div>
   </div>
 </div>
@@ -1857,9 +1851,6 @@ const CATEGORIAS_PERMISOS = [
   { grupo:'👥 Administración', permisos:[
     ['personal','Personal'],['horarios','Horarios'],
   ]},
-  { grupo:'🛒 Módulos adicionales', permisos:[
-    ['minimercado','Minimercado'],
-  ]},
 ];
 const MODULOS_PERMISOS = CATEGORIAS_PERMISOS.flatMap(c => c.permisos);
 // Claves de permiso que dan acceso al panel admin (excluye permisos solo de POS:
@@ -1902,7 +1893,7 @@ let NEG_ZONA = 'America/Bogota';
 const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
 const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
 function fmt(n){ return (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO'); }
-function fmtDate(s){ return s?new Date(s+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
+function fmtDate(s){ return s?new Date(String(s).slice(0,10)+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
 function fmtTime(s){ return s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA}):'—'; }
 function openModal(id){ document.getElementById(id).style.display='flex'; }
 function closeModal(id){ document.getElementById(id).style.display='none'; }
@@ -3355,15 +3346,19 @@ async function saveProv(){
   } catch(e){ showToast('Error: '+e.message); }
 }
 
+let _pedidosProvList=[];
 async function loadPedidosProv(){
   const data=await api('/admin/pedidos-proveedor');
+  _pedidosProvList=data;
   const estadoBadge={pendiente:'badge-amber',enviado:'badge-blue',recibido:'badge-green',cancelado:'badge-red'};
-  $('pedidos-prov-tbody').innerHTML=data.map(p=>`<tr><td><b>${p.proveedor_nombre}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estadoBadge[p.estado]||'badge-gray'}">${p.estado}</span></td><td><select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option>—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('');
+  $('pedidos-prov-tbody').innerHTML=data.map(p=>`<tr><td><b>${p.proveedor_nombre}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estadoBadge[p.estado]||'badge-gray'}">${p.estado}</span></td><td style="display:flex;gap:6px">${p.estado==='pendiente'?`<button class="btn btn-outline btn-sm" onclick="openPedidoProvModal('${p.id}')">✏️ Editar</button>`:''}<select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option>—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('');
 }
 async function cambiarEstadoPedido(id,estado){ await api(`/admin/pedidos-proveedor/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})}); showToast('Estado actualizado'); loadPedidosProv(); }
-let _ppItems=[], _ppProductos=[];
+let _ppItems=[], _ppProductos=[], _ppEditId=null;
 
-async function openPedidoProvModal(){
+async function openPedidoProvModal(id){
+  _ppEditId=id||null;
+  const pedido=id?_pedidosProvList.find(p=>p.id===id):null;
   const provs=await api('/admin/proveedores');
   $('pp-prov').innerHTML=provs.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
   _ppItems=[]; _ppProductos=[];
@@ -3378,7 +3373,19 @@ async function openPedidoProvModal(){
   if($('ppn-unidad')){$('ppn-unidad').value='unidades'; ppnUnidadChange();}
   const r0=document.querySelector('input[name="ppn-tax"][value="0"]');
   if(r0){r0.checked=true; ppnTaxChange(0);}
+
+  if($('pp-modal-title')) $('pp-modal-title').textContent=pedido?'Editar solicitud de pedido':'Nueva solicitud de pedido';
+  if($('pp-modal-submit')) $('pp-modal-submit').textContent=pedido?'Guardar cambios':'Enviar solicitud';
+
+  if(pedido){
+    $('pp-prov').value=pedido.proveedor_id;
+    $('pp-fecha').value=pedido.fecha_entrega?String(pedido.fecha_entrega).slice(0,10):'';
+    $('pp-notas').value=pedido.notas||'';
+    const items=typeof pedido.items==='string'?JSON.parse(pedido.items):(pedido.items||[]);
+    _ppItems=items.map(it=>({id:it.id,nombre:it.nombre,qty:+it.cantidad||0,costo:+it.costo_unitario||0,iva_pct:+it.iva_pct||0}));
+  }
   ppCalcTotals();
+  ppRenderItems();
   $('pedido-prov-modal').style.display='flex';
   if(provs.length) await ppProvChange();
 }
@@ -3520,11 +3527,15 @@ async function savePedidoProv(){
       sub+=s; ivaT+=iv;
       return {id:it.id,nombre:it.nombre,cantidad:it.qty,costo_unitario:it.costo,iva_pct:it.iva_pct,subtotal:s,iva_monto:iv,total:s+iv};
     });
-    await api('/admin/pedidos-proveedor',{method:'POST',body:JSON.stringify({
+    const body=JSON.stringify({
       proveedor_id:$('pp-prov').value, items, total:sub+ivaT,
       notas:$('pp-notas').value||null, fecha_entrega:$('pp-fecha').value||null
-    })});
-    closeModal('pedido-prov-modal'); showToast('Solicitud enviada ✓'); loadPedidosProv();
+    });
+    const eraEdicion=!!_ppEditId;
+    if(_ppEditId) await api(`/admin/pedidos-proveedor/${_ppEditId}`,{method:'PUT',body});
+    else await api('/admin/pedidos-proveedor',{method:'POST',body});
+    _ppEditId=null;
+    closeModal('pedido-prov-modal'); showToast(eraEdicion?'Solicitud actualizada ✓':'Solicitud enviada ✓'); loadPedidosProv();
   }catch(e){ showToast('Error: '+e.message); }
 }
 
@@ -4512,7 +4523,7 @@ async function saveCatMenu(){
 // ─── INVENTARIO ───────────────────────────────────────────────
 function setInvModulo(mod){
   invModuloActivo=mod;
-  ['restaurante','minimercado','todos'].forEach(m=>{
+  ['restaurante','todos'].forEach(m=>{
     const btn=$(`inv-tab-${m}`);
     if(btn) btn.className=mod===m||(!mod&&m==='todos')?'btn btn-primary btn-sm':'btn btn-outline btn-sm';
   });
@@ -4575,14 +4586,13 @@ async function loadInventario(){
         :_bajo
           ?'<span class="badge badge-amber">Bajo stock</span>'
           :'<span class="badge badge-green">OK</span>';
-      const modBadge=i.modulo==='minimercado'?'<span class="badge badge-blue" style="font-size:9px">🛒 Minimercado</span>':'<span class="badge badge-gray" style="font-size:9px">🍽️ Rest.</span>';
       const paqBadge=i.unidad_compra&&i.cantidad_paquete?`<span class="badge badge-gray" style="font-size:9px">📦 1 ${i.unidad_compra} = ${i.cantidad_paquete} ${badgeUnidad(i.unidad)}</span> `:'';
       const _uc=i.unidad_compra&&i.cantidad_paquete&&i.cantidad_paquete>1;
       const _stDisp=_uc?(_stock<_facPaq?`${_stock} ${i.unidad}`:`${Math.floor(_stock/_facPaq)} ${i.unidad_compra}`):`${Math.round(_stock)} ${i.unidad}`;
       const _smDisp=`${Math.round(_smin)} ${i.unidad}`;
       const costoUnit=_uc?i.costo/i.cantidad_paquete:i.costo;
       return `<tr onmouseenter="_showInvTip('${i.id}',event)" onmousemove="_posInvTip(event)" onmouseleave="_hideInvTip()" style="cursor:default">
-        <td><span style="font-size:11px;color:var(--acc);font-weight:600;font-family:monospace">${i.codigo||'—'}</span>${i.codigo_barras?` <span style="font-size:10px;color:var(--text3)">🏷️ ${i.codigo_barras}</span>`:''}<br><b>${i.nombre}</b><br>${paqBadge}${modBadge}</td>
+        <td><span style="font-size:11px;color:var(--acc);font-weight:600;font-family:monospace">${i.codigo||'—'}</span>${i.codigo_barras?` <span style="font-size:10px;color:var(--text3)">🏷️ ${i.codigo_barras}</span>`:''}<br><b>${i.nombre}</b><br>${paqBadge}</td>
         <td style="${st}">${_stDisp}</td>
         <td>${_smDisp}</td>
         <td>${fmt(i.costo)}</td>

@@ -432,6 +432,19 @@ router.post('/pedidos-proveedor', requirePermiso('proveedores'), async (req, res
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.put('/pedidos-proveedor/:id', requirePermiso('proveedores'), async (req, res) => {
+  try {
+    const { proveedor_id, items, total, notas, fecha_entrega } = req.body;
+    if (!proveedor_id) return res.status(400).json({ error: 'proveedor_id requerido' });
+    await pool.query(
+      `UPDATE pedidos_proveedor SET proveedor_id=${ph(1)}, items=${ph(2)}, total=${ph(3)}, notas=${ph(4)}, fecha_entrega=${ph(5)}
+       WHERE id=${ph(6)} AND negocio_id=${ph(7)}`,
+      [proveedor_id, JSON.stringify(items || []), total || 0, notas || null, fecha_entrega || null, req.params.id, nid(req)]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.put('/pedidos-proveedor/:id/estado', requirePermiso('proveedores'), async (req, res) => {
   try {
     const { estado } = req.body;

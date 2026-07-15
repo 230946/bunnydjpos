@@ -1428,7 +1428,7 @@ tr:hover td{background:var(--bg2)}
 <!-- Pedido proveedor -->
 <div class="modal-bg" id="pedido-prov-modal" style="display:none">
   <div class="modal" style="max-width:700px;width:100%;max-height:90vh;overflow-y:auto">
-    <h3>Nueva solicitud de pedido</h3>
+    <h3 id="pp-modal-title">Nueva solicitud de pedido</h3>
 
     <div class="field"><label>Proveedor *</label>
       <select id="pp-prov" onchange="ppProvChange()"></select>
@@ -1563,7 +1563,7 @@ tr:hover td{background:var(--bg2)}
 
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn btn-outline btn-sm" onclick="closeModal('pedido-prov-modal')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="savePedidoProv()">Enviar solicitud</button>
+      <button class="btn btn-primary btn-sm" id="pp-modal-submit" onclick="savePedidoProv()">Enviar solicitud</button>
     </div>
   </div>
 </div>
@@ -1704,7 +1704,7 @@ let NEG_MONEDA = 'COP';
 const MONEDA_LOCALE = { COP: 'es-CO', CRC: 'es-CR', USD: 'en-US', MXN: 'es-MX', PEN: 'es-PE' };
 const MONEDA_SIMBOLO = { COP: '$', CRC: '₡', USD: '$', MXN: '$', PEN: 'S/' };
 function fmt(n){ return (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString(MONEDA_LOCALE[NEG_MONEDA]||'es-CO'); }
-function fmtDate(s){ return s?new Date(s+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
+function fmtDate(s){ return s?new Date(String(s).slice(0,10)+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'; }
 function fmtTime(s){ return s?new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—'; }
 function closeModal(id){ document.getElementById(id).style.display='none'; }
 function showToast(m,ok=true){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
@@ -3005,15 +3005,19 @@ async function saveProv(){
   } catch(e){ showToast('Error: '+e.message); }
 }
 
+let _pedidosProvList=[];
 async function loadPedidosProv(){
   const data=await api('/admin/pedidos-proveedor');
+  _pedidosProvList=data;
   const estadoBadge={pendiente:'badge-amber',enviado:'badge-blue',recibido:'badge-green',cancelado:'badge-red'};
-  $('pedidos-prov-tbody').innerHTML=data.map(p=>`<tr><td><b>${p.proveedor_nombre}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estadoBadge[p.estado]||'badge-gray'}">${p.estado}</span></td><td><select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option>—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('');
+  $('pedidos-prov-tbody').innerHTML=data.map(p=>`<tr><td><b>${p.proveedor_nombre}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estadoBadge[p.estado]||'badge-gray'}">${p.estado}</span></td><td style="display:flex;gap:6px">${p.estado==='pendiente'?`<button class="btn btn-outline btn-sm" onclick="openPedidoProvModal('${p.id}')">✏️ Editar</button>`:''}<select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option>—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('');
 }
 async function cambiarEstadoPedido(id,estado){ await api(`/admin/pedidos-proveedor/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})}); showToast('Estado actualizado'); loadPedidosProv(); }
-let _ppItems=[], _ppProductos=[];
+let _ppItems=[], _ppProductos=[], _ppEditId=null;
 
-async function openPedidoProvModal(){
+async function openPedidoProvModal(id){
+  _ppEditId=id||null;
+  const pedido=id?_pedidosProvList.find(p=>p.id===id):null;
   const provs=await api('/admin/proveedores');
   $('pp-prov').innerHTML=provs.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
   _ppItems=[]; _ppProductos=[];
@@ -3028,7 +3032,19 @@ async function openPedidoProvModal(){
   if($('ppn-unidad')){$('ppn-unidad').value='unidades'; ppnUnidadChange();}
   const r0=document.querySelector('input[name="ppn-tax"][value="0"]');
   if(r0){r0.checked=true; ppnTaxChange(0);}
+
+  if($('pp-modal-title')) $('pp-modal-title').textContent=pedido?'Editar solicitud de pedido':'Nueva solicitud de pedido';
+  if($('pp-modal-submit')) $('pp-modal-submit').textContent=pedido?'Guardar cambios':'Enviar solicitud';
+
+  if(pedido){
+    $('pp-prov').value=pedido.proveedor_id;
+    $('pp-fecha').value=pedido.fecha_entrega?String(pedido.fecha_entrega).slice(0,10):'';
+    $('pp-notas').value=pedido.notas||'';
+    const items=typeof pedido.items==='string'?JSON.parse(pedido.items):(pedido.items||[]);
+    _ppItems=items.map(it=>({id:it.id,nombre:it.nombre,qty:+it.cantidad||0,costo:+it.costo_unitario||0,iva_pct:+it.iva_pct||0}));
+  }
   ppCalcTotals();
+  ppRenderItems();
   $('pedido-prov-modal').style.display='flex';
   if(provs.length) await ppProvChange();
 }
@@ -3170,11 +3186,15 @@ async function savePedidoProv(){
       sub+=s; ivaT+=iv;
       return {id:it.id,nombre:it.nombre,cantidad:it.qty,costo_unitario:it.costo,iva_pct:it.iva_pct,subtotal:s,iva_monto:iv,total:s+iv};
     });
-    await api('/admin/pedidos-proveedor',{method:'POST',body:JSON.stringify({
+    const body=JSON.stringify({
       proveedor_id:$('pp-prov').value, items, total:sub+ivaT,
       notas:$('pp-notas').value||null, fecha_entrega:$('pp-fecha').value||null
-    })});
-    closeModal('pedido-prov-modal'); showToast('Solicitud enviada ✓'); loadPedidosProv();
+    });
+    const eraEdicion=!!_ppEditId;
+    if(_ppEditId) await api(`/admin/pedidos-proveedor/${_ppEditId}`,{method:'PUT',body});
+    else await api('/admin/pedidos-proveedor',{method:'POST',body});
+    _ppEditId=null;
+    closeModal('pedido-prov-modal'); showToast(eraEdicion?'Solicitud actualizada ✓':'Solicitud enviada ✓'); loadPedidosProv();
   }catch(e){ showToast('Error: '+e.message); }
 }
 
