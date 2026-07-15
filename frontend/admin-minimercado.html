@@ -2976,11 +2976,26 @@ function imprimirFactura(){
 }
 
 // ─── PROVEEDORES ─────────────────────────────────────────────
+let _provList=[];
 async function loadProveedores(){
   const data=await api('/admin/proveedores');
+  _provList=data;
   $('prov-tbody').innerHTML=data.map(p=>`<tr><td><b>${p.nombre}</b></td><td>${p.nit||'—'}</td><td>${p.contacto||'—'}</td><td>${p.telefono||'—'}</td><td>${p.ciudad||'—'}</td><td><span class="badge ${p.activo?'badge-green':'badge-gray'}">${p.activo?'Activo':'Inactivo'}</span></td><td><button class="btn btn-outline btn-sm" onclick="openProvModal('${p.id}')">Editar</button></td></tr>`).join('');
 }
-function openProvModal(id){ provEditId=id; ['pv-nombre','pv-nit','pv-contacto','pv-tel','pv-email','pv-ciudad','pv-dir','pv-notas'].forEach(f=>$(f).value=''); $('prov-modal-title').textContent=id?'Editar proveedor':'Nuevo proveedor'; $('prov-modal').style.display='flex'; }
+function openProvModal(id){
+  provEditId=id;
+  const p=id?_provList.find(x=>x.id===id):null;
+  $('pv-nombre').value=p?.nombre||'';
+  $('pv-nit').value=p?.nit||'';
+  $('pv-contacto').value=p?.contacto||'';
+  $('pv-tel').value=p?.telefono||'';
+  $('pv-email').value=p?.email||'';
+  $('pv-ciudad').value=p?.ciudad||'';
+  $('pv-dir').value=p?.direccion||'';
+  $('pv-notas').value=p?.notas||'';
+  $('prov-modal-title').textContent=id?'Editar proveedor':'Nuevo proveedor';
+  $('prov-modal').style.display='flex';
+}
 async function saveProv(){
   try {
     const b={nombre:$('pv-nombre').value,nit:$('pv-nit').value,contacto:$('pv-contacto').value,telefono:$('pv-tel').value,email:$('pv-email').value,ciudad:$('pv-ciudad').value,direccion:$('pv-dir').value,notas:$('pv-notas').value};
