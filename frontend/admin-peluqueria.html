@@ -681,10 +681,22 @@
       <div class="field"><label>Nombre *</label><input id="cli-nombre" placeholder="Nombre completo"></div>
       <div class="frow">
         <div class="fg"><label>Teléfono</label><input id="cli-tel" type="tel" placeholder="3001234567"></div>
-        <div class="fg"><label>Documento</label><input id="cli-doc" placeholder="Cédula / NIT"></div>
+        <div class="fg"><label>Tipo de documento</label>
+          <select id="cli-tipo-doc">
+            <option value="">— Seleccionar —</option>
+            <option value="CC">Cédula de ciudadanía</option>
+            <option value="NIT">NIT</option>
+            <option value="CE">Cédula de extranjería</option>
+            <option value="PAS">Pasaporte</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
       </div>
       <div class="frow">
+        <div class="fg"><label>Documento</label><input id="cli-doc" placeholder="Cédula / NIT"></div>
         <div class="fg"><label>Email</label><input id="cli-email" type="email" placeholder="correo@ejemplo.com"></div>
+      </div>
+      <div class="frow">
         <div class="fg"><label>Dirección</label><input id="cli-dir" placeholder="Opcional"></div>
       </div>
       <div class="field"><label>Notas</label><textarea id="cli-notas" rows="2" style="resize:vertical" placeholder="Preferencias, alergias, etc."></textarea></div>
@@ -1550,6 +1562,7 @@ function abrirClienteModal(id){
   clienteEditId=id;
   document.getElementById('cli-modal-title').textContent=id?'Editar cliente':'Nuevo cliente';
   ['cli-nombre','cli-tel','cli-doc','cli-email','cli-dir','cli-notas'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('cli-tipo-doc').value='';
   document.getElementById('cli-activo').checked=true;
   document.getElementById('cli-paquetes-sec').style.display='none';
   if(id){
@@ -1557,6 +1570,7 @@ function abrirClienteModal(id){
     if(c){
       document.getElementById('cli-nombre').value=c.nombre||'';
       document.getElementById('cli-tel').value=c.telefono||'';
+      document.getElementById('cli-tipo-doc').value=c.tipo_documento||'';
       document.getElementById('cli-doc').value=c.documento||'';
       document.getElementById('cli-email').value=c.email||'';
       document.getElementById('cli-dir').value=c.direccion||'';
@@ -1598,6 +1612,7 @@ async function guardarCliente(){
   const body={
     nombre,
     telefono:document.getElementById('cli-tel').value.trim()||null,
+    tipo_documento:document.getElementById('cli-tipo-doc').value||null,
     documento:document.getElementById('cli-doc').value.trim()||null,
     email:document.getElementById('cli-email').value.trim()||null,
     direccion:document.getElementById('cli-dir').value.trim()||null,

@@ -1008,6 +1008,19 @@ tr:hover td{background:var(--bg2)}
               </div>
             </div>
             <div class="card">
+              <div class="card-header"><h3>Facturación electrónica (DIAN)</h3></div>
+              <div class="card-body">
+                <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Datos de la resolución de facturación autorizada por la DIAN, para cuando se envíen las facturas al proveedor tecnológico.</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div class="field"><label>N° de resolución</label><input id="f-dian-resolucion" placeholder="18760000001"></div>
+                  <div class="field"><label>Fecha de resolución</label><input id="f-dian-fecha" type="date"></div>
+                  <div class="field"><label>Rango autorizado — desde</label><input id="f-dian-rango-desde" type="number" min="1" placeholder="1"></div>
+                  <div class="field"><label>Rango autorizado — hasta</label><input id="f-dian-rango-hasta" type="number" min="1" placeholder="5000"></div>
+                  <div class="field" style="grid-column:1/-1"><label>Vigente hasta</label><input id="f-dian-vigencia" type="date"></div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
               <div class="card-header"><h3>Pie de factura</h3></div>
               <div class="card-body">
                 <div class="field"><label>Mensaje de agradecimiento</label><textarea id="f-gracias" placeholder="¡Gracias por su visita!"></textarea></div>
@@ -1546,7 +1559,17 @@ tr:hover td{background:var(--bg2)}
     <div class="two-col">
       <div class="field" style="grid-column:1/-1"><label>Nombre *</label><input id="cli-nombre" placeholder="Nombre completo"></div>
       <div class="field"><label>Teléfono</label><input id="cli-tel" type="tel" placeholder="3001234567"></div>
-      <div class="field"><label>Documento (NIT / Cédula)</label><input id="cli-doc" placeholder=""></div>
+      <div class="field"><label>Tipo de documento</label>
+        <select id="cli-tipo-doc" style="width:100%;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="">— Seleccionar —</option>
+          <option value="CC">Cédula de ciudadanía</option>
+          <option value="NIT">NIT</option>
+          <option value="CE">Cédula de extranjería</option>
+          <option value="PAS">Pasaporte</option>
+          <option value="OTRO">Otro</option>
+        </select>
+      </div>
+      <div class="field"><label>Documento</label><input id="cli-doc" placeholder=""></div>
       <div class="field"><label>Email</label><input id="cli-email" type="email" placeholder=""></div>
       <div class="field"><label>Dirección</label><input id="cli-dir" placeholder=""></div>
       <div class="field"><label>Departamento</label>
@@ -3095,6 +3118,7 @@ function openClienteModal(id){
   clienteEditId = id;
   $('cli-modal-title').textContent = id ? 'Editar cliente' : 'Nuevo cliente';
   ['cli-nombre','cli-tel','cli-doc','cli-email','cli-dir','cli-notas'].forEach(f=>$(f).value='');
+  $('cli-tipo-doc').value = '';
   $('cli-activo').checked = true;
   _initCliDepto(); $('cli-depto').value=''; cliDeptoChange();
   if(id){
@@ -3102,6 +3126,7 @@ function openClienteModal(id){
     if(c){
       $('cli-nombre').value = c.nombre||'';
       $('cli-tel').value = c.telefono||'';
+      $('cli-tipo-doc').value = c.tipo_documento||'';
       $('cli-doc').value = c.documento||'';
       $('cli-email').value = c.email||'';
       $('cli-dir').value = c.direccion||'';
@@ -3122,6 +3147,7 @@ async function saveCliente(){
     const b={
       nombre:$('cli-nombre').value.trim(),
       telefono:$('cli-tel').value.trim(),
+      tipo_documento:$('cli-tipo-doc').value||null,
       documento:$('cli-doc').value.trim(),
       email:$('cli-email').value.trim(),
       direccion:$('cli-dir').value.trim(),
@@ -4105,6 +4131,9 @@ async function loadCfgFactura(){
     $('f-tog-nit').checked=d.togNit!==false; $('f-tog-iva').checked=d.togIva!==false;
     $('f-tog-mesa').checked=d.togMesa!==false; $('f-tog-metodo').checked=d.togMetodo!==false;
     $('f-tog-fecha').checked=d.togFecha!==false;
+    $('f-dian-resolucion').value=d.dianResolucion||''; $('f-dian-fecha').value=d.dianFecha||'';
+    $('f-dian-rango-desde').value=d.dianRangoDesde||''; $('f-dian-rango-hasta').value=d.dianRangoHasta||'';
+    $('f-dian-vigencia').value=d.dianVigencia||'';
     if(d.logo_url){ $('logo-preview').src=d.logo_url; $('logo-preview').classList.add('show'); $('logo-placeholder').style.display='none'; }
   } catch{}
 }
@@ -4125,7 +4154,7 @@ async function subirLogo(){
 }
 async function saveCfgFactura(){
   try {
-    const body={nombre:$('f-nombre').value,nit:$('f-nit').value,direccion:$('f-dir').value,ciudad:$('f-ciudad').value,telefono:$('f-tel').value,email:$('f-email').value,prefijo:$('f-prefijo').value,consecutivo:+$('f-consec').value,iva:+$('f-iva').value,tipoDoc:$('f-tipo').value,gracias:$('f-gracias').value,footer:$('f-footer').value,togNit:$('f-tog-nit').checked,togIva:$('f-tog-iva').checked,togMesa:$('f-tog-mesa').checked,togMetodo:$('f-tog-metodo').checked,togFecha:$('f-tog-fecha').checked};
+    const body={nombre:$('f-nombre').value,nit:$('f-nit').value,direccion:$('f-dir').value,ciudad:$('f-ciudad').value,telefono:$('f-tel').value,email:$('f-email').value,prefijo:$('f-prefijo').value,consecutivo:+$('f-consec').value,iva:+$('f-iva').value,tipoDoc:$('f-tipo').value,gracias:$('f-gracias').value,footer:$('f-footer').value,togNit:$('f-tog-nit').checked,togIva:$('f-tog-iva').checked,togMesa:$('f-tog-mesa').checked,togMetodo:$('f-tog-metodo').checked,togFecha:$('f-tog-fecha').checked,dianResolucion:$('f-dian-resolucion').value,dianFecha:$('f-dian-fecha').value,dianRangoDesde:$('f-dian-rango-desde').value,dianRangoHasta:$('f-dian-rango-hasta').value,dianVigencia:$('f-dian-vigencia').value};
     await api('/admin/config/factura',{method:'PUT',body:JSON.stringify(body)});
     showToast('Configuración guardada ✓');
   } catch(e){ showToast('Error: '+e.message); }
