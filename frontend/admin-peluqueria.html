@@ -3823,6 +3823,19 @@ function renderCfgFactura(){
           </div>
         </div>
         <div class="card">
+          <div class="card-header"><h3>Facturación electrónica (DIAN)</h3></div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Datos de la resolución de facturación autorizada por la DIAN, para cuando se envíen las facturas al proveedor tecnológico.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="field"><label>N° de resolución</label><input id="f-dian-resolucion" placeholder="18760000001"></div>
+              <div class="field"><label>Fecha de resolución</label><input id="f-dian-fecha" type="date"></div>
+              <div class="field"><label>Rango autorizado — desde</label><input id="f-dian-rango-desde" type="number" min="1" placeholder="1"></div>
+              <div class="field"><label>Rango autorizado — hasta</label><input id="f-dian-rango-hasta" type="number" min="1" placeholder="5000"></div>
+              <div class="field" style="grid-column:1/-1"><label>Vigente hasta</label><input id="f-dian-vigencia" type="date"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-header"><h3>Pie de factura</h3></div>
           <div class="card-body">
             <div class="field"><label>Mensaje de agradecimiento</label><textarea id="f-gracias" placeholder="¡Gracias por su visita!"></textarea></div>
@@ -3838,7 +3851,7 @@ async function cargarCfgFactura(){
   try{
     const d=await apiFetch(`${API}/admin/config/factura`)||{};
     if(d.logo){const pr=_gel('f-logo-preview'),pl=_gel('f-logo-placeholder'),qb=_gel('f-logo-quitar');if(pr){pr.src=d.logo;pr.style.display='';pl.style.display='none';if(qb)qb.style.display='';}}_logoBase64=d.logo||null;
-    const fields={nombre:'f-nombre',nit:'f-nit',direccion:'f-dir',ciudad:'f-ciudad',telefono:'f-tel',email:'f-email',prefijo:'f-prefijo',gracias:'f-gracias',footer:'f-footer'};
+    const fields={nombre:'f-nombre',nit:'f-nit',direccion:'f-dir',ciudad:'f-ciudad',telefono:'f-tel',email:'f-email',prefijo:'f-prefijo',gracias:'f-gracias',footer:'f-footer',dianResolucion:'f-dian-resolucion',dianFecha:'f-dian-fecha',dianRangoDesde:'f-dian-rango-desde',dianRangoHasta:'f-dian-rango-hasta',dianVigencia:'f-dian-vigencia'};
     Object.entries(fields).forEach(([k,f])=>{const el=_gel(f);if(el)el.value=d[k]||'';});
     const fi=_gel('f-iva');if(fi)fi.value=String(d.iva??8);
     const ft=_gel('f-tipo');if(ft)ft.value=d.tipoDoc||'factura';
@@ -3849,7 +3862,7 @@ async function cargarCfgFactura(){
 }
 async function guardarCfgFactura(){
   try{
-    const body={logo:_logoBase64||null,nombre:_gel('f-nombre').value,nit:_gel('f-nit').value,direccion:_gel('f-dir').value,ciudad:_gel('f-ciudad').value,telefono:_gel('f-tel').value,email:_gel('f-email').value,prefijo:_gel('f-prefijo').value,consecutivo:+_gel('f-consec').value,iva:+_gel('f-iva').value,tipoDoc:_gel('f-tipo').value,gracias:_gel('f-gracias').value,footer:_gel('f-footer').value,togNit:_gel('f-tog-nit').checked,togIva:_gel('f-tog-iva').checked,togMetodo:_gel('f-tog-metodo').checked,togFecha:_gel('f-tog-fecha').checked};
+    const body={logo:_logoBase64||null,nombre:_gel('f-nombre').value,nit:_gel('f-nit').value,direccion:_gel('f-dir').value,ciudad:_gel('f-ciudad').value,telefono:_gel('f-tel').value,email:_gel('f-email').value,prefijo:_gel('f-prefijo').value,consecutivo:+_gel('f-consec').value,iva:+_gel('f-iva').value,tipoDoc:_gel('f-tipo').value,gracias:_gel('f-gracias').value,footer:_gel('f-footer').value,togNit:_gel('f-tog-nit').checked,togIva:_gel('f-tog-iva').checked,togMetodo:_gel('f-tog-metodo').checked,togFecha:_gel('f-tog-fecha').checked,dianResolucion:_gel('f-dian-resolucion').value,dianFecha:_gel('f-dian-fecha').value,dianRangoDesde:_gel('f-dian-rango-desde').value,dianRangoHasta:_gel('f-dian-rango-hasta').value,dianVigencia:_gel('f-dian-vigencia').value};
     await apiFetch(`${API}/admin/config/factura`,{method:'PUT',body:JSON.stringify(body)});showToast('Configuración guardada ✓');
   }catch(e){showToast(e.message,'err');}
 }

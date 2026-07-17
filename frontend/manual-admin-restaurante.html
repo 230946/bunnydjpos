@@ -97,12 +97,13 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <a href="#acceso" onclick="setActive(this)">Acceso al sistema</a>
     <div class="toc-section">General</div>
     <a href="#dashboard" onclick="setActive(this)">📊 Dashboard</a>
+    <a href="#reportes" onclick="setActive(this)">📈 Reportes</a>
+    <div class="toc-section">Finanzas</div>
     <a href="#caja" onclick="setActive(this)">💰 Caja diaria</a>
     <a href="#gastos" onclick="setActive(this)">📋 Gastos</a>
-    <a href="#reportes" onclick="setActive(this)">📈 Reportes</a>
     <a href="#clientes" onclick="setActive(this)">👤 Clientes</a>
-    <a href="#facturas" onclick="setActive(this)">🧾 Facturas</a>
-    <div class="toc-section">Operación</div>
+    <a href="#facturas" onclick="setActive(this)">🧾 Reimprimir / Facturas</a>
+    <div class="toc-section">Inventarios / Servicios</div>
     <a href="#inventario" onclick="setActive(this)">📦 Inventario</a>
     <a href="#mesas" onclick="setActive(this)">🪑 Mesas</a>
     <a href="#menu" onclick="setActive(this)">✏️ Editar menú</a>
@@ -110,11 +111,12 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <a href="#pedidos-prov" onclick="setActive(this)">🛒 Pedidos proveedores</a>
     <a href="#domicilios" onclick="setActive(this)">🛵 Domicilios</a>
     <a href="#domiciliarios" onclick="setActive(this)">🛵 Domiciliarios</a>
-    <div class="toc-section">Usuarios</div>
-    <a href="#personal" onclick="setActive(this)">👥 Personal</a>
+    <div class="toc-section">Personal</div>
+    <a href="#personal" onclick="setActive(this)">👥 Empleados / Usuarios</a>
     <a href="#roles" onclick="setActive(this)">🔐 Roles</a>
     <a href="#horarios" onclick="setActive(this)">🕐 Horarios</a>
     <a href="#asistencia" onclick="setActive(this)">📅 Asistencia</a>
+    <a href="#nomina" onclick="setActive(this)">💵 Nómina</a>
     <div class="toc-section">Configuración</div>
     <a href="#cfg-factura" onclick="setActive(this)">🧾 Configurar factura</a>
     <a href="#cfg-impresora" onclick="setActive(this)">🖨️ Impresora</a>
@@ -126,7 +128,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <div class="manual-header">
       <h1>Manual del Administrador</h1>
       <p>Restaurante — Gestión completa de operaciones, personal, inventario y reportes.</p>
-      <span class="badge">Versión 1.0 — Junio 2026</span>
+      <span class="badge">Versión 1.1 — Julio 2026</span>
     </div>
 
     <!-- ACCESO -->
@@ -244,10 +246,11 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
       </div>
       <p style="color:var(--text2);margin-bottom:12px">Registro de clientes frecuentes para asociarlos a sus compras y generar facturas electrónicas.</p>
       <div class="steps">
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo cliente</strong><p>Nombre, cédula o NIT, teléfono, correo y dirección.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo cliente</strong><p>Nombre, tipo de documento (cédula, NIT, cédula de extranjería, pasaporte u otro), número de documento, teléfono, correo y dirección.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asociar en ventas</strong><p>Al procesar un pago en el POS, el mesero puede buscar y asociar el cliente para emitir factura con sus datos.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Historial</strong><p>Consulta todas las compras de un cliente desde su perfil.</p></div></div>
       </div>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>El <strong>tipo de documento</strong> es obligatorio para la facturación electrónica DIAN — sin él, no se puede emitir factura electrónica a nombre de ese cliente.</span></div>
     </div>
 
     <!-- FACTURAS -->
@@ -352,15 +355,24 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div><h2>Pedidos a proveedores</h2><p>Órdenes de compra de insumos</p></div>
       </div>
       <p style="color:var(--text2);margin-bottom:12px">Crea pedidos de compra a tus proveedores y controla su estado hasta que llegan al restaurante.</p>
+      <h3 class="sub">Crear una solicitud</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Solicitud</strong><p>Elige el proveedor — el sistema carga solo los productos de inventario que ya están asociados a ese proveedor.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Agregar producto</strong><p>Selecciona producto, cantidad y costo, y haz clic en <span class="btn-demo">+ Añadir</span>. Repite para cada producto — se arma una tabla con subtotal, IVA y total general.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Crear nuevo producto</strong><p>Si el producto todavía no existe en inventario, créalo sin salir del pedido: nombre, categoría, unidad de medida, costo e IVA — queda agregado al pedido automáticamente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Fecha de entrega y notas</strong><p>Opcional. Luego <span class="btn-demo">Enviar solicitud</span>.</p></div></div>
+      </div>
+      <h3 class="sub">Estados</h3>
       <table>
         <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
         <tbody>
-          <tr><td><span class="tag tag-amber">pendiente</span></td><td>Pedido creado, esperando respuesta del proveedor</td></tr>
+          <tr><td><span class="tag tag-amber">pendiente</span></td><td>Pedido creado, esperando respuesta del proveedor — todavía se puede <strong>✏️ Editar</strong></td></tr>
           <tr><td><span class="tag" style="background:var(--blue-l);color:var(--blue)">enviado</span></td><td>Proveedor confirmó y está en camino</td></tr>
           <tr><td><span class="tag tag-green">recibido</span></td><td>Mercancía llegó — el stock se actualiza automáticamente</td></tr>
           <tr><td><span class="tag tag-red">cancelado</span></td><td>Pedido anulado</td></tr>
         </tbody>
       </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Mientras el pedido siga <strong>pendiente</strong>, puedes editarlo con el botón <strong>✏️ Editar</strong> — cambia proveedor, productos, cantidades o fecha de entrega. Una vez enviado, recibido o cancelado ya no se puede editar.</span></div>
       <div class="alert alert-tip" style="margin-top:10px">💡 <span>Al marcar un pedido como <strong>recibido</strong>, las cantidades se suman automáticamente al inventario de cada ítem.</span></div>
     </div>
 
@@ -411,15 +423,30 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <div class="section" id="personal">
       <div class="section-header">
         <div class="section-icon">👥</div>
-        <div><h2>Personal / Usuarios</h2><p>Gestión de empleados con acceso al sistema</p></div>
+        <div><h2>Empleados / Usuarios</h2><p>Ficha completa de cada empleado, con acceso al sistema</p></div>
       </div>
-      <p style="color:var(--text2);margin-bottom:12px">Crea los usuarios que pueden ingresar al POS o al panel admin con sus respectivos roles y permisos.</p>
+      <p style="color:var(--text2);margin-bottom:12px">Crea la ficha de cada empleado: sus datos personales, laborales, y si necesita entrar al POS o al panel admin, también su usuario y rol.</p>
+      <h3 class="sub">Datos personales</h3>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🪪</div><h4>Número de documento</h4><p>Obligatorio — es la llave con la que el empleado marca su turno en el kiosco de fichaje, ver sección <strong>Asistencia</strong></p></div>
+        <div class="card"><div class="card-icon">📞</div><h4>Teléfono y dirección</h4><p>Datos de contacto</p></div>
+        <div class="card"><div class="card-icon">🎂</div><h4>Fecha de nacimiento</h4><p>Opcional</p></div>
+        <div class="card"><div class="card-icon">🚨</div><h4>Contacto de emergencia</h4><p>Nombre y teléfono</p></div>
+      </div>
+      <h3 class="sub">Datos laborales</h3>
+      <div class="cards">
+        <div class="card"><div class="card-icon">💼</div><h4>Cargo y fecha de ingreso</h4><p>Para la ficha del empleado</p></div>
+        <div class="card"><div class="card-icon">📄</div><h4>Tipo de contrato</h4><p>Indefinido, término fijo, prestación de servicios, aprendizaje u otro</p></div>
+        <div class="card"><div class="card-icon">💵</div><h4>Sueldo base y tarifa por hora</h4><p>Se usan para calcular la Nómina — ver sección <strong>Nómina</strong></p></div>
+        <div class="card"><div class="card-icon">⏱️</div><h4>Multiplicador de hora extra</h4><p>Por defecto 1.5× — así se paga cualquier hora trabajada por encima de 8 horas en un mismo día</p></div>
+      </div>
+      <h3 class="sub">Acceso al sistema (opcional)</h3>
       <div class="steps">
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo usuario</strong><p>Nombre, correo (o usuario), contraseña y rol asignado.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Usuario y contraseña</strong><p>Solo si esta persona necesita entrar al POS o al panel admin — no todo empleado necesita usuario, con el número de documento ya puede marcar turno.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar rol</strong><p>El rol determina qué puede ver y hacer cada persona. Ver sección <strong>Roles</strong>.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Activar / desactivar</strong><p>Desactiva un usuario para quitarle acceso sin eliminarlo.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Portal empleado</strong><p>Cada empleado puede consultar su historial de servicios y ventas desde el portal de empleados con su usuario.</p></div></div>
       </div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Si cambias el <strong>sueldo base</strong> o la <strong>tarifa por hora</strong> de un empleado, el cambio aplica solo hacia adelante — la nómina de meses ya cerrados no se recalcula con el valor nuevo.</span></div>
     </div>
 
     <!-- ROLES -->
@@ -436,7 +463,9 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
           <tr><td><strong>reportes</strong></td><td>Ver reportes de ventas</td></tr>
           <tr><td><strong>inventario</strong></td><td>Ver y ajustar stock de productos</td></tr>
           <tr><td><strong>gastos</strong></td><td>Registrar gastos del negocio</td></tr>
-          <tr><td><strong>personal</strong></td><td>Gestionar usuarios, roles, mesas y menú</td></tr>
+          <tr><td><strong>clientes</strong></td><td>Gestionar la base de datos de clientes</td></tr>
+          <tr><td><strong>facturacion</strong></td><td>Reimprimir facturas y configurar datos de factura</td></tr>
+          <tr><td><strong>personal</strong></td><td>Gestionar empleados, roles, mesas, menú y nómina</td></tr>
           <tr><td><strong>proveedores</strong></td><td>Gestionar proveedores y pedidos de compra</td></tr>
           <tr><td><strong>horarios</strong></td><td>Ver y gestionar horarios y asistencia</td></tr>
         </tbody>
@@ -448,33 +477,69 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <div class="section" id="horarios">
       <div class="section-header">
         <div class="section-icon">🕐</div>
-        <div><h2>Horarios</h2><p>Turnos y jornadas laborales del personal</p></div>
+        <div><h2>Horarios</h2><p>Turnos programados del personal</p></div>
       </div>
-      <p style="color:var(--text2);margin-bottom:12px">Define los horarios de trabajo de cada empleado por día de la semana.</p>
+      <p style="color:var(--text2);margin-bottom:12px">Define el horario que <strong>debería</strong> trabajar cada empleado por día de la semana. Es la plantilla contra la que se compara el fichaje real (ver <strong>Asistencia</strong>).</p>
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar horario</strong><p>Selecciona el empleado, día de la semana, hora de entrada y hora de salida.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Repetir semanal</strong><p>El horario se aplica cada semana automáticamente.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Horario especial</strong><p>Para días específicos, asigna una fecha concreta en lugar de día de la semana.</p></div></div>
       </div>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Si programas horario para un empleado, el kiosco de fichaje (<strong>/turno</strong>) no lo deja marcar "Iniciar turno" antes de la hora programada ese día. Si no le programas horario, puede iniciar turno a cualquier hora.</span></div>
     </div>
 
     <!-- ASISTENCIA -->
     <div class="section" id="asistencia">
       <div class="section-header">
         <div class="section-icon">📅</div>
-        <div><h2>Asistencia</h2><p>Registro de entradas y salidas del personal</p></div>
+        <div><h2>Asistencia</h2><p>Fichaje real de entrada y salida del personal</p></div>
       </div>
-      <p style="color:var(--text2);margin-bottom:12px">Consulta quién llegó, a qué hora y si cumplió con el horario asignado.</p>
+      <p style="color:var(--text2);margin-bottom:12px">Esto <strong>no</strong> es cuándo el empleado entró al panel admin — es el fichaje real que cada empleado marca desde el kiosco público de turno.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>El empleado ficha en /turno</strong><p>Desde una tablet o celular en el negocio, ingresa su <strong>número de documento</strong> (el mismo de su ficha en Personal) y marca ▶ Iniciar turno o ■ Finalizar turno.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Consulta en Asistencia</strong><p>Aquí ves el historial de fichajes reales: fecha, hora de entrada, hora de salida y si el turno sigue abierto.</p></div></div>
+      </div>
       <table>
         <thead><tr><th>Columna</th><th>Descripción</th></tr></thead>
         <tbody>
           <tr><td><strong>Empleado</strong></td><td>Nombre del trabajador</td></tr>
-          <tr><td><strong>Fecha</strong></td><td>Día del registro</td></tr>
-          <tr><td><strong>Entrada</strong></td><td>Hora en que marcó entrada</td></tr>
-          <tr><td><strong>Salida</strong></td><td>Hora en que marcó salida</td></tr>
-          <tr><td><strong>Estado</strong></td><td><span class="tag tag-green">a tiempo</span> <span class="tag tag-amber">tardanza</span> <span class="tag tag-red">falta</span></td></tr>
+          <tr><td><strong>Fecha</strong></td><td>Día del fichaje</td></tr>
+          <tr><td><strong>Entrada</strong></td><td>Hora en que marcó "Iniciar turno"</td></tr>
+          <tr><td><strong>Salida</strong></td><td>Hora en que marcó "Finalizar turno" — vacío si el turno sigue en curso</td></tr>
         </tbody>
       </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Estas horas de fichaje son exactamente las que se usan para calcular <strong>Nómina</strong> — no hay que capturarlas dos veces.</span></div>
+    </div>
+
+    <!-- NÓMINA -->
+    <div class="section" id="nomina">
+      <div class="section-header">
+        <div class="section-icon">💵</div>
+        <div><h2>Nómina</h2><p>Pago de empleados por período, con horas extra y desprendible</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Calcula automáticamente cuánto pagarle a cada empleado en un mes: sueldo base + horas trabajadas (según Asistencia) × tarifa por hora, más bonificaciones y menos descuentos.</p>
+
+      <h3 class="sub">Estados de un período</h3>
+      <table>
+        <thead><tr><th>Estado</th><th>Qué significa</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag" style="background:var(--bg2, #f0faf5);color:var(--text2)">Abierto</span></td><td>Se recalcula en vivo — aún se pueden agregar bonificaciones o descuentos</td></tr>
+          <tr><td><span class="tag tag-amber">Calculado</span></td><td>Los montos quedaron congelados. Se puede <strong>Reabrir</strong> si algo estaba mal</td></tr>
+          <tr><td><span class="tag" style="background:var(--blue-l);color:var(--blue)">Aprobado</span></td><td>Confirmado, ya no se puede reabrir</td></tr>
+          <tr><td><span class="tag tag-green">Pagado</span></td><td>Se generó un gasto en Finanzas por cada empleado y su desprendible de pago</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub">Cerrar un período</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Revisa el período abierto</strong><p>Elige el mes con el selector de fecha. Verás sueldo base, tarifa/hora, horas trabajadas, horas extra, bonificaciones, descuentos y total por empleado — todo en vivo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ajustar (opcional)</strong><p>Antes de cerrar, agrega bonificaciones o descuentos puntuales a un empleado con el botón <span class="btn-demo outline">Ajustar</span>.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🔒 Cerrar período</strong><p>Congela los montos. Ya no se pueden agregar más ajustes a ese mes.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>✓ Aprobar → 💵 Marcar como pagado</strong><p>Al pagar, se crea un gasto por empleado en <strong>Finanzas → Gastos</strong> (categoría "Nómina") y queda disponible el desprendible imprimible de cada uno.</p></div></div>
+      </div>
+
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Cualquier hora trabajada por encima de <strong>8 horas en un mismo día</strong> se paga automáticamente como hora extra, al multiplicador configurado en la ficha del empleado (1.5× por defecto).</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Puedes ver e imprimir el <strong>🖨️ Desprendible</strong> de un empleado en cualquier momento, incluso con el período todavía abierto — en ese caso se marca como "Vista previa" porque los valores aún pueden cambiar.</span></div>
     </div>
 
     <!-- CONFIG FACTURA -->
@@ -496,6 +561,18 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
           <tr><td><strong>Número inicial</strong></td><td>El número desde donde empieza la numeración</td></tr>
         </tbody>
       </table>
+      <h3 class="sub">Facturación electrónica (DIAN)</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Datos de la resolución de facturación autorizada por la DIAN — necesarios para cuando se conecte el envío de facturas al proveedor tecnológico.</p>
+      <table>
+        <thead><tr><th>Campo</th><th>Para qué sirve</th></tr></thead>
+        <tbody>
+          <tr><td><strong>N° de resolución</strong></td><td>La que autoriza la DIAN para tu rango de numeración</td></tr>
+          <tr><td><strong>Fecha de resolución</strong></td><td>Cuándo se emitió</td></tr>
+          <tr><td><strong>Rango autorizado (desde/hasta)</strong></td><td>El tramo de números que puedes facturar bajo esa resolución</td></tr>
+          <tr><td><strong>Vigente hasta</strong></td><td>Fecha de expiración de la resolución</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Estos campos por ahora solo se <strong>guardan</strong> — el envío automático a la DIAN todavía no está conectado. Se actualizará este manual cuando esa integración quede activa.</span></div>
     </div>
 
     <!-- CONFIG IMPRESORA -->
@@ -514,7 +591,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     </div>
 
     <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">
-      BUNNYDJPOS — Manual Admin Restaurante v1.0 · Junio 2026
+      BUNNYDJPOS — Manual Admin Restaurante v1.1 · Julio 2026
     </div>
   </div>
 </div>

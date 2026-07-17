@@ -71,24 +71,25 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <a class="toc-link" href="#acceso">Acceso</a>
     <a class="toc-link" href="#navegacion">Navegación</a>
     <a class="toc-link" href="#dashboard">Dashboard</a>
-    <div class="toc-section">Operación</div>
+    <a class="toc-link" href="#reportes">Reportes</a>
+    <div class="toc-section">Finanzas</div>
     <a class="toc-link" href="#caja">Caja diaria</a>
     <a class="toc-link" href="#gastos">Gastos</a>
-    <a class="toc-link" href="#reportes">Reportes</a>
     <a class="toc-link" href="#clientes">Clientes</a>
-    <a class="toc-link" href="#facturas">Facturas</a>
-    <div class="toc-section">Inventario</div>
+    <a class="toc-link" href="#facturas">Reimprimir / Facturas</a>
+    <div class="toc-section">Inventarios / Servicios</div>
     <a class="toc-link" href="#inventario">Inventario</a>
     <a class="toc-link" href="#productos">Productos</a>
     <a class="toc-link" href="#proveedores">Proveedores</a>
     <a class="toc-link" href="#pedidos-prov">Pedidos a proveedores</a>
     <a class="toc-link" href="#domicilios">Domicilios</a>
     <a class="toc-link" href="#domiciliarios">Domiciliarios</a>
-    <div class="toc-section">Usuarios</div>
-    <a class="toc-link" href="#personal">Usuarios</a>
+    <div class="toc-section">Personal</div>
+    <a class="toc-link" href="#personal">Usuarios / Empleados</a>
     <a class="toc-link" href="#roles">Roles y permisos</a>
     <a class="toc-link" href="#horarios">Horarios</a>
     <a class="toc-link" href="#asistencia">Asistencia</a>
+    <a class="toc-link" href="#nomina">Nómina</a>
     <div class="toc-section">Configuración</div>
     <a class="toc-link" href="#cfg-factura">Datos de factura</a>
     <a class="toc-link" href="#cfg-impresora">Impresora</a>
@@ -110,11 +111,12 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   <div class="tip">Puedes cambiar tu contraseña en cualquier momento desde el botón <strong>🔑 Contraseña</strong> del menú lateral. Si la olvidaste, usa <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de inicio de sesión — te llega una contraseña temporal por correo.</div>
 
   <h2 id="navegacion">Navegación</h2>
-  <p>La interfaz tiene una barra lateral izquierda con cuatro grupos:</p>
+  <p>La interfaz tiene una barra lateral izquierda con cinco grupos:</p>
   <ul>
-    <li><strong>General</strong> — Dashboard, Caja diaria, Gastos, Reportes, Clientes, Facturas.</li>
-    <li><strong>Operación</strong> — Inventario, Productos, Proveedores, Pedidos a proveedores.</li>
-    <li><strong>Usuarios</strong> — Personal, Roles, Horarios, Asistencia.</li>
+    <li><strong>General</strong> — Dashboard, Reportes.</li>
+    <li><strong>Finanzas</strong> — Caja diaria, Gastos, Clientes, Reimprimir / Facturas.</li>
+    <li><strong>Inventarios / Servicios</strong> — Inventario, Productos, Proveedores, Pedidos a proveedores, Domicilios.</li>
+    <li><strong>Personal</strong> — Usuarios / Empleados, Roles, Horarios, Asistencia, Nómina.</li>
     <li><strong>Configuración</strong> — Factura, Impresora.</li>
   </ul>
   <p>Puedes colapsar la barra lateral con el botón ≡ para ganar espacio en pantalla. En la parte inferior aparece el botón de Salir.</p>
@@ -159,11 +161,12 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   <p>Base de datos de clientes registrados en el sistema.</p>
   <ul>
     <li>Consulta historial de compras por cliente.</li>
-    <li>Agrega, edita o elimina registros de clientes.</li>
+    <li>Agrega, edita o elimina registros de clientes — incluye <strong>tipo de documento</strong> (cédula, NIT, cédula de extranjería, pasaporte u otro) además del número.</li>
     <li>Busca por nombre o documento.</li>
   </ul>
+  <div class="tip">El tipo de documento es obligatorio para la facturación electrónica DIAN — sin él, no se puede emitir factura electrónica a nombre de ese cliente.</div>
 
-  <h2 id="facturas">Facturas</h2>
+  <h2 id="facturas">Reimprimir / Facturas</h2>
   <p>Historial de todas las facturas generadas. Puedes:</p>
   <ul>
     <li>Buscar por número, fecha o cliente.</li>
@@ -209,12 +212,13 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   <h2 id="pedidos-prov">Pedidos a proveedores</h2>
   <p>Registra y hace seguimiento de los pedidos realizados a cada proveedor.</p>
   <ol class="steps">
-    <li>Haz clic en <strong>Nuevo pedido</strong>.</li>
-    <li>Selecciona el proveedor.</li>
-    <li>Agrega los productos y cantidades solicitadas.</li>
+    <li>Haz clic en <strong>+ Solicitud</strong> y elige el proveedor — el sistema carga solo los productos ya asociados a ese proveedor.</li>
+    <li>Selecciona producto, cantidad y costo, y <strong>+ Añadir</strong> — repite para cada producto. Se arma una tabla con subtotal, IVA y total.</li>
+    <li>Si el producto no existe todavía, créalo sin salir del pedido con <strong>+ Crear nuevo producto</strong> (nombre, categoría, unidad, costo, IVA) — queda agregado automáticamente.</li>
     <li>Guarda el pedido — queda en estado <span class="badge b-amber">Pendiente</span>.</li>
   </ol>
   <p>Cuando llega la mercancía, marca el pedido como <span class="badge b-green">Recibido</span> para actualizar automáticamente el inventario.</p>
+  <div class="tip">Mientras el pedido siga <strong>Pendiente</strong>, puedes editarlo con el botón <strong>✏️ Editar</strong> — cambia proveedor, productos, cantidades o fecha de entrega. Una vez enviado, recibido o cancelado ya no se puede editar.</div>
 
   <h2 id="domicilios">Domicilios</h2>
   <p>Panel en vivo de los pedidos hechos por clientes desde el link público de la tienda (🛵 en el menú lateral).</p>
@@ -235,14 +239,28 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li>Comparte el enlace de su app con el botón <strong>Link app</strong>.</li>
   </ol>
 
-  <h2 id="personal">Usuarios</h2>
-  <p>Gestión de los empleados que tienen acceso al sistema.</p>
+  <h2 id="personal">Usuarios / Empleados</h2>
+  <p>Ficha completa de cada empleado — datos personales, laborales, y opcionalmente su acceso al sistema.</p>
+  <h3>Datos personales</h3>
+  <ul>
+    <li><strong>Número de documento</strong> (obligatorio) — es la llave con la que el empleado marca su turno en el kiosco de fichaje, ver <strong>Asistencia</strong>.</li>
+    <li>Teléfono, dirección, fecha de nacimiento (opcional).</li>
+    <li>Contacto de emergencia — nombre y teléfono.</li>
+  </ul>
+  <h3>Datos laborales</h3>
+  <ul>
+    <li>Cargo y fecha de ingreso.</li>
+    <li>Tipo de contrato — indefinido, término fijo, prestación de servicios, aprendizaje u otro.</li>
+    <li>Sueldo base y tarifa por hora — se usan para calcular <strong>Nómina</strong>.</li>
+    <li>Multiplicador de hora extra — por defecto 1.5×, así se paga cualquier hora trabajada por encima de 8 horas en un mismo día.</li>
+  </ul>
+  <h3>Acceso al sistema (opcional)</h3>
   <ol class="steps">
-    <li>Haz clic en <strong>Nuevo usuario</strong>.</li>
-    <li>Llena nombre, usuario, contraseña y rol.</li>
+    <li>Solo si esta persona necesita entrar al POS o al panel admin: usuario, contraseña y rol.</li>
     <li>Guarda — el usuario puede iniciar sesión de inmediato.</li>
   </ol>
   <p>Para cambiar la contraseña o el rol de un usuario, edita su ficha desde la lista.</p>
+  <div class="warn">⚠️ Si cambias el sueldo base o la tarifa por hora de un empleado, el cambio aplica solo hacia adelante — la nómina de meses ya cerrados no se recalcula con el valor nuevo.</div>
 
   <h2 id="roles">Roles y permisos</h2>
   <p>Define qué puede hacer cada tipo de usuario en el sistema.</p>
@@ -254,14 +272,35 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   <div class="warn">Un usuario sin el permiso de un módulo no verá ese panel en la barra lateral.</div>
 
   <h2 id="horarios">Horarios</h2>
-  <p>Define el horario de trabajo de cada empleado por día de la semana: hora de entrada y hora de salida.</p>
+  <p>Define el horario que <strong>debería</strong> trabajar cada empleado por día de la semana: hora de entrada y hora de salida. Es la plantilla contra la que se compara el fichaje real (ver <strong>Asistencia</strong>).</p>
+  <div class="tip">Si programas horario para un empleado, el kiosco de fichaje (<strong>/turno</strong>) no lo deja marcar "Iniciar turno" antes de la hora programada ese día. Si no le programas horario, puede iniciar turno a cualquier hora.</div>
 
   <h2 id="asistencia">Asistencia</h2>
-  <p>Registro de entradas y salidas del personal. Permite:</p>
+  <p>Esto <strong>no</strong> es cuándo el empleado entró al panel admin — es el fichaje real que marca desde el kiosco público de turno.</p>
+  <ol class="steps">
+    <li>El empleado ingresa a <strong>/turno</strong> desde una tablet o celular en el negocio, escribe su <strong>número de documento</strong> (el mismo de su ficha en Usuarios) y marca ▶ Iniciar turno o ■ Finalizar turno.</li>
+    <li>Aquí en Asistencia consultas el historial: fecha, hora de entrada y hora de salida de cada fichaje.</li>
+  </ol>
+  <div class="tip">Estas horas de fichaje son exactamente las que se usan para calcular <strong>Nómina</strong> — no hay que capturarlas dos veces.</div>
+
+  <h2 id="nomina">Nómina</h2>
+  <p>Calcula automáticamente cuánto pagarle a cada empleado en un mes: sueldo base + horas trabajadas (según Asistencia) × tarifa por hora, más bonificaciones y menos descuentos.</p>
+  <h3>Estados de un período</h3>
   <ul>
-    <li>Ver el historial de asistencia por empleado y por fecha.</li>
-    <li>Identificar ausencias o llegadas tarde.</li>
+    <li><span class="badge b-gray">Abierto</span> — se recalcula en vivo, se pueden agregar bonificaciones o descuentos.</li>
+    <li><span class="badge b-amber">Calculado</span> — montos congelados. Se puede <strong>Reabrir</strong> si algo estaba mal.</li>
+    <li><span class="badge b-blue">Aprobado</span> — confirmado, ya no se puede reabrir.</li>
+    <li><span class="badge b-green">Pagado</span> — se generó un gasto en Finanzas por cada empleado y su desprendible de pago.</li>
   </ul>
+  <h3>Cerrar un período</h3>
+  <ol class="steps">
+    <li>Elige el mes con el selector de fecha — verás sueldo base, tarifa/hora, horas trabajadas, horas extra, bonificaciones, descuentos y total por empleado, en vivo.</li>
+    <li>Antes de cerrar, agrega bonificaciones o descuentos puntuales con <strong>Ajustar</strong>.</li>
+    <li><strong>🔒 Cerrar período</strong> — congela los montos.</li>
+    <li><strong>✓ Aprobar → 💵 Marcar como pagado</strong> — crea un gasto por empleado en Finanzas (categoría "Nómina") y genera el desprendible imprimible de cada uno.</li>
+  </ol>
+  <div class="warn">⚠️ Cualquier hora trabajada por encima de 8 horas en un mismo día se paga automáticamente como hora extra, al multiplicador configurado en la ficha del empleado (1.5× por defecto).</div>
+  <div class="tip">Puedes ver e imprimir el <strong>🖨️ Desprendible</strong> de un empleado en cualquier momento, incluso con el período todavía abierto — en ese caso se marca como "Vista previa" porque los valores aún pueden cambiar.</div>
 
   <h2 id="cfg-factura">Datos de factura</h2>
   <p>Configura la información que aparece en los recibos impresos:</p>
@@ -270,6 +309,14 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li>Dirección y teléfono.</li>
     <li>Mensaje de pie de página (ej: "¡Gracias por su compra!").</li>
   </ul>
+  <h3>Facturación electrónica (DIAN)</h3>
+  <p>Datos de la resolución de facturación autorizada por la DIAN — necesarios para cuando se conecte el envío de facturas al proveedor tecnológico:</p>
+  <ul>
+    <li>N° de resolución y fecha de resolución.</li>
+    <li>Rango autorizado (desde / hasta).</li>
+    <li>Vigente hasta.</li>
+  </ul>
+  <div class="tip">Estos campos por ahora solo se guardan — el envío automático a la DIAN todavía no está conectado. Se actualizará este manual cuando esa integración quede activa.</div>
 
   <h2 id="cfg-impresora">Impresora</h2>
   <p>Configura la impresora de tickets térmica:</p>

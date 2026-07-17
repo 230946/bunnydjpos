@@ -94,7 +94,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     <a href="#reportes" onclick="setActive(this)">📈 Reportes</a>
     <a href="#caja" onclick="setActive(this)">💰 Caja del día</a>
     <a href="#gastos" onclick="setActive(this)">📋 Gastos</a>
-    <a href="#facturas" onclick="setActive(this)">🧾 Facturas</a>
+    <a href="#facturas" onclick="setActive(this)">🧾 Reimprimir / Facturas</a>
     <div class="toc-section">Catálogo</div>
     <a href="#servicios" onclick="setActive(this)">📂 Servicios</a>
     <a href="#paquetes" onclick="setActive(this)">🎁 Paquetes</a>
@@ -106,7 +106,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     <a href="#clientes" onclick="setActive(this)">👤 Clientes</a>
     <a href="#empleados" onclick="setActive(this)">👥 Empleados</a>
     <a href="#usuarios" onclick="setActive(this)">🔑 Usuarios y roles</a>
-    <a href="#horarios" onclick="setActive(this)">🕐 Horarios</a>
+    <a href="#horarios" onclick="setActive(this)">🕐 Horarios / Nómina</a>
     <div class="toc-section">Configuración</div>
     <a href="#cfg-factura" onclick="setActive(this)">🧾 Factura</a>
     <a href="#cfg-impresora" onclick="setActive(this)">🖨️ Impresora</a>
@@ -116,7 +116,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     <div class="manual-header">
       <h1>Manual del Administrador</h1>
       <p>Peluquería — Agenda, servicios, empleados, comisiones y reportes.</p>
-      <span class="badge">Versión 1.0 — Junio 2026</span>
+      <span class="badge">Versión 1.1 — Julio 2026</span>
     </div>
 
     <div class="section" id="acceso">
@@ -185,7 +185,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     </div>
 
     <div class="section" id="facturas">
-      <div class="section-header"><div class="section-icon">🧾</div><div><h2>Facturas</h2><p>Historial de comprobantes de venta</p></div></div>
+      <div class="section-header"><div class="section-icon">🧾</div><div><h2>Reimprimir / Facturas</h2><p>Historial de comprobantes de venta</p></div></div>
       <p style="color:var(--text2);margin-bottom:12px">Consulta, reenvía o imprime cualquier factura generada en el sistema.</p>
       <table>
         <thead><tr><th>Acción</th><th>Descripción</th></tr></thead>
@@ -272,6 +272,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
         <div class="card"><div class="card-icon">📧</div><h4>Datos de contacto</h4><p>Teléfono, documento, correo y dirección</p></div>
       </div>
       <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Nombre, documento, teléfono, email y dirección son obligatorios para poder facturar un servicio — si a un cliente le falta algún dato, el POS lo pide en el momento de cobrar la cita, no hace falta completarlo aquí de antemano.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Al documento ahora se le indica también el <strong>tipo</strong> (cédula, NIT, cédula de extranjería, pasaporte u otro) — es obligatorio para la facturación electrónica DIAN.</span></div>
     </div>
 
     <div class="section" id="empleados">
@@ -298,7 +299,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     </div>
 
     <div class="section" id="horarios">
-      <div class="section-header"><div class="section-icon">🕐</div><div><h2>Horarios</h2><p>Turnos laborales del personal y nómina</p></div></div>
+      <div class="section-header"><div class="section-icon">🕐</div><div><h2>Horarios / Nómina</h2><p>Turnos laborales del personal y nómina</p></div></div>
       <p style="color:var(--text2);margin-bottom:12px">Define los días y horas en que cada empleado trabaja. Esto controla su disponibilidad en el calendario de reservas online.</p>
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Asignar horario</strong><p>Empleado, día de la semana, hora de entrada y salida.</p></div></div>
@@ -337,6 +338,18 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
           <tr><td><strong>Prefijo y número inicial</strong></td><td>PEL-0001</td></tr>
         </tbody>
       </table>
+      <h3 class="sub">Facturación electrónica (DIAN)</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Datos de la resolución de facturación autorizada por la DIAN — necesarios para cuando se conecte el envío de facturas al proveedor tecnológico.</p>
+      <table>
+        <thead><tr><th>Campo</th><th>Para qué sirve</th></tr></thead>
+        <tbody>
+          <tr><td><strong>N° de resolución</strong></td><td>La que autoriza la DIAN para tu rango de numeración</td></tr>
+          <tr><td><strong>Fecha de resolución</strong></td><td>Cuándo se emitió</td></tr>
+          <tr><td><strong>Rango autorizado (desde/hasta)</strong></td><td>El tramo de números que puedes facturar bajo esa resolución</td></tr>
+          <tr><td><strong>Vigente hasta</strong></td><td>Fecha de expiración de la resolución</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Estos campos por ahora solo se <strong>guardan</strong> — el envío automático a la DIAN todavía no está conectado. Se actualizará este manual cuando esa integración quede activa.</span></div>
     </div>
 
     <div class="section" id="cfg-impresora">
@@ -349,7 +362,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
       <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>La impresora debe estar en la misma red WiFi que el dispositivo con el POS.</span></div>
     </div>
 
-    <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">DJPOS — Manual Admin Peluquería v1.0 · Junio 2026</div>
+    <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">DJPOS — Manual Admin Peluquería v1.1 · Julio 2026</div>
   </div>
 </div>
 <script>
