@@ -343,12 +343,6 @@ p{margin:0}
 
 /* ── VERTICAL SHOWCASE (peluqueria/restaurante/minimercado) ── */
 .quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-bottom:56px}
-@media (max-width:640px){
-  .quick-grid{grid-template-columns:1fr;gap:30px}
-  .quick-card{text-align:center}
-  .quick-ic{margin-left:auto;margin-right:auto}
-  .quick-desc{margin-left:auto;margin-right:auto;text-align:justify;text-justify:inter-word}
-}
 .quick-card{
   text-align:left;text-decoration:none;display:block;
 }
@@ -362,6 +356,16 @@ p{margin:0}
 .quick-pel:hover .quick-tit{color:var(--berry)}
 .quick-res:hover .quick-tit{color:var(--paprika)}
 .quick-min:hover .quick-tit{color:var(--indigo)}
+/* Esta regla debe ir DESPUÉS de las reglas base de arriba: al tener la
+   misma especificidad (.quick-card, .quick-ic, .quick-desc), si el media
+   query queda antes en el archivo, la regla base la pisa aunque la pantalla
+   sea angosta — el orden en el CSS importa tanto como el ancho de pantalla. */
+@media (max-width:640px){
+  .quick-grid{grid-template-columns:1fr;gap:30px}
+  .quick-card{text-align:center}
+  .quick-ic{margin-left:auto;margin-right:auto}
+  .quick-desc{margin-left:auto;margin-right:auto;text-align:justify;text-justify:inter-word}
+}
 
 .verticals{display:flex;flex-direction:column;gap:6px}
 .vcard{
