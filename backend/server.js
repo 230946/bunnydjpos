@@ -202,6 +202,49 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Manifest de PWA personalizado por negocio ─────────────────────
+// Evita tener que crear/mantener un archivo .json distinto por cada
+// negocio nuevo (restaurante, minimercado, etc.) — el nombre, ícono y
+// color se toman en vivo de la tabla `negocios` según ?n=.
+const MANIFEST_APPS = {
+  domicilios:        { label: 'Domicilios',      startUrl: '/domicilios.html',          themeColor: '#6C4FF6' },
+  'citas-peluqueria': { label: 'Reservar Cita',   startUrl: '/reservas-peluqueria.html', themeColor: '#0B8457' },
+};
+app.get('/api/manifest/:app', async (req, res) => {
+  const cfg = MANIFEST_APPS[req.params.app];
+  if (!cfg) return res.status(404).json({ error: 'App no encontrada' });
+  const negocioId = req.query.n;
+  let nombre = 'BunnyDJPOS', icon = '/img/logo.png', iconSizes = '1000x1000', theme = cfg.themeColor;
+  let startUrl = cfg.startUrl;
+  if (negocioId) {
+    try {
+      const { rows } = await pool.query(
+        `SELECT nombre, logo_url, color_primario FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+        [negocioId]
+      );
+      if (rows[0]) {
+        nombre = rows[0].nombre || nombre;
+        if (rows[0].logo_url) { icon = rows[0].logo_url; iconSizes = 'any'; }
+        if (rows[0].color_primario) theme = rows[0].color_primario;
+      }
+    } catch (_) {}
+    startUrl += `?n=${encodeURIComponent(negocioId)}`;
+  }
+  res.set('Content-Type', 'application/manifest+json');
+  res.json({
+    name: `${nombre} — ${cfg.label}`,
+    short_name: nombre.length > 12 ? nombre.slice(0, 12) : nombre,
+    description: `${cfg.label} de ${nombre}, BunnyDJPOS`,
+    start_url: startUrl,
+    scope: cfg.startUrl,
+    display: 'standalone',
+    orientation: 'any',
+    background_color: '#ffffff',
+    theme_color: theme,
+    icons: [{ src: icon, sizes: iconSizes, type: 'image/png', purpose: 'any' }],
+  });
+});
+
 // ── Subir logo de negocio ─────────────────────────────────────────
 app.post('/api/negocios/:id/logo', upload.single('logo'), async (req, res) => {
   try {

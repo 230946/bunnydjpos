@@ -11,7 +11,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Reservar Cita</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
-<link rel="manifest" href="/manifest-citas-peluqueria.json">
+<link rel="manifest" id="pwa-manifest" href="/manifest-citas-peluqueria.json">
+<script>
+(function(){
+  var n = new URLSearchParams(location.search).get('n');
+  if(n) document.getElementById('pwa-manifest').href = '/api/manifest/citas-peluqueria?n=' + encodeURIComponent(n);
+})();
+</script>
 <meta name="theme-color" content="#0B8457">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="/img/logo.png">

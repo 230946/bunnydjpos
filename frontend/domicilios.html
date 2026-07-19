@@ -13,8 +13,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="manifest" href="/manifest-domicilios.json">
+<link rel="manifest" id="pwa-manifest" href="/manifest-domicilios.json">
 <link rel="apple-touch-icon" href="/img/logo.png">
+<script>
+(function(){
+  var n = new URLSearchParams(location.search).get('n') || new URLSearchParams(location.search).get('negocio');
+  if(n) document.getElementById('pwa-manifest').href = '/api/manifest/domicilios?n=' + encodeURIComponent(n);
+})();
+</script>
 <title>Pedido a domicilio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
