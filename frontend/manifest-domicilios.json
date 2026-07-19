@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — Domicilios",
+  "short_name": "Domicilios",
+  "description": "Pedido a domicilio de BunnyDJPOS",
+  "start_url": "/domicilios.html",
+  "scope": "/domicilios.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#6c4ff6",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — Portal del Empleado",
+  "short_name": "Portal Empleado",
+  "description": "Portal del empleado de BunnyDJPOS",
+  "start_url": "/portal-empleado.html",
+  "scope": "/portal-empleado.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0B8457",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

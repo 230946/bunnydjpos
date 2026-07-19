@@ -12,6 +12,8 @@
 <meta name="theme-color" content="#f97316">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest-domiciliario.json">
+<link rel="apple-touch-icon" href="/img/logo.png">
 <title>Domiciliario</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
@@ -728,6 +730,11 @@ function stopGPS(){
     document.getElementById('view-login').style.display='flex';
   }
 })();
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/pos-sw.js',{scope:'/domiciliario.html'}).catch(function(){});
+  });
+}
 </script>
 </body>
 </html>

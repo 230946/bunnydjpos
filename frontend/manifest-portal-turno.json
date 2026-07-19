@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — Marcar Turno",
+  "short_name": "Turno",
+  "description": "Fichaje de entrada y salida de empleados, BunnyDJPOS",
+  "start_url": "/portal-turno.html",
+  "scope": "/portal-turno.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0B8457",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

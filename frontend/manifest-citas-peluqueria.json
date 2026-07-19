@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — Reservar Cita",
+  "short_name": "Citas Peluquería",
+  "description": "Reserva de citas de Peluquería, BunnyDJPOS",
+  "start_url": "/reservas-peluqueria.html",
+  "scope": "/reservas-peluqueria.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0B8457",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

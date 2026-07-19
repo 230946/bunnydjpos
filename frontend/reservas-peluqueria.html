@@ -11,6 +11,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Reservar Cita</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
+<link rel="manifest" href="/manifest-citas-peluqueria.json">
+<meta name="theme-color" content="#0B8457">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/img/logo.png">
 <link rel="stylesheet" href="css/responsive.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -750,6 +754,11 @@ function esc(s) {
 }
 
 init();
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/pos-sw.js',{scope:'/reservas-peluqueria.html'}).catch(function(){});
+  });
+}
 </script>
 </body>
 </html>

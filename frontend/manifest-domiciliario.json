@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — Domiciliario",
+  "short_name": "Domiciliario",
+  "description": "App del repartidor de BunnyDJPOS",
+  "start_url": "/domiciliario.html",
+  "scope": "/domiciliario.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

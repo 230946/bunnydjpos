@@ -11,6 +11,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Marcar turno</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
+<link rel="manifest" href="/manifest-portal-turno.json">
+<meta name="theme-color" content="#0B8457">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/img/logo.png">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -203,6 +207,11 @@ function volver(){
   document.getElementById('paso-estado').style.display = 'none';
   document.getElementById('paso-buscar').style.display = 'block';
   document.getElementById('num-empleado').focus();
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/pos-sw.js',{scope:'/portal-turno.html'}).catch(function(){});
+  });
 }
 </script>
 </body>

@@ -11,6 +11,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Portal del Empleado</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
+<link rel="manifest" href="/manifest-portal-empleado.json">
+<meta name="theme-color" content="#0B8457">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/img/logo.png">
 <link rel="stylesheet" href="css/responsive.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
@@ -1085,6 +1089,11 @@ function mostrarToast(msg) {
   t.style.opacity = '1';
   clearTimeout(t._to);
   t._to = setTimeout(() => { t.style.opacity = '0'; }, 2800);
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/pos-sw.js',{scope:'/portal-empleado.html'}).catch(function(){});
+  });
 }
 </script>
 </body>
