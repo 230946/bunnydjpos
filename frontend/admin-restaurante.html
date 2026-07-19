@@ -3522,8 +3522,10 @@ async function ppCrearProducto(){
   const unidad=$('ppn-unidad').value||'unidades';
   const cantPaq=(['caja','paquete','bolsa'].includes(unidad)&&$('ppn-cant').value)?parseInt($('ppn-cant').value)||null:null;
   try{
+    const nc=await api('/inventario/next-codigo');
     const res=await api('/inventario',{method:'POST',body:JSON.stringify({
-      codigo:$('ppn-codigo').value.trim()||null,
+      codigo:nc.codigo,
+      codigo_barras:$('ppn-codigo').value.trim()||null,
       nombre, categoria:$('ppn-cat').value||'General',
       unidad, unidad_compra:unidad,
       costo:parseFloat($('ppn-costo').value)||0,
@@ -4806,9 +4808,12 @@ async function saveInv(){
       cantidad_paquete:uc?(+$('iv-cant-paquete').value||null):null,
       modulo:$('iv-modulo').value||'restaurante'
     };
-    if(invEditId) await api(`/inventario/${invEditId}`,{method:'PUT',body:JSON.stringify(b)});
-    else await api('/inventario/',{method:'POST',body:JSON.stringify(b)});
-    closeModal('inv-modal'); toast('Artículo guardado ✓'); loadInventario(); refreshInvStats();
+    let r;
+    if(invEditId) r=await api(`/inventario/${invEditId}`,{method:'PUT',body:JSON.stringify(b)});
+    else r=await api('/inventario/',{method:'POST',body:JSON.stringify(b)});
+    closeModal('inv-modal');
+    toast(r?.menu_item_creado?'Artículo guardado y disponible en el POS ✓':'Artículo guardado ✓');
+    loadInventario(); refreshInvStats();
   } catch(e){ toast('Error: '+e.message); }
 }
 async function deleteInv(id, nombre){

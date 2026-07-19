@@ -90,7 +90,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .prod-footer{display:flex;align-items:center;gap:4px;margin-top:auto}
 .prod-price{font-size:15px;font-weight:700;color:var(--acc-d);flex:1}
 .prod-stock{font-size:11px;margin-top:3px;color:var(--text3)}
-.prod-stock-badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:600;background:rgba(245,158,11,.15);color:#b45309;white-space:nowrap;flex-shrink:0}
+.prod-stock-badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:600;background:rgba(16,185,129,.15);color:#047857;white-space:nowrap;flex-shrink:0}
+.prod-stock-badge.low{background:rgba(245,158,11,.15);color:#b45309}
 .prod-plus{width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;border:none;cursor:pointer;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;transition:.12s;padding:0}
 .prod-plus:hover{background:var(--acc-d);transform:scale(1.1)}
 .prod-plus:disabled{background:var(--border2);cursor:not-allowed;transform:none}
@@ -579,6 +580,11 @@ function stockEfectivo(p){
   if(p.stock!==null&&p.stock!==undefined) return +p.stock;
   return null;
 }
+function stockMinEfectivo(p){
+  if(p.inv_stock_min!==null&&p.inv_stock_min!==undefined&&+p.inv_stock_min>0) return +p.inv_stock_min;
+  if(p.stock_min) return +p.stock_min;
+  return 10;
+}
 
 // ── PRODUCTOS ─────────────────────────────────────────────────────
 async function cargarProductos(){
@@ -638,7 +644,7 @@ function renderProducts(){
   g.innerHTML = items.map(p => {
     const st = stockEfectivo(p);
     const sinStock = st !== null && st <= 0;
-    const stockBajo = st !== null && st > 0 && st <= 10;
+    const stockBajo = st !== null && st > 0 && st <= stockMinEfectivo(p);
     const addCall = `addToCart('${p.id}','${p.nombre.replace(/'/g,"\\'")}',${p.precio})`;
     const clickFn = sinStock ? `toast('Sin stock disponible')` : addCall;
     return `<div class="prod-card${sinStock?' sin-stock':''}" onclick="${clickFn}">
@@ -647,7 +653,7 @@ function renderProducts(){
       <div class="prod-name">${esc(p.nombre)}</div>
       <div class="prod-footer">
         <div class="prod-price">${fmt(p.precio)}</div>
-        ${stockBajo?`<span class="prod-stock-badge">${st} disp.</span>`:''}
+        ${st!==null&&st>0?`<span class="prod-stock-badge${stockBajo?' low':''}">${st} disp.</span>`:''}
         <button class="prod-plus" onclick="event.stopPropagation();${clickFn}" ${sinStock?'disabled':''}>+</button>
       </div>
     </div>`;
@@ -1235,7 +1241,7 @@ function mostrarAlertasStock(){
   const badge=$('stock-alert-badge');
   if(!badge||badge.style.display==='none') return;
   const lista=allProds.filter(p=>{const st=stockEfectivo(p);return st!==null&&st<=0;}).map(p=>`• ${p.nombre}: AGOTADO`)
-    .concat(allProds.filter(p=>{const st=stockEfectivo(p);return st!==null&&st>0&&st<=(p.stock_min||10);}).map(p=>`• ${p.nombre}: ${stockEfectivo(p)} disp.`));
+    .concat(allProds.filter(p=>{const st=stockEfectivo(p);return st!==null&&st>0&&st<=stockMinEfectivo(p);}).map(p=>`• ${p.nombre}: ${stockEfectivo(p)} disp.`));
   if(lista.length) toast('⚠ Stock bajo:\n'+lista.slice(0,5).join('\n'));
 }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal('co-modal'); closeCartMob(); } });

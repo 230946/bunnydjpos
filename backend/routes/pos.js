@@ -202,7 +202,7 @@ router.get('/menu/items', async (req, res) => {
       SELECT mi.*, mc.nombre AS categoria_nombre, mc.modulo AS categoria_modulo,
              ${PROMO_VIGENTE_SQL} AS promo_vigente,
              ${PRECIO_EFECTIVO_SQL} AS precio_efectivo,
-             inv.stock AS inv_stock, inv.nombre AS inv_nombre,
+             inv.stock AS inv_stock, inv.stock_min AS inv_stock_min, inv.nombre AS inv_nombre,
              inv.codigo AS codigo, inv.codigo_barras AS codigo_barras,
              (SELECT COUNT(*) FROM menu_item_recetas r WHERE r.menu_item_id = mi.id) AS receta_count,
              (SELECT FLOOR(MIN(inv2.stock / r2.cantidad))

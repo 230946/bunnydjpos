@@ -20,6 +20,58 @@ const XLSX   = require('xlsx');
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
 
+// El artículo de inventario es la única fuente de verdad del producto de
+// venta: si "es_producto" está activo, crea o actualiza (nombre/precio/
+// categoría) el ítem de menú vinculado y lo deja disponible en el POS; si
+// se desactiva, lo oculta del POS sin borrarlo (para no perder su historial
+// de ventas). Devuelve el id del ítem de menú vinculado (o null).
+async function _sincronizarMenuItem(negocioId, invId, { nombre, categoria, precioVenta, esProducto }) {
+  const { rows: existentes } = await pool.query(
+    `SELECT id FROM menu_items WHERE negocio_id=${ph(1)} AND inventario_id=${ph(2)} LIMIT 1`,
+    [negocioId, invId]
+  );
+  const menuItemId = existentes[0]?.id || null;
+
+  if (!esProducto) {
+    if (menuItemId) {
+      await pool.query(`UPDATE menu_items SET disponible=0 WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+        [menuItemId, negocioId]);
+    }
+    return menuItemId;
+  }
+
+  let categoriaId = null;
+  if (categoria) {
+    const { rows: cat } = await pool.query(
+      `SELECT id FROM menu_categorias WHERE negocio_id=${ph(1)} AND LOWER(nombre)=LOWER(${ph(2)}) LIMIT 1`,
+      [negocioId, categoria]
+    );
+    if (cat[0]) categoriaId = cat[0].id;
+    else {
+      categoriaId = uuid();
+      await pool.query(
+        `INSERT INTO menu_categorias (id,negocio_id,nombre,icono,modulo) VALUES (${ph(1)},${ph(2)},${ph(3)},'🛒','minimercado')`,
+        [categoriaId, negocioId, categoria]
+      );
+    }
+  }
+
+  if (menuItemId) {
+    await pool.query(
+      `UPDATE menu_items SET nombre=${ph(1)},precio=${ph(2)},categoria_id=${ph(3)},disponible=1 WHERE id=${ph(4)} AND negocio_id=${ph(5)}`,
+      [nombre, precioVenta || 0, categoriaId, menuItemId, negocioId]
+    );
+    return menuItemId;
+  }
+  const newId = uuid();
+  await pool.query(
+    `INSERT INTO menu_items (id,negocio_id,categoria_id,nombre,precio,disponible,inventario_id)
+     VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},1,${ph(6)})`,
+    [newId, negocioId, categoriaId, nombre, precioVenta || 0, invId]
+  );
+  return newId;
+}
+
 // Multer en memoria para Excel
 const memStorage = multer.memoryStorage();
 const uploadExcel = multer({ storage: memStorage, limits: { fileSize: 10*1024*1024 } });
@@ -38,7 +90,9 @@ const uploadFoto = multer({ storage: diskStorage, limits: { fileSize: 5*1024*102
 router.get('/', async (req, res) => {
   try {
     const { categoria, bajo_stock, es_producto, modulo, q, proveedor_id } = req.query;
-    let sql = `SELECT i.*, p.nombre AS proveedor_nombre
+    let sql = `SELECT i.*, p.nombre AS proveedor_nombre,
+               (SELECT mi.id FROM menu_items mi WHERE mi.inventario_id=i.id LIMIT 1) AS menu_item_id,
+               (SELECT mi.foto_url FROM menu_items mi WHERE mi.inventario_id=i.id LIMIT 1) AS menu_foto_url
                FROM inventario i LEFT JOIN proveedores p ON p.id = i.proveedor_id
                WHERE i.negocio_id=${ph(1)} AND i.activo=1`;
     const params = [nid(req)];
@@ -83,7 +137,10 @@ router.get('/next-codigo', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM inventario WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      `SELECT i.*,
+       (SELECT mi.id FROM menu_items mi WHERE mi.inventario_id=i.id LIMIT 1) AS menu_item_id,
+       (SELECT mi.foto_url FROM menu_items mi WHERE mi.inventario_id=i.id LIMIT 1) AS menu_foto_url
+       FROM inventario i WHERE i.id=${ph(1)} AND i.negocio_id=${ph(2)}`,
       [req.params.id, nid(req)]
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
@@ -117,7 +174,8 @@ router.post('/', requirePermiso('inventario'), async (req, res) => {
         [id, nid(req), stock, stock, req.user.id]
       );
     }
-    res.status(201).json({ id });
+    const menuItemId = await _sincronizarMenuItem(nid(req), id, { nombre, categoria, precioVenta: precio_venta, esProducto: !!es_producto });
+    res.status(201).json({ id, menu_item_id: menuItemId, menu_item_creado: !!menuItemId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -158,7 +216,8 @@ router.put('/:id', requirePermiso('inventario'), async (req, res) => {
        descripcion||null, margen||null, es_paquete||false, cantidad_paquete||null,
        modulo||'restaurante', req.params.id, nid(req)]
     );
-    res.json({ ok: true });
+    const menuItemId = await _sincronizarMenuItem(nid(req), req.params.id, { nombre, categoria, precioVenta: precio_venta, esProducto: !!es_producto });
+    res.json({ ok: true, menu_item_id: menuItemId, menu_item_creado: !!es_producto && !!menuItemId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

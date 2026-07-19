@@ -339,8 +339,6 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-section" data-seccion="operacion" onclick="toggleNavGroup('operacion')"><span class="nav-label">Inventarios / Servicios</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-operacion">
       <button class="nav-btn" data-permiso="inventario" onclick="nav('inventario',this)" title="Inventario"><span class="nav-icon">📦</span><span id="inv-badge" style="display:none;background:var(--amber);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;flex-shrink:0"></span><span class="nav-label"> Inventario</span></button>
-      <button class="nav-btn" data-permiso="personal" 
-      <button class="nav-btn" data-permiso="personal" onclick="nav('editar-menu',this)" title="Productos"><span class="nav-icon">📦</span><span class="nav-label"> Productos</span></button>
       <button class="nav-btn" data-permiso="proveedores" onclick="nav('proveedores',this)" title="Proveedores"><span class="nav-icon">🚚</span><span class="nav-label"> Proveedores</span></button>
       <button class="nav-btn" data-permiso="proveedores" onclick="nav('pedidos-prov',this)" title="Pedidos prov."><span class="nav-icon">🛒</span><span class="nav-label"> Pedidos prov.</span></button>
       <button class="nav-btn" data-permiso="caja" onclick="nav('domicilios',this)" title="Domicilios"><span class="nav-icon">🛵</span><span id="dom-nav-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;flex-shrink:0;min-width:18px;text-align:center"></span><span class="nav-label"> Domicilios</span></button>
@@ -944,7 +942,6 @@ tr:hover td{background:var(--bg2)}
               </div>
               <div class="field"><label>Copias por ticket</label><input id="imp-copias" type="number" min="1" max="5" placeholder="1"></div>
               <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Imprimir logo</div></div><label class="toggle"><input type="checkbox" id="imp-logo" checked><span class="toggle-s"></span></label></div>
-              <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Imprimir comanda de cocina</div></div><label class="toggle"><input type="checkbox" id="imp-cocina" checked><span class="toggle-s"></span></label></div>
               <button class="btn btn-success btn-block" style="margin-top:16px" onclick="saveCfgImpresora()">💾 Guardar</button>
             </div>
           </div>
@@ -1020,45 +1017,7 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
 
-      <!-- MESAS -->
-      <div class="panel" id="panel-mesas-admin">
-        <div class="card">
-          <div class="card-header">
-            <h3>Mesas</h3>
-            <button class="btn btn-sm btn-primary" onclick="openMesaModal(null)">+ Mesa</button>
-          </div>
-          <div class="card-body">
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>N°</th><th>Nombre</th><th>Zona</th><th>Capacidad</th><th>Estado</th><th></th></tr></thead>
-                <tbody id="adm-mesas-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- EDITAR MENÚ -->
-      <div class="panel" id="panel-editar-menu">
-        <div class="card">
-          <div class="card-header">
-            <h3>Categorías</h3>
-            <button class="btn btn-sm btn-outline" onclick="openCatMenuModal()">+ Categoría</button>
-          </div>
-          <div class="card-body">
-            <div id="editar-menu-cats" style="display:flex;gap:8px;flex-wrap:wrap;min-height:32px"></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h3>Artículos del menú</h3>
-            <button class="btn btn-sm btn-primary" onclick="openMenuItemModal(null)">+ Artículo</button>
-          </div>
-          <div class="card-body">
-            <div id="editar-menu-items" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
-          </div>
-        </div>
-      </div>
 
       <!-- INVENTARIO -->
       <div class="panel" id="panel-inventario">
@@ -1068,16 +1027,10 @@ tr:hover td{background:var(--bg2)}
             <div class="card-header-actions">
               <button class="btn btn-sm btn-outline" onclick="exportarExcel()">⬇ Excel</button>
               <label class="btn btn-sm btn-outline" style="cursor:pointer">⬆ Importar<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarExcel(this)"></label>
-              <button class="btn btn-sm btn-outline" onclick="syncMenuToInventario()" title="Crea un artículo de inventario por cada producto del menú que no esté vinculado">📥 Desde menú</button>
-              <button class="btn btn-sm btn-outline" onclick="autoLinkInventario()" title="Vincula automáticamente artículos de inventario al menú por nombre">🔗 Vincular menú</button>
               <button class="btn btn-sm btn-primary" onclick="openInvModal(null)">+ Agregar</button>
             </div>
           </div>
           <div class="card-body">
-            <div style="display:flex;gap:6px;margin-bottom:12px">
-              <button class="btn btn-primary btn-sm" id="inv-tab-minimercado" onclick="setInvModulo('minimercado')">🛒 Minimercado</button>
-              <button class="btn btn-outline btn-sm" id="inv-tab-todos" onclick="setInvModulo('')">Todos</button>
-            </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
               <input id="inv-q" placeholder="Buscar por nombre o código..." oninput="loadInventario()"
                 style="flex:1;min-width:160px;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px;outline:none">
@@ -1090,7 +1043,7 @@ tr:hover td{background:var(--bg2)}
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Código / Nombre</th><th>Stock</th><th>Mín.</th><th>Costo compra</th><th>Costo unit.</th><th>Precio venta</th><th>Estado</th><th></th></tr></thead>
+                <thead><tr><th>Código / Nombre</th><th>Stock</th><th>Uds/paquete</th><th>Mín.</th><th>Costo compra</th><th>Costo unit.</th><th>Precio venta</th><th>Estado</th><th></th></tr></thead>
                 <tbody id="inv-tbody"></tbody>
               </table>
             </div>
@@ -1103,89 +1056,16 @@ tr:hover td{background:var(--bg2)}
 </div><!-- /app -->
 
 <!-- MODALES -->
-<!-- Mesas -->
-<div class="modal-bg" id="mesa-modal" style="display:none">
-  <div class="modal" style="max-width:380px">
-    <h3 id="mesa-modal-title">Nueva mesa</h3>
-    <div class="two-col">
-      <div class="field"><label>Número</label><input id="m-num" type="number" min="1" placeholder="1"></div>
-      <div class="field"><label>Capacidad</label><input id="m-cap" type="number" min="1" value="4" placeholder="4"></div>
-      <div class="field" style="grid-column:1/-1"><label>Nombre (opcional)</label><input id="m-nombre" placeholder="Mesa 1, Terraza A..."></div>
-      <div class="field" style="grid-column:1/-1"><label>Zona</label><input id="m-zona" placeholder="Interior, Terraza, Bar..."></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline btn-sm" onclick="closeModal('mesa-modal')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="saveMesaAdmin()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Menú: artículo -->
-<div class="modal-bg" id="menu-item-modal" style="display:none">
-  <div class="modal">
-    <h3 id="mi-modal-title">Nuevo artículo</h3>
-    <img id="mi-foto-preview" style="width:100%;height:140px;object-fit:cover;border-radius:var(--r);display:none;margin-bottom:8px" alt="Preview">
-    <div id="mi-foto-upload" onclick="document.getElementById('mi-foto-file').click()" style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:14px;text-align:center;cursor:pointer;font-size:12px;color:var(--text2);margin-bottom:12px">
-      <input type="file" id="mi-foto-file" accept="image/*" style="display:none" onchange="previewMenuFoto(this)">
-      📷 Subir foto del artículo
-    </div>
-    <div class="two-col">
-      <div class="field" style="grid-column:1/-1"><label>Nombre *</label><input id="mi-nombre" placeholder="Bandeja paisa..."></div>
-      <div class="field" style="grid-column:1/-1"><label>Descripción</label><input id="mi-desc" placeholder="Descripción breve..."></div>
-      <div class="field"><label>Precio</label><input id="mi-precio" type="number" min="0" placeholder="0"></div>
-      <div class="field"><label>Categoría</label><select id="mi-cat"></select></div>
-      <div class="field"><label>Tiempo preparación (min)</label><input id="mi-tiempo" type="number" min="1" placeholder="15"></div>
-      <div class="field" style="grid-column:1/-1">
-        <label>Vincular a inventario <span style="color:var(--text2);font-weight:400;font-size:11px">(producto simple — 1 artículo de inventario)</span></label>
-        <select id="mi-inventario" style="width:100%;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
-          <option value="">— Sin vínculo —</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Sección receta -->
-    <div style="border-top:1px solid var(--border2);margin-top:14px;padding-top:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <label style="font-weight:600;font-size:13px">🧪 Receta de ingredientes <span style="color:var(--text2);font-weight:400;font-size:11px">(productos compuestos)</span></label>
-      </div>
-      <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Indica cuánto de cada ingrediente se consume al vender 1 unidad. La cantidad debe estar en la <b>unidad base</b> del inventario (ej: gramos, ml, unidades).</p>
-      <div id="mi-receta-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <select id="mi-receta-inv" onchange="recetaInvChange()" style="flex:1;min-width:140px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px">
-          <option value="">— Seleccionar ingrediente —</option>
-        </select>
-        <input id="mi-receta-cant" type="number" min="0.001" step="0.001" placeholder="Cant." style="width:80px;padding:7px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px" oninput="recetaCantChange()">
-        <span id="mi-receta-unit" style="font-size:12px;color:var(--text2);min-width:28px"></span>
-        <button class="btn btn-outline btn-sm" onclick="addRecetaIng()">+ Agregar</button>
-      </div>
-      <div id="mi-receta-hint" style="font-size:11px;color:var(--text2);margin-top:6px;display:none"></div>
-    </div>
-
-    <div class="modal-actions" style="margin-top:14px">
-      <button class="btn btn-outline btn-sm" onclick="closeModal('menu-item-modal')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="saveMenuItem()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Menú: categoría -->
-<div class="modal-bg" id="cat-menu-modal" style="display:none">
-  <div class="modal" style="max-width:360px">
-    <h3>Nueva categoría</h3>
-    <div class="field"><label>Nombre</label><input id="cm-nombre" placeholder="Entradas, Platos fuertes..."></div>
-    <div class="field"><label>Icono (emoji)</label><input id="cm-icono" placeholder="🍽️" maxlength="4"></div>
-    <input type="hidden" id="cm-modulo" value="minimercado">
-    <div class="modal-actions">
-      <button class="btn btn-outline btn-sm" onclick="closeModal('cat-menu-modal')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="saveCatMenu()">Guardar</button>
-    </div>
-  </div>
-</div>
 
 <!-- Inventario: artículo -->
 <div class="modal-bg" id="inv-modal" style="display:none">
   <div class="modal" style="max-width:520px">
     <h3 id="inv-modal-title">Nuevo artículo</h3>
+    <img id="iv-foto-preview" style="width:100%;height:120px;object-fit:cover;border-radius:var(--r);display:none;margin-bottom:8px" alt="Preview">
+    <div id="iv-foto-upload" onclick="document.getElementById('iv-foto-file').click()" style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;font-size:12px;color:var(--text2);margin-bottom:12px">
+      <input type="file" id="iv-foto-file" accept="image/*" style="display:none" onchange="previewInvFoto(this)">
+      📷 Foto del artículo (se ve en el POS)
+    </div>
     <div class="two-col">
       <div class="field"><label>Código interno</label><input id="iv-codigo" placeholder="COD-001"></div>
       <div class="field"><label>Código de barras</label><input id="iv-barcode" placeholder="Escanea o escribe..."></div>
@@ -1224,12 +1104,7 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
       <input type="hidden" id="iv-es-paquete">
-    </div>
-    <div class="field" style="margin-top:8px"><label>Módulo</label>
-      <select id="iv-modulo">
-        <option value="restaurante">🛒 Minimercado</option>
-        <option value="minimercado">🛒 Minimercado</option>
-      </select>
+      <input type="hidden" id="iv-modulo" value="minimercado">
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:4px;cursor:pointer">
       <input type="checkbox" id="iv-es-prod"> Es producto de venta directa
@@ -1673,18 +1548,13 @@ let personalEditId = null;
 let provEditId = null;
 let rolEditId = null;
 let rolesCache = [];
-let invModuloActivo = 'minimercado';
 let invEditId = null;
+let invFotoFile = null, invMenuItemId = null;
 let adjItemId = null;
-let menuItemEditId = null;
-let miRecetaLocal = [];
-let miInvItems = [];
-let mesaAdminEditId = null;
 const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const CATEGORIAS_PERMISOS = [
   { grupo:'🖥️ Punto de Venta', permisos:[
-    ['pos_mesas','Mesas'],['pos_menu','Menú'],
-    ['pos_cocina','Cocina'],['pos_cobro','Cobro / Caja'],
+    ['pos_cobro','Cobro / Caja'],
   ]},
   { grupo:'📦 Inventario', permisos:[
     ['inventario','Gestionar inventario'],
@@ -1697,13 +1567,10 @@ const CATEGORIAS_PERMISOS = [
   { grupo:'👥 Administración', permisos:[
     ['personal','Personal'],['horarios','Horarios'],
   ]},
-  { grupo:'🛒 Módulos adicionales', permisos:[
-    ['minimercado','Minimercado'],
-  ]},
 ];
 const MODULOS_PERMISOS = CATEGORIAS_PERMISOS.flatMap(c => c.permisos);
 // Claves de permiso que dan acceso al panel admin (excluye permisos solo de POS:
-// pos_mesas, pos_menu, pos_cocina, pos_cobro no bastan para entrar al admin).
+// pos_cobro no basta para entrar al admin).
 const ADMIN_ACCESS_KEYS = ['personal','inventario','inventario_borrar','proveedores',
   'gastos','reportes','facturacion','clientes','horarios'];
 function puedeAdmin(permisos, esSuperadmin){
@@ -2048,8 +1915,6 @@ function aplicarPermisosNav(){
 
 // ─── Nav ─────────────────────────────────────────────────────
 const navLoaders = {
-  'mesas-admin': loadMesasAdmin,
-  'editar-menu': loadEditarMenu,
   inventario:  () => { loadInventario(); checkInvAlertas(); },
   caja:        loadCaja,
   gastos:      () => { loadGastos(); loadCategorias(); },
@@ -2076,7 +1941,7 @@ function nav(p, btn){
   $('panel-'+p).classList.add('active');
   if(btn) btn.classList.add('active');
   expandNavGroupOf();
-  const titles={dashboard:'Dashboard','mesas-admin':'Mesas','editar-menu':'Editar menú',inventario:'Inventario',caja:'Caja diaria',gastos:'Gastos',reportes:'Reportes',clientes:'Clientes',facturas:'Facturas',
+  const titles={dashboard:'Dashboard',inventario:'Inventario',caja:'Caja diaria',gastos:'Gastos',reportes:'Reportes',clientes:'Clientes',facturas:'Facturas',
     proveedores:'Proveedores','pedidos-prov':'Solicitudes a proveedores',domicilios:'Domicilios',personal:'Usuarios',
     roles:'Roles y permisos',horarios:'Horarios de empleados',asistencia:'Asistencia',nomina:'Nómina',
     'cfg-factura':'Configuración de factura','cfg-impresora':'Configuración de impresora'};
@@ -3181,8 +3046,10 @@ async function ppCrearProducto(){
   const unidad=$('ppn-unidad').value||'unidades';
   const cantPaq=(['caja','paquete','bolsa'].includes(unidad)&&$('ppn-cant').value)?parseInt($('ppn-cant').value)||null:null;
   try{
+    const nc=await api('/inventario/next-codigo');
     const res=await api('/inventario',{method:'POST',body:JSON.stringify({
-      codigo:$('ppn-codigo').value.trim()||null,
+      codigo:nc.codigo,
+      codigo_barras:$('ppn-codigo').value.trim()||null,
       nombre, categoria:$('ppn-cat').value||'General',
       unidad, unidad_compra:unidad,
       costo:parseFloat($('ppn-costo').value)||0,
@@ -3684,7 +3551,7 @@ async function loadCfgImpresora(){
     $('imp-tipo').value=d.tipo||'termica'; $('imp-nombre').value=d.nombre||'';
     $('imp-ancho').value=String(d.ancho_papel||80); $('imp-ip').value=d.ip_impresora||'';
     $('imp-puerto').value=d.puerto||9100; $('imp-copias').value=d.copias||1;
-    $('imp-logo').checked=d.imprimir_logo!==false; $('imp-cocina').checked=d.imprimir_cocina!==false;
+    $('imp-logo').checked=d.imprimir_logo!==false;
     toggleImpresoraFields();
   } catch{}
 }
@@ -3694,7 +3561,7 @@ function toggleImpresoraFields(){
 }
 async function saveCfgImpresora(){
   try {
-    await api('/admin/config/impresora',{method:'PUT',body:JSON.stringify({tipo:$('imp-tipo').value,nombre:$('imp-nombre').value,ancho_papel:+$('imp-ancho').value,ip_impresora:$('imp-ip').value||null,puerto:+$('imp-puerto').value,copias:+$('imp-copias').value,imprimir_logo:$('imp-logo').checked,imprimir_cocina:$('imp-cocina').checked})});
+    await api('/admin/config/impresora',{method:'PUT',body:JSON.stringify({tipo:$('imp-tipo').value,nombre:$('imp-nombre').value,ancho_papel:+$('imp-ancho').value,ip_impresora:$('imp-ip').value||null,puerto:+$('imp-puerto').value,copias:+$('imp-copias').value,imprimir_logo:$('imp-logo').checked})});
     showToast('Configuración guardada ✓');
   } catch(e){ showToast('Error: '+e.message); }
 }
@@ -3719,316 +3586,7 @@ if(token){
   } catch{ sessionStorage.removeItem('bdj_adm_token'); token=null; }
 }
 
-// ─── MESAS ───────────────────────────────────────────────────
-async function loadMesasAdmin(){
-  try {
-    const mesas = await api('/pos/mesas');
-    $('adm-mesas-tbody').innerHTML = mesas.length ? mesas.map(m => `
-      <tr>
-        <td><b>${m.numero}</b></td>
-        <td>${m.nombre||'—'}</td>
-        <td>${m.zona||'—'}</td>
-        <td>${m.capacidad||'—'} pers.</td>
-        <td>${m.ocupada
-          ? '<span class="badge badge-red">Ocupada</span>'
-          : '<span class="badge badge-green">Libre</span>'}</td>
-        <td style="display:flex;gap:4px;white-space:nowrap">
-          <button class="btn btn-outline btn-sm" onclick="openMesaModal('${m.id}',${m.numero},'${(m.nombre||'').replace(/'/g,"\\'")}','${(m.zona||'').replace(/'/g,"\\'")}',${m.capacidad||4})">✏️ Editar</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteMesaAdmin('${m.id}',${m.numero})" ${m.ocupada?'disabled title="Mesa ocupada"':''}>🗑 Borrar</button>
-        </td>
-      </tr>`).join('')
-      : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text2)">Sin mesas registradas</td></tr>';
-  } catch(e){ toast('Error: '+e.message); }
-}
-
-function openMesaModal(id, num, nombre, zona, cap){
-  mesaAdminEditId = id || null;
-  $('mesa-modal-title').textContent = id ? 'Editar mesa' : 'Nueva mesa';
-  $('m-num').value   = num    ?? '';
-  $('m-nombre').value= nombre ?? '';
-  $('m-zona').value  = zona   ?? '';
-  $('m-cap').value   = cap    ?? 4;
-  $('mesa-modal').style.display = 'flex';
-}
-
-async function saveMesaAdmin(){
-  try {
-    const b = {
-      numero:   +$('m-num').value,
-      nombre:   $('m-nombre').value,
-      capacidad:+$('m-cap').value || 4,
-      zona:     $('m-zona').value
-    };
-    if(!b.numero) return toast('El número de mesa es obligatorio');
-    if(mesaAdminEditId)
-      await api(`/pos/mesas/${mesaAdminEditId}`, {method:'PUT', body:JSON.stringify(b)});
-    else
-      await api('/pos/mesas', {method:'POST', body:JSON.stringify(b)});
-    closeModal('mesa-modal'); toast('Mesa guardada ✓'); loadMesasAdmin();
-  } catch(e){ toast('Error: '+e.message); }
-}
-
-async function deleteMesaAdmin(id, numero){
-  if(!confirm(`¿Eliminar la Mesa ${numero}?\nSolo se puede borrar si está libre.`)) return;
-  try {
-    await api(`/pos/mesas/${id}`, {method:'DELETE'});
-    toast('Mesa eliminada'); loadMesasAdmin();
-  } catch(e){ toast('Error: '+e.message); }
-}
-
-// ─── EDITAR MENÚ ─────────────────────────────────────────────
-let _menuMap={}, _recetaCache={};
-function _buildMenuTipHtml(i, receta){
-  let html=`<div style="font-weight:700;font-size:13px;margin-bottom:4px">${i.emoji||'🍽️'} ${i.nombre}</div>`;
-  html+=`<div style="color:var(--text2);font-size:11px;margin-bottom:8px">${i.categoria_nombre||'Sin categoría'}</div>`;
-  html+=`<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px">`;
-  html+=`<span style="color:var(--text2)">Precio</span><span style="font-weight:600;color:var(--green-d)">${fmt(i.precio)}</span>`;
-  html+=`<span style="color:var(--text2)">Estado</span><span>${i.disponible?'✅ Disponible':'🔴 No disponible'}</span>`;
-  if(i.tiempo_prep) html+=`<span style="color:var(--text2)">Prep.</span><span>${i.tiempo_prep} min</span>`;
-  if(i.receta_count>0){
-    const porc=i.receta_porciones!=null?Math.floor(+i.receta_porciones):null;
-    html+=`<span style="color:var(--text2)">Porciones</span><span style="color:${porc===null||porc<=0?'var(--red-d)':'var(--green-d)'}">${porc===null?'Sin stock':porc+' disponibles'}</span>`;
-    html+=`</div>`;
-    if(receta===undefined){
-      html+=`<div style="margin-top:8px;color:var(--text3);font-size:11px">Cargando ingredientes…</div>`;
-    } else if(receta&&receta.length){
-      html+=`<div style="margin-top:8px;border-top:0.5px solid var(--border);padding-top:7px">`;
-      html+=`<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">Ingredientes:</div>`;
-      html+=receta.map(r=>{
-        const stock=+r.stock||0, cant=+r.cantidad||0;
-        const porc2=cant>0?Math.floor(stock/cant):0;
-        const col=porc2<=0?'var(--red-d)':porc2<3?'var(--amber-d)':'var(--green-d)';
-        return `<div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;padding:1px 0">
-          <span>${r.ingrediente_nombre}</span>
-          <span style="color:var(--text2)">${cant} ${r.unidad||''} · <span style="color:${col}">${porc2} porc.</span></span>
-        </div>`;
-      }).join('');
-      html+=`</div>`;
-    }
-  } else if(i.inventario_id&&i.inv_nombre){
-    html+=`<span style="color:var(--text2)">Inventario</span><span>${i.inv_nombre}</span>`;
-    html+=`<span style="color:var(--text2)">Stock</span><span style="color:${+i.inv_stock<=0?'var(--red-d)':'var(--green-d)'}">${Math.round(+i.inv_stock||0)} und.</span>`;
-    html+=`</div>`;
-  } else {
-    html+=`<span style="color:var(--text2)">Inventario</span><span style="color:var(--text3)">Sin vínculo</span>`;
-    html+=`</div>`;
-  }
-  if(i.descripcion) html+=`<div style="margin-top:8px;color:var(--text2);font-size:11px;border-top:0.5px solid var(--border);padding-top:6px">${i.descripcion}</div>`;
-  return html;
-}
-let _menuTipActiveId=null;
-async function _showMenuTip(id,e){
-  const i=_menuMap[id]; if(!i) return;
-  _menuTipActiveId=id;
-  const tip=$('inv-tooltip');
-  tip.innerHTML=_buildMenuTipHtml(i, _recetaCache[id]);
-  tip.style.display='block'; _posInvTip(e);
-  if(i.receta_count>0 && _recetaCache[id]===undefined){
-    _recetaCache[id]=null;
-    try{
-      const receta=await api(`/pos/menu/items/${id}/receta`);
-      _recetaCache[id]=receta;
-      if(_menuTipActiveId===id && tip.style.display!=='none'){
-        tip.innerHTML=_buildMenuTipHtml(i, receta);
-      }
-    }catch(err){ _recetaCache[id]=null; }
-  }
-}
-
-async function loadEditarMenu(){
-  try {
-    const [cats,items]=await Promise.all([api('/pos/menu/categorias'),api('/pos/menu/items')]);
-    _menuMap=Object.fromEntries(items.map(i=>[i.id,i]));
-    $('editar-menu-cats').innerHTML=cats.map(c=>`
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px">
-        ${c.icono||''} ${c.nombre}
-        <button onclick="deleteCatMenu('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;line-height:1">×</button>
-      </div>`).join('') || '<span style="font-size:13px;color:var(--text2)">Sin categorías</span>';
-    $('editar-menu-items').innerHTML=items.map(item=>`
-      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;cursor:default"
-           onmouseenter="_showMenuTip('${item.id}',event)" onmousemove="_posInvTip(event)" onmouseleave="_hideInvTip()">
-        ${item.foto_url?`<img src="${API.replace('/api','')}${item.foto_url}" style="width:100%;height:90px;object-fit:cover" alt="${item.nombre}">`:
-          `<div style="width:100%;height:60px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:28px">${item.emoji||'🍽️'}</div>`}
-        <div style="padding:10px">
-          <div style="font-weight:500;font-size:13px">${item.emoji||''} ${item.nombre}</div>
-          <div style="font-size:11px;color:var(--text2);margin:2px 0">${item.categoria_nombre||''}</div>
-          <div style="font-size:14px;font-weight:600;color:var(--green-d);margin-bottom:8px">${fmt(item.precio)}</div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap">
-            <button class="btn btn-outline btn-sm" onclick="openMenuItemModal('${item.id}')">Editar</button>
-            <label class="btn btn-outline btn-sm" style="cursor:pointer">📷<input type="file" accept="image/*" style="display:none" onchange="subirFotoMenu('${item.id}',this)"></label>
-            <button class="btn btn-danger btn-sm" onclick="deleteMenuItem('${item.id}')">✕</button>
-          </div>
-        </div>
-      </div>`).join('') || '<p style="color:var(--text2);font-size:13px">Sin artículos</p>';
-  } catch(e){ toast('Error: '+e.message); }
-}
-
-async function deleteCatMenu(id){
-  if(!confirm('¿Eliminar categoría?')) return;
-  try { await api(`/pos/menu/categorias/${id}`,{method:'DELETE'}); loadEditarMenu(); }
-  catch(e){ toast('Error: '+e.message); }
-}
-async function deleteMenuItem(id){
-  if(!confirm('¿Eliminar artículo del menú?')) return;
-  try { await api(`/pos/menu/items/${id}`,{method:'DELETE'}); loadEditarMenu(); }
-  catch(e){ toast('Error: '+e.message); }
-}
-
-async function subirFotoMenu(id,input){
-  if(!input.files[0]) return;
-  const form=new FormData(); form.append('foto',input.files[0]);
-  try { await fetch(`${API}/pos/menu/items/${id}/foto`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:form}); toast('Foto actualizada ✓'); loadEditarMenu(); }
-  catch(e){ toast('Error: '+e.message); }
-  input.value='';
-}
-
-async function openMenuItemModal(id){
-  menuItemEditId=id; miRecetaLocal=[];
-  $('mi-modal-title').textContent=id?'Editar artículo':'Nuevo artículo';
-  ['mi-nombre','mi-desc','mi-precio','mi-tiempo'].forEach(f=>$(f).value='');
-  $('mi-foto-preview').style.display='none'; $('mi-foto-preview').src='';
-  $('mi-foto-file').value=''; $('mi-receta-inv').value=''; $('mi-receta-cant').value='';
-  renderRecetaList();
-  const [cats, invItems] = await Promise.all([api('/pos/menu/categorias'), api('/inventario/')]);
-  miInvItems=invItems;
-  $('mi-cat').innerHTML=cats.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
-  const invOpts='<option value="">— Sin vínculo —</option>'+invItems.map(i=>`<option value="${i.id}">${i.nombre} (Stock: ${i.stock} ${i.unidad||''})</option>`).join('');
-  $('mi-inventario').innerHTML=invOpts;
-  $('mi-receta-inv').innerHTML='<option value="">— Seleccionar ingrediente —</option>'+invItems.map(i=>`<option value="${i.id}">${i.nombre} (${i.unidad||'und'})</option>`).join('');
-  if(id){
-    try{
-      const [item, receta]=await Promise.all([api(`/pos/menu/items/${id}`), api(`/pos/menu/items/${id}/receta`)]);
-      $('mi-nombre').value=item.nombre||''; $('mi-desc').value=item.descripcion||'';
-      $('mi-precio').value=item.precio||0;
-      $('mi-cat').value=item.categoria_id||''; $('mi-tiempo').value=item.tiempo_prep||15;
-      $('mi-inventario').value=item.inventario_id||'';
-      if(item.foto_url){ $('mi-foto-preview').src=API.replace('/api','')+item.foto_url; $('mi-foto-preview').style.display='block'; }
-      miRecetaLocal=receta; renderRecetaList();
-    }catch(e){ toast('No se pudo cargar el artículo'); }
-  }
-  $('menu-item-modal').style.display='flex';
-}
-function renderRecetaList(){
-  const cont=$('mi-receta-list');
-  if(!miRecetaLocal.length){
-    cont.innerHTML='<p style="font-size:11px;color:var(--text2);padding:4px 0">Sin ingredientes definidos.</p>'; return;
-  }
-  cont.innerHTML=miRecetaLocal.map((ing,idx)=>{
-    const stock=+ing.stock||0;
-    const cant=+ing.cantidad||0;
-    const porciones=cant>0?Math.floor(stock/cant):0;
-    const porColor=porciones<=0?'var(--red-d)':porciones<5?'var(--amber-d)':'var(--green-d)';
-    return `
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg2);border-radius:var(--r);font-size:12px">
-      <div style="flex:1">
-        <span style="font-weight:500">${ing.ingrediente_nombre||ing.nombre||''}</span>
-        <span style="font-size:10px;color:var(--text2);margin-left:6px">stock: ${stock} ${ing.unidad||''}</span>
-      </div>
-      <input type="number" min="0.001" step="0.001" value="${ing.cantidad}"
-        style="width:72px;padding:4px 6px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:12px"
-        oninput="updateRecetaCant(${idx},this.value)">
-      <span style="color:var(--text2);min-width:28px;font-size:11px">${ing.unidad||'und'}</span>
-      <span style="font-size:10px;color:${porColor};min-width:52px;text-align:right">${porciones} porc.</span>
-      <button onclick="removeRecetaIng(${idx})" style="border:none;background:none;color:var(--red-d);cursor:pointer;font-size:16px;line-height:1;padding:0">✕</button>
-    </div>`;
-  }).join('');
-}
-function recetaInvChange(){
-  const invId=$('mi-receta-inv').value;
-  const inv=miInvItems.find(i=>i.id===invId);
-  if(inv){
-    $('mi-receta-unit').textContent=inv.unidad||'und';
-    $('mi-receta-hint').style.display='block';
-    $('mi-receta-hint').textContent=`Stock disponible: ${+inv.stock||0} ${inv.unidad||'und'}. Ingresa cuánto usa 1 porción en esa unidad.`;
-  } else {
-    $('mi-receta-unit').textContent='';
-    $('mi-receta-hint').style.display='none';
-  }
-  recetaCantChange();
-}
-function recetaCantChange(){
-  const invId=$('mi-receta-inv').value;
-  const inv=miInvItems.find(i=>i.id===invId);
-  const cant=parseFloat($('mi-receta-cant').value)||0;
-  if(inv&&cant>0){
-    const stock=+inv.stock||0;
-    const porciones=Math.floor(stock/cant);
-    $('mi-receta-hint').style.display='block';
-    $('mi-receta-hint').textContent=`Stock: ${stock} ${inv.unidad||'und'} — con cantidad ${cant} → ${porciones} porción(es) disponibles`;
-    $('mi-receta-hint').style.color=porciones<=0?'var(--red-d)':porciones<3?'var(--amber-d)':'var(--text2)';
-  }
-}
-async function addRecetaIng(){
-  const invId=$('mi-receta-inv').value, cant=parseFloat($('mi-receta-cant').value);
-  if(!invId){ toast('Selecciona un ingrediente'); return; }
-  if(!cant||cant<=0){ toast('Ingresa una cantidad válida'); return; }
-  const invItem=miInvItems.find(i=>i.id===invId);
-  if(menuItemEditId){
-    try{
-      await api(`/pos/menu/items/${menuItemEditId}/receta`,{method:'POST',body:JSON.stringify({inventario_id:invId,cantidad:cant})});
-      miRecetaLocal=await api(`/pos/menu/items/${menuItemEditId}/receta`);
-    }catch(e){ toast('Error: '+e.message); return; }
-  } else {
-    const ex=miRecetaLocal.findIndex(i=>i.inventario_id===invId);
-    if(ex>=0) miRecetaLocal[ex].cantidad=cant;
-    else miRecetaLocal.push({inventario_id:invId,cantidad:cant,ingrediente_nombre:invItem?.nombre,unidad:invItem?.unidad});
-  }
-  $('mi-receta-inv').value=''; $('mi-receta-cant').value=''; renderRecetaList();
-}
-async function updateRecetaCant(idx,val){
-  const cant=parseFloat(val); if(!cant||cant<=0) return;
-  miRecetaLocal[idx].cantidad=cant;
-  renderRecetaList();
-  if(menuItemEditId&&miRecetaLocal[idx].id){
-    try{ await api(`/pos/menu/items/${menuItemEditId}/receta/${miRecetaLocal[idx].id}`,{method:'PUT',body:JSON.stringify({cantidad:cant})}); }
-    catch(e){ toast('Error actualizando cantidad'); }
-  }
-}
-async function removeRecetaIng(idx){
-  if(menuItemEditId&&miRecetaLocal[idx].id){
-    try{ await api(`/pos/menu/items/${menuItemEditId}/receta/${miRecetaLocal[idx].id}`,{method:'DELETE'}); }
-    catch(e){ toast('Error: '+e.message); return; }
-  }
-  miRecetaLocal.splice(idx,1); renderRecetaList();
-}
-function previewMenuFoto(input){
-  if(!input.files[0]) return;
-  $('mi-foto-preview').src=URL.createObjectURL(input.files[0]);
-  $('mi-foto-preview').style.display='block';
-}
-async function saveMenuItem(){
-  try {
-    const b={nombre:$('mi-nombre').value,descripcion:$('mi-desc').value,precio:+$('mi-precio').value||0,
-             categoria_id:$('mi-cat').value,tiempo_prep:+$('mi-tiempo').value||15,inventario_id:$('mi-inventario').value||null};
-    if(menuItemEditId) await api(`/pos/menu/items/${menuItemEditId}`,{method:'PUT',body:JSON.stringify(b)});
-    else {
-      const r=await api('/pos/menu/items',{method:'POST',body:JSON.stringify(b)}); menuItemEditId=r.id;
-      for(const ing of miRecetaLocal)
-        await api(`/pos/menu/items/${menuItemEditId}/receta`,{method:'POST',body:JSON.stringify({inventario_id:ing.inventario_id,cantidad:ing.cantidad})});
-    }
-    const file=$('mi-foto-file').files[0];
-    if(file){ const form=new FormData(); form.append('foto',file); await fetch(`${API}/pos/menu/items/${menuItemEditId}/foto`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:form}); }
-    closeModal('menu-item-modal'); toast('Artículo guardado ✓'); loadEditarMenu();
-  } catch(e){ toast('Error: '+e.message); }
-}
-
-function openCatMenuModal(){ $('cm-nombre').value=''; $('cm-icono').value=''; $('cm-modulo').value=''; $('cat-menu-modal').style.display='flex'; }
-async function saveCatMenu(){
-  try {
-    await api('/pos/menu/categorias',{method:'POST',body:JSON.stringify({nombre:$('cm-nombre').value,icono:$('cm-icono').value,modulo:$('cm-modulo').value||null})});
-    closeModal('cat-menu-modal'); toast('Categoría creada ✓'); loadEditarMenu();
-  } catch(e){ toast('Error: '+e.message); }
-}
-
 // ─── INVENTARIO ───────────────────────────────────────────────
-function setInvModulo(mod){
-  invModuloActivo=mod;
-  ['restaurante','minimercado','todos'].forEach(m=>{
-    const btn=$(`inv-tab-${m}`);
-    if(btn) btn.className=mod===m||(!mod&&m==='todos')?'btn btn-primary btn-sm':'btn btn-outline btn-sm';
-  });
-  loadInventario();
-}
 let _invMap={};
 function _showInvTip(id, e){
   const i=_invMap[id]; if(!i) return;
@@ -4073,7 +3631,7 @@ async function loadInventario(){
     const q=$('inv-q').value||'', cat=$('inv-cat-filter').value, bajo=$('inv-bajo-stock').checked;
     let url=`/inventario/?q=${encodeURIComponent(q)}&bajo_stock=${bajo}`;
     if(cat) url+=`&categoria=${encodeURIComponent(cat)}`;
-    if(invModuloActivo) url+=`&modulo=${invModuloActivo}`;
+    url+=`&modulo=minimercado`;
     const data=await api(url);
     _invMap=Object.fromEntries(data.map(i=>[i.id,i]));
     $('inv-tbody').innerHTML=data.map(i=>{
@@ -4086,15 +3644,15 @@ async function loadInventario(){
         :_bajo
           ?'<span class="badge badge-amber">Bajo stock</span>'
           :'<span class="badge badge-green">OK</span>';
-      const modBadge=i.modulo==='minimercado'?'<span class="badge badge-blue" style="font-size:9px">🛒 Minimercado</span>':'<span class="badge badge-gray" style="font-size:9px">🍽️ Rest.</span>';
-      const paqBadge=i.unidad_compra&&i.cantidad_paquete?`<span class="badge badge-gray" style="font-size:9px">📦 1 ${i.unidad_compra} = ${i.cantidad_paquete} ${badgeUnidad(i.unidad)}</span> `:'';
       const _uc=i.unidad_compra&&i.cantidad_paquete&&i.cantidad_paquete>1;
-      const _stDisp=_uc?(_stock<_facPaq?`${_stock} ${i.unidad}`:`${Math.floor(_stock/_facPaq)} ${i.unidad_compra}`):`${Math.round(_stock)} ${i.unidad}`;
+      const _stDisp=_uc?(_stock<_facPaq?`${_stock} ${i.unidad}`:`${Math.floor(_stock/_facPaq)} ${i.unidad_compra} <span style="color:var(--text2);font-weight:400">(${Math.round(_stock)} ${i.unidad})</span>`):`${Math.round(_stock)} ${i.unidad}`;
+      const _udsPaqDisp=_uc?`${i.cantidad_paquete} ${badgeUnidad(i.unidad)}`:'—';
       const _smDisp=`${Math.round(_smin)} ${i.unidad}`;
       const costoUnit=_uc?i.costo/i.cantidad_paquete:i.costo;
       return `<tr onmouseenter="_showInvTip('${i.id}',event)" onmousemove="_posInvTip(event)" onmouseleave="_hideInvTip()" style="cursor:default">
-        <td><span style="font-size:11px;color:var(--acc);font-weight:600;font-family:monospace">${i.codigo||'—'}</span>${i.codigo_barras?` <span style="font-size:10px;color:var(--text3)">🏷️ ${i.codigo_barras}</span>`:''}<br><b>${i.nombre}</b><br>${paqBadge}${modBadge}</td>
+        <td><span style="font-size:11px;color:var(--acc);font-weight:600;font-family:monospace">${i.codigo||'—'}</span>${i.codigo_barras?` <span style="font-size:10px;color:var(--text3)">🏷️ ${i.codigo_barras}</span>`:''}<br><b>${i.nombre}</b></td>
         <td style="${st}">${_stDisp}</td>
+        <td style="color:var(--text2)">${_udsPaqDisp}</td>
         <td>${_smDisp}</td>
         <td>${fmt(i.costo)}</td>
         <td>${fmt(costoUnit)}</td>
@@ -4105,7 +3663,7 @@ async function loadInventario(){
           <button class="btn btn-outline btn-sm" onclick="openInvModal('${i.id}')">✏️</button>
           ${canDeleteInv?`<button class="btn btn-danger btn-sm" onclick="deleteInv('${i.id}','${i.nombre.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">🗑</button>`:''}
         </td></tr>`;
-    }).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text2)">Sin resultados</td></tr>';
+    }).join('')||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text2)">Sin resultados</td></tr>';
     try {
       const cats=await api('/inventario/categorias');
       const sel=$('inv-cat-filter'); const val=sel.value;
@@ -4225,13 +3783,13 @@ function togglePaquete(){
 }
 
 async function openInvModal(id){
-  invEditId=id;
+  invEditId=id; invFotoFile=null; invMenuItemId=null;
   $('inv-modal-title').textContent=id?'Editar artículo':'Nuevo artículo';
   ['iv-nombre','iv-codigo','iv-barcode','iv-cat','iv-stock','iv-smin','iv-costo','iv-precio','iv-margen','iv-cant-paquete','iv-unidad-compra'].forEach(f=>$(f).value='');
   $('iv-desc').value=''; $('iv-es-prod').checked=false;
   $('iv-unidad').value='unidades'; $('iv-margen-label').textContent=''; $('iv-paquete-row').style.display='none';
   $('iv-stock-label').textContent='Stock actual'; $('iv-smin-label').textContent='Stock mínimo';
-  $('iv-modulo').value=invModuloActivo||'restaurante';
+  $('iv-foto-file').value=''; $('iv-foto-preview').style.display='none'; $('iv-foto-preview').src='';
   $('inv-modal').style.display='flex';
   if(!id){
     // Auto-código para artículo nuevo
@@ -4253,7 +3811,8 @@ async function openInvModal(id){
     $('iv-costo').value=d.costo||'';
     $('iv-precio').value=d.precio_venta||'';
     $('iv-margen').value=d.margen||''; $('iv-es-prod').checked=!!d.es_producto;
-    $('iv-modulo').value=d.modulo||'minimercado';
+    invMenuItemId=d.menu_item_id||null;
+    if(d.menu_foto_url){ $('iv-foto-preview').src=API.replace('/api','')+d.menu_foto_url; $('iv-foto-preview').style.display='block'; }
     calcCostoUnitario(); calcMargen();
   }catch(e){ toast('Error cargando datos: '+e.message); }
 }
@@ -4276,37 +3835,31 @@ async function saveInv(){
       unidad_compra:uc||null,
       es_paquete:!!uc,
       cantidad_paquete:uc?(+$('iv-cant-paquete').value||null):null,
-      modulo:$('iv-modulo').value||'minimercado'
+      modulo:'minimercado'
     };
-    if(invEditId) await api(`/inventario/${invEditId}`,{method:'PUT',body:JSON.stringify(b)});
-    else await api('/inventario/',{method:'POST',body:JSON.stringify(b)});
-    closeModal('inv-modal'); toast('Artículo guardado ✓'); loadInventario(); refreshInvStats();
+    let r;
+    if(invEditId) r=await api(`/inventario/${invEditId}`,{method:'PUT',body:JSON.stringify(b)});
+    else r=await api('/inventario/',{method:'POST',body:JSON.stringify(b)});
+    if(invFotoFile && r?.menu_item_id){
+      const form=new FormData(); form.append('foto',invFotoFile);
+      await fetch(`${API}/pos/menu/items/${r.menu_item_id}/foto`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:form});
+    }
+    closeModal('inv-modal');
+    toast(r?.menu_item_creado?'Artículo guardado y disponible en el POS ✓':'Artículo guardado ✓');
+    loadInventario(); refreshInvStats();
   } catch(e){ toast('Error: '+e.message); }
+}
+function previewInvFoto(input){
+  if(!input.files[0]) return;
+  invFotoFile=input.files[0];
+  $('iv-foto-preview').src=URL.createObjectURL(invFotoFile);
+  $('iv-foto-preview').style.display='block';
 }
 async function deleteInv(id, nombre){
   if(!confirm(`¿Eliminar "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
   try {
     await api(`/inventario/${id}`,{method:'DELETE'});
     toast('Artículo eliminado'); loadInventario(); refreshInvStats();
-  } catch(e){ toast('Error: '+e.message); }
-}
-async function syncMenuToInventario(){
-  if(!confirm('Se creará un artículo de inventario (stock 0) por cada producto del menú que no esté vinculado.\n\nDespués podrás ajustar el stock en cada uno.\n\n¿Continuar?')) return;
-  try {
-    const r = await api('/admin/menu/sync-inventario', {method:'POST'});
-    if(r.creados === 0) toast('Todos los productos ya están vinculados al inventario ✓');
-    else toast(`✅ ${r.mensaje}. Ajusta el stock de cada uno.`);
-    loadInventario();
-    checkInvAlertas();
-  } catch(e){ toast('Error: '+e.message); }
-}
-async function autoLinkInventario(){
-  try {
-    const r = await api('/admin/menu/auto-link-inventario', {method:'POST'});
-    if(r.vinculados === 0) toast('No se encontraron coincidencias de nombre entre menú e inventario.');
-    else toast(`✅ ${r.mensaje}. El POS ya reflejará el stock real.`);
-    loadInventario();
-    refreshInvStats();
   } catch(e){ toast('Error: '+e.message); }
 }
 let adjUnidadCompra='', adjCantPaquete=1, adjUnidad='unidades';

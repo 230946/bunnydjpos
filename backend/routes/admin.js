@@ -448,10 +448,42 @@ router.put('/pedidos-proveedor/:id', requirePermiso('proveedores'), async (req, 
 router.put('/pedidos-proveedor/:id/estado', requirePermiso('proveedores'), async (req, res) => {
   try {
     const { estado } = req.body;
+    const { rows: cur } = await pool.query(
+      `SELECT estado, items FROM pedidos_proveedor WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]
+    );
+    if (!cur[0]) return res.status(404).json({ error: 'Pedido no encontrado' });
+    const yaRecibido = cur[0].estado === 'recibido';
     await pool.query(
       `UPDATE pedidos_proveedor SET estado=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
       [estado, req.params.id, nid(req)]
     );
+    // Al marcar como recibido, sumar lo pedido al stock existente (una sola vez por
+    // transición — si ya estaba en recibido no se vuelve a sumar en un reintento).
+    if (estado === 'recibido' && !yaRecibido) {
+      const items = typeof cur[0].items === 'string' ? JSON.parse(cur[0].items) : (cur[0].items || []);
+      for (const it of items) {
+        const { rows: inv } = await pool.query(
+          `SELECT stock, cantidad_paquete FROM inventario WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+          [it.id, nid(req)]
+        );
+        if (!inv[0]) continue;
+        const factor = inv[0].cantidad_paquete > 1 ? inv[0].cantidad_paquete : 1;
+        const cantidadBase = (it.cantidad ?? it.qty ?? 0) * factor;
+        if (cantidadBase <= 0) continue;
+        const stockAntes = parseFloat(inv[0].stock) || 0;
+        const stockDespues = stockAntes + cantidadBase;
+        await pool.query(
+          `UPDATE inventario SET stock=${ph(1)}, actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+          [stockDespues, it.id, nid(req)]
+        );
+        await pool.query(
+          `INSERT INTO inventario_movimientos (inventario_id,negocio_id,tipo,cantidad,stock_antes,stock_despues,nota,usuario_id)
+           VALUES (${ph(1)},${ph(2)},'entrada',${ph(3)},${ph(4)},${ph(5)},'Recepción de pedido a proveedor',${ph(6)})`,
+          [it.id, nid(req), cantidadBase, stockAntes, stockDespues, req.user.id]
+        );
+      }
+    }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
