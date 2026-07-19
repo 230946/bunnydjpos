@@ -1361,6 +1361,9 @@ tr:hover td{background:var(--bg2)}
       <div class="field"><label>Código de barras</label><input id="iv-barcode" placeholder="Escanea o escribe..."></div>
       <div class="field" style="grid-column:1/-1"><label>Nombre *</label><input id="iv-nombre"></div>
       <div class="field"><label>Categoría</label><input id="iv-cat" placeholder="Carnes, Bebidas..."></div>
+      <div class="field"><label>Proveedor</label>
+        <select id="iv-proveedor"><option value="">— Sin proveedor —</option></select>
+      </div>
       <div class="field" style="grid-column:1/-1"><label>Descripción</label><textarea id="iv-desc" placeholder="Descripción opcional..."></textarea></div>
       <div class="field"><label id="iv-stock-label">Stock actual</label><input id="iv-stock" type="number" min="0" step="0.001" placeholder="0"></div>
       <div class="field"><label id="iv-smin-label">Stock mínimo</label><input id="iv-smin" type="number" min="0" step="0.001" placeholder="1"></div>
@@ -1384,7 +1387,18 @@ tr:hover td{background:var(--bg2)}
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
         <div class="field" style="flex:1;min-width:120px;margin-bottom:0">
           <label>Nombre</label>
-          <input id="iv-unidad-compra" placeholder="kg, litro, caja, galón..." oninput="togglePaquete()" style="width:100%">
+          <input id="iv-unidad-compra" list="iv-unidad-compra-list" placeholder="kg, litro, caja, galón..." oninput="togglePaquete()" style="width:100%">
+          <datalist id="iv-unidad-compra-list">
+            <option value="caja"></option>
+            <option value="paquete"></option>
+            <option value="bulto"></option>
+            <option value="docena"></option>
+            <option value="canasta"></option>
+            <option value="galón"></option>
+            <option value="saco"></option>
+            <option value="kg"></option>
+            <option value="litro"></option>
+          </datalist>
         </div>
         <div id="iv-paquete-row" style="display:none;flex:1;min-width:120px">
           <div class="field" style="margin-bottom:0">
@@ -1397,7 +1411,7 @@ tr:hover td{background:var(--bg2)}
     </div>
     <input type="hidden" id="iv-modulo" value="restaurante">
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:4px;cursor:pointer">
-      <input type="checkbox" id="iv-es-prod"> Es producto de venta directa
+      <input type="checkbox" id="iv-es-prod"> Es producto de venta directa en POS
     </label>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('inv-modal')">Cancelar</button>
@@ -1678,11 +1692,16 @@ tr:hover td{background:var(--bg2)}
                 <option value="rollo">Rollo</option>
               </select>
             </div>
-            <div class="field" style="margin:0"><label>Costo compra</label><input id="ppn-costo" type="number" min="0" step="0.01" placeholder="0.00"></div>
+            <div class="field" style="margin:0"><label>Costo compra</label><input id="ppn-costo" type="number" min="0" step="0.01" placeholder="0.00" oninput="ppnCalcPrecio()"></div>
             <!-- Cantidad por unidad: solo para Caja, Paquete, Bolsa -->
             <div class="field" id="ppn-cant-wrap" style="margin:0;grid-column:1/-1;display:none">
               <label id="ppn-cant-lbl">Cantidad por paquete</label>
-              <input id="ppn-cant" type="number" min="1" step="1" placeholder="Ej: 12 unidades por caja">
+              <input id="ppn-cant" type="number" min="1" step="1" placeholder="Ej: 12 unidades por caja" oninput="ppnCalcPrecio()">
+            </div>
+            <div class="field" style="margin:0;grid-column:1/-1">
+              <label>Precio de venta (por unidad) *</label>
+              <input id="ppn-precio" type="number" min="0" step="0.01" placeholder="0.00">
+              <div id="ppn-precio-hint" style="font-size:11px;color:var(--text2);margin-top:3px;display:none"></div>
             </div>
           </div>
           <!-- Impuesto sobre ventas -->
@@ -3394,7 +3413,8 @@ async function openPedidoProvModal(id){
   $('pp-items-wrap').style.display='none';
   $('pp-new-form').style.display='none';
   $('pp-iva-hint').style.display='none';
-  ['ppn-codigo','ppn-nombre','ppn-costo','ppn-cant'].forEach(f=>{if($(f))$(f).value='';});
+  ['ppn-codigo','ppn-nombre','ppn-costo','ppn-cant','ppn-precio'].forEach(f=>{if($(f))$(f).value='';});
+  if($('ppn-precio-hint'))$('ppn-precio-hint').style.display='none';
   if($('ppn-cat'))$('ppn-cat').value='General';
   if($('ppn-unidad')){$('ppn-unidad').value='unidades'; ppnUnidadChange();}
   const r0=document.querySelector('input[name="ppn-tax"][value="0"]');
@@ -3500,6 +3520,24 @@ function ppnUnidadChange(){
   const labels={caja:'Cantidad por caja',paquete:'Cantidad por paquete',bolsa:'Cantidad por bolsa'};
   if(show) $('ppn-cant-lbl').textContent=labels[u]||'Cantidad por unidad';
   if(!show && $('ppn-cant')) $('ppn-cant').value='';
+  ppnCalcPrecio();
+}
+// Costo compra es del paquete completo si hay "cantidad por paquete" — el precio de
+// venta debe ser por unidad, así que se sugiere dividiendo (no se deja igual al costo
+// del paquete, que fue el origen de precios absurdos como $35.000 por una gaseosa).
+function ppnCalcPrecio(){
+  const costo=parseFloat($('ppn-costo').value)||0;
+  const show=['caja','paquete','bolsa'].includes($('ppn-unidad').value);
+  const factor=(show&&$('ppn-cant').value)?(+$('ppn-cant').value||1):1;
+  const cu=factor>1?costo/factor:costo;
+  const hint=$('ppn-precio-hint');
+  if(cu>0){
+    hint.style.display='block';
+    hint.textContent=`Costo unitario: $${cu.toLocaleString('es-CO',{maximumFractionDigits:2})}`;
+    if(!$('ppn-precio').value) $('ppn-precio').value=Math.round(cu);
+  } else {
+    hint.style.display='none';
+  }
 }
 
 function ppnTaxChange(val){
@@ -3517,6 +3555,8 @@ function ppnGetTax(){
 async function ppCrearProducto(){
   const nombre=$('ppn-nombre').value.trim();
   if(!nombre){ showToast('El nombre es requerido'); return; }
+  const precioVenta=parseFloat($('ppn-precio').value)||0;
+  if(precioVenta<=0){ showToast('El precio de venta es requerido'); return; }
   const provId=$('pp-prov').value;
   const iva_pct=ppnGetTax();
   const unidad=$('ppn-unidad').value||'unidades';
@@ -3529,13 +3569,14 @@ async function ppCrearProducto(){
       nombre, categoria:$('ppn-cat').value||'General',
       unidad, unidad_compra:unidad,
       costo:parseFloat($('ppn-costo').value)||0,
-      precio_venta:parseFloat($('ppn-costo').value)||0,
+      precio_venta:precioVenta,
       proveedor_id:provId||null, es_producto:true,
       modulo:'restaurante', iva_pct,
       es_paquete:cantPaq!=null, cantidad_paquete:cantPaq
     })});
     showToast('Producto creado ✓');
-    ['ppn-codigo','ppn-nombre','ppn-costo','ppn-cant'].forEach(f=>{if($(f))$(f).value='';});
+    ['ppn-codigo','ppn-nombre','ppn-costo','ppn-cant','ppn-precio'].forEach(f=>{if($(f))$(f).value='';});
+    $('ppn-precio-hint').style.display='none';
     $('ppn-cat').value='General'; $('ppn-unidad').value='unidades';
     ppnUnidadChange();
     const r0=document.querySelector('input[name="ppn-tax"][value="0"]');
@@ -4762,6 +4803,10 @@ async function openInvModal(id){
   $('iv-unidad').value='unidades'; $('iv-margen-label').textContent=''; $('iv-paquete-row').style.display='none';
   $('iv-stock-label').textContent='Stock actual'; $('iv-smin-label').textContent='Stock mínimo';
   $('iv-modulo').value=invModuloActivo||'restaurante';
+  try{
+    const provs=await api('/admin/proveedores');
+    $('iv-proveedor').innerHTML='<option value="">— Sin proveedor —</option>'+provs.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+  }catch{}
   $('inv-modal').style.display='flex';
   if(!id){
     // Auto-código para artículo nuevo
@@ -4773,6 +4818,7 @@ async function openInvModal(id){
     $('iv-nombre').value=d.nombre||''; $('iv-codigo').value=d.codigo||'';
     $('iv-barcode').value=d.codigo_barras||'';
     $('iv-cat').value=d.categoria||''; $('iv-desc').value=d.descripcion||'';
+    $('iv-proveedor').value=d.proveedor_id||'';
     $('iv-unidad').value=d.unidad||'unidades';
     $('iv-unidad-compra').value=d.unidad_compra||'';
     $('iv-cant-paquete').value=d.cantidad_paquete||'';
@@ -4806,6 +4852,7 @@ async function saveInv(){
       unidad_compra:uc||null,
       es_paquete:!!uc,
       cantidad_paquete:uc?(+$('iv-cant-paquete').value||null):null,
+      proveedor_id:$('iv-proveedor').value||null,
       modulo:$('iv-modulo').value||'restaurante'
     };
     let r;

@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — POS Restaurante",
+  "short_name": "POS Restaurante",
+  "description": "Punto de venta de Restaurante de BunnyDJPOS",
+  "start_url": "/pos-restaurante.html",
+  "scope": "/pos-restaurante.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0B8457",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

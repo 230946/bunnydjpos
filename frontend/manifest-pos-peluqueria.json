@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — POS Peluquería",
+  "short_name": "POS Peluquería",
+  "description": "Punto de venta de Peluquería de BunnyDJPOS",
+  "start_url": "/pos-peluqueria.html",
+  "scope": "/pos-peluqueria.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0B8457",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

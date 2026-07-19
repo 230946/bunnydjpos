@@ -9,6 +9,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest-pos-restaurante.json">
+<meta name="theme-color" content="#0B8457">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/img/logo.png">
 <title>DJPOS — POS</title>
 <link rel="icon" href="/img/logo.png" type="image/png">
 <style>
@@ -2555,6 +2559,11 @@ document.addEventListener('DOMContentLoaded',function(){
   setInterval(function(){s.style.display='none';if(sec>0)sec--;s.textContent='↺ '+sec+'s';},1000);
   window._arReset=function(){sec=30;s.style.background='var(--green-l,#d1fae5)';s.style.color='var(--green-d,#065f46)';s.style.borderColor='var(--green,#0B8457)';s.textContent='↺ actualizado';setTimeout(function(){s.style.background='';s.style.color='';s.style.borderColor='';s.textContent='↺ 30s';},900);};
 })();
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/pos-sw.js',{scope:'/pos-restaurante.html'}).catch(function(){});
+  });
+}
 </script>
 </body>
 </html>

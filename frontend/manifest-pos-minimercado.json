@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — POS Minimercado",
+  "short_name": "POS Minimercado",
+  "description": "Punto de venta de Minimercado de BunnyDJPOS",
+  "start_url": "/pos-minimercado.html",
+  "scope": "/pos-minimercado.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0B8457",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}
