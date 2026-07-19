@@ -346,7 +346,6 @@ async function login(){
   errEl.textContent='';
   if(!doc){errEl.textContent='Ingresa tu documento'; return;}
   if(!cel||cel.length<7){errEl.textContent='Ingresa tu celular'; return;}
-  if(!NEG_ID){errEl.textContent='Falta el ID del negocio en la URL'; return;}
 
   const btn=document.getElementById('btn-login');
   btn.disabled=true; btn.textContent='Verificando…';
