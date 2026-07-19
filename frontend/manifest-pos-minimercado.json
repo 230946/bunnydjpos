@@ -2,7 +2,7 @@
   "name": "BunnyDJPOS — POS Minimercado",
   "short_name": "POS Minimercado",
   "description": "Punto de venta de Minimercado de BunnyDJPOS",
-  "start_url": "/pos-minimercado.html",
+  "start_url": "/pos-minimercado.html?n=804dc384-486f-420e-b1b3-6d06b0343f01",
   "scope": "/pos-minimercado.html",
   "display": "standalone",
   "orientation": "any",

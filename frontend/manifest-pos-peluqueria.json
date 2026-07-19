@@ -2,7 +2,7 @@
   "name": "BunnyDJPOS — POS Peluquería",
   "short_name": "POS Peluquería",
   "description": "Punto de venta de Peluquería de BunnyDJPOS",
-  "start_url": "/pos-peluqueria.html",
+  "start_url": "/pos-peluqueria.html?n=1f91b016-178e-4c49-8d7f-983889aebf3c",
   "scope": "/pos-peluqueria.html",
   "display": "standalone",
   "orientation": "any",
