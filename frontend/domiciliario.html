@@ -262,7 +262,7 @@ const API    = '/api/domicilios';
 const params = new URLSearchParams(location.search);
 const NEG_ID = params.get('n') || params.get('negocio');
 
-const SESS_KEY   = `djpos_rider_sess_${NEG_ID}`;
+const SESS_KEY   = 'djpos_rider_sess';
 let   session    = null;   // {token, id, nombre, rol, negocio_id}
 let   negocioNom = '';
 let   activeTab  = 'disponibles';

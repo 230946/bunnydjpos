@@ -608,15 +608,23 @@ router.get('/pedido/:id', async (req, res) => {
 // POST /api/domicilios/empleado-login
 router.post('/empleado-login', async (req, res) => {
   const { negocio_id, documento, celular } = req.body;
-  if (!negocio_id || !documento || !celular) return res.status(400).json({ error: 'Faltan datos' });
+  if (!documento || !celular) return res.status(400).json({ error: 'Faltan datos' });
   try {
     const cel = String(celular).replace(/[\s\-()]/g, '');
     const doc = String(documento).trim();
-    const { rows } = await pool.query(
-      `SELECT id, nombre, rol, token, negocio_id, foto_url, vehiculo, placa, color_vehiculo FROM empleados
-       WHERE negocio_id=? AND documento=? AND celular=? AND activo=1 LIMIT 1`,
-      [negocio_id, doc, cel]
-    );
+    // Sin negocio_id (app compartida entre negocios): busca al empleado solo
+    // por documento+celular, que ya son únicos por persona real.
+    const { rows } = negocio_id
+      ? await pool.query(
+          `SELECT id, nombre, rol, token, negocio_id, foto_url, vehiculo, placa, color_vehiculo FROM empleados
+           WHERE negocio_id=? AND documento=? AND celular=? AND activo=1 LIMIT 1`,
+          [negocio_id, doc, cel]
+        )
+      : await pool.query(
+          `SELECT id, nombre, rol, token, negocio_id, foto_url, vehiculo, placa, color_vehiculo FROM empleados
+           WHERE documento=? AND celular=? AND activo=1 LIMIT 1`,
+          [doc, cel]
+        );
     if (!rows[0]) return res.status(401).json({ error: 'Credenciales incorrectas o cuenta inactiva' });
     const { id, nombre, rol, token, foto_url, vehiculo, placa, color_vehiculo } = rows[0];
     res.json({ ok: true, token, id, nombre, rol, negocio_id: rows[0].negocio_id, foto_url, vehiculo, placa, color_vehiculo });

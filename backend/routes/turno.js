@@ -30,25 +30,40 @@ const localDateTime = (tz = 'America/Bogota') => {
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
 };
 
+// Sin negocio en el enlace (app compartida entre negocios), el segmento
+// de la URL llega como "_" — se busca al empleado solo por documento,
+// que ya es único por persona real, y de ahí se toma su negocio_id real.
+async function _buscarUsuario(negocioIdParam, documento) {
+  if (negocioIdParam && negocioIdParam !== '_') {
+    const { rows } = await pool.query(
+      `SELECT id, nombre, negocio_id FROM usuarios WHERE negocio_id=${ph(1)} AND TRIM(documento)=${ph(2)} AND activo=1 LIMIT 1`,
+      [negocioIdParam, documento]
+    );
+    return rows[0] || null;
+  }
+  const { rows } = await pool.query(
+    `SELECT id, nombre, negocio_id FROM usuarios WHERE TRIM(documento)=${ph(1)} AND activo=1 LIMIT 1`,
+    [documento]
+  );
+  return rows[0] || null;
+}
+
 // GET /api/turno/:negocioId?documento=X — estado del turno de hoy
 router.get('/:negocioId', async (req, res) => {
   try {
     const documento = req.query.documento ? String(req.query.documento).trim() : null;
     if (!documento) return res.status(400).json({ error: 'Ingresa tu número de documento' });
 
-    const { rows: userR } = await pool.query(
-      `SELECT id, nombre FROM usuarios WHERE negocio_id=${ph(1)} AND TRIM(documento)=${ph(2)} AND activo=1 LIMIT 1`,
-      [req.params.negocioId, documento]
-    );
-    if (!userR[0]) return res.status(404).json({ error: 'No se encontró ningún empleado con ese documento' });
+    const user = await _buscarUsuario(req.params.negocioId, documento);
+    if (!user) return res.status(404).json({ error: 'No se encontró ningún empleado con ese documento' });
 
     const [fechaHoy] = localDateTime().split(' ');
     const { rows: turnoR } = await pool.query(
       `SELECT hora_entrada, hora_salida FROM horarios
        WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND fecha=${ph(3)} AND activo=1 LIMIT 1`,
-      [userR[0].id, req.params.negocioId, fechaHoy]
+      [user.id, user.negocio_id, fechaHoy]
     );
-    res.json({ nombre: userR[0].nombre, turnoHoy: turnoR[0] || null });
+    res.json({ nombre: user.nombre, turnoHoy: turnoR[0] || null });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -58,11 +73,8 @@ router.get('/:negocioId/historial-pago', async (req, res) => {
     const documento = req.query.documento ? String(req.query.documento).trim() : null;
     if (!documento) return res.status(400).json({ error: 'Ingresa tu número de documento' });
 
-    const { rows: userR } = await pool.query(
-      `SELECT id FROM usuarios WHERE negocio_id=${ph(1)} AND TRIM(documento)=${ph(2)} AND activo=1 LIMIT 1`,
-      [req.params.negocioId, documento]
-    );
-    if (!userR[0]) return res.status(404).json({ error: 'No se encontró ningún empleado con ese documento' });
+    const user = await _buscarUsuario(req.params.negocioId, documento);
+    if (!user) return res.status(404).json({ error: 'No se encontró ningún empleado con ese documento' });
 
     const { rows } = await pool.query(
       `SELECT p.periodo, d.neto_pagar, p.pagado AS fecha_pagado
@@ -70,7 +82,7 @@ router.get('/:negocioId/historial-pago', async (req, res) => {
        JOIN periodos_nomina p ON p.id = d.periodo_id
        WHERE d.usuario_id=${ph(1)} AND d.negocio_id=${ph(2)} AND p.estado='pagado'
        ORDER BY p.periodo DESC LIMIT 24`,
-      [userR[0].id, req.params.negocioId]
+      [user.id, user.negocio_id]
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -84,12 +96,10 @@ router.post('/:negocioId', async (req, res) => {
     if (!documento || !accion) return res.status(400).json({ error: 'Faltan datos' });
     if (!['iniciar', 'finalizar'].includes(accion)) return res.status(400).json({ error: 'Acción no válida' });
 
-    const { rows: userR } = await pool.query(
-      `SELECT id, nombre FROM usuarios WHERE negocio_id=${ph(1)} AND TRIM(documento)=${ph(2)} AND activo=1 LIMIT 1`,
-      [req.params.negocioId, documento]
-    );
-    if (!userR[0]) return res.status(404).json({ error: 'No se encontró ningún empleado con ese documento' });
-    const usuarioId = userR[0].id;
+    const user = await _buscarUsuario(req.params.negocioId, documento);
+    if (!user) return res.status(404).json({ error: 'No se encontró ningún empleado con ese documento' });
+    const usuarioId = user.id;
+    const negocioId = user.negocio_id;
 
     const [fechaHoy, horaHoy] = localDateTime().split(' ');
     const diaSemana = new Date(fechaHoy + 'T12:00:00').getDay();
@@ -97,7 +107,7 @@ router.post('/:negocioId', async (req, res) => {
     const { rows: ex } = await pool.query(
       `SELECT id, hora_entrada, hora_salida FROM horarios
        WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND fecha=${ph(3)} AND activo=1 LIMIT 1`,
-      [usuarioId, req.params.negocioId, fechaHoy]
+      [usuarioId, negocioId, fechaHoy]
     );
 
     if (accion === 'iniciar') {
@@ -108,7 +118,7 @@ router.post('/:negocioId', async (req, res) => {
       const { rows: plantillaR } = await pool.query(
         `SELECT hora_entrada, es_libre FROM horarios
          WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND dia_semana=${ph(3)} AND fecha IS NULL AND activo=1 LIMIT 1`,
-        [usuarioId, req.params.negocioId, diaSemana]
+        [usuarioId, negocioId, diaSemana]
       );
       const plantilla = plantillaR[0];
       if (plantilla && !plantilla.es_libre && plantilla.hora_entrada && horaHoy < plantilla.hora_entrada) {
@@ -121,7 +131,7 @@ router.post('/:negocioId', async (req, res) => {
         await pool.query(
           `INSERT INTO horarios (id,usuario_id,negocio_id,dia_semana,hora_entrada,fecha,activo)
            VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},1)`,
-          [uuid(), usuarioId, req.params.negocioId, diaSemana, horaHoy, fechaHoy]
+          [uuid(), usuarioId, negocioId, diaSemana, horaHoy, fechaHoy]
         );
       }
     } else {
@@ -129,7 +139,7 @@ router.post('/:negocioId', async (req, res) => {
       if (ex[0].hora_salida) return res.status(400).json({ error: 'Ya finalizaste tu turno hoy' });
       await pool.query(`UPDATE horarios SET hora_salida=${ph(1)} WHERE id=${ph(2)}`, [horaHoy, ex[0].id]);
     }
-    res.json({ ok: true, nombre: userR[0].nombre });
+    res.json({ ok: true, nombre: user.nombre });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
