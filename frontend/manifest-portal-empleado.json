@@ -2,7 +2,7 @@
   "name": "BunnyDJPOS — Portal del Empleado",
   "short_name": "Portal Empleado",
   "description": "Portal del empleado de BunnyDJPOS",
-  "start_url": "/portal-empleado.html",
+  "start_url": "/portal-empleado.html?n=1f91b016-178e-4c49-8d7f-983889aebf3c",
   "scope": "/portal-empleado.html",
   "display": "standalone",
   "orientation": "any",

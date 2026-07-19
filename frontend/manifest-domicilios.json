@@ -2,7 +2,7 @@
   "name": "BunnyDJPOS — Domicilios",
   "short_name": "Domicilios",
   "description": "Pedido a domicilio de BunnyDJPOS",
-  "start_url": "/domicilios.html",
+  "start_url": "/domicilios.html?n=97452a59-cf26-4b5a-83a3-46d183d19274",
   "scope": "/domicilios.html",
   "display": "standalone",
   "orientation": "any",
