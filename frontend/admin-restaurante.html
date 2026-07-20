@@ -1275,7 +1275,15 @@ tr:hover td{background:var(--bg2)}
       <div class="field"><label>Categoría</label><select id="mi-cat"></select></div>
       <div class="field"><label>Tiempo preparación (min)</label><input id="mi-tiempo" type="number" min="1" placeholder="15"></div>
       <div class="field" style="grid-column:1/-1">
-        <label>Vincular a inventario <span style="color:var(--text2);font-weight:400;font-size:11px">(producto simple — 1 artículo de inventario)</span></label>
+        <label>¿Este producto tiene receta?</label>
+        <div style="display:flex;gap:8px;margin-top:2px">
+          <button type="button" id="mi-tipo-simple" class="btn btn-outline btn-sm" onclick="miSetTipo('simple')" style="flex:1">🥤 Simple (sin receta)</button>
+          <button type="button" id="mi-tipo-receta" class="btn btn-outline btn-sm" onclick="miSetTipo('receta')" style="flex:1">🧪 Con receta</button>
+        </div>
+        <p id="mi-tipo-hint" style="font-size:11px;color:var(--text2);margin-top:6px"></p>
+      </div>
+      <div class="field" id="mi-inventario-wrap" style="grid-column:1/-1">
+        <label>Vincular a inventario <span style="color:var(--text2);font-weight:400;font-size:11px">(opcional — para que el stock se descuente solo)</span></label>
         <select id="mi-inventario" style="width:100%;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
           <option value="">— Sin vínculo —</option>
         </select>
@@ -1308,7 +1316,7 @@ tr:hover td{background:var(--bg2)}
     </div>
 
     <!-- Sección receta -->
-    <div style="border-top:1px solid var(--border2);margin-top:14px;padding-top:14px">
+    <div id="mi-receta-wrap" style="border-top:1px solid var(--border2);margin-top:14px;padding-top:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <label style="font-weight:600;font-size:13px">🧪 Receta de ingredientes <span style="color:var(--text2);font-weight:400;font-size:11px">(productos compuestos)</span></label>
       </div>
@@ -4439,6 +4447,15 @@ async function subirFotoMenu(id,input){
   input.value='';
 }
 
+function miSetTipo(tipo){
+  $('mi-tipo-simple').className = tipo==='simple' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+  $('mi-tipo-receta').className = tipo==='receta' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+  $('mi-receta-wrap').style.display = tipo==='receta' ? 'block' : 'none';
+  $('mi-inventario-wrap').style.display = tipo==='simple' ? 'block' : 'none';
+  $('mi-tipo-hint').textContent = tipo==='simple'
+    ? 'Para productos que ya vienen listos (bebidas, postres comprados...) — opcionalmente vincúlalo a un artículo de Inventario para que el stock se descuente solo al venderlo.'
+    : 'Para platos que se arman en cocina — indica cuánto de cada ingrediente del Inventario se consume al vender 1 unidad, y el stock de cada ingrediente se descuenta solo.';
+}
 async function openMenuItemModal(id){
   menuItemEditId=id; miRecetaLocal=[];
   $('mi-modal-title').textContent=id?'Editar artículo':'Nuevo artículo';
@@ -4448,6 +4465,7 @@ async function openMenuItemModal(id){
   $('mi-foto-preview').style.display='none'; $('mi-foto-preview').src='';
   $('mi-foto-file').value=''; $('mi-receta-inv').value=''; $('mi-receta-cant').value='';
   renderRecetaList();
+  miSetTipo('simple');
   const [cats, invItems] = await Promise.all([api('/pos/menu/categorias'), api('/inventario/')]);
   miInvItems=invItems;
   $('mi-cat').innerHTML=cats.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
@@ -4472,6 +4490,7 @@ async function openMenuItemModal(id){
       $('mi-destacado-fields').style.display=item.destacado?'block':'none';
       $('mi-destacado-texto').value=item.destacado_texto||'';
       miRecetaLocal=receta; renderRecetaList();
+      miSetTipo(receta.length>0 ? 'receta' : 'simple');
     }catch(e){ toast('No se pudo cargar el artículo'); }
   }
   $('menu-item-modal').style.display='flex';
