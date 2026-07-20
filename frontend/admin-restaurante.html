@@ -4447,7 +4447,9 @@ async function subirFotoMenu(id,input){
   input.value='';
 }
 
+let miTipoActual='simple';
 function miSetTipo(tipo){
+  miTipoActual=tipo;
   $('mi-tipo-simple').className = tipo==='simple' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
   $('mi-tipo-receta').className = tipo==='receta' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
   $('mi-receta-wrap').style.display = tipo==='receta' ? 'block' : 'none';
@@ -4591,11 +4593,23 @@ async function saveMenuItem(){
              promo_activo:$('mi-promo-activo').checked,promo_precio:+$('mi-promo-precio').value||null,
              promo_desde:$('mi-promo-desde').value||null,promo_hasta:$('mi-promo-hasta').value||null,
              destacado:$('mi-destacado').checked,destacado_texto:$('mi-destacado-texto').value||null};
-    if(menuItemEditId) await api(`/pos/menu/items/${menuItemEditId}`,{method:'PUT',body:JSON.stringify(b)});
-    else {
+    if(menuItemEditId){
+      await api(`/pos/menu/items/${menuItemEditId}`,{method:'PUT',body:JSON.stringify(b)});
+      // Si se pasó a "Simple", limpiar cualquier receta que haya quedado de
+      // antes — si no, la venta la seguiría usando (tiene prioridad sobre
+      // el vínculo simple) aunque en la interfaz ya no se vea.
+      if(miTipoActual==='simple'){
+        for(const ing of miRecetaLocal){
+          if(ing.id) await api(`/pos/menu/items/${menuItemEditId}/receta/${ing.id}`,{method:'DELETE'});
+        }
+        miRecetaLocal=[];
+      }
+    } else {
       const r=await api('/pos/menu/items',{method:'POST',body:JSON.stringify(b)}); menuItemEditId=r.id;
-      for(const ing of miRecetaLocal)
-        await api(`/pos/menu/items/${menuItemEditId}/receta`,{method:'POST',body:JSON.stringify({inventario_id:ing.inventario_id,cantidad:ing.cantidad})});
+      if(miTipoActual==='receta'){
+        for(const ing of miRecetaLocal)
+          await api(`/pos/menu/items/${menuItemEditId}/receta`,{method:'POST',body:JSON.stringify({inventario_id:ing.inventario_id,cantidad:ing.cantidad})});
+      }
     }
     const file=$('mi-foto-file').files[0];
     if(file){ const form=new FormData(); form.append('foto',file); await fetch(`${API}/pos/menu/items/${menuItemEditId}/foto`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:form}); }
