@@ -258,16 +258,17 @@ router.get('/menu/items/:id', requirePermiso(['pos_menu','personal']), async (re
 
 router.post('/menu/items', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
-    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, inventario_id, nombre_zh, descripcion_zh,
+    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, inventario_id, stock, nombre_zh, descripcion_zh,
             promo_activo, promo_precio, promo_desde, promo_hasta, destacado, destacado_texto } = req.body;
     const id = uuid();
+    const stockVal = (stock !== undefined && stock !== null && stock !== '') ? +stock : null;
     await pool.query(
-      `INSERT INTO menu_items (id,negocio_id,categoria_id,nombre,descripcion,precio,emoji,disponible,tiempo_prep,orden,inventario_id,nombre_zh,descripcion_zh,
+      `INSERT INTO menu_items (id,negocio_id,categoria_id,nombre,descripcion,precio,emoji,disponible,tiempo_prep,orden,inventario_id,stock,nombre_zh,descripcion_zh,
        promo_activo,promo_precio,promo_desde,promo_hasta,destacado,destacado_texto)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)},
-       ${ph(14)},${ph(15)},${ph(16)},${ph(17)},${ph(18)},${ph(19)})`,
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)},${ph(11)},${ph(12)},${ph(13)},${ph(14)},
+       ${ph(15)},${ph(16)},${ph(17)},${ph(18)},${ph(19)},${ph(20)})`,
       [id, nid(req), categoria_id||null, nombre, descripcion||null, precio, emoji||'🍽️',
-       disponible!==false, tiempo_prep||15, orden||0, inventario_id||null,
+       disponible!==false, tiempo_prep||15, orden||0, inventario_id||null, stockVal,
        nombre_zh||null, descripcion_zh||null,
        !!promo_activo, promo_precio||null, promo_desde||null, promo_hasta||null,
        !!destacado, destacado_texto||null]
@@ -278,18 +279,19 @@ router.post('/menu/items', requirePermiso(['pos_menu','personal']), async (req, 
 
 router.put('/menu/items/:id', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
-    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, stock_min, inventario_id, nombre_zh, descripcion_zh,
+    const { nombre, descripcion, precio, categoria_id, emoji, disponible, tiempo_prep, orden, stock_min, inventario_id, stock, nombre_zh, descripcion_zh,
             promo_activo, promo_precio, promo_desde, promo_hasta, destacado, destacado_texto } = req.body;
+    const stockVal = (stock !== undefined && stock !== null && stock !== '') ? +stock : null;
     await pool.query(
       `UPDATE menu_items SET nombre=${ph(1)},descripcion=${ph(2)},precio=${ph(3)},
        categoria_id=${ph(4)},emoji=${ph(5)},disponible=${ph(6)},tiempo_prep=${ph(7)},orden=${ph(8)},stock_min=${ph(9)},
-       inventario_id=${ph(10)},nombre_zh=${ph(11)},descripcion_zh=${ph(12)},
-       promo_activo=${ph(13)},promo_precio=${ph(14)},promo_desde=${ph(15)},promo_hasta=${ph(16)},
-       destacado=${ph(17)},destacado_texto=${ph(18)}
-       WHERE id=${ph(19)} AND negocio_id=${ph(20)}`,
+       inventario_id=${ph(10)},stock=${ph(11)},nombre_zh=${ph(12)},descripcion_zh=${ph(13)},
+       promo_activo=${ph(14)},promo_precio=${ph(15)},promo_desde=${ph(16)},promo_hasta=${ph(17)},
+       destacado=${ph(18)},destacado_texto=${ph(19)}
+       WHERE id=${ph(20)} AND negocio_id=${ph(21)}`,
       [nombre, descripcion, precio, categoria_id||null, emoji||'🍽️',
        disponible!==false, tiempo_prep||15, orden||0, stock_min||0,
-       inventario_id||null, nombre_zh||null, descripcion_zh||null,
+       inventario_id||null, stockVal, nombre_zh||null, descripcion_zh||null,
        !!promo_activo, promo_precio||null, promo_desde||null, promo_hasta||null,
        !!destacado, destacado_texto||null,
        req.params.id, nid(req)]

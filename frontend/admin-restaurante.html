@@ -1283,10 +1283,14 @@ tr:hover td{background:var(--bg2)}
         <p id="mi-tipo-hint" style="font-size:11px;color:var(--text2);margin-top:6px"></p>
       </div>
       <div class="field" id="mi-inventario-wrap" style="grid-column:1/-1">
-        <label>Vincular a inventario <span style="color:var(--text2);font-weight:400;font-size:11px">(opcional — para que el stock se descuente solo)</span></label>
-        <select id="mi-inventario" style="width:100%;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px">
+        <label>Vincular a inventario <span style="color:var(--text2);font-weight:400;font-size:11px">(opcional — usa esto SI el producto también se controla en Inventario)</span></label>
+        <select id="mi-inventario" style="width:100%;padding:8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px" onchange="$('mi-stock').disabled=!!this.value">
           <option value="">— Sin vínculo —</option>
         </select>
+        <div class="field" style="margin-top:10px;margin-bottom:0">
+          <label>O ponle stock propio <span style="color:var(--text2);font-weight:400;font-size:11px">(si NO lo vinculas arriba — se descuenta 1 por cada venta)</span></label>
+          <input id="mi-stock" type="number" min="0" step="1" placeholder="Ej: 20" oninput="$('mi-inventario').disabled=this.value!==''">
+        </div>
       </div>
     </div>
 
@@ -4461,7 +4465,8 @@ function miSetTipo(tipo){
 async function openMenuItemModal(id){
   menuItemEditId=id; miRecetaLocal=[];
   $('mi-modal-title').textContent=id?'Editar artículo':'Nuevo artículo';
-  ['mi-nombre','mi-nombre-zh','mi-desc','mi-desc-zh','mi-precio','mi-tiempo','mi-promo-precio','mi-promo-desde','mi-promo-hasta','mi-destacado-texto'].forEach(f=>$(f).value='');
+  ['mi-nombre','mi-nombre-zh','mi-desc','mi-desc-zh','mi-precio','mi-tiempo','mi-promo-precio','mi-promo-desde','mi-promo-hasta','mi-destacado-texto','mi-stock'].forEach(f=>$(f).value='');
+  $('mi-inventario').disabled=false; $('mi-stock').disabled=false;
   $('mi-promo-activo').checked=false; $('mi-promo-fields').style.display='none';
   $('mi-destacado').checked=false; $('mi-destacado-fields').style.display='none';
   $('mi-foto-preview').style.display='none'; $('mi-foto-preview').src='';
@@ -4482,6 +4487,9 @@ async function openMenuItemModal(id){
       $('mi-precio').value=item.precio||0;
       $('mi-cat').value=item.categoria_id||''; $('mi-tiempo').value=item.tiempo_prep||15;
       $('mi-inventario').value=item.inventario_id||'';
+      $('mi-stock').value=(item.stock!==null&&item.stock!==undefined)?item.stock:'';
+      if(item.inventario_id){ $('mi-stock').disabled=true; $('mi-inventario').disabled=false; }
+      else if(item.stock!==null&&item.stock!==undefined){ $('mi-inventario').disabled=true; $('mi-stock').disabled=false; }
       if(item.foto_url){ $('mi-foto-preview').src=API.replace('/api','')+item.foto_url; $('mi-foto-preview').style.display='block'; }
       $('mi-promo-activo').checked=!!item.promo_activo;
       $('mi-promo-fields').style.display=item.promo_activo?'grid':'none';
@@ -4587,8 +4595,10 @@ function previewMenuFoto(input){
 }
 async function saveMenuItem(){
   try {
+    const invId=$('mi-inventario').value||null;
     const b={nombre:$('mi-nombre').value,descripcion:$('mi-desc').value,precio:+$('mi-precio').value||0,
-             categoria_id:$('mi-cat').value,tiempo_prep:+$('mi-tiempo').value||15,inventario_id:$('mi-inventario').value||null,
+             categoria_id:$('mi-cat').value,tiempo_prep:+$('mi-tiempo').value||15,inventario_id:invId,
+             stock:invId?null:($('mi-stock').value!==''?+$('mi-stock').value:null),
              nombre_zh:$('mi-nombre-zh').value||null,descripcion_zh:$('mi-desc-zh').value||null,
              promo_activo:$('mi-promo-activo').checked,promo_precio:+$('mi-promo-precio').value||null,
              promo_desde:$('mi-promo-desde').value||null,promo_hasta:$('mi-promo-hasta').value||null,
