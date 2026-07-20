@@ -4409,7 +4409,18 @@ async function loadEditarMenu(){
         ${c.icono||''} ${c.nombre}
         <button onclick="deleteCatMenu('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;line-height:1">×</button>
       </div>`).join('') || '<span style="font-size:13px;color:var(--text2)">Sin categorías</span>';
-    $('editar-menu-items').innerHTML=items.map(item=>`
+    $('editar-menu-items').innerHTML=items.map(item=>{
+      const stockEfectivo = item.receta_count>0 ? item.receta_porciones
+        : (item.inventario_id ? item.inv_stock
+        : ((item.stock!==null&&item.stock!==undefined) ? item.stock : null));
+      let stockBadge='';
+      if(stockEfectivo!==null){
+        const n=Math.floor(+stockEfectivo);
+        const color=n<=0?'var(--red-l)':n<5?'var(--amber-l)':'var(--green-l)';
+        const colorTxt=n<=0?'var(--red-d)':n<5?'var(--amber-d)':'var(--green-d)';
+        stockBadge=`<span style="font-size:10px;background:${color};color:${colorTxt};padding:1px 6px;border-radius:8px">📦 ${n<=0?'Agotado':n+' disp.'}</span>`;
+      }
+      return `
       <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;cursor:default"
            onmouseenter="_showMenuTip('${item.id}',event)" onmousemove="_posInvTip(event)" onmouseleave="_hideInvTip()">
         ${item.foto_url?`<img src="${API.replace('/api','')}${item.foto_url}" style="width:100%;height:90px;object-fit:cover" alt="${item.nombre}">`:
@@ -4419,6 +4430,7 @@ async function loadEditarMenu(){
           <div style="font-size:11px;color:var(--text2);margin:2px 0">${item.categoria_nombre||''}</div>
           <div style="font-size:14px;font-weight:600;color:var(--green-d);margin-bottom:4px">${fmt(item.precio)}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+            ${stockBadge}
             ${item.promo_vigente?'<span style="font-size:10px;background:var(--amber-l);color:var(--amber-d);padding:1px 6px;border-radius:8px">🏷️ Promo</span>':''}
             ${item.destacado?'<span style="font-size:10px;background:var(--amber-l);color:var(--amber-d);padding:1px 6px;border-radius:8px">⭐ Sugerido</span>':''}
           </div>
@@ -4428,7 +4440,8 @@ async function loadEditarMenu(){
             <button class="btn btn-danger btn-sm" onclick="deleteMenuItem('${item.id}')">✕</button>
           </div>
         </div>
-      </div>`).join('') || '<p style="color:var(--text2);font-size:13px">Sin artículos</p>';
+      </div>`;
+    }).join('') || '<p style="color:var(--text2);font-size:13px">Sin artículos</p>';
   } catch(e){ toast('Error: '+e.message); }
 }
 
