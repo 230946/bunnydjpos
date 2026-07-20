@@ -123,6 +123,7 @@ function buildWhatsAppText(pedido, negocio) {
   items.forEach(it => {
     lines.push(`  • ${it.nombre} x${it.qty} = ${fmtMoney(it.subtotal)}`);
   });
+  if (pedido.costo_domicilio > 0) lines.push(`  • Domicilio = ${fmtMoney(pedido.costo_domicilio)}`);
   lines.push(`\n💰 *Total: ${fmtMoney(pedido.total)}*`);
   lines.push(`\nID: ${pedido.id.slice(0, 8).toUpperCase()}`);
   return encodeURIComponent(lines.join('\n'));
@@ -136,7 +137,7 @@ function buildWhatsAppText(pedido, negocio) {
 // el chatbot (para construir el system prompt con el menú real).
 async function obtenerMenuData(nid) {
   const { rows: neg } = await pool.query(
-    `SELECT id, nombre, tipo, logo_url, telefono, direccion, ciudad, color_primario, moneda FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+    `SELECT id, nombre, tipo, logo_url, telefono, direccion, ciudad, color_primario, moneda, costo_domicilio FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
     [nid]
   );
   if (!neg[0]) return null;
@@ -227,7 +228,7 @@ async function crearPedidoValidado({ negocio_id, cliente_nombre, cliente_tel, cl
   monto_nequi    = parseFloat(monto_nequi) || 0;
 
   const { rows: neg } = await pool.query(
-    `SELECT id, nombre, tipo, telefono, direccion FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+    `SELECT id, nombre, tipo, telefono, direccion, costo_domicilio FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
     [negocio_id]
   );
   if (!neg[0]) return { error: 'Negocio no encontrado', status: 404 };
@@ -270,7 +271,10 @@ async function crearPedidoValidado({ negocio_id, cliente_nombre, cliente_tel, cl
 
   if (!itemsValidados.length) return { error: 'Ningún producto válido', status: 400 };
 
-  const total = subtotal + totalIva;
+  // El costo de domicilio solo aplica cuando de verdad hay que llevarlo —
+  // "recoge en tienda" no tiene envío que cobrar.
+  const costoDomicilio = tipo_entrega === 'domicilio' ? (parseFloat(neg[0].costo_domicilio) || 0) : 0;
+  const total = subtotal + totalIva + costoDomicilio;
   const id    = uuid();
   const tipo  = neg[0].tipo || 'restaurante';
 
@@ -284,27 +288,27 @@ async function crearPedidoValidado({ negocio_id, cliente_nombre, cliente_tel, cl
   }
 
   await pool.query(
-    `INSERT INTO domicilios_pedidos (id, negocio_id, tipo, tipo_entrega, cliente_nombre, cliente_tel, cliente_dir, items, notas, subtotal, total, estado, metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,'pendiente',?,?,?,?)`,
+    `INSERT INTO domicilios_pedidos (id, negocio_id, tipo, tipo_entrega, cliente_nombre, cliente_tel, cliente_dir, items, notas, subtotal, costo_domicilio, total, estado, metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'pendiente',?,?,?,?)`,
     [id, negocio_id, tipo, tipo_entrega, cliente_nombre.trim(), cliente_tel.trim(), dirFinal,
-     JSON.stringify(itemsValidados), notas?.trim() || null, subtotal, total,
+     JSON.stringify(itemsValidados), notas?.trim() || null, subtotal, costoDomicilio, total,
      metodo_pago, monto_efectivo, monto_tarjeta, monto_nequi]
   );
 
   const telNegocio = (neg[0].telefono || '').replace(/\D/g, '');
   const waLink = telNegocio
-    ? `https://wa.me/${telNegocio.startsWith('57') ? '' : '57'}${telNegocio}?text=${buildWhatsAppText({ id, cliente_nombre, cliente_tel, cliente_dir: dirFinal, notas, items: itemsValidados, total }, neg[0])}`
+    ? `https://wa.me/${telNegocio.startsWith('57') ? '' : '57'}${telNegocio}?text=${buildWhatsAppText({ id, cliente_nombre, cliente_tel, cliente_dir: dirFinal, notas, items: itemsValidados, costo_domicilio: costoDomicilio, total }, neg[0])}`
     : null;
 
   if (broadcast) {
     broadcast(negocio_id, 'domicilio_nuevo', {
       id, cliente_nombre: cliente_nombre.trim(), cliente_tel: cliente_tel.trim(),
       cliente_dir: dirFinal, tipo_entrega, notas: notas?.trim() || null,
-      items: itemsValidados, total, negocio_nombre: neg[0].nombre
+      items: itemsValidados, costo_domicilio: costoDomicilio, total, negocio_nombre: neg[0].nombre
     });
   }
 
-  return { ok: true, id, total, wa_link: waLink, tipo_entrega };
+  return { ok: true, id, subtotal, costo_domicilio: costoDomicilio, total, wa_link: waLink, tipo_entrega };
 }
 
 // POST /api/domicilios/pedido
@@ -341,10 +345,14 @@ function buildChatSystemPrompt(negocio, productos, clienteTel) {
     return `${catIdx + 1}. ${cat.toUpperCase()}\n${lineasCat.join('\n')}`;
   }).join('\n\n');
   const destacados = disponibles.filter(p => p.destacado);
+  const costoDomicilio = parseFloat(negocio.costo_domicilio) || 0;
   let prompt = `Eres el asistente de pedidos a domicilio de "${negocio.nombre}". Ayudas al cliente a armar su pedido conversando por chat, en español, de forma breve, cálida y directa.
 
 MENÚ DISPONIBLE (usa el "id" EXACTO al llamar la herramienta; nunca inventes ids ni precios; el "id" es solo para ti, nunca lo muestres al cliente):
 ${menuFormateado}`;
+  if (costoDomicilio > 0) {
+    prompt += `\n\nCOSTO DE DOMICILIO: ${fmtMoney(costoDomicilio)}. Este valor se suma automáticamente al total SOLO si el pedido es "a domicilio" (nunca si es "recoger en tienda"). Cuando confirmes el resumen y el total con el cliente, si es a domicilio inclúyelo como una línea aparte ("Domicilio: ${fmtMoney(costoDomicilio)}") y súmalo al total que le muestres — el total final que cobra el sistema ya lo incluye automáticamente, tú solo debes anunciarlo para que no le tome por sorpresa.`;
+  }
 
   if (destacados.length) {
     prompt += `\n\nPRODUCTOS DESTACADOS/SUGERIDOS (recomiéndalos con gusto cuando el cliente pregunte qué le recomiendas, qué hay de especial, o no sepa qué pedir):

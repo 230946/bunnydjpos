@@ -482,6 +482,7 @@ body{display:flex;flex-direction:column;min-height:100vh}
   <div class="resumen-box">
     <h3>Resumen</h3>
     <div id="res-items"></div>
+    <div class="res-item" id="res-domicilio-row" style="display:none"><span>Domicilio</span><span id="res-domicilio-val"></span></div>
     <div class="res-total"><span>Total</span><span id="res-total-val"></span></div>
   </div>
   <button id="btn-volver" onclick="showCatalog()">← Seguir comprando</button>
@@ -1001,16 +1002,23 @@ function updateBottomBar() {
 function getCartTotal() {
   return Object.values(cart).reduce((s, {item, qty}) => s + item.precio * qty, 0);
 }
+// Costo de domicilio solo aplica cuando la entrega elegida es "domicilio"
+// (nunca en "recoge en tienda") — debe coincidir con lo que calcula el
+// backend en crearPedidoValidado, o el pago mixto se rechaza al confirmar.
+function getCostoDomicilioActual() {
+  return tipoEntrega === 'domicilio' ? (parseFloat(negocio?.costo_domicilio) || 0) : 0;
+}
+function getTotalConEntrega() {
+  return getCartTotal() + getCostoDomicilioActual();
+}
 
 function goToForm() {
   closeCart();
   const items = Object.values(cart);
   if (!items.length) { toast('Agrega productos primero'); return; }
-  const total = getCartTotal();
   document.getElementById('res-items').innerHTML = items.map(({item, qty}) =>
     `<div class="res-item"><span>${item.nombre} x${qty}</span><span>${fmtCOP(item.precio * qty)}</span></div>`
   ).join('');
-  document.getElementById('res-total-val').textContent = fmtCOP(total);
   // Pre-rellenar con datos guardados del cliente
   if (clienteTel    && !document.getElementById('f-tel').value)    document.getElementById('f-tel').value = clienteTel;
   if (clienteNombre && !document.getElementById('f-nombre').value) document.getElementById('f-nombre').value = clienteNombre;
@@ -1024,6 +1032,19 @@ function selTipoEntrega(t) {
   tipoEntrega = t;
   document.querySelectorAll('#entrega-grid .pay-opt').forEach(b => b.classList.toggle('sel', b.dataset.e === t));
   document.getElementById('fld-dir').style.display = t === 'domicilio' ? 'block' : 'none';
+  actualizarResumenTotal();
+}
+function actualizarResumenTotal() {
+  const costoDom = getCostoDomicilioActual();
+  const fila = document.getElementById('res-domicilio-row');
+  if (costoDom > 0) {
+    fila.style.display = 'flex';
+    document.getElementById('res-domicilio-val').textContent = fmtCOP(costoDom);
+  } else {
+    fila.style.display = 'none';
+  }
+  document.getElementById('res-total-val').textContent = fmtCOP(getTotalConEntrega());
+  calcPagoMixtoRestante();
 }
 
 // ── Medio de pago ───────────────────────────────────────────────
@@ -1040,7 +1061,7 @@ function selMetodoPago(m) {
 }
 
 function calcPagoMixtoRestante() {
-  const total = getCartTotal();
+  const total = getTotalConEntrega();
   const ef = parseInt(document.getElementById('pm-efectivo').value) || 0;
   const ta = parseInt(document.getElementById('pm-tarjeta').value) || 0;
   const ne = parseInt(document.getElementById('pm-nequi').value) || 0;
@@ -1269,11 +1290,11 @@ async function confirmarPedido() {
     pagos.efectivo = parseInt(document.getElementById('pm-efectivo').value) || 0;
     pagos.tarjeta  = parseInt(document.getElementById('pm-tarjeta').value) || 0;
     pagos.nequi    = parseInt(document.getElementById('pm-nequi').value) || 0;
-    if (pagos.efectivo + pagos.tarjeta + pagos.nequi !== getCartTotal()) {
+    if (pagos.efectivo + pagos.tarjeta + pagos.nequi !== getTotalConEntrega()) {
       toast('El pago mixto debe sumar el total del pedido'); return;
     }
   } else {
-    pagos[metodoPago] = getCartTotal();
+    pagos[metodoPago] = getTotalConEntrega();
   }
 
   const btn = document.getElementById('btn-confirmar');

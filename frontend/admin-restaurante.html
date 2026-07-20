@@ -1081,6 +1081,7 @@ tr:hover td{background:var(--bg2)}
                 <button class="btn btn-sm btn-outline" onclick="domCopyLinkRider()" title="Copiar link para repartidores">🏍️ Link Repartidores</button>
                 <button class="btn btn-sm btn-outline" onclick="toggleDomMap()" title="Ver mapa de repartidores">🗺️ Mapa</button>
                 <button class="btn btn-sm btn-outline" onclick="domShowRiders()">👤 Domiciliarios</button>
+                <button class="btn btn-sm btn-outline" onclick="openDomConfigModal()">⚙️ Costo de domicilio</button>
                 <button class="btn btn-sm btn-primary" onclick="loadDomPedidos()">↺ Actualizar</button>
               </div>
             </div>
@@ -1340,6 +1341,19 @@ tr:hover td{background:var(--bg2)}
     <div class="modal-actions" style="margin-top:14px">
       <button class="btn btn-outline btn-sm" onclick="closeModal('menu-item-modal')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="saveMenuItem()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Domicilios: configuración -->
+<div class="modal-bg" id="dom-config-modal" style="display:none">
+  <div class="modal" style="max-width:380px">
+    <h3>Costo de domicilio</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Se suma automáticamente al total solo en pedidos <b>a domicilio</b> — los de "recoger en tienda" no lo cobran.</p>
+    <div class="field"><label>Valor ($)</label><input id="dom-cfg-costo" type="number" min="0" step="100" placeholder="0"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('dom-config-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveDomConfig()">Guardar</button>
     </div>
   </div>
 </div>
@@ -5246,6 +5260,20 @@ function domShowPedidos() {
   document.getElementById('panel-dom-riders').style.display = 'none';
 }
 
+async function openDomConfigModal(){
+  try{
+    const d=await api('/admin/config/domicilios');
+    $('dom-cfg-costo').value=d.costo_domicilio||0;
+  }catch(e){ $('dom-cfg-costo').value=0; }
+  $('dom-config-modal').style.display='flex';
+}
+async function saveDomConfig(){
+  try{
+    await api('/admin/config/domicilios',{method:'PUT',body:JSON.stringify({costo_domicilio:+$('dom-cfg-costo').value||0})});
+    closeModal('dom-config-modal');
+    showToast('Costo de domicilio guardado ✓');
+  }catch(e){ showToast('Error: '+e.message); }
+}
 function domCopyLink() {
   const nid = me?.negocio_id;
   if (!nid) return;

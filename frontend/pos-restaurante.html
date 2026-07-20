@@ -395,7 +395,7 @@ table.inv tr:hover td{background:var(--bg2)}
     <button class="nav-icon active" title="Mesas" data-pos-perm="pos_mesas" onclick="nav('mesas',this)">🪑<span class="lbl">Mesas</span></button>
     <button class="nav-icon" title="Menú" data-pos-perm="pos_menu" onclick="nav('menu',this)">📋<span class="lbl">Menú</span></button>
     <button class="nav-icon" title="Cocina" data-pos-perm="pos_cocina" onclick="nav('cocina',this)">👨‍🍳<span class="badge" id="cocina-badge" style="display:none">0</span><span class="lbl">Cocina</span></button>
-    <button class="nav-icon" title="Recoger" data-pos-perm="pos_cocina" onclick="nav('recoger',this)">🏪<span class="badge" id="recoger-badge" style="display:none">0</span><span class="lbl">Recoger</span></button>
+    <button class="nav-icon" title="Recoger / Domicilio" data-pos-perm="pos_cocina" onclick="nav('recoger',this)">🏪<span class="badge" id="recoger-badge" style="display:none">0</span><span class="lbl">Recoger / Domicilio</span></button>
     <button class="nav-icon" title="Cobro" data-pos-perm="pos_cobro" onclick="nav('cobro',this)">💳<span class="lbl">Caja</span></button>
     <button class="nav-icon" title="Caja diaria" data-pos-perm="pos_cobro" onclick="nav('caja',this)">💰<span class="badge" id="dom-caja-badge" style="display:none;background:#f59e0b">0</span><span class="lbl">Caja diaria</span></button>
     <div style="margin-top:auto">
@@ -481,7 +481,7 @@ table.inv tr:hover td{background:var(--bg2)}
       <!-- RECOGER EN TIENDA (pedidos ya listos, esperando que el cliente pase) -->
       <div class="panel" id="panel-recoger">
         <div class="panel-topbar">
-          <span class="panel-title">🏪 Pedidos para recoger</span>
+          <span class="panel-title">🏪🛵 Pedidos para recoger / domicilio</span>
           <button class="btn btn-sm btn-outline" onclick="loadRecoger()">↻</button>
         </div>
         <div class="panel-body">
@@ -985,7 +985,7 @@ function nav(p,btn){
   document.querySelectorAll('.nav-icon').forEach(el=>el.classList.remove('active'));
   $('panel-'+p).classList.add('active');
   if(btn) btn.classList.add('active');
-  const labels={mesas:'Mesas',menu:'Menú',cocina:'Cocina',recoger:'Recoger',cobro:'Caja',caja:'Caja Diaria'};
+  const labels={mesas:'Mesas',menu:'Menú',cocina:'Cocina',recoger:'Recoger / Domicilio',cobro:'Caja',caja:'Caja Diaria'};
   const mt=$('mob-panel-title');if(mt)mt.textContent=labels[p]||p;
   if(p==='mesas') loadMesas();
   if(p==='menu') { loadMenu(); }
@@ -1408,9 +1408,10 @@ async function loadCocina(){
       api('/domicilios/pedidos').catch(()=>({ pedidos:[], pendientes:0 }))
     ]);
     const ESTADOS_COCINA = new Set(['pendiente','aceptado','en_preparacion','listo']);
-    // Los "recoge en tienda" ya listos se mueven a la pestaña Recoger — no se
-    // quedan en Cocina para no confundir al cocinero sobre qué falta preparar.
-    const domData = (domRes.pedidos||[]).filter(p => ESTADOS_COCINA.has(p.estado) && !(p.tipo_entrega==='recoge_tienda' && p.estado==='listo'));
+    // Cualquier pedido ya "listo" (recoge en tienda o domicilio) se mueve a
+    // la pestaña Recoger / Domicilio — no se queda en Cocina para no
+    // confundir al cocinero sobre qué falta preparar.
+    const domData = (domRes.pedidos||[]).filter(p => ESTADOS_COCINA.has(p.estado) && p.estado!=='listo');
     const domNuevos = domData.filter(p => p.estado==='pendiente'||p.estado==='aceptado').length;
     actualizarAlertaDomicilioNuevo(domNuevos);
     const totalBadge = data.length + domData.length;
@@ -1472,28 +1473,31 @@ async function updDomicilio(id, estado){
   } catch(e){ toast('Error: '+e.message); }
 }
 
-// Pedidos "recoge en tienda" ya listos, esperando que el cliente pase por
-// ellos — separado de Cocina para no mezclar "falta preparar" con "ya está
-// listo, solo falta entregarlo".
+// Pedidos ya listos esperando que alguien pase por ellos — el cliente
+// mismo (recoge en tienda) o el domiciliario (domicilio) — separado de
+// Cocina para no mezclar "falta preparar" con "ya está listo".
 async function loadRecoger(){
   try {
     const domRes = await api('/domicilios/pedidos').catch(()=>({ pedidos:[], pendientes:0 }));
-    const listos = (domRes.pedidos||[]).filter(p => p.tipo_entrega==='recoge_tienda' && p.estado==='listo');
+    const listos = (domRes.pedidos||[]).filter(p => p.estado==='listo');
     const badge = $('recoger-badge');
     if(badge){ badge.style.display = listos.length ? 'flex' : 'none'; badge.textContent = listos.length; }
     const g = $('recoger-grid'); if(!g) return;
     g.innerHTML='';
-    if(!listos.length){ g.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">Sin pedidos listos para recoger</div>'; return; }
+    if(!listos.length){ g.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">Sin pedidos listos para recoger o despachar</div>'; return; }
     listos.forEach(p=>{
       const items=typeof p.items==='string'?JSON.parse(p.items):p.items;
       const mins=Math.floor((Date.now()-new Date(p.created_at))/60000);
+      const esRecoge = p.tipo_entrega==='recoge_tienda';
       const d=document.createElement('div');
       d.className='ticket entregado';
       d.style.borderLeft='3px solid #f59e0b';
       const btn = p.pago_estado==='pagado'
-        ? `<button class="ticket-btn btn-listo" onclick="updDomicilio('${p.id}','entregado')">✅ Entregado (recogido por el cliente)</button>`
-        : `<div style="background:var(--amber-l,#fff7d6);color:var(--amber-d,#8aad00);border-radius:var(--r);padding:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px">⚠️ Falta facturar en Caja para entregar</div>`;
-      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">🏪 ${p.cliente_nombre}</span><span class="badge b-entregado">Listo para recoger</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:18px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${btn}`;
+        ? (esRecoge
+            ? `<button class="ticket-btn btn-listo" onclick="updDomicilio('${p.id}','entregado')">✅ Entregado (recogido por el cliente)</button>`
+            : `<button class="ticket-btn btn-listo" onclick="reenviarAvisoDomicilio('${p.id}')">🔔 Reenviar aviso a domiciliario</button>`)
+        : `<div style="background:var(--amber-l,#fff7d6);color:var(--amber-d,#8aad00);border-radius:var(--r);padding:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px">⚠️ Falta facturar en Caja para ${esRecoge?'entregar':'despachar'}</div>`;
+      d.innerHTML=`<div class="ticket-header"><span class="ticket-mesa">${esRecoge?'🏪':'🛵'} ${p.cliente_nombre}</span><span class="badge b-entregado">${esRecoge?'Listo para recoger':'Listo para Domicilio'}</span></div><div class="ticket-time">${mins}min · ${p.cliente_tel}</div><div style="margin:8px 0">${items.map(i=>`<div class="ticket-item"><span class="ticket-qty">${i.qty||1}×</span><div style="display:flex;flex-direction:column;line-height:1.25"><span>${i.nombre}</span>${i.nombre_zh?`<span style="font-size:18px;color:var(--text2);font-weight:600">${i.nombre_zh}</span>`:''}</div></div>`).join('')}</div>${p.notas?`<div style="font-size:11px;color:var(--amber-d,#b45309);margin-bottom:6px">📝 ${p.notas}</div>`:''}<div style="font-size:12px;font-weight:600;margin-bottom:6px">Total: $${(p.total||0).toLocaleString('es-CO')}</div>${btn}`;
       g.appendChild(d);
     });
   } catch(e){ toast('Error cargando recoger: '+e.message); }

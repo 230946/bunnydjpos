@@ -359,6 +359,23 @@ router.put('/config/impresora', requirePermiso('personal'), async (req, res) => 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.get('/config/domicilios', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT costo_domicilio FROM negocios WHERE id=${ph(1)}`, [nid(req)]
+    );
+    res.json({ costo_domicilio: rows[0]?.costo_domicilio ?? 0 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/config/domicilios', requirePermiso('personal'), async (req, res) => {
+  try {
+    const costo = Math.max(0, +req.body.costo_domicilio || 0);
+    await pool.query(`UPDATE negocios SET costo_domicilio=${ph(1)} WHERE id=${ph(2)}`, [costo, nid(req)]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ════════════════════════════════════════════════════════════════
 // PROVEEDORES
 // ════════════════════════════════════════════════════════════════

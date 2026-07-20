@@ -131,7 +131,7 @@ app.use('/api/turno',     turnoRouter);
 app.get('/api/negocio-pub/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT nombre, tipo, logo_url, nit, direccion, ciudad, telefono, departamento, idiomas, color_primario, moneda, zona_horaria FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+      `SELECT nombre, tipo, logo_url, nit, direccion, ciudad, telefono, departamento, idiomas, color_primario, moneda, zona_horaria, costo_domicilio FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
@@ -350,6 +350,8 @@ async function runMigrations() {
     { table: 'menu_items', column: 'promo_hasta',     sql: `ALTER TABLE menu_items ADD COLUMN promo_hasta DATE NULL` },
     { table: 'menu_items', column: 'destacado',       sql: `ALTER TABLE menu_items ADD COLUMN destacado TINYINT(1) NOT NULL DEFAULT 0` },
     { table: 'menu_items', column: 'destacado_texto', sql: `ALTER TABLE menu_items ADD COLUMN destacado_texto VARCHAR(100) NULL` },
+    { table: 'negocios', column: 'costo_domicilio', sql: `ALTER TABLE negocios ADD COLUMN costo_domicilio DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'domicilios_pedidos', column: 'costo_domicilio', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN costo_domicilio DECIMAL(10,2) NOT NULL DEFAULT 0` },
     {
       table: 'domicilios_pedidos', column: '__create__',
       createSql: `CREATE TABLE IF NOT EXISTS domicilios_pedidos (
