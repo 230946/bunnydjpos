@@ -1190,6 +1190,7 @@ function esAgotado(item){
   if(!item.disponible) return true;
   if(item.receta_count > 0) return item.receta_porciones === null || item.receta_porciones <= 0;
   if(item.inventario_id != null) return item.inv_stock === null || +item.inv_stock <= 0;
+  if(item.stock !== null && item.stock !== undefined) return +item.stock <= 0;
   return false;
 }
 function stockLabel(item){
@@ -1199,6 +1200,8 @@ function stockLabel(item){
       : `<span style="font-size:10px;color:var(--red-d);margin-top:2px">Sin ingredientes</span>`;
   if(item.inventario_id != null && item.inv_stock !== null)
     return `<span style="font-size:10px;color:var(--text2);margin-top:2px">Stock: ${Math.round(+item.inv_stock)}</span>`;
+  if(item.stock !== null && item.stock !== undefined)
+    return `<span style="font-size:10px;color:var(--text2);margin-top:2px">Stock: ${Math.round(+item.stock)}</span>`;
   return '';
 }
 function _showPosTip(item, e){
@@ -1210,6 +1213,8 @@ function _showPosTip(item, e){
     html+=`<div style="margin-top:6px;font-size:11px;color:${porc===null||porc<=0?'var(--red-d)':'var(--text2)'}">🧪 ${porc===null||porc<=0?'Sin stock':''+porc+' porciones disponibles'}</div>`;
   } else if(item.inventario_id!=null&&item.inv_stock!=null){
     html+=`<div style="margin-top:6px;font-size:11px;color:var(--text2)">Stock: ${Math.round(+item.inv_stock)}</div>`;
+  } else if(item.stock!==null&&item.stock!==undefined){
+    html+=`<div style="margin-top:6px;font-size:11px;color:var(--text2)">Stock: ${Math.round(+item.stock)}</div>`;
   }
   tip.innerHTML=html;
   tip.style.display='block';
@@ -1250,7 +1255,7 @@ function renderMenuItems(){
       ? `<div class="menu-item-price">${fmt(precioMostrar)} <span style="font-size:11px;font-weight:400;color:var(--text2);text-decoration:line-through">${fmt(item.precio)}</span></div>`
       : `<div class="menu-item-price">${fmt(precioMostrar)}</div>`;
     d.innerHTML=`${item.foto_url?`<img src="${API.replace('/api','')}${item.foto_url}" class="menu-item-img" alt="${esc(item.nombre)}" onerror="this.style.display='none'">`:`<div class="menu-item-img-placeholder">${esc(item.emoji)||'🍽️'}</div>`}<div class="menu-item-body"><div class="menu-item-name">${esc(item.nombre)}</div>${item.descripcion?`<div class="menu-item-desc">${esc(item.descripcion)}</div>`:''}${precioHtml}${stockLabel(item)}${item.promo_vigente?'<span class="menu-item-badge" style="background:var(--amber-l);color:var(--amber-d)">🏷️ Promo</span>':''}${item.destacado?'<span class="menu-item-badge" style="background:var(--amber-l);color:var(--amber-d)">⭐ Sugerido</span>':''}${agotado?'<span class="menu-item-badge">Agotado</span>':''}</div>`;
-    if(item.descripcion||item.receta_count>0||item.inventario_id!=null){
+    if(item.descripcion||item.receta_count>0||item.inventario_id!=null||(item.stock!==null&&item.stock!==undefined)){
       d.addEventListener('mouseenter', e=>_showPosTip(item,e));
       d.addEventListener('mousemove',  e=>_posPosTip(e));
       d.addEventListener('mouseleave', _hidePosTip);
@@ -1270,12 +1275,14 @@ function addToPedido(item){
     const porciones = item.receta_porciones;
     if(porciones === null || porciones <= 0){ toast(`⚠️ "${item.nombre}" no tiene ingredientes suficientes`); Sound.error(); return; }
     if(cantActual >= porciones){ toast(`⚠️ Solo quedan ${porciones} porciones de "${item.nombre}"`); Sound.error(); return; }
-  } else {
-    if(item.inventario_id != null && item.inv_stock !== null){
-      const stockDisp = +item.inv_stock;
-      if(stockDisp <= 0){ toast(`⚠️ "${item.nombre}" está agotado`); Sound.error(); return; }
-      if(cantActual >= stockDisp){ toast(`⚠️ Solo quedan ${Math.round(stockDisp)} unidades de "${item.nombre}"`); Sound.error(); return; }
-    }
+  } else if(item.inventario_id != null && item.inv_stock !== null){
+    const stockDisp = +item.inv_stock;
+    if(stockDisp <= 0){ toast(`⚠️ "${item.nombre}" está agotado`); Sound.error(); return; }
+    if(cantActual >= stockDisp){ toast(`⚠️ Solo quedan ${Math.round(stockDisp)} unidades de "${item.nombre}"`); Sound.error(); return; }
+  } else if(item.stock !== null && item.stock !== undefined){
+    const stockDisp = +item.stock;
+    if(stockDisp <= 0){ toast(`⚠️ "${item.nombre}" está agotado`); Sound.error(); return; }
+    if(cantActual >= stockDisp){ toast(`⚠️ Solo quedan ${Math.round(stockDisp)} unidades de "${item.nombre}"`); Sound.error(); return; }
   }
   const ex=pedido.find(i=>i.id===item.id);
   const precioAgregar = item.precio_efectivo != null ? item.precio_efectivo : item.precio;
@@ -1319,12 +1326,15 @@ function changeQty(i,d){
         if(p > 0 && pedido[i].qty >= p){
           toast(`⚠️ Solo quedan ${p} porciones de "${mi.nombre}"`); Sound.error(); return;
         }
-      } else {
-        if(mi.inventario_id != null && mi.inv_stock !== null){
-          const sd = Math.round(+mi.inv_stock);
-          if(pedido[i].qty >= sd){
-            toast(`⚠️ Solo quedan ${sd} unidades de "${mi.nombre}"`); Sound.error(); return;
-          }
+      } else if(mi.inventario_id != null && mi.inv_stock !== null){
+        const sd = Math.round(+mi.inv_stock);
+        if(pedido[i].qty >= sd){
+          toast(`⚠️ Solo quedan ${sd} unidades de "${mi.nombre}"`); Sound.error(); return;
+        }
+      } else if(mi.stock !== null && mi.stock !== undefined){
+        const sd = Math.round(+mi.stock);
+        if(pedido[i].qty >= sd){
+          toast(`⚠️ Solo quedan ${sd} unidades de "${mi.nombre}"`); Sound.error(); return;
         }
       }
     }
