@@ -144,8 +144,11 @@ tr:hover td{background:var(--bg2)}
     </div>
 
     <div class="card">
-      <div class="table-header"><h3>Actividad reciente de la plataforma</h3></div>
-      <div class="table-scroll">
+      <div class="table-header" style="cursor:pointer;user-select:none" onclick="toggleActividad()">
+        <h3>Actividad reciente de la plataforma</h3>
+        <span id="act-toggle" style="font-size:12px;color:var(--text2);white-space:nowrap">▼ Mostrar</span>
+      </div>
+      <div class="table-scroll" id="act-wrap" style="display:none">
         <table>
           <thead><tr><th>Fecha</th><th>Negocio</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
           <tbody id="act-tbody"><tr><td colspan="5" class="loading">Cargando...</td></tr></tbody>
@@ -284,7 +287,22 @@ function renderRanking(){
     </tr>`).join('') : `<tr><td colspan="7" class="loading">Sin datos en este período</td></tr>`;
 }
 
+let actAbierta = false;
+let actCount = 0;
+function updateActToggleLabel(){
+  const el = document.getElementById('act-toggle');
+  if(!el) return;
+  el.textContent = actAbierta ? '▲ Ocultar' : `▼ Mostrar (${actCount})`;
+}
+function toggleActividad(){
+  actAbierta = !actAbierta;
+  document.getElementById('act-wrap').style.display = actAbierta ? '' : 'none';
+  updateActToggleLabel();
+}
+
 function renderActividad(rows){
+  actCount = rows.length;
+  updateActToggleLabel();
   document.getElementById('act-tbody').innerHTML = rows.length ? rows.map(r => `
     <tr>
       <td style="white-space:nowrap">${fmtDT(r.creado)}</td>
