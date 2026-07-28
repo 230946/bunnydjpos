@@ -1,0 +1,362 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<title>DJPOS — Analítica</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --blue:#0B8457;--blue-l:#e0f7ec;--blue-d:#086644;
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber-l:#f5ffd6;--amber-d:#8aad00;
+  --purple:#534AB7;--purple-l:#EEEDFE;--purple-d:#26215C;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh}
+.topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-title{font-size:15px;font-weight:500}
+.content{padding:18px 22px;max-width:1400px;margin:0 auto}
+.btn{padding:8px 16px;border:none;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:500}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text)}
+.btn-outline:hover{background:var(--bg2)}
+.btn-sm{padding:6px 14px;font-size:12px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px}
+.stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:8px}
+.stat-val{font-size:24px;font-weight:700;line-height:1}
+.stat-sub{font-size:11px;color:var(--text2);margin-top:6px}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:16px}
+.card h3{font-size:13px;font-weight:600;margin-bottom:12px}
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;margin-bottom:16px}
+.chart-box{height:220px;position:relative}
+.filter-row{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.filter-row label{font-size:12px;color:var(--text2);white-space:nowrap}
+.filter-row select{padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px}
+.table-header{padding:0 0 12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.table-header h3{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 14px;color:var(--text2);font-weight:500;border-bottom:0.5px solid var(--border);background:var(--bg2)}
+td{padding:10px 14px;border-bottom:0.5px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.table-scroll{overflow-x:auto}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-blue{background:var(--blue-l);color:var(--blue-d)}
+.badge-green{background:var(--green-l);color:var(--green-d)}
+.badge-purple{background:var(--purple-l);color:var(--purple-d)}
+.badge-gray{background:var(--bg3);color:var(--text2)}
+.loading{text-align:center;color:var(--text2);padding:24px}
+@media(max-width:767px){
+  .content{padding:12px}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .stat-val{font-size:20px}
+  table{min-width:520px}
+  th,td{padding:8px 10px;white-space:nowrap}
+}
+</style>
+</head>
+<body>
+
+<div id="app" style="display:none">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn btn-outline btn-sm" onclick="location.href='/superadmin'">← Volver</button>
+      <span class="topbar-title">📈 Analítica de la plataforma</span>
+    </div>
+    <span id="topbar-user" style="font-size:12px;color:var(--text2)"></span>
+  </div>
+
+  <div class="content">
+
+    <div class="stats-row" id="kpi-row">
+      <div class="loading">Cargando...</div>
+    </div>
+
+    <div class="card">
+      <div class="filter-row" style="margin-bottom:0">
+        <label>Período de tendencia</label>
+        <select id="f-meses" onchange="loadSeries()">
+          <option value="6">Últimos 6 meses</option>
+          <option value="12" selected>Últimos 12 meses</option>
+          <option value="24">Últimos 24 meses</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card">
+        <h3>Ingresos mensuales</h3>
+        <div class="chart-box"><canvas id="chart-ingresos-mes"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Ventas mensuales</h3>
+        <div class="chart-box"><canvas id="chart-ventas-mes"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Negocios nuevos por mes</h3>
+        <div class="chart-box"><canvas id="chart-negocios-nuevos"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Negocios registrados (acumulado)</h3>
+        <div class="chart-box"><canvas id="chart-negocios-acum"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Ingresos por tipo de negocio · histórico</h3>
+      <div class="chart-box" style="height:280px"><canvas id="chart-por-tipo"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="table-header">
+        <h3>Ranking de negocios</h3>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-primary btn-sm" id="btn-rank-mes" onclick="setRankingRango('mes')">Mes actual</button>
+          <button class="btn btn-outline btn-sm" id="btn-rank-hist" onclick="setRankingRango('historico')">Histórico</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Negocio</th><th>Tipo</th><th>Plan</th><th>Ventas</th><th>Ingresos</th><th>Ticket prom.</th><th>Última venta</th></tr></thead>
+          <tbody id="rank-tbody"><tr><td colspan="7" class="loading">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-header"><h3>Actividad reciente de la plataforma</h3></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Fecha</th><th>Negocio</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
+          <tbody id="act-tbody"><tr><td colspan="5" class="loading">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+const API = window.location.origin + '/api';
+let token = sessionStorage.getItem('bdj_token');
+
+async function api(path, opts={}){
+  const r = await fetch(`${API}${path}`, {
+    ...opts,
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,...(opts.headers||{})}
+  });
+  const d = await r.json();
+  if(!r.ok) throw new Error(d.error||'Error');
+  return d;
+}
+
+const fmt   = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0);
+const fmtN  = n => new Intl.NumberFormat('es-CO').format(n||0);
+const fmtDT = s => s ? new Date(s).toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+const fmtMesLbl = m => { const [y,mm] = m.split('-'); return new Date(+y, +mm-1, 1).toLocaleDateString('es-CO',{month:'short',year:'2-digit'}); };
+
+const _PLAN_LABEL = {free:'Free',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
+const _PLAN_COLOR = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
+const _colorTipo = { restaurante:'#e65c00', bar:'#7c1f3e', minimercado:'#0B8457', peluqueria:'#0B8457',
+  veterinaria:'#0ea5e9', farmacia:'#dc2626', taller:'#374151', lavanderia:'#0284c7', gimnasio:'#7c3aed',
+  ferreteria:'#b45309', ropa:'#db2777', hotel:'#1d4ed8' };
+const accionLabels = {negocio_creado:'Negocio creado',admin_creado:'Admin creado',plan_cambiado:'Plan cambiado',contrato_creado:'Contrato creado',contrato_editado:'Contrato editado'};
+const accionColors = {negocio_creado:'badge-blue',admin_creado:'badge-green',plan_cambiado:'badge-purple',contrato_creado:'badge-blue',contrato_editado:'badge-purple'};
+
+function gridColor(){ return getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || 'rgba(0,0,0,0.08)'; }
+function tickColor(){ return getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#666'; }
+const chartFont = {family:"'Segoe UI',sans-serif",size:11};
+
+let negociosCache = [];
+let repMes = null, repHist = null;
+let rankingRango = 'mes';
+const charts = {};
+
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); charts[id]=null; } }
+
+async function loadAll(){
+  try {
+    const [negocios, rMes, rHist, actividad] = await Promise.all([
+      api('/superadmin/negocios'),
+      api('/superadmin/reportes'),
+      api(`/superadmin/reportes?desde=2000-01-01&hasta=${new Date().toISOString().slice(0,10)}`),
+      api('/superadmin/actividad?limite=20'),
+    ]);
+    negociosCache = negocios;
+    repMes = rMes;
+    repHist = rHist;
+    renderKPIs();
+    renderPorTipo();
+    renderRanking();
+    renderActividad(actividad);
+    await loadSeries();
+  } catch(e){ console.error(e); }
+}
+
+function renderKPIs(){
+  const activos   = negociosCache.filter(n => +n.activo === 1).length;
+  const inactivos = negociosCache.length - activos;
+  const ticketMes = repMes.totalVentas > 0 ? repMes.totalIngresos / repMes.totalVentas : 0;
+  const cards = [
+    { label:'Negocios activos',      val: fmtN(activos),           sub:`de ${fmtN(negociosCache.length)} registrados`, color:'#22c55e' },
+    { label:'Negocios inactivos',    val: fmtN(inactivos),         sub:'dados de baja',                                 color:'#9e9e9e' },
+    { label:'Negocios nuevos (mes)', val: fmtN(0),                 sub:'este mes', id:'kpi-nuevos-mes',                 color:'#6366f1' },
+    { label:'Ingresos histórico',    val: fmt(repHist.totalIngresos), sub:`${fmtN(repHist.totalVentas)} ventas en total`, color:'#0ea5e9' },
+    { label:'Ingresos mes actual',   val: fmt(repMes.totalIngresos),  sub:`${fmtN(repMes.totalVentas)} ventas este mes`,  color:'#f59e0b' },
+    { label:'Ticket promedio (mes)', val: fmt(ticketMes),          sub:'valor promedio por venta',                     color:'#7c3aed' },
+  ];
+  document.getElementById('kpi-row').innerHTML = cards.map(c => `
+    <div class="stat-card" style="border-left:3px solid ${c.color}">
+      <div class="stat-label">${c.label}</div>
+      <div class="stat-val" ${c.id?`id="${c.id}"`:''}>${c.val}</div>
+      <div class="stat-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+function renderPorTipo(){
+  const porTipo = {};
+  (repHist.rows||[]).forEach(r => {
+    const t = r.tipo || 'otro';
+    porTipo[t] = (porTipo[t]||0) + parseFloat(r.ingresos||0);
+  });
+  const entries = Object.entries(porTipo).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  const canvas = document.getElementById('chart-por-tipo');
+  destroyChart('porTipo');
+  if(!entries.length) return;
+  charts.porTipo = new Chart(canvas.getContext('2d'), {
+    type:'bar',
+    data:{
+      labels: entries.map(([t]) => t.charAt(0).toUpperCase()+t.slice(1)),
+      datasets:[{ data: entries.map(([,v]) => v), backgroundColor: entries.map(([t]) => _colorTipo[t]||'#9e9e9e'), borderRadius:4, borderSkipped:false }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `  ${fmt(+ctx.raw)}` } } },
+      scales:{
+        x:{ grid:{color:gridColor()}, ticks:{ color:tickColor(), font:chartFont, callback:v=>'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v) } },
+        y:{ grid:{display:false}, ticks:{ color:tickColor(), font:chartFont } }
+      }
+    }
+  });
+}
+
+function _rankRows(){ return rankingRango === 'mes' ? (repMes.rows||[]) : (repHist.rows||[]); }
+
+function setRankingRango(r){
+  rankingRango = r;
+  document.getElementById('btn-rank-mes').className = `btn btn-sm ${r==='mes'?'btn-primary':'btn-outline'}`;
+  document.getElementById('btn-rank-hist').className = `btn btn-sm ${r==='historico'?'btn-primary':'btn-outline'}`;
+  renderRanking();
+}
+
+function renderRanking(){
+  const rows = [..._rankRows()].sort((a,b) => parseFloat(b.ingresos||0) - parseFloat(a.ingresos||0));
+  document.getElementById('rank-tbody').innerHTML = rows.length ? rows.map(r => `
+    <tr>
+      <td>${r.nombre}</td>
+      <td><span class="badge" style="background:${(_colorTipo[r.tipo]||'#9e9e9e')}1a;color:${_colorTipo[r.tipo]||'#9e9e9e'}">${r.tipo}</span></td>
+      <td><span class="badge" style="background:${(_PLAN_COLOR[r.plan]||'#9e9e9e')}1a;color:${_PLAN_COLOR[r.plan]||'#9e9e9e'}">${_PLAN_LABEL[r.plan]||r.plan}</span></td>
+      <td>${fmtN(r.total_ventas)}</td>
+      <td>${fmt(r.ingresos)}</td>
+      <td>${fmt(r.promedio)}</td>
+      <td style="white-space:nowrap">${fmtDT(r.ultima_venta)}</td>
+    </tr>`).join('') : `<tr><td colspan="7" class="loading">Sin datos en este período</td></tr>`;
+}
+
+function renderActividad(rows){
+  document.getElementById('act-tbody').innerHTML = rows.length ? rows.map(r => `
+    <tr>
+      <td style="white-space:nowrap">${fmtDT(r.creado)}</td>
+      <td>${r.negocio_nombre || '<span style="color:var(--text2)">—</span>'}</td>
+      <td style="color:var(--text2)">${r.usuario_nombre||'—'}</td>
+      <td><span class="badge ${accionColors[r.accion]||'badge-gray'}">${accionLabels[r.accion]||r.accion}</span></td>
+      <td style="font-size:12px;color:var(--text2)">${r.detalle||'—'}</td>
+    </tr>`).join('') : `<tr><td colspan="5" class="loading">Sin actividad registrada</td></tr>`;
+}
+
+async function loadSeries(){
+  try {
+    const meses = document.getElementById('f-meses').value;
+    const { meses: serie } = await api(`/superadmin/series-mensuales?meses=${meses}`);
+    const labels = serie.map(m => fmtMesLbl(m.mes));
+    const gc = gridColor(), tc = tickColor();
+    const barOpts = (colorFn, valueFmt) => ({
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `  ${valueFmt(+ctx.raw)}` } } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{ color:tc, font:chartFont, maxRotation:0 } },
+        y:{ grid:{color:gc}, ticks:{ color:tc, font:chartFont, callback: v => valueFmt(v, true) } }
+      }
+    });
+
+    destroyChart('ingresosMes');
+    charts.ingresosMes = new Chart(document.getElementById('chart-ingresos-mes').getContext('2d'), {
+      type:'bar',
+      data:{ labels, datasets:[{ data: serie.map(m=>m.ingresos), backgroundColor:'#f59e0b', borderRadius:4, borderSkipped:false }] },
+      options: barOpts(null, (v,compact) => compact ? (v===0?'':'$'+Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)) : fmt(v))
+    });
+
+    destroyChart('ventasMes');
+    charts.ventasMes = new Chart(document.getElementById('chart-ventas-mes').getContext('2d'), {
+      type:'bar',
+      data:{ labels, datasets:[{ data: serie.map(m=>m.ventas), backgroundColor:'#0ea5e9', borderRadius:4, borderSkipped:false }] },
+      options: barOpts(null, (v,compact) => compact ? (v===0?'':v) : fmtN(v))
+    });
+
+    destroyChart('negociosNuevos');
+    charts.negociosNuevos = new Chart(document.getElementById('chart-negocios-nuevos').getContext('2d'), {
+      type:'bar',
+      data:{ labels, datasets:[{ data: serie.map(m=>m.negocios_nuevos), backgroundColor:'#22c55e', borderRadius:4, borderSkipped:false }] },
+      options: barOpts(null, (v,compact) => compact ? (v===0?'':v) : fmtN(v))
+    });
+
+    destroyChart('negociosAcum');
+    charts.negociosAcum = new Chart(document.getElementById('chart-negocios-acum').getContext('2d'), {
+      type:'line',
+      data:{ labels, datasets:[{ data: serie.map(m=>m.negocios_acumulado), borderColor:'#6366f1', backgroundColor:'#6366f1', borderWidth:2, pointRadius:4, pointHoverRadius:6, tension:.25, fill:false }] },
+      options: barOpts(null, (v,compact) => compact ? v : fmtN(v))
+    });
+
+    const ultimo = serie[serie.length-1];
+    const kpiNuevos = document.getElementById('kpi-nuevos-mes');
+    if(kpiNuevos && ultimo) kpiNuevos.textContent = fmtN(ultimo.negocios_nuevos);
+  } catch(e){ console.error(e); }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+if(token){
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if(payload.es_superadmin && payload.exp > Date.now()/1000){
+      document.getElementById('topbar-user').textContent = payload.nombre;
+      document.getElementById('app').style.display = 'block';
+      loadAll();
+    } else { sessionStorage.removeItem('bdj_token'); location.href = '/login'; }
+  } catch { sessionStorage.removeItem('bdj_token'); location.href = '/login'; }
+} else {
+  location.href = '/login';
+}
+</script>
+</body>
+</html>

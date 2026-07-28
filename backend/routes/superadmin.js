@@ -332,6 +332,61 @@ router.get('/reportes', async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════════
+// SERIES MENSUALES (tendencia de ventas y crecimiento de negocios)
+// ════════════════════════════════════════════════════════════════
+router.get('/series-mensuales', async (req, res) => {
+  try {
+    const meses = Math.min(Math.max(parseInt(req.query.meses) || 12, 1), 24);
+    const now = new Date(Date.now() - 5*60*60*1000);
+    // Primer día del mes que inicia el rango (hace `meses-1` meses)
+    const inicioRango = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (meses - 1), 1));
+    const inicioStr = inicioRango.toISOString().slice(0,10);
+
+    const { rows: ventasPorMes } = await pool.query(`
+      SELECT DATE_FORMAT(v.creado, '%Y-%m') AS mes,
+        COUNT(*) AS ventas, COALESCE(SUM(v.total),0) AS ingresos
+      FROM (
+        SELECT total, creado FROM ventas
+        UNION ALL
+        SELECT total, fecha AS creado FROM pel_ventas WHERE estado='completada'
+      ) v
+      WHERE v.creado >= ?
+      GROUP BY mes
+    `, [inicioStr]);
+
+    const { rows: negociosPorMes } = await pool.query(`
+      SELECT DATE_FORMAT(creado, '%Y-%m') AS mes, COUNT(*) AS nuevos
+      FROM negocios WHERE creado >= ?
+      GROUP BY mes
+    `, [inicioStr]);
+
+    const { rows: baseRows } = await pool.query(
+      `SELECT COUNT(*) AS n FROM negocios WHERE creado < ?`, [inicioStr]
+    );
+    let acumulado = parseInt(baseRows[0]?.n || 0);
+
+    const ventasMap = Object.fromEntries(ventasPorMes.map(r => [r.mes, r]));
+    const negociosMap = Object.fromEntries(negociosPorMes.map(r => [r.mes, r]));
+
+    const result = [];
+    for (let i = 0; i < meses; i++) {
+      const d = new Date(Date.UTC(inicioRango.getUTCFullYear(), inicioRango.getUTCMonth() + i, 1));
+      const mes = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;
+      const nuevos = parseInt(negociosMap[mes]?.nuevos || 0);
+      acumulado += nuevos;
+      result.push({
+        mes,
+        ventas: parseInt(ventasMap[mes]?.ventas || 0),
+        ingresos: parseFloat(ventasMap[mes]?.ingresos || 0),
+        negocios_nuevos: nuevos,
+        negocios_acumulado: acumulado,
+      });
+    }
+    res.json({ meses: result });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════
 // PLANES / LICENCIAS
 // ════════════════════════════════════════════════════════════════
 router.get('/planes', async (_, res) => {
