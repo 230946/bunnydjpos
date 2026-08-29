@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — POS Ferretería",
+  "short_name": "POS Ferretería",
+  "description": "Punto de venta de Ferretería de BunnyDJPOS",
+  "start_url": "/pos-ferreteria.html",
+  "scope": "/pos-ferreteria.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0B8457",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "BunnyDJPOS — POS Ropa y Moda",
+  "short_name": "POS Ropa y Moda",
+  "description": "Punto de venta de Ropa y Moda de BunnyDJPOS",
+  "start_url": "/pos-ropa.html",
+  "scope": "/pos-ropa.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0B8457",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }
+  ]
+}

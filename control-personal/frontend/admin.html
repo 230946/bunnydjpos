@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Personal — Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f6fa;--bg2:#eef0f5;--card:#fff;--text:#1b1f27;--text2:#6b7280;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.16);
+  --accent:#2563eb;--accent-l:#dbeafe;--accent-d:#1d4ed8;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fee2e2;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#15171c;--bg2:#1b1e25;--card:#1e2129;--text:#f0f0f0;--text2:#9aa0aa;
+  --border:rgba(255,255,255,0.12);--border2:rgba(255,255,255,0.2);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:var(--bg);color:var(--text);min-height:100vh}
+.app{display:flex;min-height:100vh}
+.sidebar{width:210px;background:var(--card);border-right:0.5px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:4px}
+.sidebar h2{font-size:14px;font-weight:700;padding:8px 10px 18px;border-bottom:0.5px solid var(--border);margin-bottom:8px}
+.nav-btn{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:9px 12px;border-radius:var(--r);border:none;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;width:100%;text-align:left}
+.nav-btn.active{background:var(--accent-l);color:var(--accent-d);font-weight:600}
+.nav-btn:hover:not(.active){background:var(--bg2)}
+.nav-badge{background:var(--red);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;font-weight:700}
+.main{flex:1;overflow-y:auto}
+.topbar{background:var(--card);border-bottom:0.5px solid var(--border);padding:12px 22px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:15px;font-weight:600}
+.content{padding:20px;max-width:1300px}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.card-header h3{font-size:14px;font-weight:600}
+.btn{padding:8px 16px;border:none;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-d)}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text)}
+.btn-outline:hover{background:var(--bg2)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 12px;color:var(--text2);font-weight:600;border-bottom:0.5px solid var(--border);background:var(--bg2)}
+td{padding:9px 12px;border-bottom:0.5px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.table-scroll{overflow-x:auto}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-green{background:var(--green-l);color:#166534}
+.badge-red{background:var(--red-l);color:var(--red)}
+.badge-amber{background:var(--amber-l);color:var(--amber)}
+.badge-gray{background:var(--bg2);color:var(--text2)}
+.field{margin-bottom:12px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px}
+.field textarea{resize:vertical;min-height:60px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--card);border:0.5px solid var(--border2);border-radius:var(--rl);padding:22px;width:420px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.loading{text-align:center;color:var(--text2);padding:20px}
+.filter-row{display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.filter-row label{font-size:12px;color:var(--text2)}
+.filter-row input,.filter-row select{padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px}
+/* Grid de horario semanal */
+.horario-grid{display:grid;grid-template-columns:140px repeat(7,minmax(170px,1fr));gap:1px;background:var(--border);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden;width:max-content;min-width:100%}
+.hg-cell{background:var(--card);padding:8px;font-size:12px;min-width:0}
+.hg-head{background:var(--bg2);font-weight:600;text-align:center;white-space:nowrap}
+.hg-emp{font-weight:600;display:flex;align-items:center;white-space:nowrap}
+.hg-cell select{width:100%;padding:5px;border:0.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;box-sizing:border-box}
+.hg-pausa-horas{display:flex;gap:3px;min-width:0}
+.hg-cell input[type=time]{width:0;flex:1;min-width:0;padding:3px 2px;border:0.5px solid var(--border2);border-radius:5px;background:var(--bg);color:var(--text);font-size:11px;box-sizing:border-box}
+@media(max-width:900px){
+  .horario-grid{grid-template-columns:110px repeat(7,minmax(150px,1fr))}
+  .app{flex-direction:column}
+  .sidebar{width:100%;flex-direction:row;overflow-x:auto}
+  .frow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app" style="display:none">
+  <div class="sidebar">
+    <h2>👥 Control Personal</h2>
+    <button class="nav-btn active" onclick="showPanel('empleados',this)">Empleados</button>
+    <button class="nav-btn" onclick="showPanel('turnos',this)">Turnos</button>
+    <button class="nav-btn" onclick="showPanel('horario',this)">Horario semanal</button>
+    <button class="nav-btn" onclick="showPanel('permisos',this)">Permisos <span class="nav-badge" id="badge-permisos" style="display:none">0</span></button>
+    <button class="nav-btn" onclick="showPanel('asistencia',this)">Asistencia</button>
+    <div style="margin-top:auto;padding-top:12px;border-top:0.5px solid var(--border)">
+      <button class="nav-btn" onclick="window.open('/kiosco.html','_blank')">📷 Abrir kiosco</button>
+      <button class="nav-btn" onclick="doLogout()">🚪 Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Empleados</span>
+      <span id="topbar-user" style="font-size:12px;color:var(--text2)"></span>
+    </div>
+    <div class="content">
+
+      <!-- EMPLEADOS -->
+      <div class="panel active" id="panel-empleados">
+        <div class="card">
+          <div class="card-header">
+            <h3>Empleados</h3>
+            <button class="btn btn-primary btn-sm" onclick="abrirEmpleadoModal()">+ Nuevo empleado</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Nombre</th><th>N° identificación</th><th>Usuario</th><th>Email</th><th>Cargo</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="emp-tbody"><tr><td colspan="8" class="loading">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TURNOS -->
+      <div class="panel" id="panel-turnos">
+        <div class="card">
+          <div class="card-header">
+            <h3>Catálogo de turnos</h3>
+            <button class="btn btn-primary btn-sm" onclick="abrirTurnoModal()">+ Nuevo turno</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Turno</th><th>Hora inicio</th><th>Hora fin</th><th></th></tr></thead>
+              <tbody id="turno-tbody"><tr><td colspan="4" class="loading">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- HORARIO SEMANAL -->
+      <div class="panel" id="panel-horario">
+        <div class="card">
+          <div class="card-header">
+            <h3>Horario semanal</h3>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="cambiarSemana(-7)">← Semana anterior</button>
+              <input type="date" id="h-fecha" onchange="cargarHorarioSemana()">
+              <button class="btn btn-outline btn-sm" onclick="cambiarSemana(7)">Semana siguiente →</button>
+              <button class="btn btn-primary btn-sm" onclick="duplicarSemanaAnterior()">⧉ Duplicar semana anterior</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <div id="horario-grid-wrap" class="loading">Selecciona una fecha para ver la semana...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERMISOS -->
+      <div class="panel" id="panel-permisos">
+        <div class="card">
+          <div class="card-header">
+            <h3>Solicitudes de permiso</h3>
+            <select id="perm-filtro" onchange="cargarPermisos()">
+              <option value="">Todas</option>
+              <option value="pendiente" selected>Pendientes</option>
+              <option value="aprobado">Aprobadas</option>
+              <option value="rechazado">Rechazadas</option>
+            </select>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Empleado</th><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="perm-tbody"><tr><td colspan="7" class="loading">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASISTENCIA -->
+      <div class="panel" id="panel-asistencia">
+        <div class="card">
+          <div class="card-header"><h3>Asistencia / Fichajes</h3></div>
+          <div class="filter-row">
+            <label>Empleado</label>
+            <select id="asis-empleado" onchange="cargarAsistencia()"><option value="">Todos</option></select>
+            <label>Desde</label><input type="date" id="asis-desde" onchange="cargarAsistencia()">
+            <label>Hasta</label><input type="date" id="asis-hasta" onchange="cargarAsistencia()">
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Fecha</th><th>Empleado</th><th>Turno</th><th>Entrada</th><th>Pausa</th><th>Salida</th><th>Horas</th><th>Tardanza</th></tr></thead>
+              <tbody id="asis-tbody"><tr><td colspan="8" class="loading">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Empleado -->
+<div class="modal-bg" id="empleado-modal" style="display:none">
+  <div class="modal">
+    <h3 id="empleado-modal-title">Nuevo empleado</h3>
+    <input type="hidden" id="emp-id">
+    <div class="field"><label>Nombre completo</label><input id="emp-nombre"></div>
+    <div class="field"><label>N° de identificación</label><input id="emp-documento" placeholder="Cédula / DNI"></div>
+    <div class="frow">
+      <div class="field"><label>Usuario</label><input id="emp-username"></div>
+      <div class="field"><label>Email</label><input id="emp-email" type="email"></div>
+    </div>
+    <div class="frow">
+      <div class="field"><label>Cargo</label><input id="emp-cargo" placeholder="Ej. Mesero, Cajero..."></div>
+      <div class="field"><label>Rol</label>
+        <select id="emp-rol"><option value="empleado">Empleado</option><option value="admin">Administrador</option></select>
+      </div>
+    </div>
+    <div class="field"><label id="emp-pass-label">Contraseña</label><input id="emp-pass" type="password"></div>
+    <div class="field" id="emp-activo-wrap" style="display:none">
+      <label><input type="checkbox" id="emp-activo" style="width:auto;margin-right:6px">Activo</label>
+    </div>
+    <div id="empleado-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="cerrarModal('empleado-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarEmpleado()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal QR -->
+<div class="modal-bg" id="qr-modal" style="display:none">
+  <div class="modal" style="width:320px;text-align:center">
+    <h3 id="qr-modal-title">Código QR</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Este código es personal. Imprímelo o guárdalo en el celular del empleado para que lo presente en el kiosco de entrada.</p>
+    <img id="qr-img" src="" alt="Código QR" style="width:220px;height:220px;border:0.5px solid var(--border2);border-radius:var(--r);background:#fff;padding:8px">
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-outline btn-sm" onclick="cerrarModal('qr-modal')">Cerrar</button>
+      <button class="btn btn-outline btn-sm" onclick="descargarQR()">⬇️ Descargar</button>
+      <button class="btn btn-primary btn-sm" onclick="imprimirQR()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Turno -->
+<div class="modal-bg" id="turno-modal" style="display:none">
+  <div class="modal" style="width:360px">
+    <h3 id="turno-modal-title">Nuevo turno</h3>
+    <input type="hidden" id="turno-id">
+    <div class="field"><label>Nombre</label><input id="turno-nombre" placeholder="Ej. Mañana, Tarde, Noche"></div>
+    <div class="frow">
+      <div class="field"><label>Hora inicio</label><input id="turno-inicio" type="time"></div>
+      <div class="field"><label>Hora fin</label><input id="turno-fin" type="time"></div>
+    </div>
+    <div class="field"><label>Color</label><input id="turno-color" type="color" value="#2563eb"></div>
+    <div id="turno-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="cerrarModal('turno-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarTurno()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Responder Permiso -->
+<div class="modal-bg" id="permiso-modal" style="display:none">
+  <div class="modal" style="width:380px">
+    <h3 id="permiso-modal-title">Responder solicitud</h3>
+    <input type="hidden" id="perm-id">
+    <input type="hidden" id="perm-estado">
+    <div class="field"><label>Notas (opcional)</label><textarea id="perm-notas"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="cerrarModal('permiso-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmarRespuestaPermiso()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin + '/api';
+let token = sessionStorage.getItem('cp_token');
+let userInfo = JSON.parse(sessionStorage.getItem('cp_user') || 'null');
+
+if (!token || !userInfo) { location.href = '/login.html'; }
+
+async function api(path, opts = {}) {
+  const r = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...(opts.headers || {}) }
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Error');
+  return d;
+}
+function doLogout(){ sessionStorage.removeItem('cp_token'); sessionStorage.removeItem('cp_user'); location.href = '/login.html'; }
+function cerrarModal(id){ document.getElementById(id).style.display = 'none'; }
+
+const TITULOS = { empleados:'Empleados', turnos:'Turnos', horario:'Horario semanal', permisos:'Permisos', asistencia:'Asistencia' };
+function showPanel(nombre, btn){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + nombre).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('topbar-title').textContent = TITULOS[nombre];
+  if (nombre === 'empleados') cargarEmpleados();
+  if (nombre === 'turnos') cargarTurnos();
+  if (nombre === 'horario') cargarHorarioSemana();
+  if (nombre === 'permisos') cargarPermisos();
+  if (nombre === 'asistencia') cargarAsistencia();
+}
+
+const fmtFecha = s => { if(!s) return '—'; const d = new Date(String(s).slice(0,10)+'T12:00:00'); return isNaN(d)?'—':d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'}); };
+const fmtHora  = s => s ? new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}) : '—';
+
+// ── EMPLEADOS ──────────────────────────────────────────────────
+let empleadosCache = [];
+async function cargarEmpleados(){
+  try {
+    empleadosCache = await api('/empleados');
+    document.getElementById('emp-tbody').innerHTML = empleadosCache.length ? empleadosCache.map(e => `
+      <tr>
+        <td>${e.nombre}</td><td>${e.documento || '—'}</td><td>${e.username}</td><td>${e.email || '—'}</td><td>${e.cargo || '—'}</td>
+        <td><span class="badge ${e.rol === 'admin' ? 'badge-amber' : 'badge-gray'}">${e.rol}</span></td>
+        <td><span class="badge ${e.activo ? 'badge-green' : 'badge-red'}">${e.activo ? 'Activo' : 'Inactivo'}</span></td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="abrirEmpleadoModal('${e.id}')">Editar</button>
+          <button class="btn btn-outline btn-sm" onclick="abrirQR('${e.id}')">🔗 QR</button>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="8" class="loading">Sin empleados aún</td></tr>`;
+    // refrescar selects que dependen de empleados
+    const sel = document.getElementById('asis-empleado');
+    if (sel) sel.innerHTML = '<option value="">Todos</option>' + empleadosCache.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+  } catch (e) { console.error(e); }
+}
+
+function abrirEmpleadoModal(id){
+  document.getElementById('empleado-error').style.display = 'none';
+  const e = id ? empleadosCache.find(x => x.id === id) : null;
+  document.getElementById('empleado-modal-title').textContent = e ? 'Editar empleado' : 'Nuevo empleado';
+  document.getElementById('emp-id').value = e?.id || '';
+  document.getElementById('emp-nombre').value = e?.nombre || '';
+  document.getElementById('emp-documento').value = e?.documento || '';
+  document.getElementById('emp-username').value = e?.username || '';
+  document.getElementById('emp-email').value = e?.email || '';
+  document.getElementById('emp-cargo').value = e?.cargo || '';
+  document.getElementById('emp-rol').value = e?.rol || 'empleado';
+  document.getElementById('emp-pass').value = '';
+  document.getElementById('emp-pass-label').textContent = e ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña';
+  document.getElementById('emp-activo-wrap').style.display = e ? 'block' : 'none';
+  document.getElementById('emp-activo').checked = e ? !!e.activo : true;
+  document.getElementById('empleado-modal').style.display = 'flex';
+}
+async function guardarEmpleado(){
+  const id = document.getElementById('emp-id').value;
+  const errEl = document.getElementById('empleado-error');
+  errEl.style.display = 'none';
+  const body = {
+    nombre: document.getElementById('emp-nombre').value.trim(),
+    documento: document.getElementById('emp-documento').value.trim(),
+    username: document.getElementById('emp-username').value.trim(),
+    email: document.getElementById('emp-email').value.trim(),
+    cargo: document.getElementById('emp-cargo').value.trim(),
+    rol: document.getElementById('emp-rol').value,
+    password: document.getElementById('emp-pass').value,
+  };
+  if (id) body.activo = document.getElementById('emp-activo').checked;
+  try {
+    if (id) await api(`/empleados/${id}`, { method:'PUT', body: JSON.stringify(body) });
+    else await api('/empleados', { method:'POST', body: JSON.stringify(body) });
+    cerrarModal('empleado-modal');
+    cargarEmpleados();
+  } catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+}
+
+let qrNombreActual = '';
+async function abrirQR(id){
+  try {
+    const { nombre, dataUrl } = await api(`/empleados/${id}/qr`);
+    qrNombreActual = nombre;
+    document.getElementById('qr-modal-title').textContent = `QR de ${nombre}`;
+    document.getElementById('qr-img').src = dataUrl;
+    document.getElementById('qr-modal').style.display = 'flex';
+  } catch (e) { alert(e.message); }
+}
+function descargarQR(){
+  const slug = qrNombreActual.trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'empleado';
+  const a = document.createElement('a');
+  a.href = document.getElementById('qr-img').src;
+  a.download = `qr-${slug}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+function imprimirQR(){
+  const win = window.open('', '_blank');
+  win.document.write(`<html><head><title>${document.getElementById('qr-modal-title').textContent}</title></head>
+    <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">
+      <h2>${document.getElementById('qr-modal-title').textContent}</h2>
+      <img src="${document.getElementById('qr-img').src}" style="width:280px;height:280px">
+    </body></html>`);
+  win.document.close();
+  win.print();
+}
+
+// ── TURNOS ─────────────────────────────────────────────────────
+let turnosCache = [];
+async function cargarTurnos(){
+  try {
+    turnosCache = await api('/turnos');
+    document.getElementById('turno-tbody').innerHTML = turnosCache.length ? turnosCache.map(t => `
+      <tr>
+        <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${t.color};margin-right:6px"></span>${t.nombre}</td>
+        <td>${t.hora_inicio.slice(0,5)}</td><td>${t.hora_fin.slice(0,5)}</td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="abrirTurnoModal('${t.id}')">Editar</button>
+          <button class="btn btn-outline btn-sm" onclick="eliminarTurno('${t.id}')">Eliminar</button>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="4" class="loading">Sin turnos aún</td></tr>`;
+  } catch (e) { console.error(e); }
+}
+function abrirTurnoModal(id){
+  document.getElementById('turno-error').style.display = 'none';
+  const t = id ? turnosCache.find(x => x.id === id) : null;
+  document.getElementById('turno-modal-title').textContent = t ? 'Editar turno' : 'Nuevo turno';
+  document.getElementById('turno-id').value = t?.id || '';
+  document.getElementById('turno-nombre').value = t?.nombre || '';
+  document.getElementById('turno-inicio').value = t?.hora_inicio?.slice(0,5) || '';
+  document.getElementById('turno-fin').value = t?.hora_fin?.slice(0,5) || '';
+  document.getElementById('turno-color').value = t?.color || '#2563eb';
+  document.getElementById('turno-modal').style.display = 'flex';
+}
+async function guardarTurno(){
+  const id = document.getElementById('turno-id').value;
+  const errEl = document.getElementById('turno-error');
+  errEl.style.display = 'none';
+  const body = {
+    nombre: document.getElementById('turno-nombre').value.trim(),
+    hora_inicio: document.getElementById('turno-inicio').value,
+    hora_fin: document.getElementById('turno-fin').value,
+    color: document.getElementById('turno-color').value,
+  };
+  try {
+    if (id) await api(`/turnos/${id}`, { method:'PUT', body: JSON.stringify(body) });
+    else await api('/turnos', { method:'POST', body: JSON.stringify(body) });
+    cerrarModal('turno-modal');
+    cargarTurnos();
+  } catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+}
+async function eliminarTurno(id){
+  try { await api(`/turnos/${id}`, { method:'DELETE' }); cargarTurnos(); } catch (e) { alert(e.message); }
+}
+
+// ── HORARIO SEMANAL ────────────────────────────────────────────
+const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+function lunesDe(fechaStr){
+  const d = new Date(fechaStr + 'T12:00:00');
+  const diff = (d.getDay() + 6) % 7; // 0=lunes
+  d.setDate(d.getDate() - diff);
+  return d.toISOString().slice(0,10);
+}
+function sumarDias(fechaStr, dias){
+  const d = new Date(fechaStr + 'T12:00:00');
+  d.setDate(d.getDate() + dias);
+  return d.toISOString().slice(0,10);
+}
+function initSemana(){
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('h-fecha').value = lunesDe(hoy);
+}
+function cambiarSemana(dias){
+  const actual = document.getElementById('h-fecha').value || lunesDe(new Date().toISOString().slice(0,10));
+  document.getElementById('h-fecha').value = sumarDias(actual, dias);
+  cargarHorarioSemana();
+}
+async function cargarHorarioSemana(){
+  try {
+    if (!empleadosCache.length) empleadosCache = await api('/empleados');
+    if (!turnosCache.length) turnosCache = await api('/turnos');
+    const lunes = lunesDe(document.getElementById('h-fecha').value || new Date().toISOString().slice(0,10));
+    document.getElementById('h-fecha').value = lunes;
+    const { asignaciones } = await api(`/horarios/semana?desde=${lunes}`);
+    const mapa = {}; // usuario_id -> fecha -> asignación
+    asignaciones.forEach(a => {
+      const f = String(a.fecha).slice(0,10);
+      mapa[a.usuario_id] = mapa[a.usuario_id] || {};
+      mapa[a.usuario_id][f] = a;
+    });
+    const activos = empleadosCache.filter(e => e.activo);
+    const fechas = Array.from({length:7}, (_,i) => sumarDias(lunes, i));
+
+    let html = '<div class="horario-grid">';
+    html += '<div class="hg-cell hg-head">Empleado</div>';
+    fechas.forEach((f,i) => html += `<div class="hg-cell hg-head">${DIAS[i]}<br><span style="font-weight:400;color:var(--text2)">${fmtFecha(f)}</span></div>`);
+    activos.forEach(emp => {
+      html += `<div class="hg-cell hg-emp">${emp.nombre}</div>`;
+      fechas.forEach(f => {
+        const a = mapa[emp.id]?.[f];
+        const turnoActual = a?.turno_id || '';
+        const pausaTipo = a?.pausa_tipo || '';
+        const pausaIni = a?.pausa_inicio?.slice(0,5) || '';
+        const pausaFin = a?.pausa_fin?.slice(0,5) || '';
+        const cellId = `cell-${emp.id}-${f}`;
+        const colorActual = turnosCache.find(t => t.id === turnoActual)?.color || '';
+        const colorPausaActual = PAUSA_COLOR[pausaTipo] || '';
+        html += `<div class="hg-cell" id="${cellId}">
+          <select class="hg-turno" onchange="pintarSelectTurno(this);guardarCelda('${emp.id}','${f}')" style="${colorActual ? `color:${colorActual};font-weight:600;border-color:${colorActual}80` : ''}">
+            <option value="">— Libre —</option>
+            ${turnosCache.map(t => `<option value="${t.id}" style="color:${t.color};background:${t.color}18" ${t.id===turnoActual?'selected':''}>${t.nombre}</option>`).join('')}
+          </select>
+          <select class="hg-pausa-tipo" onchange="pintarSelectPausa(this);toggleHorasPausa('${cellId}');guardarCelda('${emp.id}','${f}')" style="margin-top:3px;${colorPausaActual ? `color:${colorPausaActual};font-weight:600;border-color:${colorPausaActual}80` : ''}">
+            <option value="" ${!pausaTipo?'selected':''}>Sin pausa</option>
+            <option value="almuerzo" style="color:${PAUSA_COLOR.almuerzo};background:${PAUSA_COLOR.almuerzo}18" ${pausaTipo==='almuerzo'?'selected':''}>🍽️ Almuerzo</option>
+            <option value="cena" style="color:${PAUSA_COLOR.cena};background:${PAUSA_COLOR.cena}18" ${pausaTipo==='cena'?'selected':''}>🌙 Cena</option>
+          </select>
+          <div class="hg-pausa-horas" style="display:${pausaTipo?'flex':'none'};gap:3px;margin-top:3px">
+            <input type="time" class="hg-pausa-ini" value="${pausaIni}" onchange="guardarCelda('${emp.id}','${f}')">
+            <input type="time" class="hg-pausa-fin" value="${pausaFin}" onchange="guardarCelda('${emp.id}','${f}')">
+          </div>
+        </div>`;
+      });
+    });
+    html += '</div>';
+    document.getElementById('horario-grid-wrap').innerHTML = activos.length ? html : '<div class="loading">No hay empleados activos</div>';
+  } catch (e) { console.error(e); }
+}
+function pintarSelectTurno(sel){
+  const t = turnosCache.find(x => x.id === sel.value);
+  sel.style.color = t ? t.color : '';
+  sel.style.fontWeight = t ? '600' : '';
+  sel.style.borderColor = t ? t.color + '80' : '';
+}
+const PAUSA_COLOR = { almuerzo:'#d97706', cena:'#4f46e5' };
+function pintarSelectPausa(sel){
+  const c = PAUSA_COLOR[sel.value] || '';
+  sel.style.color = c;
+  sel.style.fontWeight = c ? '600' : '';
+  sel.style.borderColor = c ? c + '80' : '';
+}
+function toggleHorasPausa(cellId){
+  const cell = document.getElementById(cellId);
+  const tipo = cell.querySelector('.hg-pausa-tipo').value;
+  cell.querySelector('.hg-pausa-horas').style.display = tipo ? 'flex' : 'none';
+}
+async function guardarCelda(usuario_id, fecha){
+  const cell = document.getElementById(`cell-${usuario_id}-${fecha}`);
+  const turno_id = cell.querySelector('.hg-turno').value || null;
+  const pausa_tipo = cell.querySelector('.hg-pausa-tipo').value || null;
+  const pausa_inicio = cell.querySelector('.hg-pausa-ini').value || null;
+  const pausa_fin = cell.querySelector('.hg-pausa-fin').value || null;
+  try {
+    await api('/horarios/asignar', { method:'POST', body: JSON.stringify({ usuario_id, fecha, turno_id, pausa_tipo, pausa_inicio, pausa_fin }) });
+  } catch (e) { alert(e.message); cargarHorarioSemana(); }
+}
+async function duplicarSemanaAnterior(){
+  const hacia = lunesDe(document.getElementById('h-fecha').value);
+  const desde = sumarDias(hacia, -7);
+  try {
+    const r = await api('/horarios/duplicar-semana', { method:'POST', body: JSON.stringify({ desde, hacia }) });
+    cargarHorarioSemana();
+    alert(`Semana duplicada: ${r.filas_copiadas} asignaciones copiadas.`);
+  } catch (e) { alert(e.message); }
+}
+
+// ── PERMISOS ───────────────────────────────────────────────────
+async function cargarPermisos(){
+  try {
+    const estado = document.getElementById('perm-filtro').value;
+    const rows = await api(`/permisos${estado ? `?estado=${estado}` : ''}`);
+    const badgeMap = { pendiente:'badge-amber', aprobado:'badge-green', rechazado:'badge-red' };
+    document.getElementById('perm-tbody').innerHTML = rows.length ? rows.map(p => `
+      <tr>
+        <td>${p.usuario_nombre}</td><td>${p.tipo}</td><td>${fmtFecha(p.fecha_inicio)}</td><td>${fmtFecha(p.fecha_fin)}</td>
+        <td style="max-width:220px">${p.motivo || '—'}</td>
+        <td><span class="badge ${badgeMap[p.estado]}">${p.estado}</span></td>
+        <td>${p.estado === 'pendiente' ? `
+          <button class="btn btn-green btn-sm" onclick="abrirPermisoModal('${p.id}','aprobado')">Aprobar</button>
+          <button class="btn btn-red btn-sm" onclick="abrirPermisoModal('${p.id}','rechazado')">Rechazar</button>
+        ` : (p.notas_admin ? `<span style="color:var(--text2);font-size:12px">${p.notas_admin}</span>` : '—')}</td>
+      </tr>`).join('') : `<tr><td colspan="7" class="loading">Sin solicitudes</td></tr>`;
+    const pendientes = rows.filter(p => p.estado === 'pendiente').length;
+    actualizarBadgePermisos();
+  } catch (e) { console.error(e); }
+}
+async function actualizarBadgePermisos(){
+  try {
+    const rows = await api('/permisos?estado=pendiente');
+    const b = document.getElementById('badge-permisos');
+    b.style.display = rows.length ? 'inline-block' : 'none';
+    b.textContent = rows.length;
+  } catch (e) {}
+}
+function abrirPermisoModal(id, estado){
+  document.getElementById('perm-id').value = id;
+  document.getElementById('perm-estado').value = estado;
+  document.getElementById('perm-notas').value = '';
+  document.getElementById('permiso-modal-title').textContent = estado === 'aprobado' ? 'Aprobar solicitud' : 'Rechazar solicitud';
+  document.getElementById('permiso-modal').style.display = 'flex';
+}
+async function confirmarRespuestaPermiso(){
+  const id = document.getElementById('perm-id').value;
+  const estado = document.getElementById('perm-estado').value;
+  const notas_admin = document.getElementById('perm-notas').value.trim();
+  try {
+    await api(`/permisos/${id}`, { method:'PUT', body: JSON.stringify({ estado, notas_admin }) });
+    cerrarModal('permiso-modal');
+    cargarPermisos();
+  } catch (e) { alert(e.message); }
+}
+
+// ── ASISTENCIA ─────────────────────────────────────────────────
+async function cargarAsistencia(){
+  try {
+    if (!empleadosCache.length) await cargarEmpleados();
+    const usuario_id = document.getElementById('asis-empleado').value;
+    const desde = document.getElementById('asis-desde').value;
+    const hasta = document.getElementById('asis-hasta').value;
+    const params = new URLSearchParams();
+    if (usuario_id) params.set('usuario_id', usuario_id);
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+    const rows = await api(`/fichajes/historial?${params}`);
+    document.getElementById('asis-tbody').innerHTML = rows.length ? rows.map(f => `
+      <tr>
+        <td>${fmtFecha(f.fecha)}</td><td>${f.usuario_nombre}</td><td>${f.turno_nombre || '—'}</td>
+        <td>${fmtHora(f.hora_entrada_real)}</td>
+        <td>${f.pausa_inicio_real ? `${fmtHora(f.pausa_inicio_real)}–${fmtHora(f.pausa_fin_real)}${f.duracion_pausa_min!=null?` (${f.duracion_pausa_min} min)`:''}` : '—'}</td>
+        <td>${fmtHora(f.hora_salida_real)}</td>
+        <td>${f.horas_trabajadas ?? '—'}</td>
+        <td>${f.tardanza ? '<span class="badge badge-red">Sí</span>' : '<span class="badge badge-green">No</span>'}</td>
+      </tr>`).join('') : `<tr><td colspan="8" class="loading">Sin registros</td></tr>`;
+  } catch (e) { console.error(e); }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+document.getElementById('topbar-user').textContent = userInfo?.nombre || '';
+document.getElementById('app').style.display = 'flex';
+initSemana();
+cargarEmpleados();
+actualizarBadgePermisos();
+</script>
+</body>
+</html>

@@ -179,26 +179,32 @@ const TIPOS = {
   restaurante:'Restaurante', peluqueria:'Peluquería / Salón de Belleza',
   minimercado:'Minimercado', bar:'Bar', veterinaria:'Veterinaria',
   taller:'Taller', lavanderia:'Lavandería', gimnasio:'Gimnasio', farmacia:'Farmacia',
+  ferreteria:'Ferretería',
+  ropa:'Ropa y Moda',
+  hotel:'Hotel',
 };
 const ADMIN_URL = {
   restaurante:'admin-restaurante.html', peluqueria:'admin-peluqueria.html',
   minimercado:'admin-minimercado.html', bar:'admin-restaurante.html',
   veterinaria:'admin-restaurante.html', taller:'admin-restaurante.html',
   lavanderia:'admin-restaurante.html', gimnasio:'admin-restaurante.html',
-  farmacia:'admin-restaurante.html',
+  farmacia:'admin-restaurante.html', ferreteria:'admin-ferreteria.html',
+  ropa:'admin-ropa.html', hotel:'admin-hotel.html',
 };
 const POS_URL = {
   restaurante:'pos-restaurante.html', peluqueria:'pos-peluqueria.html',
   minimercado:'pos-minimercado.html', bar:'pos-restaurante.html',
   veterinaria:'pos-restaurante.html', taller:'pos-restaurante.html',
   lavanderia:'pos-restaurante.html', gimnasio:'pos-restaurante.html',
-  farmacia:'pos-restaurante.html',
+  farmacia:'pos-restaurante.html', ferreteria:'pos-ferreteria.html',
+  ropa:'pos-ropa.html', hotel:'pos-hotel.html',
 };
 
 // Claves de sessionStorage que usa cada portal
 const SS_KEYS = {
   peluqueria:  { admin: 'pel_token',     pos: 'pos_pel_token' },
   minimercado: { admin: 'bdj_adm_token', pos: 'mini_pos_tok'  },
+  hotel:       { admin: 'htl_adm_token', pos: 'htl_pos_tok'  },
 };
 function getKeys(t){ return SS_KEYS[t] || { admin:'bdj_adm_token', pos:'bdj_pos_token' }; }
 
@@ -243,6 +249,8 @@ function guardarSesion(token, user){
     sessionStorage.setItem('pel_negocio_id',  user.negocio_id||nid||'');
   } else if(t === 'minimercado'){
     sessionStorage.setItem('bdj_adm_token',   token);
+  } else if(t === 'hotel'){
+    sessionStorage.setItem('htl_adm_token',   token);
   } else {
     sessionStorage.setItem('bdj_adm_token',   token);
   }
@@ -255,6 +263,8 @@ function limpiarSesion(){
      'pos_pel_token','pos_pel_user','pos_pel_rol'].forEach(k => sessionStorage.removeItem(k));
   } else if(t === 'minimercado'){
     ['bdj_adm_token','mini_pos_tok','mini_pos_nombre','mini_pos_rol'].forEach(k => sessionStorage.removeItem(k));
+  } else if(t === 'hotel'){
+    ['htl_adm_token'].forEach(k => sessionStorage.removeItem(k));
   } else {
     ['bdj_adm_token','bdj_pos_token'].forEach(k => sessionStorage.removeItem(k));
   }
@@ -281,7 +291,13 @@ function mostrarTarjetasAdmin(user){
     });
   }
 
-  accesos.push({
+  accesos.push(tipo === 'hotel' ? {
+    url:   (POS_URL[tipo]||'pos-restaurante.html')+'?n='+nid,
+    clase: 'pos', icon:'🛏️',
+    title: 'Recepción',
+    desc:  'Check-in, check-out y cobros',
+    badge: 'POS',
+  } : {
     url:   (POS_URL[tipo]||'pos-restaurante.html')+'?n='+nid,
     clase: 'pos', icon:'🛒',
     title: 'Punto de Venta',

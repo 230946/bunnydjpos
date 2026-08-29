@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Personal — Mi portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f6fa;--bg2:#eef0f5;--card:#fff;--text:#1b1f27;--text2:#6b7280;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.16);
+  --accent:#2563eb;--accent-l:#dbeafe;--accent-d:#1d4ed8;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fee2e2;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#15171c;--bg2:#1b1e25;--card:#1e2129;--text:#f0f0f0;--text2:#9aa0aa;
+  --border:rgba(255,255,255,0.12);--border2:rgba(255,255,255,0.2);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--card);border-bottom:0.5px solid var(--border);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-title{font-size:15px;font-weight:700}
+.content{padding:18px 22px;max-width:900px;margin:0 auto}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{padding:8px 14px;border:none;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600;background:var(--card);border:0.5px solid var(--border2);color:var(--text2)}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:16px}
+.card h3{font-size:14px;font-weight:600;margin-bottom:14px}
+.btn{padding:9px 18px;border:none;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-d)}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 10px;color:var(--text2);font-weight:600;border-bottom:0.5px solid var(--border);background:var(--bg2)}
+td{padding:9px 10px;border-bottom:0.5px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.table-scroll{overflow-x:auto}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-green{background:var(--green-l);color:#166534}
+.badge-red{background:var(--red-l);color:var(--red)}
+.badge-amber{background:var(--amber-l);color:var(--amber)}
+.fichaje-box{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.fichaje-estado{font-size:13px;color:var(--text2)}
+.field{margin-bottom:12px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px}
+.field textarea{resize:vertical;min-height:60px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.notif-item{padding:10px 12px;border-radius:var(--r);background:var(--bg2);margin-bottom:8px;font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.notif-item.no-leida{border-left:3px solid var(--accent)}
+.loading{text-align:center;color:var(--text2);padding:20px}
+.horario-lista{display:flex;flex-direction:column;gap:8px}
+.horario-dia{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg2);border-radius:var(--r)}
+</style>
+</head>
+<body>
+
+<div id="app" style="display:none">
+  <div class="topbar">
+    <span class="topbar-title">👥 Mi portal</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="topbar-user" style="font-size:12px;color:var(--text2)"></span>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('horario',this)">Mi horario</button>
+      <button class="tab-btn" onclick="showTab('fichaje',this)">Marcar turno</button>
+      <button class="tab-btn" onclick="showTab('permisos',this)">Mis permisos</button>
+      <button class="tab-btn" onclick="showTab('notif',this)">Notificaciones <span id="notif-count" style="display:none"></span></button>
+    </div>
+
+    <!-- MI HORARIO -->
+    <div class="panel active" id="tab-horario">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0">Mi horario de la semana</h3>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="cambiarSemana(-7)">← Anterior</button>
+            <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="cambiarSemana(7)">Siguiente →</button>
+          </div>
+        </div>
+        <div id="horario-lista" class="loading">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- FICHAJE -->
+    <div class="panel" id="tab-fichaje">
+      <div class="card">
+        <h3>Marcar entrada / salida</h3>
+        <div class="fichaje-box">
+          <div class="fichaje-estado" id="fichaje-estado">Cargando...</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" id="btn-entrada" onclick="marcar('entrada')">Marcar entrada</button>
+            <button class="btn btn-primary" id="btn-salida" onclick="marcar('salida')">Marcar salida</button>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text2);margin-top:10px">🍽️ Las pausas de almuerzo/cena se registran escaneando tu código QR en el kiosco de la entrada, no desde aquí.</p>
+      </div>
+      <div class="card">
+        <h3>Mi historial reciente</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Fecha</th><th>Turno</th><th>Entrada</th><th>Pausa</th><th>Salida</th><th>Horas</th></tr></thead>
+            <tbody id="historial-tbody"><tr><td colspan="6" class="loading">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERMISOS -->
+    <div class="panel" id="tab-permisos">
+      <div class="card">
+        <h3>Nueva solicitud</h3>
+        <div class="frow">
+          <div class="field"><label>Tipo</label>
+            <select id="p-tipo"><option value="vacaciones">Vacaciones</option><option value="personal" selected>Personal</option><option value="enfermedad">Enfermedad</option><option value="otro">Otro</option></select>
+          </div>
+          <div></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Desde</label><input type="date" id="p-desde"></div>
+          <div class="field"><label>Hasta</label><input type="date" id="p-hasta"></div>
+        </div>
+        <div class="field"><label>Motivo</label><textarea id="p-motivo"></textarea></div>
+        <div id="p-error" style="color:var(--red);font-size:12px;margin-bottom:8px;display:none"></div>
+        <button class="btn btn-primary" onclick="crearPermiso()">Enviar solicitud</button>
+      </div>
+      <div class="card">
+        <h3>Mis solicitudes</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th></tr></thead>
+            <tbody id="permisos-tbody"><tr><td colspan="5" class="loading">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICACIONES -->
+    <div class="panel" id="tab-notif">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0">Notificaciones</h3>
+          <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="marcarTodasLeidas()">Marcar todas como leídas</button>
+        </div>
+        <div id="notif-lista" class="loading">Cargando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin + '/api';
+let token = sessionStorage.getItem('cp_token');
+let userInfo = JSON.parse(sessionStorage.getItem('cp_user') || 'null');
+if (!token || !userInfo) { location.href = '/login.html'; }
+
+async function api(path, opts = {}) {
+  const r = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...(opts.headers || {}) }
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Error');
+  return d;
+}
+function doLogout(){ sessionStorage.removeItem('cp_token'); sessionStorage.removeItem('cp_user'); location.href = '/login.html'; }
+
+function showTab(nombre, btn){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + nombre).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (nombre === 'horario') cargarHorario();
+  if (nombre === 'fichaje') { cargarFichajeHoy(); cargarHistorial(); }
+  if (nombre === 'permisos') cargarPermisos();
+  if (nombre === 'notif') cargarNotificaciones();
+}
+
+const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const PAUSA_COLOR = { almuerzo:'#d97706', cena:'#4f46e5' };
+const fmtFecha = s => { const d = new Date(String(s).slice(0,10)+'T12:00:00'); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'}); };
+const fmtHora  = s => s ? new Date(s).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}) : '—';
+function lunesDe(fechaStr){
+  const d = new Date(fechaStr + 'T12:00:00');
+  const diff = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - diff);
+  return d.toISOString().slice(0,10);
+}
+function sumarDias(fechaStr, dias){
+  const d = new Date(fechaStr + 'T12:00:00');
+  d.setDate(d.getDate() + dias);
+  return d.toISOString().slice(0,10);
+}
+let semanaActual = lunesDe(new Date().toISOString().slice(0,10));
+function cambiarSemana(dias){ semanaActual = sumarDias(semanaActual, dias); cargarHorario(); }
+const hoyBogotaStr = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+
+// ── MI HORARIO ─────────────────────────────────────────────────
+let fichajeHoy = null;
+function fichajeInlineHtml(){
+  const f = fichajeHoy;
+  const btn = (label, accion) => `<button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="marcar('${accion}')">${label}</button>`;
+
+  if (!f || !f.hora_entrada_real) {
+    return btn('Marcar entrada', 'entrada');
+  }
+  if (f.hora_salida_real) {
+    return `<div style="font-size:11px;color:var(--text2);margin-top:2px">✓ Jornada completa (${f.horas_trabajadas ?? '—'} h)</div>`;
+  }
+  if (f.pausa_inicio_real && !f.pausa_fin_real) {
+    // El regreso de pausa se marca en el kiosco, no hay botón aquí.
+    return `<div style="font-size:11px;color:var(--text2);margin-top:2px">🍽️ En pausa desde ${fmtHora(f.pausa_inicio_real)} (marca el regreso en el kiosco)</div>`;
+  }
+  const resumenPausa = f.pausa_fin_real ? `<div style="font-size:11px;color:var(--text2);margin-bottom:4px">Pausa: ${fmtHora(f.pausa_inicio_real)}–${fmtHora(f.pausa_fin_real)}</div>` : '';
+  return `<div style="margin-top:2px;text-align:right">
+    <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Entrada: ${fmtHora(f.hora_entrada_real)}</div>
+    ${resumenPausa}
+    ${btn('Marcar salida', 'salida')}
+  </div>`;
+}
+async function cargarHorario(){
+  try {
+    const [{ asignaciones }, fh] = await Promise.all([
+      api(`/horarios/semana?desde=${semanaActual}`),
+      api('/fichajes/hoy')
+    ]);
+    fichajeHoy = fh;
+    const hoy = hoyBogotaStr();
+    const mapa = {};
+    asignaciones.forEach(a => mapa[String(a.fecha).slice(0,10)] = a);
+    const fechas = Array.from({length:7}, (_,i) => sumarDias(semanaActual, i));
+    document.getElementById('horario-lista').innerHTML = `<div class="horario-lista">` + fechas.map((f,i) => {
+      const a = mapa[f];
+      const esHoy = f === hoy;
+      const pausaLbl = { almuerzo: '🍽️ Almuerzo', cena: '🌙 Cena' };
+      const pausaColor = PAUSA_COLOR[a?.pausa_tipo] || '';
+      return `<div class="horario-dia" ${esHoy ? 'style="border:1.5px solid var(--accent)"' : ''}>
+        <span><strong>${DIAS[i]}</strong> · ${fmtFecha(f)} ${esHoy ? '<span class="badge" style="background:var(--accent-l);color:var(--accent-d);margin-left:6px">Hoy</span>' : ''}</span>
+        <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          ${a && a.turno_id ? `<span class="badge" style="background:${a.color}22;color:${a.color}">${a.turno_nombre} (${a.hora_inicio?.slice(0,5)}–${a.hora_fin?.slice(0,5)})</span>` : `<span class="badge badge-gray" style="background:var(--bg2);color:var(--text2)">Libre</span>`}
+          ${a && a.pausa_tipo ? `<span class="badge" style="background:${pausaColor}22;color:${pausaColor}">${pausaLbl[a.pausa_tipo]} ${a.pausa_inicio?.slice(0,5)||''}${a.pausa_fin?'–'+a.pausa_fin.slice(0,5):''}</span>` : ''}
+          ${esHoy ? fichajeInlineHtml() : ''}
+        </span>
+      </div>`;
+    }).join('') + `</div>`;
+  } catch (e) { document.getElementById('horario-lista').textContent = 'Error: ' + e.message; }
+}
+
+// ── FICHAJE ────────────────────────────────────────────────────
+async function cargarFichajeHoy(){
+  try {
+    const f = await api('/fichajes/hoy');
+    const estadoEl = document.getElementById('fichaje-estado');
+    const btnE = document.getElementById('btn-entrada'), btnS = document.getElementById('btn-salida');
+
+    if (!f || !f.hora_entrada_real) {
+      estadoEl.textContent = 'Aún no has marcado entrada hoy.';
+      btnE.disabled = false; btnS.disabled = true;
+    } else if (f.hora_salida_real) {
+      estadoEl.textContent = `Jornada completa: ${fmtHora(f.hora_entrada_real)} – ${fmtHora(f.hora_salida_real)} (${f.horas_trabajadas ?? '—'} h).`;
+      btnE.disabled = true; btnS.disabled = true;
+    } else if (f.pausa_inicio_real && !f.pausa_fin_real) {
+      estadoEl.textContent = `Entrada marcada a las ${fmtHora(f.hora_entrada_real)}. En pausa desde las ${fmtHora(f.pausa_inicio_real)} (marca el regreso en el kiosco).`;
+      btnE.disabled = true; btnS.disabled = true; // no puede salir mientras siga en pausa
+    } else {
+      let txt = `Entrada marcada a las ${fmtHora(f.hora_entrada_real)}.`;
+      if (f.pausa_fin_real) txt += ` Pausa: ${fmtHora(f.pausa_inicio_real)}–${fmtHora(f.pausa_fin_real)}.`;
+      estadoEl.textContent = txt;
+      btnE.disabled = true; btnS.disabled = false;
+    }
+  } catch (e) { console.error(e); }
+}
+async function marcar(accion){
+  try {
+    const r = await api('/fichajes/marcar', { method:'POST', body: JSON.stringify({ accion }) });
+    if (accion === 'entrada' && r.tardanza) alert('Marcaste tu entrada con tardanza.');
+    cargarFichajeHoy(); cargarHistorial(); cargarHorario();
+  } catch (e) { alert(e.message); }
+}
+async function cargarHistorial(){
+  try {
+    const rows = await api('/fichajes/historial');
+    document.getElementById('historial-tbody').innerHTML = rows.length ? rows.slice(0,15).map(f => `
+      <tr><td>${fmtFecha(f.fecha)}</td><td>${f.turno_nombre || '—'}</td><td>${fmtHora(f.hora_entrada_real)}</td>
+      <td>${f.pausa_inicio_real ? `${fmtHora(f.pausa_inicio_real)}–${fmtHora(f.pausa_fin_real)}` : '—'}</td>
+      <td>${fmtHora(f.hora_salida_real)}</td><td>${f.horas_trabajadas ?? '—'}</td></tr>
+    `).join('') : `<tr><td colspan="6" class="loading">Sin registros</td></tr>`;
+  } catch (e) { console.error(e); }
+}
+
+// ── PERMISOS ───────────────────────────────────────────────────
+async function crearPermiso(){
+  const errEl = document.getElementById('p-error');
+  errEl.style.display = 'none';
+  const body = {
+    tipo: document.getElementById('p-tipo').value,
+    fecha_inicio: document.getElementById('p-desde').value,
+    fecha_fin: document.getElementById('p-hasta').value,
+    motivo: document.getElementById('p-motivo').value.trim(),
+  };
+  if (!body.fecha_inicio || !body.fecha_fin) { errEl.textContent = 'Selecciona fecha de inicio y fin'; errEl.style.display = 'block'; return; }
+  try {
+    await api('/permisos', { method:'POST', body: JSON.stringify(body) });
+    document.getElementById('p-motivo').value = '';
+    cargarPermisos();
+  } catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+}
+async function cargarPermisos(){
+  try {
+    const rows = await api('/permisos');
+    const badgeMap = { pendiente:'badge-amber', aprobado:'badge-green', rechazado:'badge-red' };
+    document.getElementById('permisos-tbody').innerHTML = rows.length ? rows.map(p => `
+      <tr><td>${p.tipo}</td><td>${fmtFecha(p.fecha_inicio)}</td><td>${fmtFecha(p.fecha_fin)}</td><td>${p.motivo || '—'}</td>
+      <td><span class="badge ${badgeMap[p.estado]}">${p.estado}</span></td></tr>
+    `).join('') : `<tr><td colspan="5" class="loading">Sin solicitudes aún</td></tr>`;
+  } catch (e) { console.error(e); }
+}
+
+// ── NOTIFICACIONES ─────────────────────────────────────────────
+async function cargarNotificaciones(){
+  try {
+    const rows = await api('/notificaciones');
+    document.getElementById('notif-lista').innerHTML = rows.length ? rows.map(n => `
+      <div class="notif-item ${n.leido ? '' : 'no-leida'}">
+        <span>${n.mensaje}<br><span style="font-size:11px;color:var(--text2)">${new Date(n.creado).toLocaleString('es-CO')}</span></span>
+        ${!n.leido ? `<button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="marcarLeida('${n.id}')">Marcar leída</button>` : ''}
+      </div>`).join('') : `<div class="loading">Sin notificaciones</div>`;
+    actualizarContadorNotif(rows);
+  } catch (e) { console.error(e); }
+}
+async function marcarLeida(id){ await api(`/notificaciones/${id}/leida`, { method:'PUT' }); cargarNotificaciones(); }
+async function marcarTodasLeidas(){ await api('/notificaciones/leer-todas', { method:'PUT' }); cargarNotificaciones(); }
+function actualizarContadorNotif(rows){
+  const noLeidas = rows.filter(n => !n.leido).length;
+  const el = document.getElementById('notif-count');
+  el.style.display = noLeidas ? 'inline' : 'none';
+  el.textContent = `(${noLeidas})`;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+document.getElementById('topbar-user').textContent = userInfo?.nombre || '';
+document.getElementById('app').style.display = 'block';
+cargarHorario();
+api('/notificaciones').then(actualizarContadorNotif).catch(()=>{});
+</script>
+</body>
+</html>

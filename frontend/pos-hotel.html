@@ -1,0 +1,496 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recepción — Hotel | DJPOS</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<meta name="theme-color" content="#0B8457">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/img/logo.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --acc:#0B8457;--acc-l:#e0f7ec;--acc-d:#086644;
+  --amber:#b6702a;--amber-l:#f7ecdd;
+  --red:#E24B4A;--red-l:#FCEBEB;--red-d:#A32D2D;
+  --blue:#3C5A96;--blue-l:#e7ebf4;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1a2220;--bg2:#202b28;--bg3:#263531;
+  --text:#eaf3ee;--text2:#a9c4b8;--text3:#6b8a7c;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --acc-l:#0f3327;--amber-l:#33260f;--red-l:#3a1010;--blue-l:#131c33;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:36px 32px;width:360px;max-width:100%}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo img{width:72px;height:72px;border-radius:50%;object-fit:contain;margin:0 auto 10px;display:block}
+.login-logo h1{font-size:20px;font-weight:700}
+.login-logo p{font-size:12px;color:var(--text2);margin-top:3px}
+#login-neg-nombre{display:none;font-size:12px;color:var(--acc);font-weight:600;margin-top:4px}
+.field{margin-bottom:13px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;outline:none;font-family:inherit}
+.field input:focus,.field select:focus{border-color:var(--acc)}
+.field textarea{resize:vertical;min-height:64px}
+.btn{padding:10px 18px;border:none;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600;transition:.12s;font-family:inherit}
+.btn-primary{background:var(--acc);color:#fff}.btn-primary:hover{background:var(--acc-d)}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text)}.btn-outline:hover{background:var(--bg2)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:var(--red-d)}
+.btn-sm{padding:6px 13px;font-size:12px}
+.btn-block{width:100%}
+.error-msg{background:var(--red-l);color:var(--red-d);padding:9px 12px;border-radius:var(--r);font-size:12px;margin-bottom:12px;display:none}
+
+/* APP SHELL */
+.app{display:flex;flex-direction:column;height:100%}
+.topbar{padding:12px 20px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0}
+.topbar img{width:30px;height:30px;border-radius:8px;object-fit:contain}
+.topbar h2{font-size:16px;flex:1;min-width:0}
+.topbar .sub{font-size:11px;color:var(--text2);font-weight:400}
+.topbar-btn{background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer;padding:4px}
+.content{flex:1;overflow-y:auto;padding:18px 20px 90px;overscroll-behavior:contain}
+
+/* DASHBOARD CARDS */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px 16px}
+.card .n{font-size:24px;font-weight:800;color:var(--acc)}
+.card .l{font-size:11px;color:var(--text2);margin-top:2px}
+
+.sec-title{font-size:14px;font-weight:700;margin:22px 0 12px;display:flex;align-items:center;justify-content:space-between}
+.sec-title:first-child{margin-top:0}
+
+/* HABITACIONES */
+.hab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.hab-card{background:var(--bg);border:1px solid var(--border);border-left:4px solid var(--text3);border-radius:var(--r);padding:11px 13px;cursor:pointer}
+.hab-card.st-Disponible{border-left-color:var(--acc)}
+.hab-card.st-Ocupada{border-left-color:var(--red)}
+.hab-card.st-Limpieza{border-left-color:var(--amber)}
+.hab-card.st-Mantenimiento{border-left-color:var(--text3)}
+.hab-card .num{font-size:15px;font-weight:800}
+.hab-card .tipo{font-size:10px;color:var(--text2)}
+.hab-card .estado{display:inline-block;margin-top:5px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px}
+.hab-card.st-Disponible .estado{background:var(--acc-l);color:var(--acc-d)}
+.hab-card.st-Ocupada .estado{background:var(--red-l);color:var(--red-d)}
+.hab-card.st-Limpieza .estado{background:var(--amber-l);color:#8a5a1a}
+.hab-card.st-Mantenimiento .estado{background:var(--bg2);color:var(--text2)}
+
+/* LISTAS */
+.op-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.op-body{flex:1;min-width:160px}
+.op-name{font-weight:700;font-size:14px}
+.op-meta{font-size:12px;color:var(--text2);margin-top:2px}
+.op-actions{display:flex;gap:6px;flex-wrap:wrap}
+.empty{text-align:center;padding:24px;color:var(--text3);font-size:13px;background:var(--bg);border-radius:var(--r);border:1px dashed var(--border)}
+
+/* FAB */
+.fab{position:fixed;right:20px;bottom:20px;background:var(--acc);color:#fff;border:none;border-radius:50px;padding:14px 22px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:50}
+.fab:hover{background:var(--acc-d)}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal{background:var(--bg);border-radius:var(--rl);padding:22px 24px;width:420px;max-width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{margin-bottom:14px;font-size:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.frow{display:flex;gap:10px}
+.frow .field{flex:1}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:200}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/img/logo.png" alt="DJPOS">
+      <h1>Recepción — Hotel</h1>
+      <p>Ingresa con tu usuario y contraseña</p>
+      <div id="login-neg-nombre"></div>
+    </div>
+    <div class="error-msg" id="login-error"></div>
+    <div class="field"><label>Usuario o email</label><input id="l-login" type="text" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>Contraseña</label><input id="l-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()">Ingresar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="res-modal">
+  <div class="modal">
+    <h3>Nueva reserva (walk-in)</h3>
+    <div class="field"><label>Habitación *</label><select id="res-hab"></select></div>
+    <div class="frow">
+      <div class="field"><label>Check-in *</label><input id="res-checkin" type="date"></div>
+      <div class="field"><label>Check-out *</label><input id="res-checkout" type="date"></div>
+    </div>
+    <div class="field"><label>Nombre del huésped *</label><input id="res-nombre" placeholder="Nombre completo"></div>
+    <div class="frow">
+      <div class="field"><label>Teléfono</label><input id="res-tel"></div>
+      <div class="field"><label>Documento</label><input id="res-doc"></div>
+    </div>
+    <div class="field"><label>N° de huéspedes</label><input id="res-huespedes" type="number" min="1" value="1"></div>
+    <div id="res-err" style="display:none;color:var(--red-d);font-size:12px;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('res-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarReserva()">Crear reserva</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="pago-modal">
+  <div class="modal" style="width:360px">
+    <h3>Registrar cobro</h3>
+    <input type="hidden" id="pago-reserva-id">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">
+      Total: <b id="pago-total">—</b> · Pagado: <b id="pago-pagado">—</b> · Saldo: <b id="pago-saldo">—</b>
+    </div>
+    <div class="field"><label>Monto a cobrar *</label><input id="pago-monto" type="number" min="0" step="1000"></div>
+    <div class="field"><label>Método de pago *</label>
+      <select id="pago-metodo">
+        <option value="Efectivo">Efectivo</option>
+        <option value="Transferencia">Transferencia</option>
+        <option value="Tarjeta">Tarjeta</option>
+      </select>
+    </div>
+    <div id="pago-err" style="display:none;color:var(--red-d);font-size:12px;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('pago-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarPago()">Registrar cobro</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="cargo-modal">
+  <div class="modal" style="width:380px">
+    <h3>Agregar cargo</h3>
+    <input type="hidden" id="cargo-reserva-id">
+    <div class="field"><label>Servicio</label>
+      <select id="cargo-servicio" onchange="onCargoServicioChange()"><option value="">— Personalizado —</option></select>
+    </div>
+    <div class="frow">
+      <div class="field"><label>Nombre</label><input id="cargo-nombre"></div>
+      <div class="field"><label>Precio unitario</label><input id="cargo-precio" type="number" min="0" step="1000"></div>
+    </div>
+    <div class="field"><label>Cantidad</label><input id="cargo-cantidad" type="number" min="1" value="1"></div>
+    <div id="cargo-err" style="display:none;color:var(--red-d);font-size:12px;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('cargo-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarCargo()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app-screen" style="display:none">
+  <div class="topbar">
+    <img src="/img/logo.png" alt="Logo">
+    <h2>Recepción<div class="sub" id="tb-negocio"></div></h2>
+    <button class="topbar-btn" onclick="cargarTodo()" title="Actualizar">↺</button>
+    <button class="topbar-btn" onclick="toggleFullscreenPOS()" title="Pantalla completa">⛶</button>
+    <button class="topbar-btn" onclick="doLogout()" title="Cerrar sesión">🚪</button>
+  </div>
+
+  <div class="content">
+    <div class="cards">
+      <div class="card"><div class="n" id="d-checkins">—</div><div class="l">Check-ins hoy</div></div>
+      <div class="card"><div class="n" id="d-checkouts">—</div><div class="l">Check-outs hoy</div></div>
+      <div class="card"><div class="n" id="d-ocupadas">—</div><div class="l">Ocupadas</div></div>
+      <div class="card"><div class="n" id="d-libres">—</div><div class="l">Libres</div></div>
+    </div>
+
+    <div class="sec-title">🛏️ Habitaciones</div>
+    <div class="hab-grid" id="hab-grid"></div>
+
+    <div class="sec-title">📋 Check-ins de hoy</div>
+    <div id="checkins-list"></div>
+
+    <div class="sec-title">🚪 Check-outs de hoy</div>
+    <div id="checkouts-list"></div>
+  </div>
+
+  <button class="fab" onclick="abrirReserva()">+ Nueva reserva</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
+const API = '/api';
+let token = sessionStorage.getItem('htl_pos_tok') || '';
+const urlNegocio = new URLSearchParams(window.location.search).get('n') || '';
+if (urlNegocio) {
+  fetch(`/api/negocio-pub/${urlNegocio}`).then(r=>r.ok?r.json():null).then(info=>{
+    if(!info||!info.nombre) return;
+    const el=document.getElementById('login-neg-nombre');
+    el.textContent = info.nombre; el.style.display='block';
+    document.title = `${info.nombre} — Recepción`;
+    document.getElementById('tb-negocio').textContent = info.nombre;
+  }).catch(()=>{});
+}
+
+function $(id){ return document.getElementById(id); }
+function closeModal(id){ $(id).style.display='none'; }
+function showToast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+function fmtCOP(n){ return '$'+(Math.round(n)||0).toLocaleString('es-CO'); }
+function today(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function addDays(dateStr, n){
+  const d = new Date(dateStr+'T12:00:00'); d.setDate(d.getDate()+n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function api(path, opts={}){
+  const r = await fetch(`${API}${path}`, { ...opts, headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`, ...(opts.headers||{})} });
+  if (r.status===401){ doLogout(); throw new Error('Sesión expirada'); }
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error||'Error');
+  return d;
+}
+
+async function doLogin(){
+  const login = $('l-login').value.trim();
+  const pass = $('l-pass').value;
+  const err = $('login-error');
+  err.style.display = 'none';
+  try {
+    const r = await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login,password:pass,negocio_id:urlNegocio||undefined})});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Error');
+    if(!d.user.negocio_id && !d.user.es_superadmin) throw new Error('Este usuario no tiene negocio asignado.');
+    token = d.token;
+    sessionStorage.setItem('htl_pos_tok', token);
+    sessionStorage.setItem('htl_pos_nombre', d.user?.nombre || login);
+    showApp();
+  } catch(e){ err.textContent = e.message; err.style.display = 'block'; }
+}
+
+function doLogout(){
+  sessionStorage.removeItem('htl_pos_tok');
+  sessionStorage.removeItem('htl_pos_nombre');
+  token = null;
+  location.reload();
+}
+
+async function showApp(){
+  $('login-screen').style.display='none';
+  $('app-screen').style.display='flex';
+  cargarTodo();
+}
+
+let _habitaciones = [];
+let _reservasHoy = [];
+
+async function cargarTodo(){
+  try{
+    const [resumen, habs, reservas] = await Promise.all([
+      api('/hotel/resumen'),
+      api('/hotel/habitaciones'),
+      api(`/hotel/reservas?desde=${today()}&hasta=${addDays(today(),1)}`),
+    ]);
+    _habitaciones = habs;
+    _reservasHoy = reservas;
+    const libres = habs.filter(h=>h.estado==='Disponible').length;
+    $('d-checkins').textContent = resumen.checkinsHoy;
+    $('d-checkouts').textContent = resumen.checkoutsHoy;
+    $('d-ocupadas').textContent = resumen.habitacionesOcupadas;
+    $('d-libres').textContent = libres;
+    renderHabitaciones();
+    renderCheckins();
+    renderCheckouts();
+  }catch(e){ showToast(e.message); }
+}
+
+function renderHabitaciones(){
+  const g = $('hab-grid');
+  if(!_habitaciones.length){ g.innerHTML = '<div class="empty">Sin habitaciones registradas. Créalas desde el panel Admin.</div>'; return; }
+  g.innerHTML = _habitaciones.map(h => `
+    <div class="hab-card st-${h.estado}" onclick="clickHabitacion('${h.id}')">
+      <div class="num">${esc(h.numero)}</div>
+      <div class="tipo">${esc(h.tipo)} · ${h.capacidad} pax</div>
+      <span class="estado">${h.estado}</span>
+    </div>`).join('');
+}
+
+async function clickHabitacion(id){
+  const h = _habitaciones.find(x=>x.id===id);
+  if(!h) return;
+  if(h.estado === 'Disponible'){ abrirReserva(id); return; }
+  if(h.estado === 'Limpieza' || h.estado === 'Mantenimiento'){
+    if(!confirm(`¿Marcar la habitación ${h.numero} como Disponible?`)) return;
+    try{
+      await api(`/hotel/habitaciones/${id}/estado`,{method:'PATCH',body:JSON.stringify({estado:'Disponible'})});
+      showToast('Habitación disponible ✓');
+      cargarTodo();
+    }catch(e){ showToast(e.message); }
+    return;
+  }
+  showToast('Habitación ocupada — hazle check-out desde la lista de abajo');
+}
+
+function renderCheckins(){
+  const el = $('checkins-list');
+  const hoy = today();
+  const list = _reservasHoy.filter(r => r.fecha_checkin.slice(0,10)===hoy && ['Pendiente','Confirmada'].includes(r.estado));
+  if(!list.length){ el.innerHTML = '<div class="empty">No hay check-ins programados para hoy.</div>'; return; }
+  el.innerHTML = list.map(r => `
+    <div class="op-card">
+      <div class="op-body">
+        <div class="op-name">${esc(r.cliente_nombre)}</div>
+        <div class="op-meta">Hab. ${esc(r.habitacion_numero)} — ${esc(r.habitacion_tipo)} · ${r.cliente_tel?esc(r.cliente_tel):'Sin teléfono'}</div>
+      </div>
+      <div class="op-actions">
+        <button class="btn btn-primary btn-sm" onclick="checkIn('${r.id}')">Check-in ✓</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderCheckouts(){
+  const el = $('checkouts-list');
+  const hoy = today();
+  const list = _reservasHoy.filter(r => r.fecha_checkout.slice(0,10)===hoy && r.estado==='EnCasa');
+  if(!list.length){ el.innerHTML = '<div class="empty">No hay check-outs programados para hoy.</div>'; return; }
+  el.innerHTML = list.map(r => {
+    const saldo = parseFloat(r.total) - parseFloat(r.monto_pagado);
+    return `
+    <div class="op-card">
+      <div class="op-body">
+        <div class="op-name">${esc(r.cliente_nombre)}</div>
+        <div class="op-meta">Hab. ${esc(r.habitacion_numero)} — ${esc(r.habitacion_tipo)} · ${saldo>0.01?`Saldo: ${fmtCOP(saldo)}`:'Pagado ✓'}</div>
+      </div>
+      <div class="op-actions">
+        <button class="btn btn-outline btn-sm" onclick="abrirCargo('${r.id}')">+ Cargo</button>
+        ${saldo>0.01?`<button class="btn btn-outline btn-sm" onclick='abrirPago(${JSON.stringify(r)})'>Cobrar</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="checkOut('${r.id}')">Check-out</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let _serviciosPos = [];
+async function abrirCargo(reservaId){
+  $('cargo-reserva-id').value = reservaId;
+  $('cargo-err').style.display = 'none';
+  $('cargo-servicio').value=''; $('cargo-nombre').value=''; $('cargo-precio').value=''; $('cargo-cantidad').value=1;
+  try{
+    _serviciosPos = await api('/hotel/servicios');
+    $('cargo-servicio').innerHTML = '<option value="">— Personalizado —</option>' +
+      _serviciosPos.map(s=>`<option value="${s.id}" data-precio="${s.precio}">${esc(s.nombre)} (${fmtCOP(s.precio)})</option>`).join('');
+  }catch(e){}
+  $('cargo-modal').style.display = 'flex';
+}
+function onCargoServicioChange(){
+  const opt = $('cargo-servicio').selectedOptions[0];
+  if(opt && opt.value){ $('cargo-nombre').value = opt.textContent.replace(/\s*\(.+\)$/,''); $('cargo-precio').value = opt.dataset.precio; }
+}
+async function guardarCargo(){
+  const errEl = $('cargo-err'); errEl.style.display='none';
+  const servicio_id = $('cargo-servicio').value || null;
+  const body = { servicio_id, nombre: $('cargo-nombre').value.trim(), precio: $('cargo-precio').value, cantidad: $('cargo-cantidad').value };
+  if(!servicio_id && !body.nombre){ errEl.textContent='Elige un servicio o escribe un nombre'; errEl.style.display='block'; return; }
+  try{
+    await api(`/hotel/reservas/${$('cargo-reserva-id').value}/cargos`,{method:'POST',body:JSON.stringify(body)});
+    closeModal('cargo-modal');
+    showToast('Cargo agregado ✓');
+    cargarTodo();
+  }catch(e){ errEl.textContent=e.message; errEl.style.display='block'; }
+}
+
+async function checkIn(id){
+  try{
+    await api(`/hotel/reservas/${id}/estado`,{method:'PATCH',body:JSON.stringify({estado:'EnCasa'})});
+    showToast('Check-in registrado ✓');
+    cargarTodo();
+  }catch(e){ showToast(e.message); }
+}
+async function checkOut(id){
+  try{
+    await api(`/hotel/reservas/${id}/estado`,{method:'PATCH',body:JSON.stringify({estado:'Finalizada'})});
+    showToast('Check-out registrado ✓');
+    cargarTodo();
+  }catch(e){ showToast(e.message); }
+}
+
+function abrirPago(r){
+  const saldo = parseFloat(r.total) - parseFloat(r.monto_pagado);
+  $('pago-reserva-id').value = r.id;
+  $('pago-total').textContent = fmtCOP(r.total);
+  $('pago-pagado').textContent = fmtCOP(r.monto_pagado);
+  $('pago-saldo').textContent = fmtCOP(saldo);
+  $('pago-monto').value = Math.round(saldo);
+  $('pago-metodo').value = 'Efectivo';
+  $('pago-err').style.display = 'none';
+  $('pago-modal').style.display = 'flex';
+}
+async function guardarPago(){
+  const errEl = $('pago-err'); errEl.style.display='none';
+  const id = $('pago-reserva-id').value;
+  const body = { monto: $('pago-monto').value, metodo: $('pago-metodo').value };
+  if(!body.monto || parseFloat(body.monto) <= 0){ errEl.textContent='Ingresa un monto válido'; errEl.style.display='block'; return; }
+  try{
+    await api(`/hotel/reservas/${id}/pagos`,{method:'POST',body:JSON.stringify(body)});
+    closeModal('pago-modal');
+    showToast('Cobro registrado ✓');
+    cargarTodo();
+  }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
+}
+
+function abrirReserva(habId){
+  $('res-err').style.display = 'none';
+  const libres = _habitaciones.filter(h=>h.estado==='Disponible');
+  $('res-hab').innerHTML = libres.map(h => `<option value="${h.id}">${esc(h.numero)} — ${esc(h.tipo)} (${fmtCOP(h.precio_noche)}/noche)</option>`).join('') || '<option value="">Sin habitaciones disponibles</option>';
+  if(habId) $('res-hab').value = habId;
+  $('res-checkin').value = today();
+  $('res-checkout').value = addDays(today(),1);
+  $('res-nombre').value = ''; $('res-tel').value=''; $('res-doc').value=''; $('res-huespedes').value=1;
+  $('res-modal').style.display = 'flex';
+}
+async function guardarReserva(){
+  const errEl = $('res-err'); errEl.style.display='none';
+  const body = {
+    habitacion_id: $('res-hab').value,
+    fecha_checkin: $('res-checkin').value,
+    fecha_checkout: $('res-checkout').value,
+    cliente_nombre: $('res-nombre').value.trim(),
+    cliente_tel: $('res-tel').value.trim(),
+    cliente_doc: $('res-doc').value.trim(),
+    huespedes: $('res-huespedes').value,
+  };
+  if(!body.habitacion_id || !body.cliente_nombre || !body.fecha_checkin || !body.fecha_checkout){
+    errEl.textContent = 'Completa habitación, huésped y fechas'; errEl.style.display='block'; return;
+  }
+  try{
+    await api('/hotel/reservas',{method:'POST',body:JSON.stringify(body)});
+    closeModal('res-modal');
+    showToast('Reserva creada ✓');
+    cargarTodo();
+  }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
+}
+
+// ── Init: sesión existente ────────────────────────────────────
+(async () => {
+  if(!token) return;
+  try{
+    const d = await api('/auth/me').catch(()=>null);
+    if(d && d.user) showApp();
+    else { sessionStorage.removeItem('htl_pos_tok'); token=null; }
+  }catch{ sessionStorage.removeItem('htl_pos_tok'); token=null; }
+})();
+</script>
+</body>
+</html>

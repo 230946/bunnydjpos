@@ -25,7 +25,7 @@ const nid = req => req.user.negocio_id;
 // categoría) el ítem de menú vinculado y lo deja disponible en el POS; si
 // se desactiva, lo oculta del POS sin borrarlo (para no perder su historial
 // de ventas). Devuelve el id del ítem de menú vinculado (o null).
-async function _sincronizarMenuItem(negocioId, invId, { nombre, categoria, precioVenta, esProducto }) {
+async function _sincronizarMenuItem(negocioId, invId, { nombre, categoria, precioVenta, esProducto, modulo }) {
   const { rows: existentes } = await pool.query(
     `SELECT id FROM menu_items WHERE negocio_id=${ph(1)} AND inventario_id=${ph(2)} LIMIT 1`,
     [negocioId, invId]
@@ -50,8 +50,8 @@ async function _sincronizarMenuItem(negocioId, invId, { nombre, categoria, preci
     else {
       categoriaId = uuid();
       await pool.query(
-        `INSERT INTO menu_categorias (id,negocio_id,nombre,icono,modulo) VALUES (${ph(1)},${ph(2)},${ph(3)},'🛒','minimercado')`,
-        [categoriaId, negocioId, categoria]
+        `INSERT INTO menu_categorias (id,negocio_id,nombre,icono,modulo) VALUES (${ph(1)},${ph(2)},${ph(3)},'🛒',${ph(4)})`,
+        [categoriaId, negocioId, categoria, modulo||'restaurante']
       );
     }
   }
@@ -174,7 +174,7 @@ router.post('/', requirePermiso('inventario'), async (req, res) => {
         [id, nid(req), stock, stock, req.user.id]
       );
     }
-    const menuItemId = await _sincronizarMenuItem(nid(req), id, { nombre, categoria, precioVenta: precio_venta, esProducto: !!es_producto });
+    const menuItemId = await _sincronizarMenuItem(nid(req), id, { nombre, categoria, precioVenta: precio_venta, esProducto: !!es_producto, modulo });
     res.status(201).json({ id, menu_item_id: menuItemId, menu_item_creado: !!menuItemId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -216,7 +216,7 @@ router.put('/:id', requirePermiso('inventario'), async (req, res) => {
        descripcion||null, margen||null, es_paquete||false, cantidad_paquete||null,
        modulo||'restaurante', req.params.id, nid(req)]
     );
-    const menuItemId = await _sincronizarMenuItem(nid(req), req.params.id, { nombre, categoria, precioVenta: precio_venta, esProducto: !!es_producto });
+    const menuItemId = await _sincronizarMenuItem(nid(req), req.params.id, { nombre, categoria, precioVenta: precio_venta, esProducto: !!es_producto, modulo });
     res.json({ ok: true, menu_item_id: menuItemId, menu_item_creado: !!es_producto && !!menuItemId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

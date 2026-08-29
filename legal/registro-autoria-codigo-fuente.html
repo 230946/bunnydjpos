@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listado de código fuente — BUNNYDJPOS / DJPOS</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Georgia,'Times New Roman',serif;color:#111;max-width:840px;margin:0 auto;padding:40px 32px;line-height:1.5}
+h1{font-size:20px;text-align:center;margin-bottom:4px;letter-spacing:.5px}
+h2{font-size:15px;margin:28px 0 10px;border-bottom:1px solid #999;padding-bottom:4px}
+.subtitulo{text-align:center;font-size:13px;color:#444;margin-bottom:28px}
+table.datos{width:100%;border-collapse:collapse;margin-bottom:16px}
+table.datos td{border:1px solid #999;padding:8px 10px;font-size:13px;vertical-align:top}
+table.datos td.campo{width:220px;font-weight:bold;background:#f4f4f4}
+.declaracion{font-size:13px;text-align:justify;margin:18px 0}
+.firma{margin-top:60px;display:flex;justify-content:space-between;font-size:13px}
+.firma div{width:45%;border-top:1px solid #333;padding-top:6px;text-align:center}
+.parte-header{background:#eee;border:1px solid #999;padding:8px 12px;font-size:13px;font-weight:bold;margin:0 0 8px}
+.parte-nota{font-size:12px;color:#444;margin-bottom:10px}
+pre.codigo{font-family:Consolas,'Courier New',monospace;font-size:10.5px;line-height:1.35;white-space:pre;background:#fafafa;border:1px solid #ccc;padding:14px 10px;overflow-x:auto}
+.page-break{page-break-before:always}
+.no-print{background:#fff8e1;border:1px solid #f0c040;border-radius:6px;padding:12px 16px;font-family:sans-serif;font-size:13px;margin-bottom:24px}
+.no-print b{color:#8a5a00}
+@media print{.no-print{display:none}}
+footer{margin-top:40px;font-size:11px;color:#666;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="no-print">
+  <b>Nota:</b> este documento está listo para imprimir o exportar a PDF
+  (Ctrl+P → "Guardar como PDF") y anexarlo a la solicitud de registro ante
+  la Dirección Nacional de Derecho de Autor (DNDA). Este recuadro no se
+  imprime.
+</div>
+
+<h1>LISTADO DE CÓDIGO FUENTE</h1>
+<div class="subtitulo">Anexo para solicitud de registro de derechos de autor sobre programa de ordenador</div>
+
+<h2>1. Identificación del programa de ordenador</h2>
+<table class="datos">
+  <tr><td class="campo">Nombre del programa</td><td>BUNNYDJPOS / DJPOS</td></tr>
+  <tr><td class="campo">Autor</td><td>Juan Manuel Franco Rodríguez</td></tr>
+  <tr><td class="campo">Fecha de creación</td><td>Enero de 2026</td></tr>
+  <tr><td class="campo">Descripción funcional</td><td>Sistema POS multi-negocio para restaurantes, minimercados y peluquerías, en el cual se registran los inventarios y movimientos de ventas del negocio.</td></tr>
+  <tr><td class="campo">Lenguajes de programación</td><td>JavaScript (Node.js / Express.js) en el servidor backend; HTML5, CSS3 y JavaScript en las interfaces frontend; SQL (MySQL/MariaDB) para el modelo de datos.</td></tr>
+  <tr><td class="campo">Extensión del código fuente propio</td><td>Aproximadamente 7.710 líneas de código en el módulo backend (excluyendo librerías de terceros), distribuidas en 33 archivos fuente, más los módulos de interfaz frontend.</td></tr>
+  <tr><td class="campo">Archivo representativo de este anexo</td><td><code>backend/server.js</code> — módulo principal del servidor (punto de entrada de la aplicación, configuración de rutas, migraciones de base de datos y arranque del servicio).</td></tr>
+  <tr><td class="campo">Extensión del archivo representativo</td><td>384 líneas de código</td></tr>
+  <tr><td class="campo">Fecha de elaboración de este documento</td><td>2 de julio de 2026</td></tr>
+</table>
+
+<div class="declaracion">
+  El presente documento contiene un extracto representativo del código
+  fuente del programa de ordenador identificado, correspondiente al
+  <b>inicio</b> y al <b>final</b> del archivo principal del sistema
+  (<code>backend/server.js</code>), en cumplimiento de lo exigido para el
+  depósito de listados de código fuente ante la autoridad de registro de
+  derechos de autor. El autor declara ser el creador original de la obra
+  aquí referenciada.
+</div>
+
+<div class="firma">
+  <div>Firma del autor<br>Juan Manuel Franco Rodríguez</div>
+  <div>Fecha</div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>2. Listado de código fuente — Parte 1 de 2 (inicio del programa)</h2>
+<div class="parte-header">Archivo: backend/server.js — Líneas 1 a 192 de 384</div>
+<div class="parte-nota">BUNNYDJPOS / DJPOS — Juan Manuel Franco Rodríguez — Enero de 2026</div>
+<pre class="codigo">0001  /**
+0002   * BUNNYDJPOS — server.js
+0003   * Servidor principal API REST + WebSocket para cocina en tiempo real
+0004   */
+0005  require('dotenv').config();
+0006  const express    = require('express');
+0007  const cors       = require('cors');
+0008  const http       = require('http');
+0009  const { WebSocketServer } = require('ws');
+0010  const bcrypt     = require('bcryptjs');
+0011  const { v4: uuid } = require('uuid');
+0012  const path       = require('path');
+0013  const multer     = require('multer');
+0014  const { pool, ph } = require('./db');
+0015
+0016  // ── Routers ──────────────────────────────────────────────────────
+0017  const authRouter       = require('./routes/auth');
+0018  const superadminRouter = require('./routes/superadmin');
+0019  const usuariosRouter   = require('./routes/usuarios');
+0020  const adminRouter      = require('./routes/admin');
+0021  const posRouter        = require('./routes/pos');
+0022  const inventarioRouter = require('./routes/inventario');
+0023  const clientesRouter    = require('./routes/clientes');
+0024  const peluqueriaRouter  = require('./routes/peluqueria');
+0025  const domiciliosRouter  = require('./routes/domicilios');
+0026
+0027  const app    = express();
+0028  const server = http.createServer(app);
+0029  const PORT   = process.env.PORT || 3001;
+0030
+0031  // ── Middlewares ───────────────────────────────────────────────────
+0032  app.use(cors({ origin: '*' }));
+0033  app.use(express.json({ limit: '10mb' }));
+0034  app.use('/uploads', express.static(process.env.UPLOADS_DIR || './uploads'));
+0035
+0036  // ── Servir frontend desde el servidor (evita problema file://) ────
+0037  const frontendPath = path.join(__dirname, '..', 'frontend');
+0038  app.disable('etag');  // sin cache en desarrollo
+0039  app.use(express.static(frontendPath, { etag: false, lastModified: false }));
+0040  // Rutas directas para cada panel
+0041  app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
+0042  app.get('/login',            (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
+0043  // POS
+0044  app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'pos-restaurante.html')));
+0045  app.get('/minimercado',      (_, res) => res.sendFile(path.join(frontendPath, 'pos-minimercado.html')));
+0046  app.get('/peluqueria',       (_, res) => res.sendFile(path.join(frontendPath, 'pos-peluqueria.html')));
+0047  // Domicilios
+0048  app.get('/domicilios',       (_, res) => res.sendFile(path.join(frontendPath, 'domicilios.html')));
+0049  app.get('/domiciliario',     (_, res) => res.sendFile(path.join(frontendPath, 'domiciliario.html')));
+0050  app.get('/rider',            (_, res) => res.sendFile(path.join(frontendPath, 'rider.html')));
+0051  // Admin
+0052  app.get('/admin',            (_, res) => res.sendFile(path.join(frontendPath, 'admin-restaurante.html')));
+0053  app.get('/minimercado-admin',(_, res) => res.sendFile(path.join(frontendPath, 'admin-minimercado.html')));
+0054  app.get('/peluqueria-admin', (_, res) => res.sendFile(path.join(frontendPath, 'admin-peluqueria.html')));
+0055  app.get('/superadmin',       (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
+0056  // Portales
+0057  app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'portal.html')));
+0058  app.get('/portal-empleado',  (_, res) => res.sendFile(path.join(frontendPath, 'portal-empleado.html')));
+0059  app.get('/reservas',         (_, res) => res.sendFile(path.join(frontendPath, 'reservas-peluqueria.html')));
+0060
+0061  // ── Multer para logos ─────────────────────────────────────────────
+0062  const storage = multer.diskStorage({
+0063    destination: process.env.UPLOADS_DIR || './uploads',
+0064    filename: (_, file, cb) => cb(null, uuid() + path.extname(file.originalname))
+0065  });
+0066  const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+0067
+0068  // ── WebSocket (cocina en tiempo real) ─────────────────────────────
+0069  const wss = new WebSocketServer({ server });
+0070  const clients = new Map(); // negocio_id → Set&lt;ws&gt;
+0071
+0072  wss.on('connection', (ws, req) => {
+0073    const url    = new URL(req.url, `http://localhost`);
+0074    const negocio = url.searchParams.get('negocio_id') || 'global';
+0075    if (!clients.has(negocio)) clients.set(negocio, new Set());
+0076    clients.get(negocio).add(ws);
+0077    ws.on('close', () => clients.get(negocio)?.delete(ws));
+0078  });
+0079
+0080  function broadcast(negocio_id, tipo, data) {
+0081    const msg = JSON.stringify({ tipo, data, ts: Date.now() });
+0082    clients.get(negocio_id)?.forEach(ws => {
+0083      if (ws.readyState === 1) ws.send(msg);
+0084    });
+0085  }
+0086  app.locals.broadcast = broadcast;
+0087
+0088  // ── Rutas ─────────────────────────────────────────────────────────
+0089  app.get('/api/health', async (_, res) => {
+0090    try {
+0091      await pool.query('SELECT 1');
+0092      res.json({ ok: true, version: '1.0.0', name: 'BUNNYDJPOS' });
+0093    } catch (e) {
+0094      res.status(500).json({ ok: false, error: e.message });
+0095    }
+0096  });
+0097
+0098  app.use('/api/auth',       authRouter);
+0099  app.use('/api/superadmin', superadminRouter);
+0100  app.use('/api/admin',      usuariosRouter);
+0101  app.use('/api/admin',      adminRouter);
+0102  app.use('/api/admin',      clientesRouter);
+0103  app.use('/api/pos',        posRouter);
+0104  app.use('/api/inventario', inventarioRouter);
+0105  app.use('/api/peluqueria', peluqueriaRouter);
+0106  app.use('/api/domicilios', domiciliosRouter);
+0107
+0108  // ── Info pública de negocio (para mostrar nombre en login) ────────
+0109  app.get('/api/negocio-pub/:id', async (req, res) => {
+0110    try {
+0111      const { rows } = await pool.query(
+0112        `SELECT nombre, tipo, logo_url, nit, direccion, ciudad, telefono, departamento, idiomas, color_primario, moneda, zona_horaria FROM negocios WHERE id=? AND activo=1 LIMIT 1`,
+0113        [req.params.id]
+0114      );
+0115      if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
+0116
+0117      // Incluir info del contrato vigente (si existe la tabla)
+0118      let contrato = null;
+0119      try {
+0120        const { rows: cr } = await pool.query(
+0121          `SELECT id, estado, fecha_inicio, fecha_fin, tipo, valor FROM neg_contratos
+0122           WHERE negocio_id=?
+0123           ORDER BY FIELD(estado,'activo','pendiente','vencido','cancelado'), fecha_fin DESC
+0124           LIMIT 1`,
+0125          [req.params.id]
+0126        );
+0127        if (cr[0]) {
+0128          let { id: cid, estado, fecha_fin, fecha_inicio, tipo, valor } = cr[0];
+0129          const hoy = new Date();
+0130          // Auto-activar: pendiente → activo si fecha_inicio llegó y fecha_fin no ha pasado aún
+0131          if (estado === 'pendiente' && fecha_inicio) {
+0132            const inicio = new Date(String(fecha_inicio).slice(0,10)+'T12:00:00');
+0133            const fin2 = fecha_fin ? new Date(String(fecha_fin).slice(0,10)+'T12:00:00') : null;
+0134            if (inicio &lt;= hoy && (!fin2 || fin2 >= hoy)) {
+0135              await pool.query(`UPDATE neg_contratos SET estado='activo', actualizado=NOW() WHERE id=?`, [cid]);
+0136              estado = 'activo';
+0137            }
+0138          }
+0139          // Auto-vencer: activo → pendiente (renovación) si fecha_fin ya pasó
+0140          let renovacion = false;
+0141          if (estado === 'activo' && fecha_fin) {
+0142            const fin2 = new Date(String(fecha_fin).slice(0,10)+'T12:00:00');
+0143            if (fin2 &lt; hoy) {
+0144              await pool.query(`UPDATE neg_contratos SET estado='pendiente', actualizado=NOW() WHERE id=?`, [cid]);
+0145              estado = 'pendiente';
+0146              renovacion = true;
+0147            }
+0148          }
+0149          const fin = fecha_fin;
+0150          let dias = null;
+0151          if (fin) {
+0152            const ms = new Date(String(fin).slice(0,10)+'T12:00:00') - hoy;
+0153            dias = Math.ceil(ms / (1000*60*60*24));
+0154          }
+0155          contrato = {
+0156            estado,
+0157            fecha_fin: fin ? String(fin).slice(0,10) : null,
+0158            dias_para_vencer: dias,
+0159            renovacion,
+0160            tipo: tipo || 'mensual',
+0161            valor: parseFloat(valor) || 0
+0162          };
+0163        }
+0164      } catch (_) {}
+0165
+0166      let plan = 'free';
+0167      try {
+0168        const { rows: planRows } = await pool.query(
+0169          `SELECT COALESCE(
+0170             (SELECT c.plan FROM neg_contratos c WHERE c.negocio_id=? AND c.estado='activo' ORDER BY c.fecha_fin DESC LIMIT 1),
+0171             np.plan, 'free'
+0172           ) AS plan
+0173           FROM negocios n LEFT JOIN neg_planes np ON np.negocio_id=n.id WHERE n.id=? LIMIT 1`,
+0174          [req.params.id, req.params.id]
+0175        );
+0176        plan = planRows[0]?.plan || 'free';
+0177      } catch (_) {}
+0178
+0179      res.json({ ...rows[0], contrato, plan });
+0180    } catch (e) { res.status(500).json({ error: e.message }); }
+0181  });
+0182
+0183  // ── Subir logo de negocio ─────────────────────────────────────────
+0184  app.post('/api/negocios/:id/logo', upload.single('logo'), async (req, res) => {
+0185    try {
+0186      if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+0187      const url = `/uploads/${req.file.filename}`;
+0188      await pool.query(`UPDATE negocios SET logo_url=${ph(1)} WHERE id=${ph(2)}`, [url, req.params.id]);
+0189      res.json({ url });
+0190    } catch (e) { res.status(500).json({ error: e.message }); }
+0191  });
+0192</pre>
+
+<div class="page-break"></div>
+
+<h2>3. Listado de código fuente — Parte 2 de 2 (final del programa)</h2>
+<div class="parte-header">Archivo: backend/server.js — Líneas 193 a 384 de 384</div>
+<div class="parte-nota">BUNNYDJPOS / DJPOS — Juan Manuel Franco Rodríguez — Enero de 2026</div>
+<pre class="codigo">0193  // ── Subir foto de empleado peluquería ─────────────────────────────
+0194  app.post('/api/peluqueria/empleados/:id/foto', upload.single('foto'), async (req, res) => {
+0195    try {
+0196      if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+0197      const url = `/uploads/${req.file.filename}`;
+0198      await pool.query(`UPDATE pel_empleados SET foto_url=${ph(1)} WHERE id=${ph(2)}`, [url, req.params.id]);
+0199      res.json({ url });
+0200    } catch (e) { res.status(500).json({ error: e.message }); }
+0201  });
+0202
+0203  // ── Configuración de factura por negocio ──────────────────────────
+0204  app.get('/api/config-factura', async (req, res) => {
+0205    try {
+0206      const nid = req.query.negocio_id;
+0207      const { rows } = await pool.query(`SELECT datos FROM config_factura WHERE negocio_id=${ph(1)}`, [nid]);
+0208      res.json(rows[0] ? JSON.parse(rows[0].datos) : {});
+0209    } catch (e) { res.status(500).json({ error: e.message }); }
+0210  });
+0211
+0212  app.put('/api/config-factura', async (req, res) => {
+0213    try {
+0214      const { negocio_id, ...datos } = req.body;
+0215      await pool.query(`
+0216        INSERT INTO config_factura (negocio_id, datos)
+0217        VALUES (?,?)
+0218        ON DUPLICATE KEY UPDATE datos=VALUES(datos), actualizado=NOW()
+0219      `, [negocio_id, JSON.stringify(datos)]);
+0220      res.json({ ok: true });
+0221    } catch (e) { res.status(500).json({ error: e.message }); }
+0222  });
+0223
+0224  // ── Seed: crear superadmin si no existe ───────────────────────────
+0225  async function seedSuperadmin() {
+0226    try {
+0227      const email = process.env.SUPERADMIN_EMAIL || 'superadmin@bunnydjpos.com';
+0228      const pass  = process.env.SUPERADMIN_PASS  || 'Admin123!';
+0229      const { rows } = await pool.query(`SELECT id FROM usuarios WHERE es_superadmin=1 LIMIT 1`);
+0230      if (rows.length) return console.log('✅ Superadmin ya existe');
+0231      const hash = await bcrypt.hash(pass, 12);
+0232      await pool.query(
+0233        `INSERT INTO usuarios (id,nombre,email,username,password_hash,es_superadmin)
+0234         VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},1)`,
+0235        [uuid(), 'Super Admin', email, 'superadmin', hash]
+0236      );
+0237      console.log(`✅ Superadmin creado: ${email} / ${pass}`);
+0238      console.log('   ⚠️  Cambia la contraseña en producción');
+0239    } catch (e) {
+0240      console.error('Error creando superadmin:', e.message);
+0241    }
+0242  }
+0243
+0244  // ── Migraciones automáticas ───────────────────────────────────────
+0245  async function runMigrations() {
+0246    const migrations = [
+0247      { table: 'inventario', column: 'iva_pct',      sql: `ALTER TABLE inventario ADD COLUMN iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0` },
+0248      { table: 'negocios',   column: 'departamento', sql: `ALTER TABLE negocios ADD COLUMN departamento VARCHAR(100) NULL` },
+0249      { table: 'negocios',   column: 'idiomas',      sql: `ALTER TABLE negocios ADD COLUMN idiomas VARCHAR(255) NULL DEFAULT '["es"]'` },
+0250      { table: 'negocios',   column: 'color_primario', sql: `ALTER TABLE negocios ADD COLUMN color_primario VARCHAR(20) NULL` },
+0251      { table: 'negocios',   column: 'moneda',       sql: `ALTER TABLE negocios ADD COLUMN moneda VARCHAR(3) NOT NULL DEFAULT 'COP'` },
+0252      { table: 'negocios',   column: 'zona_horaria', sql: `ALTER TABLE negocios ADD COLUMN zona_horaria VARCHAR(50) NOT NULL DEFAULT 'America/Bogota'` },
+0253      { table: 'comandas',   column: 'es_adicion',   sql: `ALTER TABLE comandas ADD COLUMN es_adicion TINYINT(1) NOT NULL DEFAULT 0` },
+0254      { table: 'menu_items', column: 'nombre_zh',    sql: `ALTER TABLE menu_items ADD COLUMN nombre_zh VARCHAR(200) NULL` },
+0255      { table: 'menu_items', column: 'descripcion_zh', sql: `ALTER TABLE menu_items ADD COLUMN descripcion_zh TEXT NULL` },
+0256      { table: 'domicilios_pedidos', column: 'pago_estado', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente'` },
+0257      { table: 'domicilios_pedidos', column: 'venta_id',    sql: `ALTER TABLE domicilios_pedidos ADD COLUMN venta_id VARCHAR(36) NULL` },
+0258      { table: 'empleados', column: 'lat',    sql: `ALTER TABLE empleados ADD COLUMN lat DECIMAL(10,7) NULL` },
+0259      { table: 'empleados', column: 'lng',    sql: `ALTER TABLE empleados ADD COLUMN lng DECIMAL(10,7) NULL` },
+0260      { table: 'empleados', column: 'gps_at', sql: `ALTER TABLE empleados ADD COLUMN gps_at TIMESTAMP NULL` },
+0261      { table: 'empleados', column: 'foto_url', sql: `ALTER TABLE empleados ADD COLUMN foto_url VARCHAR(300) NULL` },
+0262      { table: 'empleados', column: 'vehiculo', sql: `ALTER TABLE empleados ADD COLUMN vehiculo VARCHAR(20) NULL` },
+0263      { table: 'empleados', column: 'placa',    sql: `ALTER TABLE empleados ADD COLUMN placa VARCHAR(20) NULL` },
+0264      { table: 'empleados', column: 'color_vehiculo', sql: `ALTER TABLE empleados ADD COLUMN color_vehiculo VARCHAR(40) NULL` },
+0265      { table: 'ventas', column: 'monto_efectivo', sql: `ALTER TABLE ventas ADD COLUMN monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0` },
+0266      { table: 'ventas', column: 'monto_tarjeta',  sql: `ALTER TABLE ventas ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
+0267      { table: 'ventas', column: 'monto_nequi',    sql: `ALTER TABLE ventas ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
+0268      { table: 'menu_items', column: 'foto_url', sql: `ALTER TABLE menu_items ADD COLUMN foto_url VARCHAR(255) NULL` },
+0269      { table: 'domicilios_pedidos', column: 'calificacion',      sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion TINYINT NULL` },
+0270      { table: 'domicilios_pedidos', column: 'calificacion_nota', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion_nota VARCHAR(255) NULL` },
+0271      { table: 'domicilios_pedidos', column: 'metodo_pago',    sql: `ALTER TABLE domicilios_pedidos ADD COLUMN metodo_pago VARCHAR(20) NOT NULL DEFAULT 'efectivo'` },
+0272      { table: 'domicilios_pedidos', column: 'monto_efectivo', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0` },
+0273      { table: 'domicilios_pedidos', column: 'monto_tarjeta',  sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_tarjeta  DECIMAL(10,2) NOT NULL DEFAULT 0` },
+0274      { table: 'domicilios_pedidos', column: 'monto_nequi',    sql: `ALTER TABLE domicilios_pedidos ADD COLUMN monto_nequi    DECIMAL(10,2) NOT NULL DEFAULT 0` },
+0275      {
+0276        table: 'domicilios_pedidos', column: '__create__',
+0277        createSql: `CREATE TABLE IF NOT EXISTS domicilios_pedidos (
+0278          id VARCHAR(36) PRIMARY KEY,
+0279          negocio_id VARCHAR(36) NOT NULL,
+0280          tipo VARCHAR(20) NOT NULL DEFAULT 'restaurante',
+0281          cliente_nombre VARCHAR(100) NOT NULL,
+0282          cliente_tel VARCHAR(30) NOT NULL,
+0283          cliente_dir TEXT NOT NULL,
+0284          items JSON NOT NULL,
+0285          notas TEXT,
+0286          estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+0287          domiciliario_id VARCHAR(36),
+0288          pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+0289          venta_id VARCHAR(36) NULL,
+0290          calificacion TINYINT NULL,
+0291          calificacion_nota VARCHAR(255) NULL,
+0292          metodo_pago VARCHAR(20) NOT NULL DEFAULT 'efectivo',
+0293          monto_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0,
+0294          monto_tarjeta DECIMAL(10,2) NOT NULL DEFAULT 0,
+0295          monto_nequi DECIMAL(10,2) NOT NULL DEFAULT 0,
+0296          subtotal DECIMAL(12,2) DEFAULT 0,
+0297          total DECIMAL(12,2) DEFAULT 0,
+0298          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+0299          actualizado TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+0300          INDEX idx_negocio (negocio_id),
+0301          INDEX idx_estado (estado)
+0302        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+0303      },
+0304      {
+0305        table: 'empleados', column: '__create__',
+0306        createSql: `CREATE TABLE IF NOT EXISTS empleados (
+0307          id VARCHAR(36) PRIMARY KEY,
+0308          negocio_id VARCHAR(36) NOT NULL,
+0309          nombre VARCHAR(100) NOT NULL,
+0310          documento VARCHAR(30) NOT NULL,
+0311          celular VARCHAR(30) NOT NULL,
+0312          rol VARCHAR(30) NOT NULL DEFAULT 'domiciliario',
+0313          activo TINYINT(1) DEFAULT 1,
+0314          token VARCHAR(80) UNIQUE NOT NULL,
+0315          lat DECIMAL(10,7) NULL,
+0316          lng DECIMAL(10,7) NULL,
+0317          gps_at TIMESTAMP NULL,
+0318          foto_url VARCHAR(300) NULL,
+0319          vehiculo VARCHAR(20) NULL,
+0320          placa VARCHAR(20) NULL,
+0321          color_vehiculo VARCHAR(40) NULL,
+0322          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+0323          INDEX idx_negocio (negocio_id),
+0324          UNIQUE KEY uk_neg_doc (negocio_id, documento)
+0325        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+0326      },
+0327      {
+0328        table: 'domicilios_riders', column: '__create__',
+0329        createSql: `CREATE TABLE IF NOT EXISTS domicilios_riders (
+0330          id VARCHAR(36) PRIMARY KEY,
+0331          negocio_id VARCHAR(36) NOT NULL,
+0332          nombre VARCHAR(100) NOT NULL,
+0333          telefono VARCHAR(30),
+0334          token VARCHAR(80) UNIQUE NOT NULL,
+0335          activo TINYINT(1) DEFAULT 1,
+0336          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+0337          INDEX idx_negocio (negocio_id)
+0338        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+0339      },
+0340      {
+0341        table: 'menu_item_recetas', column: '__create__',
+0342        createSql: `CREATE TABLE IF NOT EXISTS menu_item_recetas (
+0343          id            INT AUTO_INCREMENT PRIMARY KEY,
+0344          menu_item_id  VARCHAR(36) NOT NULL,
+0345          negocio_id    VARCHAR(36) NOT NULL,
+0346          inventario_id VARCHAR(36) NOT NULL,
+0347          cantidad      DECIMAL(12,3) NOT NULL DEFAULT 1,
+0348          FOREIGN KEY (menu_item_id)  REFERENCES menu_items(id)  ON DELETE CASCADE,
+0349          FOREIGN KEY (negocio_id)    REFERENCES negocios(id)    ON DELETE CASCADE,
+0350          FOREIGN KEY (inventario_id) REFERENCES inventario(id)  ON DELETE CASCADE
+0351        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+0352      },
+0353    ];
+0354    for (const m of migrations) {
+0355      try {
+0356        if (m.createSql) {
+0357          // Migración tipo CREATE TABLE IF NOT EXISTS
+0358          await pool.query(m.createSql);
+0359          console.log(`✅ Tabla ${m.table} OK`);
+0360        } else {
+0361          // Migración tipo ADD COLUMN
+0362          const { rows } = await pool.query(
+0363            `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+0364             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+0365            [m.table, m.column]
+0366          );
+0367          if (!rows[0] || parseInt(rows[0].cnt) === 0) {
+0368            await pool.query(m.sql);
+0369            console.log(`✅ Migración ${m.table}.${m.column} OK`);
+0370          }
+0371        }
+0372      } catch (e) {
+0373        console.error(`Error migración ${m.table}:`, e.message);
+0374      }
+0375    }
+0376  }
+0377
+0378  // ── Arrancar ──────────────────────────────────────────────────────
+0379  server.listen(PORT, async () => {
+0380    console.log(`\n🐰 BUNNYDJPOS API → http://localhost:${PORT}`);
+0381    console.log(`   WebSocket   → ws://localhost:${PORT}?negocio_id=&lt;id&gt;`);
+0382    await seedSuperadmin();
+0383    await runMigrations();
+0384  });</pre>
+
+<footer>BUNNYDJPOS / DJPOS — Listado de código fuente — Juan Manuel Franco Rodríguez — Documento generado el 2 de julio de 2026</footer>
+
+</body>
+</html>

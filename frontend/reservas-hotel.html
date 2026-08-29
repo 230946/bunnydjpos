@@ -1,0 +1,547 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reservar Habitación</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<meta name="theme-color" content="#1d4ed8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/img/logo.png">
+<link rel="stylesheet" href="css/responsive.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --acc:#1d4ed8;--acc-d:#1739ac;--acc-l:#e6ecfb;
+  --lime:#C6F135;--dark:#102A24;
+  --bg:#f2f5fb;--bg2:#fff;
+  --text:#0f1b33;--text2:#3a4a66;--text3:#657390;
+  --border:rgba(29,78,216,0.18);--radius:14px;
+  --shadow:0 4px 20px rgba(0,0,0,.08);
+}
+body{background:var(--bg);font-family:'Segoe UI',sans-serif;color:var(--text);min-height:100vh}
+
+.header{background:var(--acc);color:#fff;padding:13px 18px;display:flex;align-items:center;gap:11px;position:sticky;top:0;z-index:10;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.header img{width:34px;height:34px;object-fit:contain;border-radius:8px;flex-shrink:0}
+.h-title{font-size:15px;font-weight:700;line-height:1.2}
+.h-sub{font-size:11px;opacity:.75}
+
+.prog-wrap{background:var(--acc-d);padding:10px 18px 12px}
+.prog-steps{display:flex;align-items:center}
+.prog-dot{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);flex-shrink:0;transition:.2s}
+.prog-dot.active{background:var(--lime);color:var(--dark)}
+.prog-dot.done{background:rgba(255,255,255,.55);color:var(--dark)}
+.prog-line{flex:1;height:2px;background:rgba(255,255,255,.15);transition:.2s}
+.prog-line.done{background:var(--lime)}
+.prog-labels{display:flex;margin-top:6px;padding:0 2px}
+.prog-lbl{flex:1;font-size:9px;color:rgba(255,255,255,.55);text-align:center}
+.prog-lbl:first-child{text-align:left}
+.prog-lbl:last-child{text-align:right}
+
+.page{max-width:460px;margin:0 auto;padding:20px 14px 40px}
+.screen{display:none}
+.screen.active{display:block}
+
+.s-title{font-size:18px;font-weight:700;margin-bottom:4px}
+.s-sub{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.4}
+
+.field-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block}
+.date-inp{width:100%;padding:12px 14px;font-size:16px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg2);color:var(--text);outline:none;margin-bottom:18px;font-family:inherit}
+.date-inp:focus{border-color:var(--acc)}
+.noches-note{background:var(--acc-l);border:1px solid rgba(29,78,216,.25);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text2);margin-bottom:6px;line-height:1.5}
+.noches-note strong{color:var(--acc)}
+
+.hab-card{background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px;cursor:pointer;display:flex;align-items:flex-start;gap:11px;transition:.15s}
+.hab-card:active{transform:scale(.98)}
+.hab-card.sel{border-color:var(--acc);background:var(--acc-l)}
+.hab-chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;transition:.15s}
+.hab-card.sel .hab-chk{background:var(--acc);border-color:var(--acc);color:#fff}
+.hab-body{flex:1;min-width:0}
+.hab-num{font-weight:700;font-size:15px}
+.hab-tipo{font-size:12px;color:var(--text3);margin-top:2px}
+.hab-desc{font-size:12px;color:var(--text3);margin-top:3px}
+.hab-price{font-size:14px;font-weight:700;color:var(--acc);margin-top:5px}
+.hab-price small{font-weight:500;color:var(--text3)}
+
+.slots-empty{text-align:center;color:var(--text3);font-size:13px;padding:22px 16px;background:var(--bg2);border-radius:12px;border:1px dashed var(--border);margin-bottom:8px;line-height:1.5}
+.slots-spin{display:flex;align-items:center;justify-content:center;gap:10px;padding:24px;color:var(--text3);font-size:13px}
+.sp{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.f-group{margin-bottom:15px}
+.f-inp{width:100%;padding:12px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg2);color:var(--text);outline:none;font-family:inherit;transition:.15s}
+.f-inp:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(29,78,216,.1)}
+textarea.f-inp{resize:none;height:76px}
+.frow2{display:flex;gap:10px}
+.frow2 .f-group{flex:1}
+
+.res-card{background:var(--acc-l);border:1px solid rgba(29,78,216,.25);border-radius:12px;padding:14px 16px;margin-bottom:18px}
+.res-head{font-size:11px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.res-row{display:flex;gap:8px;font-size:13px;margin-bottom:5px;align-items:flex-start}
+.res-row:last-child{margin-bottom:0}
+.res-lbl{color:var(--text3);flex-shrink:0;width:76px;padding-top:1px}
+.res-val{font-weight:600;color:var(--text);flex:1;word-break:break-word}
+
+.btn-next{width:100%;padding:14px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;margin-top:6px}
+.btn-next:hover{background:var(--acc-d)}
+.btn-next:disabled{opacity:.5;cursor:not-allowed}
+.btn-back{width:100%;padding:11px;background:transparent;color:var(--text3);border:1.5px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;margin-top:10px;transition:.15s}
+.btn-back:hover{border-color:var(--acc);color:var(--acc)}
+
+.err-box{background:#fee2e2;color:#dc2626;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+
+.ok-wrap{text-align:center;padding:36px 8px 24px}
+.ok-icon{width:70px;height:70px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 18px;box-shadow:0 4px 20px rgba(198,241,53,.5)}
+.ok-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.ok-sub{font-size:14px;color:var(--text2);margin-bottom:26px;line-height:1.5}
+.ok-card{background:var(--bg2);border-radius:12px;box-shadow:var(--shadow);padding:18px;margin-bottom:24px;text-align:left}
+.btn-nueva{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-size:15px;font-weight:700;cursor:pointer}
+
+.init-load{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--text3)}
+.init-load .sp{width:36px;height:36px;border-width:3px}
+
+.home-hero{text-align:center;padding:32px 8px 24px}
+.home-logo{width:88px;height:88px;border-radius:22px;object-fit:cover;margin:0 auto 16px;display:block;box-shadow:0 6px 24px rgba(29,78,216,.2)}
+.home-logo-init{width:88px;height:88px;border-radius:22px;background:var(--acc);color:#fff;font-size:36px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 6px 24px rgba(29,78,216,.2)}
+.home-nombre{font-size:24px;font-weight:800;color:var(--text);line-height:1.2;margin-bottom:6px}
+.home-badge{display:inline-block;background:var(--acc-l);color:var(--acc);font-size:11px;font-weight:700;border-radius:20px;padding:3px 12px;margin-bottom:20px;letter-spacing:.3px}
+.home-info-wrap{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.home-info-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:13px;text-decoration:none;color:var(--text);transition:.15s}
+.home-info-card:hover{border-color:var(--acc);background:var(--acc-l)}
+.home-info-icon{width:36px;height:36px;border-radius:10px;background:var(--acc-l);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.home-info-body{flex:1;min-width:0}
+.home-info-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.home-info-val{font-size:14px;font-weight:600;color:var(--text);word-break:break-word}
+.btn-reservar{width:100%;padding:16px;background:var(--acc);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;transition:.15s;letter-spacing:.2px;box-shadow:0 4px 16px rgba(29,78,216,.3)}
+.btn-reservar:hover{background:var(--acc-d);box-shadow:0 6px 20px rgba(29,78,216,.4)}
+.btn-reservar:active{transform:scale(.98)}
+
+@media(max-width:400px){
+  .page{padding:16px 10px 40px}
+  .s-title{font-size:16px}
+  .home-nombre{font-size:20px}
+  .frow2{flex-direction:column;gap:0}
+}
+#contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
+#contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
+#contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
+</style>
+</head>
+<body>
+<div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Servicio no disponible</h2><p id="contrato-block-msg">Las reservas de este hotel no están disponibles en este momento.<br>Contáctanos para más información.</p></div>
+
+<header class="header">
+  <img id="hLogo" src="/img/logo.png" alt="Logo">
+  <div style="flex:1;min-width:0">
+    <div class="h-title" id="hNombre">Cargando...</div>
+    <div class="h-sub">Reserva tu habitación en línea</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+    <button onclick="toggleFullscreenPOS()" title="Pantalla completa" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:16px;line-height:1;cursor:pointer;padding:0">⛶</button>
+    <div style="display:flex;align-items:center;gap:5px;opacity:.55">
+      <img src="/img/logo.png" style="width:16px;height:16px;border-radius:3px;object-fit:contain" onerror="this.style.display='none'">
+      <span style="font-size:9px;font-weight:700;letter-spacing:.3px;color:#fff">DJPOS</span>
+    </div>
+  </div>
+</header>
+
+<div class="prog-wrap" id="progWrap" style="display:none">
+  <div class="prog-steps">
+    <div class="prog-dot active" id="d1">1</div>
+    <div class="prog-line" id="l1"></div>
+    <div class="prog-dot" id="d2">2</div>
+    <div class="prog-line" id="l2"></div>
+    <div class="prog-dot" id="d3">3</div>
+  </div>
+  <div class="prog-labels">
+    <span class="prog-lbl">Fechas</span>
+    <span class="prog-lbl" style="text-align:center">Habitación</span>
+    <span class="prog-lbl">Mis datos</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="init-load" id="initLoad">
+    <div class="sp"></div>
+    <div>Cargando...</div>
+  </div>
+
+  <!-- LANDING HOME -->
+  <div class="screen" id="s0">
+    <div class="home-hero">
+      <div id="homeLogo" class="home-logo-init">N</div>
+      <div class="home-nombre" id="homeNombre">Cargando...</div>
+      <span class="home-badge">Reserva tu habitación en línea</span>
+    </div>
+    <div class="home-info-wrap" id="homeInfoWrap"></div>
+    <button class="btn-reservar" onclick="iniciarReserva()">Reservar habitación →</button>
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:22px;opacity:.4">
+      <img src="/img/logo.png" style="width:14px;height:14px;border-radius:3px;object-fit:contain" onerror="this.style.display='none'">
+      <span style="font-size:11px;font-weight:600;color:var(--text3)">Powered by BunnyDJPOS</span>
+    </div>
+  </div>
+
+  <!-- STEP 1: Fechas -->
+  <div class="screen" id="s1">
+    <div class="s-title">¿Cuándo te hospedas?</div>
+    <div class="s-sub">Elige tu fecha de llegada y de salida</div>
+    <label class="field-label">Check-in</label>
+    <input type="date" class="date-inp" id="checkinInp" oninput="onFechasChange()">
+    <label class="field-label">Check-out</label>
+    <input type="date" class="date-inp" id="checkoutInp" oninput="onFechasChange()">
+    <div class="noches-note" id="nochesNote" style="display:none"></div>
+    <div class="err-box" id="e1">Selecciona fechas válidas de check-in y check-out</div>
+    <button class="btn-next" onclick="goStep(2)">Ver habitaciones disponibles →</button>
+    <button class="btn-back" onclick="showStep(0)">← Volver al inicio</button>
+  </div>
+
+  <!-- STEP 2: Habitación -->
+  <div class="screen" id="s2">
+    <div class="s-title">Elige tu habitación</div>
+    <div class="s-sub" id="s2Sub">Disponibles para tus fechas</div>
+    <div id="habList"></div>
+    <div class="err-box" id="e2">Selecciona una habitación para continuar</div>
+    <button class="btn-next" onclick="goStep(3)">Continuar →</button>
+    <button class="btn-back" onclick="goStep(1)">← Atrás</button>
+  </div>
+
+  <!-- STEP 3: Datos -->
+  <div class="screen" id="s3">
+    <div class="s-title">Tus datos</div>
+    <div class="s-sub">Necesitamos tu información para confirmar la reserva</div>
+
+    <div class="f-group">
+      <label class="field-label">Nombre completo *</label>
+      <input type="text" class="f-inp" id="fNombre" placeholder="¿Cómo te llamas?" autocomplete="name">
+    </div>
+    <div class="f-group">
+      <label class="field-label">Teléfono / WhatsApp *</label>
+      <input type="tel" class="f-inp" id="fTel" placeholder="Tu número de contacto" inputmode="tel" autocomplete="tel" maxlength="20" oninput="this.value=this.value.replace(/[^0-9+\-() ]/g,'')">
+    </div>
+    <div class="frow2">
+      <div class="f-group">
+        <label class="field-label">Documento</label>
+        <input type="text" class="f-inp" id="fDoc" placeholder="Opcional">
+      </div>
+      <div class="f-group">
+        <label class="field-label">N° de huéspedes</label>
+        <input type="number" class="f-inp" id="fHuespedes" min="1" value="1">
+      </div>
+    </div>
+    <div class="f-group">
+      <label class="field-label">Notas <span style="font-weight:400;color:var(--text3)">(opcional)</span></label>
+      <textarea class="f-inp" id="fNotas" placeholder="Hora de llegada, preferencias..."></textarea>
+    </div>
+
+    <div class="res-card">
+      <div class="res-head">Resumen de tu reserva</div>
+      <div class="res-row"><span class="res-lbl">Habitación</span><span class="res-val" id="rHab">—</span></div>
+      <div class="res-row"><span class="res-lbl">Check-in</span><span class="res-val" id="rCheckin">—</span></div>
+      <div class="res-row"><span class="res-lbl">Check-out</span><span class="res-val" id="rCheckout">—</span></div>
+      <div class="res-row"><span class="res-lbl">Noches</span><span class="res-val" id="rNoches">—</span></div>
+      <div class="res-row"><span class="res-lbl">Total</span><span class="res-val" id="rTotal">—</span></div>
+    </div>
+
+    <div class="err-box" id="e3">Ingresa tu nombre y teléfono para continuar</div>
+    <button class="btn-next" id="btnConf" onclick="confirmar()">Confirmar reserva</button>
+    <button class="btn-back" onclick="goStep(2)">← Atrás</button>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="screen" id="sOk">
+    <div class="ok-wrap">
+      <div class="ok-icon">✓</div>
+      <div class="ok-title">¡Reserva enviada!</div>
+      <div class="ok-sub">El hotel confirmará tu reserva pronto.<br>Te esperamos.</div>
+      <div class="ok-card res-card" id="okDetails"></div>
+      <button class="btn-nueva" onclick="location.reload()">Hacer otra reserva</button>
+    </div>
+  </div>
+
+</div><!-- .page -->
+
+<script>
+function toggleFullscreenPOS(){
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+}
+const BASE = '/api/hotel/booking';
+const NID  = new URLSearchParams(location.search).get('n');
+
+const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+let _habsDisponibles = [];
+let _selHabId = null;
+let _selCheckin = '', _selCheckout = '';
+let _step = 0;
+
+function fmtFecha(s) {
+  const d = new Date(s + 'T12:00:00');
+  return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+}
+function fmtCOP(n) {
+  return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n||0);
+}
+function today(){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function addDaysStr(s,n){ const d=new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); const p=x=>String(x).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+
+async function checkContrato(negId){
+  try{
+    const r=await fetch(`/api/negocio-pub/${negId}`);
+    if(!r.ok) return false;
+    const d=await r.json();
+    if(!d.contrato||['vencido','cancelado','pendiente'].includes(d.contrato.estado)){
+      document.getElementById('contrato-block').style.display='flex';
+      return true;
+    }
+  }catch(_){}
+  return false;
+}
+
+async function init() {
+  if (!NID) {
+    document.getElementById('initLoad').innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">URL inválida. Pide el enlace al hotel.</div>';
+    return;
+  }
+  if(await checkContrato(NID)) return;
+  try {
+    const infoR = await fetch(`${BASE}/${NID}/info`);
+    if (!infoR.ok) throw new Error('Hotel no encontrado');
+    const info = await infoR.json();
+
+    document.getElementById('hNombre').textContent = info.nombre;
+    document.title = info.nombre;
+
+    renderHome(info);
+
+    const inp1 = document.getElementById('checkinInp'), inp2 = document.getElementById('checkoutInp');
+    inp1.min = today(); inp1.value = today();
+    inp2.min = addDaysStr(today(),1); inp2.value = addDaysStr(today(),1);
+
+    document.getElementById('initLoad').style.display = 'none';
+    showStep(0);
+  } catch(e) {
+    document.getElementById('initLoad').innerHTML = `<div style="text-align:center;padding:40px;color:#dc2626">${e.message}</div>`;
+  }
+}
+
+function renderHome(info) {
+  if (info.logo_url) {
+    const hLogo = document.getElementById('hLogo');
+    if (hLogo) { hLogo.src = info.logo_url; hLogo.onerror = () => { hLogo.src = '/img/logo.png'; }; }
+  }
+  const logoEl = document.getElementById('homeLogo');
+  if (info.logo_url) {
+    logoEl.outerHTML = `<img src="${info.logo_url}" alt="${esc(info.nombre)}" class="home-logo" id="homeLogo" onerror="this.outerHTML='<div class=home-logo-init id=homeLogo>${(info.nombre[0]||'N').toUpperCase()}</div>'">`;
+  } else {
+    logoEl.textContent = (info.nombre[0] || 'N').toUpperCase();
+  }
+  document.getElementById('homeNombre').textContent = info.nombre;
+
+  const infos = [];
+  if (info.ciudad || info.direccion) {
+    const dir = [info.direccion, info.ciudad].filter(Boolean).join(', ');
+    infos.push({ icon: '📍', lbl: 'Dirección', val: dir, href: `https://maps.google.com/?q=${encodeURIComponent(dir)}`, target: '_blank' });
+  }
+  if (info.telefono) {
+    const tel = info.telefono.replace(/\D/g,'');
+    infos.push({ icon: '📞', lbl: 'Teléfono / WhatsApp', val: info.telefono, href: `https://wa.me/57${tel}`, target: '_blank' });
+  }
+  if (info.email) {
+    infos.push({ icon: '✉️', lbl: 'Correo', val: info.email, href: `mailto:${info.email}`, target: '' });
+  }
+
+  document.getElementById('homeInfoWrap').innerHTML = infos.map(i =>
+    `<a class="home-info-card" href="${i.href}" target="${i.target}" rel="noopener" onclick="event.stopPropagation()">
+      <div class="home-info-icon">${i.icon}</div>
+      <div class="home-info-body">
+        <div class="home-info-lbl">${i.lbl}</div>
+        <div class="home-info-val">${esc(i.val)}</div>
+      </div>
+    </a>`
+  ).join('');
+}
+
+function iniciarReserva() {
+  document.getElementById('progWrap').style.display = 'block';
+  showStep(1);
+}
+
+function onFechasChange(){
+  const inp1 = document.getElementById('checkinInp'), inp2 = document.getElementById('checkoutInp');
+  if (inp2.value && inp2.value <= inp1.value) inp2.value = addDaysStr(inp1.value, 1);
+  inp2.min = addDaysStr(inp1.value, 1);
+  const noches = Math.round((new Date(inp2.value+'T12:00:00') - new Date(inp1.value+'T12:00:00')) / 86400000);
+  const note = document.getElementById('nochesNote');
+  if (inp1.value && inp2.value && noches > 0) {
+    note.style.display = 'block';
+    note.innerHTML = `<strong>${noches} noche${noches!==1?'s':''}</strong> · ${fmtFecha(inp1.value)} → ${fmtFecha(inp2.value)}`;
+  } else {
+    note.style.display = 'none';
+  }
+}
+
+function showErr(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+let _stepShown = 0;
+function showStep(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(n === 'ok' ? 'sOk' : `s${n}`).classList.add('active');
+  if (n === 0) {
+    _stepShown = 0;
+    document.getElementById('progWrap').style.display = 'none';
+  } else if (n !== 'ok') {
+    _stepShown = n;
+    for (let i = 1; i <= 3; i++) {
+      document.getElementById(`d${i}`).className = 'prog-dot' + (i < n ? ' done' : i === n ? ' active' : '');
+      if (i < 3) document.getElementById(`l${i}`).className = 'prog-line' + (i < n ? ' done' : '');
+    }
+  } else {
+    document.getElementById('progWrap').style.display = 'none';
+  }
+  window.scrollTo(0, 0);
+}
+
+async function goStep(n) {
+  const from = _stepShown;
+  if (n > from) {
+    if (from === 1) {
+      const inp1 = document.getElementById('checkinInp').value, inp2 = document.getElementById('checkoutInp').value;
+      if (!inp1 || !inp2 || inp2 <= inp1) { showErr('e1'); return; }
+      _selCheckin = inp1; _selCheckout = inp2;
+      await loadDisponibilidad(); // ya deja mostrado el paso 2
+      return;
+    }
+    if (from === 2 && !_selHabId) { showErr('e2'); return; }
+  }
+  if (n === 3) fillResumen();
+  showStep(n);
+}
+
+async function loadDisponibilidad(){
+  const listEl = document.getElementById('habList');
+  listEl.innerHTML = '<div class="slots-spin"><div class="sp"></div> Buscando habitaciones disponibles...</div>';
+  document.getElementById('s2Sub').textContent = `${fmtFecha(_selCheckin)} → ${fmtFecha(_selCheckout)}`;
+  showStep(2);
+  try {
+    const p = new URLSearchParams({ checkin: _selCheckin, checkout: _selCheckout });
+    const r = await fetch(`${BASE}/${NID}/disponibilidad?${p}`);
+    if (!r.ok) throw new Error((await r.json()).error || 'Error');
+    _habsDisponibles = await r.json();
+    renderHabs();
+  } catch(e) {
+    listEl.innerHTML = `<div class="slots-empty">Error al buscar disponibilidad: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderHabs(){
+  const listEl = document.getElementById('habList');
+  if (!_habsDisponibles.length) {
+    listEl.innerHTML = '<div class="slots-empty">No hay habitaciones disponibles para esas fechas.<br>Prueba con otras fechas.</div>';
+    return;
+  }
+  const noches = Math.round((new Date(_selCheckout+'T12:00:00') - new Date(_selCheckin+'T12:00:00')) / 86400000);
+  listEl.innerHTML = _habsDisponibles.map(h => `
+    <div class="hab-card" id="hab-${h.id}" onclick="selHab('${h.id}')">
+      <div class="hab-chk">✓</div>
+      <div class="hab-body">
+        <div class="hab-num">Habitación ${esc(h.numero)} — ${esc(h.tipo)}</div>
+        <div class="hab-tipo">👥 Hasta ${h.capacidad} huéspedes</div>
+        ${h.descripcion ? `<div class="hab-desc">${esc(h.descripcion)}</div>` : ''}
+        <div class="hab-price">${fmtCOP(h.precio_noche)} <small>/noche</small> · Total ${fmtCOP(h.precio_noche*noches)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function selHab(id){
+  _selHabId = id;
+  document.querySelectorAll('.hab-card').forEach(c => c.classList.remove('sel'));
+  document.getElementById('hab-'+id).classList.add('sel');
+}
+
+function fillResumen() {
+  const h = _habsDisponibles.find(x => x.id === _selHabId);
+  const noches = Math.round((new Date(_selCheckout+'T12:00:00') - new Date(_selCheckin+'T12:00:00')) / 86400000);
+  document.getElementById('rHab').textContent = h ? `${h.numero} — ${h.tipo}` : '—';
+  document.getElementById('rCheckin').textContent = fmtFecha(_selCheckin);
+  document.getElementById('rCheckout').textContent = fmtFecha(_selCheckout);
+  document.getElementById('rNoches').textContent = `${noches} noche${noches!==1?'s':''}`;
+  document.getElementById('rTotal').textContent = h ? fmtCOP(h.precio_noche*noches) : '—';
+}
+
+async function confirmar() {
+  const nombre = document.getElementById('fNombre').value.trim();
+  const tel    = document.getElementById('fTel').value.trim();
+  const errEl  = document.getElementById('e3');
+  if (!nombre || !tel) { errEl.textContent = 'Ingresa tu nombre y teléfono para continuar'; showErr('e3'); return; }
+  const telDigits = tel.replace(/\D/g, '');
+  if (telDigits.length < 7 || telDigits.length > 15) {
+    errEl.textContent = 'Ingresa un número de teléfono válido (solo números, 7 a 15 dígitos)';
+    showErr('e3');
+    return;
+  }
+
+  const btn = document.getElementById('btnConf');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  try {
+    const r = await fetch(`${BASE}/${NID}/reservar`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        habitacionId: _selHabId,
+        checkin: _selCheckin,
+        checkout: _selCheckout,
+        clienteNombre: nombre,
+        clienteTelefono: tel,
+        clienteDoc: document.getElementById('fDoc').value.trim() || null,
+        huespedes: document.getElementById('fHuespedes').value,
+        notas: document.getElementById('fNotas').value.trim() || null,
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error al crear la reserva');
+
+    const h = _habsDisponibles.find(x => x.id === _selHabId);
+    document.getElementById('okDetails').innerHTML = `
+      <div class="res-head">Detalles de tu reserva</div>
+      <div class="res-row"><span class="res-lbl">Nombre</span><span class="res-val">${esc(nombre)}</span></div>
+      <div class="res-row"><span class="res-lbl">Teléfono</span><span class="res-val">${esc(tel)}</span></div>
+      <div class="res-row"><span class="res-lbl">Habitación</span><span class="res-val">${h?esc(h.numero+' — '+h.tipo):'—'}</span></div>
+      <div class="res-row"><span class="res-lbl">Check-in</span><span class="res-val">${fmtFecha(_selCheckin)}</span></div>
+      <div class="res-row"><span class="res-lbl">Check-out</span><span class="res-val">${fmtFecha(_selCheckout)}</span></div>
+      <div class="res-row"><span class="res-lbl">Total</span><span class="res-val">${fmtCOP(data.total)}</span></div>`;
+    showStep('ok');
+  } catch(e) {
+    document.getElementById('e3').textContent = e.message;
+    showErr('e3');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirmar reserva';
+  }
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/pos-sw.js',{scope:'/reservas-hotel.html'}).catch(function(){});
+  });
+}
+</script>
+</body>
+</html>

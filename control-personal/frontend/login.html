@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Personal — Ingresar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f6fa;--card:#fff;--text:#1b1f27;--text2:#6b7280;
+  --border:rgba(0,0,0,0.1);--accent:#2563eb;--accent-d:#1d4ed8;
+  --red:#dc2626;--red-l:#fee2e2;--r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#15171c;--card:#1e2129;--text:#f0f0f0;--text2:#9aa0aa;
+  --border:rgba(255,255,255,0.12);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--rl);padding:36px 32px;width:340px}
+h1{font-size:20px;font-weight:700;text-align:center;margin-bottom:4px}
+p.sub{font-size:12px;color:var(--text2);text-align:center;margin-bottom:24px}
+.field{margin-bottom:14px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.field input{width:100%;padding:9px 12px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;outline:none}
+.field input:focus{border-color:var(--accent)}
+.btn{width:100%;padding:11px;border:none;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:600;background:var(--accent);color:#fff}
+.btn:hover{background:var(--accent-d)}
+.error-msg{background:var(--red-l);color:var(--red);padding:9px 12px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>👥 Control de Personal</h1>
+  <p class="sub">Horarios, turnos y asistencia</p>
+  <div class="error-msg" id="login-error"></div>
+  <div class="field"><label>Usuario o email</label><input id="l-login" type="text" autocomplete="username"></div>
+  <div class="field"><label>Contraseña</label><input id="l-pass" type="password" autocomplete="current-password"></div>
+  <button class="btn" onclick="doLogin()">Ingresar</button>
+</div>
+<script>
+const API = window.location.origin + '/api';
+async function doLogin(){
+  const login = document.getElementById('l-login').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const err   = document.getElementById('login-error');
+  err.style.display = 'none';
+  try {
+    const r = await fetch(`${API}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ login, password: pass }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error');
+    sessionStorage.setItem('cp_token', d.token);
+    sessionStorage.setItem('cp_user', JSON.stringify(d.user));
+    location.href = d.user.rol === 'admin' ? '/admin.html' : '/empleado.html';
+  } catch (e) { err.textContent = e.message; err.style.display = 'block'; }
+}
+document.getElementById('l-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Personal — Kiosco</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1115;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow:hidden}
+.reloj{font-size:20px;color:#9aa0aa;margin-bottom:10px;letter-spacing:.5px}
+.camera-wrap{position:relative;width:min(92vw,480px);aspect-ratio:1;border-radius:20px;overflow:hidden;background:#000;border:5px solid #2563eb;transition:border-color .15s,box-shadow .15s}
+.camera-wrap.flash-ok{border-color:#22c55e;box-shadow:0 0 50px 12px rgba(34,197,94,.65)}
+.camera-wrap.flash-error{border-color:#ef4444;box-shadow:0 0 50px 12px rgba(239,68,68,.65)}
+video{width:100%;height:100%;object-fit:cover}
+.scan-frame{position:absolute;inset:14%;border:3px solid rgba(255,255,255,.6);border-radius:16px;pointer-events:none}
+.icono-resultado{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:120px;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .12s}
+.icono-resultado.show{opacity:1}
+.estado{margin-top:22px;text-align:center;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.estado h2{font-size:26px;font-weight:700}
+.estado p{font-size:14px;color:#9aa0aa}
+.estado.ok h2{color:#22c55e}
+.estado.error h2{color:#ef4444}
+.hint{font-size:13px;color:#6b7280;margin-top:16px;text-align:center;max-width:420px}
+.manual{margin-top:18px;display:flex;gap:8px}
+.manual input{padding:9px 12px;border-radius:8px;border:1px solid #333;background:#1a1d24;color:#fff;font-size:13px;width:220px}
+.manual button{padding:9px 16px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.eleccion{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+.eleccion-btn{padding:16px 22px;border:none;border-radius:12px;background:#2563eb;color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+.eleccion-btn:hover{background:#1d4ed8}
+.overlay-inicio{position:fixed;inset:0;background:#0f1115;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:50;cursor:pointer}
+.overlay-inicio h1{font-size:24px}
+.overlay-inicio p{color:#9aa0aa;font-size:14px}
+.overlay-inicio button{padding:14px 28px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+  <div class="overlay-inicio" id="overlay-inicio" onclick="activarKiosco()">
+    <h1>👥 Control de Personal</h1>
+    <p>Toca la pantalla para activar el kiosco (cámara y sonido)</p>
+    <button>Activar</button>
+  </div>
+
+  <div class="reloj" id="reloj">--:--:--</div>
+  <div class="camera-wrap" id="camera-wrap">
+    <video id="video" autoplay muted playsinline></video>
+    <div class="scan-frame"></div>
+    <div class="icono-resultado" id="icono-resultado"></div>
+  </div>
+  <div class="estado" id="estado">
+    <h2>Escanea tu código QR</h2>
+    <p>Acércalo a la cámara para registrar tu entrada o salida</p>
+  </div>
+  <div class="hint" id="hint"></div>
+  <div class="manual" id="manual" style="display:none">
+    <input id="codigo-manual" placeholder="Pegar código QR manualmente">
+    <button onclick="marcarConCodigo(document.getElementById('codigo-manual').value.trim())">Marcar</button>
+  </div>
+
+<script>
+const API = window.location.origin + '/api';
+let escaneando = true;
+let audioCtx = null;
+
+function actualizarReloj(){
+  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+setInterval(actualizarReloj, 1000);
+actualizarReloj();
+
+function activarKiosco(){
+  document.getElementById('overlay-inicio').style.display = 'none';
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+  iniciarCamara();
+}
+
+// Beep generado con Web Audio API (sin archivos externos). Tono agudo/corto
+// para OK, tono grave para error — perceptible sin tener que mirar la pantalla.
+function sonido(exito){
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = exito ? 880 : 220;
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.35);
+}
+
+function flashResultado(exito){
+  const wrap = document.getElementById('camera-wrap');
+  const icono = document.getElementById('icono-resultado');
+  wrap.classList.add(exito ? 'flash-ok' : 'flash-error');
+  icono.textContent = exito ? '✅' : '❌';
+  icono.classList.add('show');
+  setTimeout(() => {
+    wrap.classList.remove('flash-ok', 'flash-error');
+    icono.classList.remove('show');
+  }, 1300);
+}
+
+function mostrarEstado(tipo, titulo, detalle){
+  const el = document.getElementById('estado');
+  el.className = 'estado' + (tipo ? ' ' + tipo : '');
+  el.innerHTML = `<h2>${titulo}</h2><p>${detalle || ''}</p>`;
+}
+function resetEstado(){
+  mostrarEstado('', 'Escanea tu código QR', 'Acércalo a la cámara para registrar tu entrada o salida');
+}
+
+const PAUSA_INFO = {
+  almuerzo: { icono:'🍽️', nombre:'almuerzo', color:'#d97706' },
+  cena:     { icono:'🌙', nombre:'cena', color:'#4f46e5' },
+};
+function infoPausa(tipo){ return PAUSA_INFO[tipo] || { icono:'🍽️', nombre:'pausa', color:'#6b7280' }; }
+
+const ACCION_LBL = { entrada:'Entrada registrada', pausa_fin:'Regreso de pausa registrado', salida:'Salida registrada' };
+function etiquetaAccion(d){
+  if (d.accion === 'pausa_inicio') { const p = infoPausa(d.pausa_tipo); return `Salida a ${p.nombre} registrada`; }
+  if (d.accion === 'pausa_fin' && d.pausa_tipo) { const p = infoPausa(d.pausa_tipo); return `Regreso de ${p.nombre} registrado`; }
+  return ACCION_LBL[d.accion] || 'Registrado';
+}
+let codigoPendiente = null;
+
+async function marcarConCodigo(codigo_qr, accionElegida){
+  if (!codigo_qr) return;
+  if (!accionElegida && !escaneando) return; // solo bloquea el auto-escaneo, no la confirmación manual
+  escaneando = false;
+  try {
+    const body = accionElegida ? { codigo_qr, accion: accionElegida } : { codigo_qr };
+    const r = await fetch(`${API}/kiosco/marcar`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error');
+
+    if (d.eleccion) {
+      codigoPendiente = codigo_qr;
+      mostrarEleccion(d.nombre, d.opciones, d.pausa_tipo);
+      return; // se queda esperando a que la persona toque una opción, sin reiniciar el escaneo
+    }
+
+    const hora = new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+    mostrarEstado('ok', `¡Hola, ${d.nombre}!`, `${etiquetaAccion(d)} a las ${hora}${d.tardanza ? ' (con tardanza)' : ''}`);
+    flashResultado(true);
+    sonido(true);
+    setTimeout(() => { escaneando = true; resetEstado(); }, 4000);
+  } catch (e) {
+    mostrarEstado('error', 'No se pudo registrar', e.message);
+    flashResultado(false);
+    sonido(false);
+    setTimeout(() => { escaneando = true; resetEstado(); }, 4000);
+  }
+}
+
+function mostrarEleccion(nombre, opciones, pausaTipo){
+  const p = infoPausa(pausaTipo);
+  const labelMap = {
+    pausa_inicio: { label:`${p.icono} Salgo a ${p.nombre}`, color:p.color },
+    salida:       { label:'🚪 Marco mi salida final', color:'#2563eb' },
+  };
+  const el = document.getElementById('estado');
+  el.className = 'estado';
+  el.innerHTML = `<h2>¡Hola, ${nombre}!</h2><p>¿Qué deseas registrar?</p>
+    <div class="eleccion">${opciones.map(o => `<button class="eleccion-btn" style="background:${labelMap[o]?.color||'#2563eb'}" onclick="confirmarEleccion('${o}')">${labelMap[o]?.label || o}</button>`).join('')}</div>`;
+}
+function confirmarEleccion(accion){
+  const codigo = codigoPendiente;
+  codigoPendiente = null;
+  marcarConCodigo(codigo, accion);
+}
+
+// ── Cámara + detección de QR ────────────────────────────────────
+// BarcodeDetector (nativo) solo existe en Chrome/Android y ChromeOS — en
+// Chrome de escritorio (Windows/Mac/Linux) casi nunca está disponible.
+// jsQR decodifica el QR analizando los píxeles del video, así que funciona
+// igual en cualquier navegador; se usa siempre como base, y BarcodeDetector
+// como acelerador extra cuando el navegador sí lo trae.
+async function iniciarCamara(){
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    await new Promise(r => video.onloadedmetadata = r);
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const detector = ('BarcodeDetector' in window) ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
+
+    setInterval(async () => {
+      if (!escaneando || video.readyState < 2) return;
+      try {
+        if (detector) {
+          const codigos = await detector.detect(video);
+          if (codigos.length) return marcarConCodigo(codigos[0].rawValue);
+        }
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imagen = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const resultado = jsQR(imagen.data, imagen.width, imagen.height);
+        if (resultado) marcarConCodigo(resultado.data);
+      } catch {}
+    }, 350);
+  } catch (e) {
+    document.getElementById('hint').textContent = 'No se pudo acceder a la cámara: ' + e.message + '. Puedes ingresar el código manualmente abajo.';
+    document.getElementById('manual').style.display = 'flex';
+  }
+}
+</script>
+</body>
+</html>
