@@ -51,6 +51,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Login propio para la tarjeta de cumpleaños (separado del login de DJMPOS) ──
+// Usa HTTP Basic Auth: el navegador muestra su propio cuadro de usuario/clave.
+// Credenciales en CUMPLEANOS_USER / CUMPLEANOS_PASS (.env) — si no están
+// configuradas, se bloquea el acceso (nunca se deja abierto por defecto).
+function requiereLoginCumpleanos(req, res, next) {
+  const usuarioValido = process.env.CUMPLEANOS_USER;
+  const claveValida = process.env.CUMPLEANOS_PASS;
+  const auth = req.headers.authorization || '';
+  const [tipo, credenciales] = auth.split(' ');
+  if (usuarioValido && claveValida && tipo === 'Basic' && credenciales) {
+    const [usuario, clave] = Buffer.from(credenciales, 'base64').toString().split(':');
+    if (usuario === usuarioValido && clave === claveValida) return next();
+  }
+  res.set('WWW-Authenticate', 'Basic realm="Tarjeta de Cumpleanos"');
+  return res.status(401).send('Acceso restringido.');
+}
+app.use(['/cumpleanos', '/tarjeta-cumpleanos.html'], requiereLoginCumpleanos);
+
 // ── Servir frontend desde el servidor (evita problema file://) ────
 const frontendPath = path.join(__dirname, '..', 'frontend');
 app.disable('etag');  // sin cache en desarrollo
