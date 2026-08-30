@@ -363,6 +363,19 @@
   }
   .sync-estado.err{ color:#a10a0a; font-weight:bold; }
 
+  /* Vista previa chica junto al selector de diseño */
+  .mini-wrap{ display:flex; align-items:flex-start; gap:12px; margin: 2px 0 16px; }
+  .mini-label{ font-size:12px; font-weight:bold; color:#444; padding-top:3px; }
+  .mini-box{
+    flex:none; border:1px solid #ddd; border-radius:6px; overflow:hidden;
+    background:#eee; box-shadow:0 1px 4px rgba(0,0,0,.12); cursor:pointer;
+  }
+  .mini-box--card{ width:120px; height:185px; }
+  .mini-box--hoja{ width:132px; height:187px; }
+  .mini-box > *{ transform-origin: top left; }
+  .mini-box--card > .card{ transform: scale(0.369); }
+  .mini-box--hoja > .lista-hoja{ transform: scale(0.166); box-shadow:none; margin:0; }
+
   /* ================= LISTA MENSUAL — hoja A4 ================= */
   .lista-hoja{
     position: relative;
@@ -513,7 +526,7 @@
   /* ---------- Impresión ---------- */
   @media print{
     body{ background:#fff; }
-    .panel, .tabs, .sync-estado{ display:none; }
+    .panel, .tabs, .sync-estado, .mini-wrap{ display:none; }
     .sheet, .lista-hoja{ margin:0; box-shadow:none; zoom:1; }
     #sheets, #listaSheets{ overflow:visible; }
     @page{ size: A4; margin: 0; }
@@ -600,6 +613,11 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="mini-wrap">
+      <span class="mini-label">Vista previa</span>
+      <div id="miniTarjeta" class="mini-box mini-box--card" title="Ir a la vista previa completa"></div>
     </div>
 
     <h2>Datos del evento (compartidos por las 4 tarjetas)</h2>
@@ -757,6 +775,11 @@ Para festejarlo, te invitamos a almorzar el {dia} {fecha} en el {lugar}, durante
         <label for="listaMes">Mes</label>
         <select id="listaMes"></select>
       </div>
+    </div>
+
+    <div class="mini-wrap">
+      <span class="mini-label">Vista previa</span>
+      <div id="miniLista" class="mini-box mini-box--hoja" title="Ir a la vista previa completa"></div>
     </div>
 
     <h2>Textos del encabezado</h2>
@@ -1214,6 +1237,11 @@ function render(){
     sheetDiv.innerHTML = grupo.map(cardHTML).join('');
     sheets.appendChild(sheetDiv);
   }
+
+  // Vista previa chica junto al selector de diseño.
+  const nombreMuestra = getEmpleadosFiltrados()[0]?.nombre || 'Ana Sofía Gómez';
+  const mini = document.getElementById('miniTarjeta');
+  if(mini) mini.innerHTML = cardHTML(nombreMuestra);
 }
 
 function refrescarTodo(){
@@ -1754,7 +1782,14 @@ function renderListaHojas(){
   }).join('');
 }
 
-function refrescarLista(){ renderListaTabla(); renderListaHojas(); }
+function renderMiniLista(){
+  const mini = document.getElementById('miniLista');
+  if(!mini) return;
+  const hoja = document.querySelector('#listaSheets .lista-hoja');
+  mini.innerHTML = '';
+  if(hoja) mini.appendChild(hoja.cloneNode(true));
+}
+function refrescarLista(){ renderListaTabla(); renderListaHojas(); renderMiniLista(); }
 
 function actualizarControlesLista(){
   const fuente = document.getElementById('listaFuente').value;
@@ -1781,6 +1816,14 @@ document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', (
 
 actualizarControlesLista();
 activarTab('tarjetas');
+
+// Clic en la vista previa chica → bajar a la vista previa completa.
+document.getElementById('miniTarjeta').addEventListener('click', () => {
+  document.getElementById('sheets').scrollIntoView({ behavior:'smooth', block:'start' });
+});
+document.getElementById('miniLista').addEventListener('click', () => {
+  document.getElementById('listaSheets').scrollIntoView({ behavior:'smooth', block:'start' });
+});
 
 document.getElementById('diseno').dispatchEvent(new Event('change'));
 refrescarTodo();
