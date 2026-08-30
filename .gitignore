@@ -5,3 +5,7 @@ backend/uploads/
 .env
 .claude/
 Claves importantes_play store/
+
+# Bases de datos de empleados para la tarjeta de cumpleaños (datos personales — no versionar)
+tarjeta-cumpleanos-excel/*.xlsx
+tarjeta-cumpleanos-excel/~$*
