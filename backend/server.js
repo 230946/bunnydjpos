@@ -32,6 +32,7 @@ const domiciliosRouter  = require('./routes/domicilios');
 const publicoRouter     = require('./routes/publico');
 const turnoRouter       = require('./routes/turno');
 const hotelRouter       = require('./routes/hotel');
+const cumpleanosRouter  = require('./routes/cumpleanos');
 
 const app    = express();
 const server = http.createServer(app);
@@ -68,6 +69,8 @@ function requiereLoginCumpleanos(req, res, next) {
   return res.status(401).send('Acceso restringido.');
 }
 app.use(['/cumpleanos', '/tarjeta-cumpleanos.html'], requiereLoginCumpleanos);
+// API clave-valor de la tarjeta/lista de cumpleaños (queda detrás del Basic Auth de arriba).
+app.use('/cumpleanos/api', cumpleanosRouter);
 
 // ── Servir frontend desde el servidor (evita problema file://) ────
 const frontendPath = path.join(__dirname, '..', 'frontend');
@@ -478,6 +481,14 @@ async function runMigrations() {
     },
     { table: 'pedidos_cliente', column: 'cliente_nombre', sql: `ALTER TABLE pedidos_cliente ADD COLUMN cliente_nombre VARCHAR(100) NULL` },
     { table: 'pedidos_cliente', column: 'cliente_celular', sql: `ALTER TABLE pedidos_cliente ADD COLUMN cliente_celular VARCHAR(30) NULL` },
+    {
+      table: 'cumple_kv', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS cumple_kv (
+        clave       VARCHAR(64) PRIMARY KEY,
+        valor       LONGTEXT NOT NULL,
+        actualizado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
   ];
   for (const m of migrations) {
     try {

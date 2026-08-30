@@ -333,19 +333,177 @@
   .card--bloque .paragraph{ text-align:center; }
   .card--bloque .info-group{ margin-top:3mm; }
 
+  /* ================= PESTAÑAS ================= */
+  .tabs{
+    max-width: 960px;
+    margin: 20px auto 0;
+    display:flex;
+    gap: 6px;
+  }
+  .tab-btn{
+    flex:1;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px 10px 0 0;
+    background: #d8d8d8;
+    color: #555;
+    cursor: pointer;
+  }
+  .tab-btn.active{ background:#fff; color:#a10a0a; }
+  .tabs + .panel{ margin-top: 0; border-top-left-radius:0; }
+  .sync-estado{
+    max-width: 960px;
+    margin: 5px auto 0;
+    font-size: 11px;
+    text-align: right;
+    color: #888;
+    min-height: 14px;
+  }
+  .sync-estado.err{ color:#a10a0a; font-weight:bold; }
+
+  /* ================= LISTA MENSUAL — hoja A4 ================= */
+  .lista-hoja{
+    position: relative;
+    width: 210mm;
+    height: 297mm;
+    margin: 24px auto;
+    background:#fff;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    color: #1a1a1a;
+    --accent: #A83E6C;
+  }
+  .lista-hoja .layer.contorno{ position:absolute; inset:0; width:100%; height:100%; object-fit:fill; z-index:1; }
+  .lista-hoja .lista-cab-bloque svg{ position:absolute; display:block; }
+  .lista-contenido{
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display:flex;
+    flex-direction:column;
+    padding: 18mm 16mm 16mm;
+  }
+  .lista-cabecera{ text-align:center; flex-shrink:0; margin-bottom: 8mm; }
+  .lista-titulo{
+    font-family: 'Fraunces Disp', Georgia, serif;
+    font-weight: 700;
+    font-size: 15mm;
+    line-height: 1.05;
+    color: var(--accent);
+  }
+  .lista-subtitulo{
+    font-family: 'Work Sans Body', Arial, sans-serif;
+    font-weight: 600;
+    letter-spacing: .5px;
+    font-size: 4.6mm;
+    margin-top: 2.5mm;
+    color: #333;
+  }
+  .lista-panel{
+    background: rgba(255,255,255,.93);
+    border-radius: 3mm;
+    padding: 4mm 6mm 5mm;
+    box-shadow: 0 0 3mm rgba(0,0,0,.06);
+  }
+  .lista-tabla{ width:100%; border-collapse: collapse; font-family: 'Work Sans Body', Arial, sans-serif; }
+  .lista-tabla th{
+    text-align:left;
+    font-size: 3.6mm;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: var(--accent);
+    border-bottom: 0.5mm solid var(--accent);
+    padding: 0 3mm 2mm;
+  }
+  .lista-tabla th.c2{ text-align:right; }
+  .lista-tabla td{
+    font-size: 3.7mm;
+    line-height: 1.3;
+    padding: 1.6mm 3mm;
+    border-bottom: 0.2mm solid #e2e2e2;
+  }
+  .lista-tabla td.c2{ text-align:right; color:#555; }
+  .lista-tabla td .dia{
+    display:inline-block;
+    min-width: 7mm;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .lista-tabla tr.nueva-decena td{ border-top: 0.4mm solid #cfcfcf; }
+  .lista-pagina{
+    margin-top: auto;
+    text-align:center;
+    font-family: 'Work Sans Body', Arial, sans-serif;
+    font-size: 3mm;
+    color:#999;
+    padding-top: 4mm;
+  }
+
+  /* Decoración reutilizada (elegante / confeti / bloque) a escala A4 */
+  .lista-hoja.card--elegante{ background:#FAF4E8; }
+  .lista-hoja.card--elegante .frame.f1{ inset:8mm; border-width:0.6mm; }
+  .lista-hoja.card--elegante .frame.f2{ inset:10mm; }
+  .lista-hoja.card--elegante .rama{ width:42mm; }
+  .lista-hoja.card--elegante .rama.tl{ top:9mm; left:9mm; }
+  .lista-hoja.card--elegante .rama.tr{ top:9mm; right:9mm; }
+  .lista-hoja.card--elegante .rama.bl{ bottom:9mm; left:9mm; }
+  .lista-hoja.card--elegante .rama.br{ bottom:9mm; right:9mm; }
+  .lista-hoja.card--elegante .lista-contenido{ padding:24mm 22mm; }
+
+  .lista-hoja.card--confeti .band{ height:9mm; }
+  .lista-hoja.card--confeti .confetti{ width:50mm; }
+  .lista-hoja.card--confeti .confetti.tl{ top:7mm; left:-8mm; }
+  .lista-hoja.card--confeti .confetti.br{ bottom:2mm; right:-10mm; transform:rotate(180deg); }
+  .lista-hoja.card--confeti .confetti.ml,
+  .lista-hoja.card--confeti .confetti.mr{ display:none; }
+  .lista-hoja.card--confeti .globos{ width:30mm; top:11mm; left:4mm; }
+  .lista-hoja.card--confeti .globo.r{ width:16mm; top:13mm; right:9mm; }
+  .lista-hoja.card--confeti .lista-contenido{ padding:18mm 16mm 14mm; }
+
+  .lista-hoja.card--bloque{ background:#fff; }
+  .lista-hoja.card--bloque .lista-cab-bloque{
+    position:absolute; top:0; left:0; right:0; height:56mm;
+    background: var(--accent); z-index:2; overflow:hidden;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3mm;
+  }
+  .lista-hoja.card--bloque .lista-cab-bloque .lista-titulo{ font-size:12mm; }
+  .lista-hoja.card--bloque .lista-cab-bloque .lista-titulo{ color:#fff; position:relative; z-index:2; }
+  .lista-hoja.card--bloque .lista-cab-bloque .lista-subtitulo{ color:rgba(255,255,255,.9); position:relative; z-index:2; }
+  .lista-hoja.card--bloque .lista-cab-bloque .confetti{ width:70mm; }
+  .lista-hoja.card--bloque .lista-cab-bloque .confetti.h1{ top:-6mm; left:-8mm; }
+  .lista-hoja.card--bloque .lista-cab-bloque .confetti.h2{ top:2mm; right:-10mm; transform:rotate(150deg); }
+  .lista-hoja.card--bloque .scallop{
+    position:absolute; left:0; right:0; top:56mm; height:3mm; z-index:2;
+    background:radial-gradient(circle 2.4mm at 3.5mm 0, var(--accent) 47%, transparent 50%) repeat-x;
+    background-size:7mm 3mm;
+  }
+  .lista-hoja.card--bloque .lista-contenido{ padding: 66mm 16mm 14mm; }
+
   /* ---------- Impresión ---------- */
   @media print{
     body{ background:#fff; }
-    .panel{ display:none; }
-    .sheet{ margin:0; box-shadow:none; }
+    .panel, .tabs{ display:none; }
+    .sheet, .lista-hoja{ margin:0; box-shadow:none; }
     @page{ size: A4; margin: 0; }
-    .card, .tpl, .card *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .card, .tpl, .card *, .lista-hoja, .lista-hoja *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body.modo-tarjetas #listaSheets{ display:none; }
+    body.modo-lista #sheets{ display:none; }
+    .lista-hoja{ page-break-after: always; }
+    .lista-hoja:last-child{ page-break-after: avoid; }
   }
 </style>
 </head>
 <body>
 
-  <div class="panel">
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="tarjetas">Tarjetas individuales</button>
+    <button type="button" class="tab-btn" data-tab="lista">Lista mensual</button>
+  </div>
+  <p id="syncEstado" class="sync-estado"></p>
+
+  <div class="panel" id="panelTarjetas">
     <h1>Tarjeta de cumpleaños — La Gaitana Farms</h1>
 
     <h2>Base de datos</h2>
@@ -552,7 +710,77 @@ Para festejarlo, te invitamos a almorzar el {dia} {fecha} en el {lugar}, durante
     <p class="hint">Se arman hojas A4 de 4 tarjetas cada una, en el mismo orden de la lista. Si sobran nombres, se crean más hojas automáticamente. Usa el botón de imprimir (o Ctrl+P).</p>
   </div>
 
+  <div class="panel" id="panelLista" hidden>
+    <h1>Lista mensual de cumpleaños — La Gaitana Farms</h1>
+
+    <h2>Diseño y mes</h2>
+    <div class="row2">
+      <div class="field">
+        <label for="listaDiseno">Diseño de fondo</label>
+        <select id="listaDiseno">
+          <option value="confeti" selected>Confeti moderno</option>
+          <option value="elegante">Elegante — invitación</option>
+          <option value="bloque">Bloque de color</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="listaMes">Mes</label>
+        <select id="listaMes"></select>
+      </div>
+    </div>
+
+    <h2>Textos del encabezado</h2>
+    <div class="field">
+      <label for="listaTitulo">Título</label>
+      <input id="listaTitulo" type="text" value="CELEBRAMOS CONTIGO">
+    </div>
+    <div class="field">
+      <label for="listaSubtitulo">Subtítulo</label>
+      <input id="listaSubtitulo" type="text" value="ALMUERZO EN CASINO Y POSTRE">
+    </div>
+
+    <h2>De dónde salen los nombres</h2>
+    <div class="row2">
+      <div class="field">
+        <label for="listaFuente">Fuente</label>
+        <select id="listaFuente">
+          <option value="import" selected>Lista importada de Excel</option>
+          <option value="LGF">Base LGF — Cultivo Tenjo</option>
+          <option value="POSCO_CUL">Base POSCO-CUL</option>
+        </select>
+      </div>
+      <div class="field" id="listaCol2Wrap">
+        <label for="listaCol2">2ª columna (de la base)</label>
+        <select id="listaCol2">
+          <option value="area">Área</option>
+          <option value="cargo">Cargo</option>
+          <option value="origen">Origen</option>
+          <option value="">(vacía)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field" id="listaImportWrap">
+      <label>Importar la lista (columnas: <code>Día</code>, <code>Nombre</code>, <code>Supervisor</code>)</label>
+      <div class="actions">
+        <button type="button" class="btn-print" id="listaBtnImportar">Importar Excel (.xlsx / .csv)</button>
+        <button type="button" class="btn-print" id="listaBtnLimpiar">Vaciar lista importada</button>
+        <input type="file" id="listaInputImportar" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
+      </div>
+      <p class="hint">Acepta la hoja <code>Datos</code> del archivo <code>plantilla_tarjeta_cumpleanos.xlsx</code>. Si el <code>Día</code> viene como <code>01</code>, <code>04</code>… se toma como día del mes elegido arriba.</p>
+    </div>
+
+    <table id="listaTabla" style="width:100%; border-collapse:collapse; font-size:13px; margin-top:6px;"></table>
+    <p class="hint" id="listaContador"></p>
+
+    <div class="actions">
+      <button class="btn-print" onclick="window.print()">Imprimir la lista</button>
+    </div>
+    <p class="hint">Se arma en hojas A4; si hay muchos nombres continúa en más hojas con el mismo diseño.</p>
+  </div>
+
   <div id="sheets"></div>
+  <div id="listaSheets"></div>
 
 <script src="js/xlsx.full.min.js"></script>
 <script>
@@ -601,6 +829,75 @@ function renderParrafo(template, dia, fecha, hora, lugar){
     .replace(/\{lugar\}/gi, escapeHtml(lugar));
 }
 
+// ---- Decoraciones CSS/SVG compartidas (tarjetas y lista mensual) ----
+const PLANTILLAS = ['elegante', 'confeti', 'bloque'];
+const ACENTOS = {
+  rojo: '#a10a0a', azul: '#0a4aa1', verde: '#1c7a3e', negro: '#222222', dorado: '#b8860b',
+  marco1: '#1c8a86', marco2: '#1c8a86', marco3: '#1c8a86', marco4: '#1c8a86', marco5: '#1c8a86',
+  // Paleta de marca La Gaitana Farms (de inicio.html): paprika / berry / forest
+  elegante: '#B6702A', confeti: '#A83E6C', bloque: '#086644',
+};
+const svgRama = (cls) => `<svg class="rama ${cls}" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+    <path d="M8 8C26 10 41 23 47 46" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    <circle cx="8" cy="8" r="2"/>
+    <path d="M14 9c5-3 11-2 14 3-6 3-12 2-14-3Z"/>
+    <path d="M23 15c5-3 12-1 14 4-6 2-12 1-14-4Z"/>
+    <path d="M32 25c5-2 12 1 13 6-6 1-12-1-13-6Z"/>
+    <path d="M39 37c4-2 11 1 12 7-6 0-11-2-12-7Z"/>
+    <path d="M11 16c-3 5-3 11 0 15 4-5 4-11 0-15Z" opacity=".85"/>
+    <path d="M20 27c-3 5-3 12 0 16 4-5 4-12 0-16Z" opacity=".85"/>
+    <path d="M29 40c-3 5-2 11 1 15 3-5 2-11-1-15Z" opacity=".85"/></svg>`;
+const svgCinta = (cls, color) => `<svg class="cinta ${cls}" viewBox="0 0 44 66" aria-hidden="true">
+    <path d="M6 3C24 8 8 20 24 25 40 30 8 40 26 46 42 51 12 58 30 63"
+      fill="none" stroke="${color}" stroke-width="3.4" stroke-linecap="round"/></svg>`;
+const svgConfetti = (cls) => `<svg class="confetti ${cls}" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="10" cy="14" r="3.4" fill="#A83E6C"/>
+    <rect x="24" y="5" width="7" height="7" rx="1" fill="#0B8457" transform="rotate(22 27 8)"/>
+    <path d="M44 24c5-7 12-7 17 0" stroke="#B6702A" stroke-width="3" fill="none"/>
+    <circle cx="70" cy="10" r="3" fill="#7A9900"/>
+    <rect x="84" y="20" width="6" height="6" fill="#A83E6C" transform="rotate(18 87 23)"/>
+    <path d="M6 34c4-6 10-6 14 0" stroke="#0B8457" stroke-width="3" fill="none"/>
+    <rect x="30" y="30" width="7" height="7" rx="1" fill="#B6702A" transform="rotate(-14 33 33)"/>
+    <circle cx="52" cy="40" r="3.2" fill="#7A9900"/>
+    <path d="M70 40c4-6 10-6 14 0" stroke="#A83E6C" stroke-width="3" fill="none"/>
+    <circle cx="14" cy="56" r="3" fill="#B6702A"/>
+    <rect x="40" y="52" width="7" height="7" rx="1" fill="#0B8457" transform="rotate(30 43 55)"/>
+    <circle cx="64" cy="60" r="3.4" fill="#A83E6C"/>
+    <path d="M24 76c5-7 12-7 17 0" stroke="#7A9900" stroke-width="3" fill="none"/>
+    <rect x="58" y="76" width="6" height="6" fill="#B6702A" transform="rotate(-20 61 79)"/>
+    <circle cx="82" cy="72" r="3" fill="#0B8457"/>
+    <circle cx="8" cy="82" r="2.6" fill="#7A9900"/></svg>`;
+const svgConfettiClaro = (cls) => `<svg class="confetti ${cls}" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="12" cy="16" r="3.4" fill="#fff" opacity=".9"/>
+    <rect x="30" y="8" width="7" height="7" rx="1" fill="#C6F135" transform="rotate(20 33 11)"/>
+    <path d="M52 22c5-7 12-7 17 0" stroke="#fff" stroke-width="3" fill="none" opacity=".8"/>
+    <circle cx="82" cy="14" r="3" fill="#C6F135"/>
+    <rect x="10" y="40" width="6" height="6" fill="#fff" opacity=".85" transform="rotate(25 13 43)"/>
+    <path d="M34 44c4-6 10-6 14 0" stroke="#C6F135" stroke-width="3" fill="none"/>
+    <circle cx="66" cy="42" r="3.2" fill="#fff" opacity=".9"/>
+    <rect x="84" y="44" width="7" height="7" rx="1" fill="#C6F135" transform="rotate(-16 87 47)"/>
+    <circle cx="20" cy="64" r="3" fill="#C6F135"/>
+    <path d="M46 66c5-7 12-7 17 0" stroke="#fff" stroke-width="3" fill="none" opacity=".8"/>
+    <circle cx="78" cy="66" r="3.2" fill="#fff" opacity=".9"/></svg>`;
+const svgGloboUno = (cls, color) => `<svg class="globo ${cls}" viewBox="0 0 30 50" aria-hidden="true">
+    <ellipse cx="15" cy="14" rx="12" ry="14" fill="${color}"/>
+    <path d="M15 27l-2.6 4.8h5.2z" fill="${color}"/>
+    <path d="M15 32c0 7 4.5 9 4.5 16" stroke="${color}" stroke-width="1.6" fill="none" opacity=".55"/></svg>`;
+const svgGlobos = (cls) => `<svg class="globos ${cls}" viewBox="0 0 46 66" aria-hidden="true">
+    <path d="M13 20C15 36 22 42 22 56" stroke="#8a8a8a" stroke-width="1.1" fill="none" opacity=".5"/>
+    <path d="M32 17C29 34 22 42 22 56" stroke="#8a8a8a" stroke-width="1.1" fill="none" opacity=".5"/>
+    <path d="M22 14C22 34 22 42 22 56" stroke="#8a8a8a" stroke-width="1.1" fill="none" opacity=".5"/>
+    <ellipse cx="12" cy="15" rx="9" ry="11" fill="#A83E6C"/>
+    <ellipse cx="33" cy="13" rx="9" ry="11" fill="#0B8457"/>
+    <ellipse cx="22" cy="9" rx="9" ry="11" fill="#B6702A"/></svg>`;
+
+// Devuelve el acento efectivo para un diseño (respeta el color de texto elegido en las plantillas).
+function acentoDe(diseno, colorTexto){
+  const esPlantilla = PLANTILLAS.includes(diseno);
+  if(esPlantilla && colorTexto && colorTexto.toLowerCase() !== '#222222') return colorTexto;
+  return ACENTOS[diseno] || '#a10a0a';
+}
+
 function cardHTML(nombre){
   const dia     = document.getElementById('dia').value || '';
   const fecha   = formatFecha(document.getElementById('fecha').value);
@@ -623,21 +920,8 @@ function cardHTML(nombre){
   const colorTexto = document.getElementById('colorTexto').value || '#222222';
 
   // Plantillas nuevas hechas en CSS/SVG (no usan PNG de fondo).
-  const PLANTILLAS = ['elegante', 'confeti', 'bloque'];
   const plantilla = PLANTILLAS.includes(diseno) ? diseno : null;
-
-  // Color de acento (título, nombre, filetes) según el diseño elegido.
-  const ACENTOS = {
-    rojo: '#a10a0a', azul: '#0a4aa1', verde: '#1c7a3e', negro: '#222222', dorado: '#b8860b',
-    marco1: '#1c8a86', marco2: '#1c8a86', marco3: '#1c8a86', marco4: '#1c8a86', marco5: '#1c8a86',
-    // Paleta de marca La Gaitana Farms (de inicio.html): paprika / berry / forest
-    elegante: '#B6702A', confeti: '#A83E6C', bloque: '#086644',
-  };
-  // En las plantillas nuevas, si el usuario cambió el "color del texto"
-  // (distinto del negro por defecto) ese color manda como acento.
-  const acento = plantilla && colorTexto.toLowerCase() !== '#222222'
-    ? colorTexto
-    : (ACENTOS[diseno] || '#a10a0a');
+  const acento = acentoDe(diseno, colorTexto);
   // El contenido fluye desde arriba; el bloque nombre/datos se ancla al pie
   // con margin-top:auto (ver .info-group).
   const posicionTexto = 'flex-start';
@@ -673,63 +957,6 @@ function cardHTML(nombre){
 
   // ---- Plantillas CSS/SVG ----
   if(plantilla){
-    // Rama con hojas para las 4 esquinas de la plantilla elegante.
-    const svgRama = (cls) => `<svg class="rama ${cls}" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
-        <path d="M8 8C26 10 41 23 47 46" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-        <circle cx="8" cy="8" r="2"/>
-        <path d="M14 9c5-3 11-2 14 3-6 3-12 2-14-3Z"/>
-        <path d="M23 15c5-3 12-1 14 4-6 2-12 1-14-4Z"/>
-        <path d="M32 25c5-2 12 1 13 6-6 1-12-1-13-6Z"/>
-        <path d="M39 37c4-2 11 1 12 7-6 0-11-2-12-7Z"/>
-        <path d="M11 16c-3 5-3 11 0 15 4-5 4-11 0-15Z" opacity=".85"/>
-        <path d="M20 27c-3 5-3 12 0 16 4-5 4-12 0-16Z" opacity=".85"/>
-        <path d="M29 40c-3 5-2 11 1 15 3-5 2-11-1-15Z" opacity=".85"/></svg>`;
-    // Cinta enrollada (serpentina) para las esquinas del confeti.
-    const svgCinta = (cls, color) => `<svg class="cinta ${cls}" viewBox="0 0 44 66" aria-hidden="true">
-        <path d="M6 3C24 8 8 20 24 25 40 30 8 40 26 46 42 51 12 58 30 63"
-          fill="none" stroke="${color}" stroke-width="3.4" stroke-linecap="round"/></svg>`;
-    const svgConfetti = (cls) => `<svg class="confetti ${cls}" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="10" cy="14" r="3.4" fill="#A83E6C"/>
-        <rect x="24" y="5" width="7" height="7" rx="1" fill="#0B8457" transform="rotate(22 27 8)"/>
-        <path d="M44 24c5-7 12-7 17 0" stroke="#B6702A" stroke-width="3" fill="none"/>
-        <circle cx="70" cy="10" r="3" fill="#7A9900"/>
-        <rect x="84" y="20" width="6" height="6" fill="#A83E6C" transform="rotate(18 87 23)"/>
-        <path d="M6 34c4-6 10-6 14 0" stroke="#0B8457" stroke-width="3" fill="none"/>
-        <rect x="30" y="30" width="7" height="7" rx="1" fill="#B6702A" transform="rotate(-14 33 33)"/>
-        <circle cx="52" cy="40" r="3.2" fill="#7A9900"/>
-        <path d="M70 40c4-6 10-6 14 0" stroke="#A83E6C" stroke-width="3" fill="none"/>
-        <circle cx="14" cy="56" r="3" fill="#B6702A"/>
-        <rect x="40" y="52" width="7" height="7" rx="1" fill="#0B8457" transform="rotate(30 43 55)"/>
-        <circle cx="64" cy="60" r="3.4" fill="#A83E6C"/>
-        <path d="M24 76c5-7 12-7 17 0" stroke="#7A9900" stroke-width="3" fill="none"/>
-        <rect x="58" y="76" width="6" height="6" fill="#B6702A" transform="rotate(-20 61 79)"/>
-        <circle cx="82" cy="72" r="3" fill="#0B8457"/>
-        <circle cx="8" cy="82" r="2.6" fill="#7A9900"/></svg>`;
-    // Confeti en blanco/lima para el bloque de color.
-    const svgConfettiClaro = (cls) => `<svg class="confetti ${cls}" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="12" cy="16" r="3.4" fill="#fff" opacity=".9"/>
-        <rect x="30" y="8" width="7" height="7" rx="1" fill="#C6F135" transform="rotate(20 33 11)"/>
-        <path d="M52 22c5-7 12-7 17 0" stroke="#fff" stroke-width="3" fill="none" opacity=".8"/>
-        <circle cx="82" cy="14" r="3" fill="#C6F135"/>
-        <rect x="10" y="40" width="6" height="6" fill="#fff" opacity=".85" transform="rotate(25 13 43)"/>
-        <path d="M34 44c4-6 10-6 14 0" stroke="#C6F135" stroke-width="3" fill="none"/>
-        <circle cx="66" cy="42" r="3.2" fill="#fff" opacity=".9"/>
-        <rect x="84" y="44" width="7" height="7" rx="1" fill="#C6F135" transform="rotate(-16 87 47)"/>
-        <circle cx="20" cy="64" r="3" fill="#C6F135"/>
-        <path d="M46 66c5-7 12-7 17 0" stroke="#fff" stroke-width="3" fill="none" opacity=".8"/>
-        <circle cx="78" cy="66" r="3.2" fill="#fff" opacity=".9"/></svg>`;
-    const svgGloboUno = (cls, color) => `<svg class="globo ${cls}" viewBox="0 0 30 50" aria-hidden="true">
-        <ellipse cx="15" cy="14" rx="12" ry="14" fill="${color}"/>
-        <path d="M15 27l-2.6 4.8h5.2z" fill="${color}"/>
-        <path d="M15 32c0 7 4.5 9 4.5 16" stroke="${color}" stroke-width="1.6" fill="none" opacity=".55"/></svg>`;
-    const svgGlobos = (cls) => `<svg class="globos ${cls}" viewBox="0 0 46 66" aria-hidden="true">
-        <path d="M13 20C15 36 22 42 22 56" stroke="#8a8a8a" stroke-width="1.1" fill="none" opacity=".5"/>
-        <path d="M32 17C29 34 22 42 22 56" stroke="#8a8a8a" stroke-width="1.1" fill="none" opacity=".5"/>
-        <path d="M22 14C22 34 22 42 22 56" stroke="#8a8a8a" stroke-width="1.1" fill="none" opacity=".5"/>
-        <ellipse cx="12" cy="15" rx="9" ry="11" fill="#A83E6C"/>
-        <ellipse cx="33" cy="13" rx="9" ry="11" fill="#0B8457"/>
-        <ellipse cx="22" cy="9" rx="9" ry="11" fill="#B6702A"/></svg>`;
-
     const infoGrupo = (conLogo) => `<div class="info-group">
           <div class="name-inline">${nombreHTML}</div>
           <div class="event-lines">${evento}</div>
@@ -825,6 +1052,26 @@ const LS_KEY_BASE = 'gaitanaFarms_tarjetaCumple_baseActiva';
 const LS_KEY_LEGACY = 'gaitanaFarms_tarjetaCumple_empleados';
 function lsKeyEmpleados(base){ return `gaitanaFarms_tarjetaCumple_empleados__${base}`; }
 
+// ---------- Sincronización con el servidor (MySQL, compartida entre navegadores) ----------
+const API_KV = '/cumpleanos/api/kv';
+function syncEstado(ok, msg){
+  const el = document.getElementById('syncEstado');
+  if(!el) return;
+  el.classList.toggle('err', !ok);
+  el.textContent = msg || (ok
+    ? 'Guardado en el servidor · disponible desde cualquier navegador'
+    : 'Sin conexión al servidor — los cambios quedan solo en este navegador');
+}
+function apiGuardar(clave, valor){
+  return fetch(`${API_KV}/${encodeURIComponent(clave)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(valor),
+  }).then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); syncEstado(true); })
+    .catch(() => syncEstado(false));
+}
+
 // Migración: la versión anterior guardaba una sola lista sin base. Se pasa a LGF.
 (function migrarBaseUnica(){
   try{
@@ -848,7 +1095,8 @@ function cargarEmpleados(base = baseActiva){
   }catch(e){ return []; }
 }
 function guardarEmpleados(lista, base = baseActiva){
-  localStorage.setItem(lsKeyEmpleados(base), JSON.stringify(lista));
+  try{ localStorage.setItem(lsKeyEmpleados(base), JSON.stringify(lista)); }catch(e){}
+  apiGuardar('empleados_' + base, lista);
 }
 
 let empleados = cargarEmpleados();
@@ -1280,8 +1528,261 @@ document.querySelectorAll('.btn-color-preset').forEach(btn => {
   });
 });
 
+// ==================== LISTA MENSUAL ====================
+const LS_LISTA = 'gaitanaFarms_tarjetaCumple_listaMensual';
+const ACENTOS_LISTA = { confeti:'#A83E6C', elegante:'#B6702A', bloque:'#086644' };
+const FILAS_HOJA = {
+  confeti:  { primera:24, siguientes:31 },
+  elegante: { primera:22, siguientes:29 },
+  bloque:   { primera:24, siguientes:31 },
+};
+
+function cargarListaImportada(){
+  try{ const r = localStorage.getItem(LS_LISTA); return r ? JSON.parse(r) : []; }catch(e){ return []; }
+}
+function guardarListaImportada(l){
+  try{ localStorage.setItem(LS_LISTA, JSON.stringify(l)); }catch(e){}
+  apiGuardar('lista_mensual', l);
+}
+let listaImportada = cargarListaImportada();
+
+(function(){
+  const sel = document.getElementById('listaMes');
+  sel.innerHTML = MESES.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  sel.value = String(new Date().getMonth() + 1);
+})();
+
+// Parseo de la lista importada: columnas Día, Nombre, Supervisor
+function listaDesdeFilas(filas){
+  if(!filas || filas.length < 2) return { items: [], omitidos: 0 };
+  const H = filas[0].map(normalizarEncabezado);
+  const idx = (...ns) => H.findIndex(h => ns.some(n => h === n || h.startsWith(n)));
+  const iDia = idx('dia');
+  const iNom = idx('nombre y apellidos completo','nombre completo','nombres','nombre','empleado');
+  const iSup = idx('supervisor','jefe','lider','líder');
+  const cel = (f,i) => (i>=0 && f[i]!=null) ? String(f[i]).trim() : '';
+  const items = []; let omitidos = 0;
+  for(const f of filas.slice(1)){
+    const nombre = cel(f, iNom);
+    if(!nombre) continue;
+    const dia = parseInt(cel(f, iDia).replace(/\D/g,''), 10);
+    if(!dia || dia < 1 || dia > 31){ omitidos++; continue; }
+    items.push({ dia, nombre, supervisor: cel(f, iSup) });
+  }
+  return { items, omitidos };
+}
+
+function importarListaWorkbook(wb){
+  const nombres = wb.SheetNames.slice()
+    .sort((a,b) => (normalizarEncabezado(b)==='datos'?1:0) - (normalizarEncabezado(a)==='datos'?1:0));
+  for(const sn of nombres){
+    const filas = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header:1, raw:true, blankrows:false, defval:'' });
+    const { items, omitidos } = listaDesdeFilas(filas);
+    if(items.length){
+      listaImportada = items;
+      guardarListaImportada(listaImportada);
+      alert(`Importados ${items.length} nombres de la hoja "${sn}"` + (omitidos ? ` (${omitidos} sin día válido, omitidos)` : ''));
+      refrescarLista();
+      return;
+    }
+  }
+  alert('No se encontraron filas con Día + Nombre en el archivo.');
+}
+
+document.getElementById('listaBtnImportar').addEventListener('click', () => document.getElementById('listaInputImportar').click());
+document.getElementById('listaBtnLimpiar').addEventListener('click', () => {
+  if(!listaImportada.length || confirm('¿Vaciar la lista importada?')){
+    listaImportada = []; guardarListaImportada(listaImportada); refrescarLista();
+  }
+});
+document.getElementById('listaInputImportar').addEventListener('change', (ev) => {
+  const archivo = ev.target.files[0]; if(!archivo) return;
+  const esCsv = /\.csv$/i.test(archivo.name) || archivo.type === 'text/csv';
+  const lector = new FileReader();
+  if(esCsv){
+    lector.onload = () => {
+      const { items } = listaDesdeFilas(parseCSV(lector.result));
+      if(items.length){ listaImportada = items; guardarListaImportada(listaImportada); alert(`Importados ${items.length} nombres.`); refrescarLista(); }
+      else alert('No se encontraron filas válidas (Día + Nombre).');
+      ev.target.value = '';
+    };
+    lector.readAsText(archivo, 'utf-8');
+  } else {
+    lector.onload = () => {
+      try{ importarListaWorkbook(XLSX.read(lector.result, { type:'array', cellDates:true })); }
+      catch(e){ alert('No se pudo leer el Excel: ' + e.message); }
+      ev.target.value = '';
+    };
+    lector.readAsArrayBuffer(archivo);
+  }
+});
+
+function getListaPersonas(){
+  const fuente = document.getElementById('listaFuente').value;
+  const mes = parseInt(document.getElementById('listaMes').value, 10);
+  if(fuente === 'import'){
+    return { col2label: 'Supervisor',
+             personas: listaImportada.map(p => ({ dia:p.dia, nombre:p.nombre, col2:p.supervisor || '' })) };
+  }
+  const col2 = document.getElementById('listaCol2').value;
+  const label = { area:'Área', cargo:'Cargo', origen:'Origen' }[col2] || '';
+  const emp = cargarEmpleados(fuente).filter(e => Number(e.mes) === mes);
+  return { col2label: label,
+           personas: emp.map(e => ({ dia:Number(e.dia), nombre:e.nombre, col2: col2 ? (e[col2] || '') : '' })) };
+}
+
+function renderListaTabla(){
+  const { personas, col2label } = getListaPersonas();
+  personas.sort((a,b) => a.dia - b.dia || String(a.nombre).localeCompare(b.nombre));
+  const tabla = document.getElementById('listaTabla');
+  tabla.innerHTML = `<tr><th>Día</th><th>Nombre</th>${col2label ? `<th>${escapeHtml(col2label)}</th>` : ''}</tr>` +
+    personas.map(p => `<tr><td>${String(p.dia).padStart(2,'0')}</td><td>${escapeHtml(p.nombre)}</td>${col2label ? `<td>${escapeHtml(p.col2)}</td>` : ''}</tr>`).join('');
+  const mesN = MESES[parseInt(document.getElementById('listaMes').value,10) - 1];
+  document.getElementById('listaContador').textContent = `${personas.length} nombre(s) para ${mesN}.`;
+}
+
+function listaDecorHTML(diseno, acento){
+  if(diseno === 'elegante'){
+    return `<div class="tpl">
+      <span class="frame f1"></span><span class="frame f2"></span>
+      ${svgRama('tl')}${svgRama('tr')}${svgRama('bl')}${svgRama('br')}
+    </div>`;
+  }
+  if(diseno === 'confeti'){
+    return `<div class="tpl">
+      <span class="band top"></span><span class="band bot"></span>
+      ${svgConfetti('tl')}${svgConfetti('br')}
+      ${svgGlobos('l')}${svgGloboUno('r', acento)}
+    </div>`;
+  }
+  return '';
+}
+
+function renderListaHojas(){
+  const cont = document.getElementById('listaSheets');
+  const diseno = document.getElementById('listaDiseno').value;
+  const acento = ACENTOS_LISTA[diseno] || '#A83E6C';
+  const titulo = document.getElementById('listaTitulo').value || '';
+  const subtitulo = document.getElementById('listaSubtitulo').value || '';
+  const mesN = MESES[parseInt(document.getElementById('listaMes').value,10) - 1];
+  const esBloque = diseno === 'bloque';
+
+  const { personas, col2label } = getListaPersonas();
+  personas.sort((a,b) => a.dia - b.dia || String(a.nombre).localeCompare(b.nombre));
+
+  const cap = FILAS_HOJA[diseno] || FILAS_HOJA.confeti;
+  const paginas = [];
+  let i = 0;
+  do {
+    const n = paginas.length === 0 ? cap.primera : cap.siguientes;
+    paginas.push(personas.slice(i, i + n));
+    i += n;
+  } while(i < personas.length);
+
+  const cabeceraHTML = `<div class="lista-titulo">${escapeHtml(titulo)}</div>` +
+    (subtitulo ? `<div class="lista-subtitulo">${escapeHtml(subtitulo)}</div>` : '');
+
+  cont.innerHTML = paginas.map((filas, pi) => {
+    const filasHTML = filas.map((p, k) => {
+      const prev = k > 0 ? filas[k-1].dia : null;
+      const nuevaDecena = prev !== null && Math.floor((p.dia-1)/10) !== Math.floor((prev-1)/10);
+      return `<tr class="${nuevaDecena ? 'nueva-decena' : ''}">
+        <td><span class="dia">${String(p.dia).padStart(2,'0')}</span> ${escapeHtml(p.nombre)}</td>
+        ${col2label ? `<td class="c2">${escapeHtml(p.col2)}</td>` : ''}
+      </tr>`;
+    }).join('');
+    const tablaHTML = `<div class="lista-panel"><table class="lista-tabla">
+      <tr><th>Nombres</th>${col2label ? `<th class="c2">${escapeHtml(col2label)}</th>` : ''}</tr>
+      ${filasHTML}
+    </table></div>`;
+    const pieHTML = `<div class="lista-pagina">Cumpleaños de ${mesN}` +
+      (paginas.length > 1 ? ` · Página ${pi+1} de ${paginas.length}` : '') + `</div>`;
+
+    if(esBloque){
+      return `<div class="lista-hoja card--tpl card--bloque" style="--accent:${acento}">
+        <div class="lista-cab-bloque">
+          ${svgConfettiClaro('h1')}${svgConfettiClaro('h2')}
+          ${cabeceraHTML}
+        </div>
+        <span class="scallop"></span>
+        <div class="lista-contenido">${tablaHTML}${pieHTML}</div>
+      </div>`;
+    }
+    return `<div class="lista-hoja card--tpl card--${diseno}" style="--accent:${acento}">
+      ${listaDecorHTML(diseno, acento)}
+      <div class="lista-contenido">
+        <div class="lista-cabecera">${cabeceraHTML}</div>
+        ${tablaHTML}${pieHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function refrescarLista(){ renderListaTabla(); renderListaHojas(); }
+
+function actualizarControlesLista(){
+  const fuente = document.getElementById('listaFuente').value;
+  document.getElementById('listaImportWrap').hidden = fuente !== 'import';
+  document.getElementById('listaCol2Wrap').hidden = fuente === 'import';
+}
+['listaDiseno','listaMes','listaTitulo','listaSubtitulo','listaCol2'].forEach(id => {
+  document.getElementById(id).addEventListener('input', refrescarLista);
+});
+document.getElementById('listaFuente').addEventListener('change', () => { actualizarControlesLista(); refrescarLista(); });
+
+// ---- Pestañas ----
+function activarTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('panelTarjetas').hidden = tab !== 'tarjetas';
+  document.getElementById('panelLista').hidden = tab !== 'lista';
+  document.body.classList.toggle('modo-tarjetas', tab === 'tarjetas');
+  document.body.classList.toggle('modo-lista', tab === 'lista');
+  document.getElementById('sheets').style.display = tab === 'tarjetas' ? '' : 'none';
+  document.getElementById('listaSheets').style.display = tab === 'lista' ? '' : 'none';
+  if(tab === 'lista') refrescarLista();
+}
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => activarTab(b.dataset.tab)));
+
+actualizarControlesLista();
+activarTab('tarjetas');
+
 document.getElementById('diseno').dispatchEvent(new Event('change'));
 refrescarTodo();
+
+// Al abrir: traer del servidor lo guardado (el servidor manda). Si el servidor
+// no tiene una clave pero este navegador sí, se sube. Si no hay conexión, se
+// sigue con lo local.
+async function sincronizarConServidor(){
+  syncEstado(true, 'Sincronizando con el servidor…');
+  let kv;
+  try{
+    const r = await fetch(API_KV, { credentials: 'include' });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    kv = await r.json();
+  }catch(e){ syncEstado(false); return; }
+
+  const mapa = [
+    ['empleados_LGF',       lsKeyEmpleados('LGF')],
+    ['empleados_POSCO_CUL', lsKeyEmpleados('POSCO_CUL')],
+    ['lista_mensual',       LS_LISTA],
+  ];
+  for(const [claveSrv, claveLS] of mapa){
+    const tieneSrv = Object.prototype.hasOwnProperty.call(kv, claveSrv) && kv[claveSrv] != null;
+    if(tieneSrv){
+      try{ localStorage.setItem(claveLS, JSON.stringify(kv[claveSrv])); }catch(e){}
+    } else {
+      const local = localStorage.getItem(claveLS);
+      if(local){ try{ apiGuardar(claveSrv, JSON.parse(local)); }catch(e){} }
+    }
+  }
+
+  empleados = cargarEmpleados();
+  listaImportada = cargarListaImportada();
+  refrescarTodo();
+  refrescarLista();
+  syncEstado(true, 'Datos sincronizados con el servidor');
+}
+sincronizarConServidor();
 </script>
 
 </body>
