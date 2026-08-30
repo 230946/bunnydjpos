@@ -481,11 +481,41 @@
   }
   .lista-hoja.card--bloque .lista-contenido{ padding: 66mm 16mm 14mm; }
 
+  /* ================= RESPONSIVE / MÓVIL ================= */
+  html, body{ overflow-x: hidden; max-width: 100%; }
+  #sheets, #listaSheets{ max-width: 100%; overflow-x: auto; }
+  .tabla-scroll{ max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #tablaEmpleados, #listaTabla{ min-width: 420px; }
+  @media (max-width: 860px){
+    .tabs{ max-width: 100%; margin: 12px 10px 0; }
+    .tab-btn{ padding: 10px 6px; font-size: 12.5px; }
+    .sync-estado{ max-width: 100%; margin: 5px 10px 0; }
+    .panel{
+      max-width: 100%; margin: 12px 10px; padding: 16px 14px 20px;
+      border-radius: 8px; overflow-wrap: anywhere;
+    }
+    .panel h1{ font-size: 16px; overflow-wrap: anywhere; }
+    .panel h2{ font-size: 12px; }
+    .row2{ flex-direction: column; gap: 0; }
+    .grupo-fila{ flex-wrap: wrap; }
+    .grupo-fila input[type="text"]{ flex: 1 1 100%; }
+    .grupo-fila input[type="date"]{ flex: 1 1 60%; }
+    .actions{ flex-wrap: wrap; }
+    .actions button{ flex: 1 1 100%; min-width: 0; white-space: normal; }
+    /* Vista previa A4 escalada para que se vea completa en el celular */
+    .sheet, .lista-hoja{ zoom: 0.46; }
+  }
+  @media (max-width: 480px){
+    .tab-btn{ font-size: 11.5px; }
+    .sheet, .lista-hoja{ zoom: 0.36; }
+  }
+
   /* ---------- Impresión ---------- */
   @media print{
     body{ background:#fff; }
-    .panel, .tabs{ display:none; }
-    .sheet, .lista-hoja{ margin:0; box-shadow:none; }
+    .panel, .tabs, .sync-estado{ display:none; }
+    .sheet, .lista-hoja{ margin:0; box-shadow:none; zoom:1; }
+    #sheets, #listaSheets{ overflow:visible; }
     @page{ size: A4; margin: 0; }
     .card, .tpl, .card *, .lista-hoja, .lista-hoja *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     body.modo-tarjetas #listaSheets{ display:none; }
@@ -701,7 +731,7 @@ Para festejarlo, te invitamos a almorzar el {dia} {fecha} en el {lugar}, durante
       </div>
     </div>
 
-    <table id="tablaEmpleados" style="width:100%; border-collapse:collapse; font-size:13px; margin-top:6px;"></table>
+    <div class="tabla-scroll"><table id="tablaEmpleados" style="width:100%; border-collapse:collapse; font-size:13px; margin-top:6px;"></table></div>
     <p class="hint" id="contadorEmpleados"></p>
 
     <div class="actions">
@@ -770,7 +800,7 @@ Para festejarlo, te invitamos a almorzar el {dia} {fecha} en el {lugar}, durante
       <p class="hint">Acepta la hoja <code>Datos</code> del archivo <code>plantilla_tarjeta_cumpleanos.xlsx</code>. Si el <code>Día</code> viene como <code>01</code>, <code>04</code>… se toma como día del mes elegido arriba.</p>
     </div>
 
-    <table id="listaTabla" style="width:100%; border-collapse:collapse; font-size:13px; margin-top:6px;"></table>
+    <div class="tabla-scroll"><table id="listaTabla" style="width:100%; border-collapse:collapse; font-size:13px; margin-top:6px;"></table></div>
     <p class="hint" id="listaContador"></p>
 
     <div class="actions">
@@ -1506,6 +1536,12 @@ function sincronizarDiaSemana(){
   const d = diaSemanaDeISO(document.getElementById('fecha').value);
   if(d) document.getElementById('dia').value = d;
 }
+// Al abrir, la fecha del evento arranca en HOY (el mes/día actual).
+(function fechaHoy(){
+  const h = new Date();
+  const iso = `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
+  document.getElementById('fecha').value = iso;
+})();
 document.getElementById('fecha').addEventListener('change', () => { sincronizarDiaSemana(); render(); });
 sincronizarDiaSemana();
 document.getElementById('diseno').addEventListener('change', () => {
