@@ -1,0 +1,615 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Centro de soporte | DJPOS</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f5fb;--card:#fff;--text:#1b1c2e;--text2:#5b5d78;--text3:#8a8ca8;
+  --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.16);
+  --acc:#6C4FF6;--acc-d:#5a3fe0;--acc-l:#ece8fe;
+  --green:#0B8457;--green-l:#e0f4ec;--amber:#b6702a;--amber-l:#f7ecdd;
+  --red:#d33;--red-l:#fbe9e9;--yellow:#FFC800;
+  --r:10px;--rl:16px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#14151f;--card:#1e1f2d;--text:#ecedf6;--text2:#a6a8c4;--text3:#6f7192;
+  --border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2);
+  --acc-l:#251f45;--green-l:#0f3327;--amber-l:#33260f;--red-l:#3a1010;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;color:var(--text);background:var(--bg);min-height:100vh;line-height:1.5}
+.wrap{max-width:620px;margin:0 auto;padding:22px 16px 70px}
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:20px}
+.brand img{width:42px;height:42px;border-radius:10px;object-fit:contain;background:#fff;border:0.5px solid var(--border)}
+.brand h1{font-size:18px;font-weight:700}
+.brand p{font-size:12px;color:var(--text2)}
+.tabs{display:flex;gap:4px;background:var(--card);border:0.5px solid var(--border);border-radius:999px;padding:4px;margin-bottom:20px;overflow-x:auto}
+.tab{flex:1;white-space:nowrap;padding:9px 12px;border:none;background:none;border-radius:999px;font:inherit;font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer}
+.tab.active{background:var(--acc);color:#fff}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:14px}
+.view{display:none}.view.active{display:block}
+h2{font-size:16px;margin-bottom:4px}
+.sub{font-size:13px;color:var(--text2);margin-bottom:16px}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:11px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font:inherit;font-size:14px;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--acc)}
+.field textarea{resize:vertical;min-height:100px}
+.frow{display:flex;gap:10px}.frow .field{flex:1}
+.btn{width:100%;padding:12px;border:none;border-radius:var(--r);background:var(--acc);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.btn:hover{background:var(--acc-d)}.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn-ghost{background:transparent;border:0.5px solid var(--border2);color:var(--text)}
+.btn-ghost:hover{background:var(--bg)}
+.msg{padding:10px 13px;border-radius:var(--r);font-size:13px;margin-bottom:14px;display:none}
+.msg.err{background:var(--red-l);color:var(--red);display:block}
+.msg.ok{background:var(--green-l);color:var(--green);display:block}
+.hint{font-size:12px;color:var(--text3);margin-top:6px}
+
+.result-code{text-align:center;padding:22px 16px;background:var(--acc-l);border-radius:var(--rl);margin-bottom:16px}
+.result-code .lbl{font-size:12px;color:var(--text2);font-weight:600}
+.result-code .code{font-size:26px;font-weight:800;letter-spacing:1px;color:var(--acc);margin:6px 0}
+
+.suggest{border:0.5px solid var(--border);border-radius:var(--r);margin:-6px 0 13px;overflow:hidden}
+.suggest .sg-h{font-size:11px;font-weight:700;color:var(--text3);padding:8px 12px;background:var(--bg);text-transform:uppercase;letter-spacing:.4px}
+.suggest a{display:block;padding:9px 12px;font-size:13px;color:var(--acc);text-decoration:none;border-top:0.5px solid var(--border)}
+.suggest a:hover{background:var(--acc-l)}
+
+.tk-head{border-bottom:0.5px solid var(--border);padding-bottom:14px;margin-bottom:14px}
+.tk-head h2{margin-bottom:8px}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;text-transform:capitalize}
+.b-abierto{background:var(--acc-l);color:var(--acc-d)}
+.b-en_progreso{background:var(--amber-l);color:var(--amber)}
+.b-resuelto{background:var(--green-l);color:var(--green)}
+.b-cerrado{background:var(--bg);color:var(--text3);border:0.5px solid var(--border)}
+.b-baja{background:var(--bg);color:var(--text2);border:0.5px solid var(--border)}
+.b-media{background:var(--acc-l);color:var(--acc-d)}
+.b-alta{background:var(--amber-l);color:var(--amber)}
+.b-urgente{background:var(--red-l);color:var(--red)}
+.tk-desc{font-size:14px;color:var(--text2);white-space:pre-wrap;margin-bottom:6px}
+.meta{font-size:12px;color:var(--text3)}
+
+.thread{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.bubble{padding:11px 13px;border-radius:var(--r);font-size:14px;max-width:88%;white-space:pre-wrap}
+.bubble .who{font-size:11px;font-weight:700;margin-bottom:3px;opacity:.75}
+.bubble .when{font-size:10px;color:var(--text3);margin-top:5px}
+.bubble.cliente{align-self:flex-end;background:var(--acc);color:#fff}
+.bubble.cliente .when{color:rgba(255,255,255,.7)}
+.bubble.agente{align-self:flex-start;background:var(--bg);border:0.5px solid var(--border)}
+.empty{text-align:center;color:var(--text3);font-size:13px;padding:20px}
+a.plain{color:var(--acc);text-decoration:none}
+
+/* CSAT */
+.csat{text-align:center;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);padding:16px;margin-top:14px}
+.stars{font-size:30px;letter-spacing:6px;cursor:pointer;user-select:none;margin:8px 0}
+.stars span{opacity:.3;transition:.1s}
+.stars span.on{opacity:1}
+
+/* KB */
+.kb-cat{margin-bottom:8px}
+.kb-cat h3{font-size:14px;margin-bottom:6px}
+.kb-list a{display:block;padding:11px 13px;border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:7px;text-decoration:none;color:var(--text);font-size:14px}
+.kb-list a:hover{border-color:var(--acc);background:var(--acc-l)}
+.kb-list a small{display:block;color:var(--text3);font-size:12px;margin-top:2px}
+.article{font-size:14.5px;line-height:1.65}
+.article h1{font-size:19px;margin:16px 0 8px}
+.article h2{font-size:16px;margin:14px 0 6px}
+.article h3{font-size:14px;margin:12px 0 6px}
+.article p{margin:8px 0}
+.article ul,.article ol{margin:8px 0 8px 20px}
+.article li{margin:3px 0}
+.article code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:13px}
+.article pre{background:var(--bg);padding:12px;border-radius:var(--r);overflow-x:auto;margin:10px 0}
+.article a{color:var(--acc)}
+
+/* Academia */
+.course-grid{display:grid;gap:12px}
+.course{display:flex;gap:12px;align-items:center;border:0.5px solid var(--border);border-radius:var(--rl);padding:14px;cursor:pointer;background:var(--card)}
+.course:hover{border-color:var(--acc)}
+.course .ic{font-size:28px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:12px;flex-shrink:0}
+.course .t{font-weight:700;font-size:14px}
+.course .d{font-size:12px;color:var(--text2);margin-top:2px}
+.course .p{font-size:11px;color:var(--text3);margin-top:4px}
+.path{max-width:420px;margin:0 auto}
+.node-row{display:flex;justify-content:center;margin:8px 0}
+.lnode{width:60px;height:60px;border-radius:50%;border:none;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(0,0,0,.18);cursor:pointer;color:#fff}
+.lnode:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.lnode.done{background:var(--green)}
+.lnode.current{background:var(--acc)}
+.lnode.locked{background:var(--border2);box-shadow:0 4px 0 var(--border);color:var(--text3);cursor:not-allowed}
+.node-label{text-align:center;font-size:11px;color:var(--text2);font-weight:700;max-width:110px;margin:3px auto 0}
+
+/* Lesson player */
+#player{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column}
+#player.on{display:flex}
+.pl-top{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.pl-x{background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer}
+.pl-bar{flex:1;height:12px;background:var(--border);border-radius:999px;overflow:hidden}
+.pl-bar>div{height:100%;background:var(--acc);width:0;transition:width .3s}
+.pl-body{flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column}
+.teach{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;max-width:480px;margin:0 auto;width:100%}
+.teach .ic{font-size:44px;margin-bottom:8px}
+.teach h3{font-size:22px;margin-bottom:12px}
+.teach p{font-size:16px;color:var(--text2)}
+.teach ul{text-align:left;list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.teach li{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:11px 13px;font-size:14px}
+.quiz{max-width:480px;margin:0 auto;width:100%}
+.quiz h3{font-size:19px;margin:6px 0 18px}
+.opt{width:100%;text-align:left;padding:14px;margin-bottom:10px;border-radius:12px;border:0.5px solid var(--border2);border-bottom-width:3px;background:var(--card);color:var(--text);font:inherit;font-size:14.5px;font-weight:600;cursor:pointer}
+.opt.correct{border-color:var(--green);background:var(--green-l);color:var(--green)}
+.opt.wrong{border-color:var(--red);background:var(--red-l);color:var(--red)}
+.opt.dim{opacity:.5}
+.pl-foot{padding:16px 20px calc(16px + env(safe-area-inset-bottom));border-top:0.5px solid var(--border)}
+.pl-foot.ok{background:var(--green-l);border-top:none}
+.pl-foot.bad{background:var(--red-l);border-top:none}
+.fb{font-weight:700;font-size:15px;margin-bottom:10px;max-width:480px;margin-inline:auto}
+.fb.ok{color:var(--green)}.fb.bad{color:var(--red)}
+.done-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.done-wrap .big{font-size:60px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <img id="b-logo" src="/img/logo.png" alt="">
+    <div><h1 id="b-name">Centro de soporte</h1><p id="b-tagline">Estamos para ayudarte</p></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="nuevo" onclick="switchTab('nuevo')">Abrir ticket</button>
+    <button class="tab" data-tab="consultar" onclick="switchTab('consultar')">Mi ticket</button>
+    <button class="tab" data-tab="kb" onclick="switchTab('kb')">Centro de ayuda</button>
+    <button class="tab" data-tab="academia" onclick="switchTab('academia')">Academia</button>
+  </div>
+
+  <!-- NUEVO TICKET -->
+  <div class="view active" id="view-nuevo">
+    <div class="card" id="form-card">
+      <h2>Cuéntanos qué ocurre</h2>
+      <p class="sub">Un agente revisará tu caso y te responderá aquí mismo.</p>
+      <div class="msg" id="nuevo-msg"></div>
+      <div class="field"><label>Asunto *</label><input id="f-asunto" maxlength="160" placeholder="Resumen corto del problema" oninput="sugerirKB()"></div>
+      <div class="suggest" id="kb-suggest" style="display:none"><div class="sg-h">Quizá esto te ayude</div><div id="kb-suggest-list"></div></div>
+      <div class="field"><label>Descripción *</label><textarea id="f-desc" maxlength="5000" placeholder="Describe el problema con el mayor detalle posible"></textarea></div>
+      <div class="frow">
+        <div class="field"><label>Categoría</label><select id="f-cat"></select></div>
+        <div class="field"><label>Prioridad</label>
+          <select id="f-prio">
+            <option value="baja">Baja</option><option value="media" selected>Media</option>
+            <option value="alta">Alta</option><option value="urgente">Urgente</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Tu nombre *</label><input id="f-nombre" maxlength="120" placeholder="Nombre y apellido"></div>
+      <div class="frow">
+        <div class="field"><label>Correo</label><input id="f-email" type="email" maxlength="160" placeholder="tucorreo@ejemplo.com"></div>
+        <div class="field"><label>Teléfono</label><input id="f-tel" maxlength="40" placeholder="Opcional"></div>
+      </div>
+      <p class="hint">Indica al menos un correo o un teléfono para poder contactarte.</p>
+      <br>
+      <button class="btn" id="btn-crear" onclick="crearTicket()">Enviar ticket</button>
+    </div>
+    <div class="card" id="ok-card" style="display:none">
+      <div class="result-code">
+        <div class="lbl">TU CÓDIGO DE TICKET</div>
+        <div class="code" id="ok-code">—</div>
+        <div style="font-size:12px;color:var(--text2)">Guárdalo. Con el enlace de abajo verás las respuestas.</div>
+      </div>
+      <div class="field"><label>Enlace directo a tu ticket</label><input id="ok-link" readonly onclick="this.select()"></div>
+      <button class="btn" onclick="location.href=okLink">Ver mi ticket</button><br><br>
+      <button class="btn btn-ghost" onclick="location.reload()">Abrir otro ticket</button>
+    </div>
+  </div>
+
+  <!-- CONSULTAR -->
+  <div class="view" id="view-consultar">
+    <div class="card" id="consultar-card">
+      <h2>Consulta tu ticket</h2>
+      <p class="sub">Escribe el código que recibiste al crear el ticket.</p>
+      <div class="msg" id="consultar-msg"></div>
+      <div class="field"><label>Código *</label><input id="c-codigo" placeholder="SOP-XXXXXX" style="text-transform:uppercase"></div>
+      <div class="field"><label>Token de acceso *</label><input id="c-token" placeholder="Pega aquí tu token"></div>
+      <p class="hint">Si usaste el enlace directo no necesitas escribir nada.</p><br>
+      <button class="btn" onclick="consultarTicket()">Ver ticket</button>
+    </div>
+    <div class="card" id="ticket-card" style="display:none">
+      <div class="tk-head">
+        <h2 id="t-asunto">—</h2>
+        <div class="badges" id="t-badges"></div>
+        <div class="meta" id="t-meta" style="margin-top:8px"></div>
+      </div>
+      <div class="tk-desc" id="t-desc"></div>
+      <div class="thread" id="t-thread"></div>
+      <div id="t-reply">
+        <div class="msg" id="reply-msg"></div>
+        <div class="field"><label>Responder</label><textarea id="r-cuerpo" maxlength="5000" placeholder="Añade información o responde al agente…"></textarea></div>
+        <button class="btn" onclick="responder()">Enviar respuesta</button>
+      </div>
+      <div class="csat" id="csat-box" style="display:none">
+        <div style="font-weight:700;font-size:14px">¿Cómo fue la atención?</div>
+        <div class="stars" id="stars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
+        <input id="csat-com" placeholder="Comentario (opcional)" style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font:inherit;margin-bottom:8px">
+        <button class="btn" onclick="enviarCsat()">Enviar calificación</button>
+        <div class="msg" id="csat-msg" style="margin-top:8px"></div>
+      </div>
+      <p id="t-cerrado" style="display:none;text-align:center;color:var(--text3);font-size:13px;margin-top:10px">Este ticket está cerrado.</p>
+      <br><button class="btn btn-ghost" onclick="location.reload()">Volver</button>
+    </div>
+  </div>
+
+  <!-- CENTRO DE AYUDA -->
+  <div class="view" id="view-kb">
+    <div class="card">
+      <div class="field" style="margin:0"><input id="kb-q" placeholder="🔍 Buscar en el centro de ayuda…" oninput="buscarKB()"></div>
+      <div id="kb-search-results"></div>
+    </div>
+    <div class="card" id="kb-browse"><div class="empty">Cargando…</div></div>
+    <div class="card" id="kb-article" style="display:none">
+      <button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:12px" onclick="cerrarArticulo()">← Volver</button>
+      <div class="article" id="kb-article-body" style="margin-top:12px"></div>
+      <div style="margin-top:18px;padding-top:14px;border-top:0.5px solid var(--border);text-align:center">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">¿Te sirvió este artículo?</div>
+        <button class="btn btn-ghost" style="width:auto;display:inline-block;margin:0 4px" onclick="votarArticulo(true)">👍 Sí</button>
+        <button class="btn btn-ghost" style="width:auto;display:inline-block;margin:0 4px" onclick="votarArticulo(false)">👎 No</button>
+        <div class="msg" id="kb-vote-msg" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACADEMIA -->
+  <div class="view" id="view-academia">
+    <div class="card" id="ac-list"><div class="empty">Cargando…</div></div>
+    <div class="card" id="ac-course" style="display:none">
+      <button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:12px" onclick="cerrarCurso()">← Cursos</button>
+      <div style="text-align:center;margin:10px 0 18px">
+        <div style="font-size:34px" id="ac-course-ic">🎓</div>
+        <h2 id="ac-course-t">—</h2>
+        <p class="sub" id="ac-course-d" style="margin:0"></p>
+      </div>
+      <div class="path" id="ac-path"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LESSON PLAYER -->
+<div id="player">
+  <div class="pl-top">
+    <button class="pl-x" onclick="cerrarPlayer()">✕</button>
+    <div class="pl-bar"><div id="pl-progress"></div></div>
+  </div>
+  <div class="pl-body" id="pl-body"></div>
+  <div class="pl-foot" id="pl-foot">
+    <div class="fb" id="pl-fb" style="display:none"></div>
+    <button class="btn" id="pl-next" onclick="pasoSiguiente()">Continuar</button>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+const qs = new URLSearchParams(location.search);
+const negocioId = qs.get('n') || '';
+let okLink = '/soporte', INFO = {};
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ const p=document.createElement('p'); p.textContent=s==null?'':String(s); return p.innerHTML; }
+function fmt(s){ if(!s) return ''; return new Date(String(s).replace(' ','T')).toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+function showMsg(id,t,k){ const el=$(id); el.textContent=t; el.className='msg '+(k||'err'); }
+function clearMsg(id){ const el=$(id); el.className='msg'; el.textContent=''; }
+function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
+
+// mini markdown → HTML (seguro: escapa primero)
+function md(src){
+  let s = esc(src||'');
+  const blocks = s.split(/\n{2,}/).map(b=>{
+    if(/^### /.test(b)) return '<h3>'+b.slice(4)+'</h3>';
+    if(/^## /.test(b))  return '<h2>'+b.slice(3)+'</h2>';
+    if(/^# /.test(b))   return '<h1>'+b.slice(2)+'</h1>';
+    if(/^```/.test(b))  return '<pre>'+b.replace(/^```\w*\n?/,'').replace(/```$/,'')+'</pre>';
+    if(/^(\d+\.|- |\* )/m.test(b)){
+      const ol=/^\d+\./.test(b);
+      const items=b.split('\n').filter(Boolean).map(l=>'<li>'+l.replace(/^(\d+\.|-|\*)\s*/,'')+'</li>').join('');
+      return ol?'<ol>'+items+'</ol>':'<ul>'+items+'</ul>';
+    }
+    return '<p>'+b.replace(/\n/g,'<br>')+'</p>';
+  }).join('');
+  return blocks
+    .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('view-'+t).classList.add('active');
+  if(t==='kb' && !$('kb-browse').dataset.loaded) cargarKB();
+  if(t==='academia' && !$('ac-list').dataset.loaded) cargarAcademia();
+}
+
+async function cargarNegocio(){
+  if(!negocioId){ showMsg('nuevo-msg','Falta el identificador del negocio en el enlace (?n=…).'); $('btn-crear').disabled=true; return; }
+  try{
+    const r = await fetch(`${API}/soporte/pub/${negocioId}/info`);
+    const d = await r.json(); if(!r.ok) throw new Error(d.error);
+    INFO = d;
+    $('b-name').textContent = d.nombre + ' · Soporte';
+    document.title = `Soporte · ${d.nombre}`;
+    if(d.logo_url) $('b-logo').src = d.logo_url;
+    if(d.color_primario){ document.documentElement.style.setProperty('--acc', d.color_primario); document.documentElement.style.setProperty('--acc-d', d.color_primario); }
+    $('b-tagline').textContent = [d.telefono,d.email].filter(Boolean).join(' · ') || 'Estamos para ayudarte';
+    $('f-cat').innerHTML = (d.categorias||['otro']).map(c=>`<option value="${c}">${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
+  }catch(e){ showMsg('nuevo-msg', e.message||'Negocio no encontrado'); $('btn-crear').disabled=true; }
+}
+
+// ── KB suggestions on ticket form ─────────────────────────────
+const sugerirKB = debounce(async ()=>{
+  const q = $('f-asunto').value.trim();
+  const box = $('kb-suggest');
+  if(q.length < 4){ box.style.display='none'; return; }
+  try{
+    const r = await fetch(`${API}/soporte/pub/${negocioId}/kb/buscar?q=${encodeURIComponent(q)}`);
+    const arts = await r.json();
+    if(!arts.length){ box.style.display='none'; return; }
+    $('kb-suggest-list').innerHTML = arts.slice(0,4).map(a=>`<a href="#" onclick="verArticulo('${a.slug}');switchTab('kb');return false">${esc(a.titulo)}</a>`).join('');
+    box.style.display='block';
+  }catch{ box.style.display='none'; }
+}, 350);
+
+// ── Crear ticket ─────────────────────────────────────────────
+async function crearTicket(){
+  clearMsg('nuevo-msg');
+  const body = {
+    asunto:$('f-asunto').value.trim(), descripcion:$('f-desc').value.trim(),
+    categoria:$('f-cat').value, prioridad:$('f-prio').value,
+    solicitante_nombre:$('f-nombre').value.trim(),
+    solicitante_email:$('f-email').value.trim(), solicitante_tel:$('f-tel').value.trim(),
+  };
+  if(!body.asunto || !body.descripcion || !body.solicitante_nombre) return showMsg('nuevo-msg','Completa asunto, descripción y tu nombre.');
+  if(!body.solicitante_email && !body.solicitante_tel) return showMsg('nuevo-msg','Indica un correo o un teléfono.');
+  const btn=$('btn-crear'); btn.disabled=true; btn.textContent='Enviando…';
+  try{
+    const r = await fetch(`${API}/soporte/pub/${negocioId}/tickets`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d = await r.json(); if(!r.ok) throw new Error(d.error);
+    okLink = `${location.origin}/soporte?n=${encodeURIComponent(negocioId)}&c=${d.codigo}&t=${d.token}`;
+    $('ok-code').textContent = d.codigo; $('ok-link').value = okLink;
+    $('form-card').style.display='none'; $('ok-card').style.display='block'; window.scrollTo(0,0);
+  }catch(e){ showMsg('nuevo-msg', e.message); btn.disabled=false; btn.textContent='Enviar ticket'; }
+}
+
+// ── Consultar / responder / CSAT ─────────────────────────────
+let curCodigo='', curToken='';
+async function consultarTicket(){
+  clearMsg('consultar-msg');
+  const codigo=$('c-codigo').value.trim().toUpperCase(), tk=$('c-token').value.trim();
+  if(!codigo || !tk) return showMsg('consultar-msg','Escribe el código y el token.');
+  await verTicket(codigo, tk, 'consultar-msg');
+}
+async function verTicket(codigo, tk, msgId){
+  try{
+    const r = await fetch(`${API}/soporte/pub/ticket?codigo=${encodeURIComponent(codigo)}&token=${encodeURIComponent(tk)}`);
+    const d = await r.json(); if(!r.ok) throw new Error(d.error);
+    curCodigo=codigo; curToken=tk; renderTicket(d);
+    switchTab('consultar');
+    $('consultar-card').style.display='none'; $('ticket-card').style.display='block'; window.scrollTo(0,0);
+  }catch(e){ showMsg(msgId, e.message); }
+}
+function renderTicket(d){
+  const t=d.ticket;
+  $('t-asunto').textContent = t.asunto;
+  $('t-badges').innerHTML = `<span class="badge b-${t.estado}">${t.estado.replace('_',' ')}</span><span class="badge b-${t.prioridad}">${t.prioridad}</span><span class="badge b-cerrado">${esc(t.categoria)}</span>`;
+  $('t-meta').innerHTML = `Ticket <b>${esc(t.codigo)}</b> · Abierto el ${fmt(t.creado)}` + (t.agente_nombre?` · Atiende: ${esc(t.agente_nombre)}`:'');
+  $('t-desc').textContent = t.descripcion;
+  const coms=d.comentarios||[];
+  $('t-thread').innerHTML = coms.length ? coms.map(c=>`<div class="bubble ${c.autor_tipo}"><div class="who">${esc(c.autor_nombre)}${c.autor_tipo==='agente'?' · Agente':''}</div>${esc(c.cuerpo)}<div class="when">${fmt(c.creado)}</div></div>`).join('') : '<div class="empty">Aún no hay respuestas.</div>';
+  const cerrado = t.estado==='cerrado';
+  $('t-reply').style.display = cerrado ? 'none' : 'block';
+  $('t-cerrado').style.display = cerrado ? 'block' : 'none';
+  $('csat-box').style.display = t.puede_calificar ? 'block' : 'none';
+}
+async function responder(){
+  clearMsg('reply-msg');
+  const cuerpo=$('r-cuerpo').value.trim(); if(!cuerpo) return showMsg('reply-msg','Escribe un mensaje.');
+  try{
+    const r = await fetch(`${API}/soporte/pub/ticket/comentario`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo:curCodigo,token:curToken,cuerpo})});
+    const d = await r.json(); if(!r.ok) throw new Error(d.error);
+    $('r-cuerpo').value=''; showMsg('reply-msg','Respuesta enviada.','ok');
+    const r2 = await fetch(`${API}/soporte/pub/ticket?codigo=${encodeURIComponent(curCodigo)}&token=${encodeURIComponent(curToken)}`);
+    if(r2.ok) renderTicket(await r2.json());
+  }catch(e){ showMsg('reply-msg', e.message); }
+}
+let csatVal=0;
+$('stars').addEventListener('click', e=>{
+  const v=e.target.dataset.v; if(!v) return; csatVal=+v;
+  [...$('stars').children].forEach(s=>s.classList.toggle('on', +s.dataset.v <= csatVal));
+});
+async function enviarCsat(){
+  clearMsg('csat-msg');
+  if(!csatVal) return showMsg('csat-msg','Toca una estrella.');
+  try{
+    const r = await fetch(`${API}/soporte/pub/ticket/csat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo:curCodigo,token:curToken,score:csatVal,comentario:$('csat-com').value.trim()})});
+    const d = await r.json(); if(!r.ok) throw new Error(d.error);
+    showMsg('csat-msg','¡Gracias por tu calificación!','ok');
+    setTimeout(()=>$('csat-box').style.display='none', 1500);
+  }catch(e){ showMsg('csat-msg', e.message); }
+}
+
+// ── Centro de ayuda ──────────────────────────────────────────
+async function cargarKB(){
+  try{
+    const r = await fetch(`${API}/soporte/pub/${negocioId}/kb`);
+    const d = await r.json();
+    const all = [...(d.categorias||[]), ...(d.sueltos&&d.sueltos.length?[{nombre:'Otros',articulos:d.sueltos}]:[])];
+    const withArts = all.filter(c=>c.articulos&&c.articulos.length);
+    $('kb-browse').innerHTML = withArts.length ? withArts.map(c=>`
+      <div class="kb-cat"><h3>${esc(c.icono||'')} ${esc(c.nombre)}</h3>
+      <div class="kb-list">${c.articulos.map(a=>`<a href="#" onclick="verArticulo('${a.slug}');return false">${esc(a.titulo)}${a.resumen?`<small>${esc(a.resumen)}</small>`:''}</a>`).join('')}</div></div>`).join('')
+      : '<div class="empty">Aún no hay artículos publicados.</div>';
+    $('kb-browse').dataset.loaded = '1';
+  }catch(e){ $('kb-browse').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+const buscarKB = debounce(async ()=>{
+  const q = $('kb-q').value.trim();
+  const box = $('kb-search-results');
+  if(q.length<2){ box.innerHTML=''; return; }
+  try{
+    const r = await fetch(`${API}/soporte/pub/${negocioId}/kb/buscar?q=${encodeURIComponent(q)}`);
+    const arts = await r.json();
+    box.innerHTML = arts.length ? '<div class="kb-list" style="margin-top:10px">'+arts.map(a=>`<a href="#" onclick="verArticulo('${a.slug}');return false">${esc(a.titulo)}</a>`).join('')+'</div>' : '<div class="empty">Sin resultados</div>';
+  }catch{ box.innerHTML=''; }
+}, 300);
+let curArticuloId=null;
+async function verArticulo(slug){
+  try{
+    const r = await fetch(`${API}/soporte/pub/${negocioId}/kb/articulo/${encodeURIComponent(slug)}`);
+    const a = await r.json(); if(!r.ok) throw new Error(a.error);
+    curArticuloId = a.id;
+    $('kb-article-body').innerHTML = `<h1>${esc(a.titulo)}</h1>` + md(a.cuerpo);
+    clearMsg('kb-vote-msg');
+    $('kb-browse').style.display='none'; $('kb-article').style.display='block'; window.scrollTo(0,0);
+  }catch(e){ alert(e.message); }
+}
+function cerrarArticulo(){ $('kb-article').style.display='none'; $('kb-browse').style.display='block'; }
+async function votarArticulo(util){
+  try{
+    await fetch(`${API}/soporte/pub/${negocioId}/kb/articulo/${curArticuloId}/util`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({util})});
+    showMsg('kb-vote-msg','¡Gracias por tu opinión!','ok');
+  }catch{}
+}
+
+// ── Academia (cliente) ───────────────────────────────────────
+const ALUMNO_KEY = 'sop_alumno_'+negocioId;
+function alumnoRef(){
+  let v = localStorage.getItem(ALUMNO_KEY);
+  if(!v){ v = 'anon-'+Math.random().toString(36).slice(2,10); try{ localStorage.setItem(ALUMNO_KEY,v); }catch{} }
+  return v;
+}
+let CURSOS=[], PROG=new Set(), curCurso=null, curLecciones=[];
+async function cargarAcademia(){
+  try{
+    const [cr, pr] = await Promise.all([
+      fetch(`${API}/soporte/pub/${negocioId}/academia`).then(r=>r.json()),
+      fetch(`${API}/soporte/pub/${negocioId}/academia/progreso?alumno=${encodeURIComponent(alumnoRef())}`).then(r=>r.json()),
+    ]);
+    CURSOS = cr; PROG = new Set((pr||[]).map(p=>p.leccion_id));
+    $('ac-list').innerHTML = CURSOS.length ? '<div class="course-grid">'+CURSOS.map(c=>`
+      <div class="course" onclick="abrirCurso('${c.id}')">
+        <div class="ic" style="background:${esc(c.color||'#ece8fe')}22">${esc(c.icono||'🎓')}</div>
+        <div><div class="t">${esc(c.titulo)}</div><div class="d">${esc(c.descripcion||'')}</div>
+        <div class="p">${c.lecciones} ${c.lecciones==1?'lección':'lecciones'}</div></div>
+      </div>`).join('')+'</div>' : '<div class="empty">Aún no hay cursos disponibles.</div>';
+    $('ac-list').dataset.loaded='1';
+  }catch(e){ $('ac-list').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+async function abrirCurso(id){
+  try{
+    const r = await fetch(`${API}/soporte/pub/${negocioId}/academia/curso/${id}`);
+    const d = await r.json(); if(!r.ok) throw new Error(d.error);
+    curCurso = d.curso; curLecciones = d.lecciones;
+    $('ac-course-ic').textContent = d.curso.icono||'🎓';
+    $('ac-course-t').textContent = d.curso.titulo;
+    $('ac-course-d').textContent = d.curso.descripcion||'';
+    renderPath();
+    $('ac-list').style.display='none'; $('ac-course').style.display='block'; window.scrollTo(0,0);
+  }catch(e){ alert(e.message); }
+}
+function renderPath(){
+  let firstPending = true;
+  $('ac-path').innerHTML = curLecciones.map((l,i)=>{
+    const done = PROG.has(l.id);
+    let cls='locked';
+    if(done) cls='done';
+    else if(firstPending){ cls='current'; firstPending=false; }
+    const clickable = cls!=='locked';
+    return `<div class="node-row"><button class="lnode ${cls}" ${clickable?`onclick="iniciarLeccion(${i})"`:'disabled'}>${done?'✓':(i+1)}</button></div>
+      <div class="node-label">${esc(l.titulo)}</div>`;
+  }).join('') || '<div class="empty">Este curso no tiene lecciones.</div>';
+}
+function cerrarCurso(){ $('ac-course').style.display='none'; $('ac-list').style.display='block'; }
+
+// ── Lesson player (compartido cliente/agente sería duplicado; aquí cliente) ──
+let plLeccion=null, plPasos=[], plIdx=0, plAciertos=0, plContestada=false;
+function iniciarLeccion(i){
+  plLeccion = curLecciones[i];
+  plPasos = (plLeccion.contenido||[]).filter(p=>p&&p.tipo);
+  if(!plPasos.length){ marcarCompletada(100); return; }
+  plIdx=0; plAciertos=0;
+  $('player').classList.add('on');
+  renderPaso();
+}
+function renderPaso(){
+  plContestada=false;
+  const p = plPasos[plIdx];
+  $('pl-progress').style.width = (plIdx/plPasos.length*100)+'%';
+  $('pl-foot').className='pl-foot'; $('pl-fb').style.display='none';
+  const next=$('pl-next'); next.textContent='Continuar'; next.disabled = p.tipo==='quiz';
+  if(p.tipo==='concepto'){
+    $('pl-body').innerHTML = `<div class="teach">
+      <div class="ic">${esc(p.icono||'💡')}</div>
+      <h3>${esc(p.titulo||'')}</h3>
+      <p>${esc(p.texto||'')}</p>
+      ${Array.isArray(p.puntos)&&p.puntos.length?`<ul>${p.puntos.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+    </div>`;
+  } else {
+    $('pl-body').innerHTML = `<div class="quiz"><h3>${esc(p.pregunta||'')}</h3>
+      ${(p.opciones||[]).map((o,oi)=>`<button class="opt" data-oi="${oi}" onclick="responderQuiz(${oi})">${esc(o)}</button>`).join('')}</div>`;
+  }
+}
+function responderQuiz(oi){
+  if(plContestada) return;
+  plContestada=true;
+  const p = plPasos[plIdx];
+  const ok = oi === p.correcta;
+  if(ok) plAciertos++;
+  document.querySelectorAll('.opt').forEach(b=>{
+    const i=+b.dataset.oi;
+    if(i===p.correcta) b.classList.add('correct');
+    else if(i===oi) b.classList.add('wrong');
+    else b.classList.add('dim');
+    b.style.pointerEvents='none';
+  });
+  $('pl-foot').className = 'pl-foot ' + (ok?'ok':'bad');
+  $('pl-fb').style.display='block';
+  $('pl-fb').className = 'fb ' + (ok?'ok':'bad');
+  $('pl-fb').textContent = ok ? '¡Correcto!' : ('Respuesta: ' + (p.opciones?.[p.correcta]||'')) + (p.explicacion?` — ${p.explicacion}`:'');
+  const next=$('pl-next'); next.disabled=false; next.textContent = plIdx===plPasos.length-1?'Finalizar':'Continuar';
+}
+function pasoSiguiente(){
+  if(plIdx < plPasos.length-1){ plIdx++; renderPaso(); return; }
+  const quizzes = plPasos.filter(p=>p.tipo==='quiz').length;
+  const puntaje = quizzes ? Math.round(plAciertos/quizzes*100) : 100;
+  marcarCompletada(puntaje);
+}
+async function marcarCompletada(puntaje){
+  $('pl-progress').style.width='100%';
+  $('pl-body').innerHTML = `<div class="done-wrap"><div class="big">🎉</div><h3>¡Lección completada!</h3><p style="color:var(--text2)">Puntaje: ${puntaje}%</p></div>`;
+  $('pl-foot').className='pl-foot'; $('pl-fb').style.display='none';
+  $('pl-next').textContent='Volver al curso'; $('pl-next').disabled=false;
+  $('pl-next').onclick = ()=>{ cerrarPlayer(); };
+  try{
+    await fetch(`${API}/soporte/pub/${negocioId}/academia/progreso`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({alumno:alumnoRef(), alumno_nombre:$('f-nombre').value.trim()||null, leccion_id:plLeccion.id, puntaje, xp:10+plAciertos*5})});
+    PROG.add(plLeccion.id);
+  }catch{}
+}
+function cerrarPlayer(){
+  $('player').classList.remove('on');
+  $('pl-next').onclick = pasoSiguiente;
+  renderPath();
+}
+
+// ── Init ─────────────────────────────────────────────────────
+cargarNegocio();
+const dc = qs.get('c'), dt = qs.get('t');
+if(dc && dt){ switchTab('consultar'); verTicket(dc.toUpperCase(), dt, 'consultar-msg'); }
+</script>
+</body>
+</html>
