@@ -33,6 +33,7 @@ const publicoRouter     = require('./routes/publico');
 const turnoRouter       = require('./routes/turno');
 const hotelRouter       = require('./routes/hotel');
 const cumpleanosRouter  = require('./routes/cumpleanos');
+const soporteRouter     = require('./routes/soporte');
 
 const app    = express();
 const server = http.createServer(app);
@@ -95,6 +96,8 @@ app.get('/admin',            (_, res) => res.sendFile(path.join(frontendPath, 'a
 app.get('/minimercado-admin',(_, res) => res.sendFile(path.join(frontendPath, 'admin-minimercado.html')));
 app.get('/peluqueria-admin', (_, res) => res.sendFile(path.join(frontendPath, 'admin-peluqueria.html')));
 app.get('/hotel-admin',      (_, res) => res.sendFile(path.join(frontendPath, 'admin-hotel.html')));
+app.get('/soporte',          (_, res) => res.sendFile(path.join(frontendPath, 'soporte.html')));
+app.get('/soporte-admin',    (_, res) => res.sendFile(path.join(frontendPath, 'admin-soporte.html')));
 app.get('/superadmin',       (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
 // Portales
 app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'portal.html')));
@@ -153,6 +156,7 @@ app.use('/api/domicilios', domiciliosRouter);
 app.use('/api/publico',   publicoRouter);
 app.use('/api/turno',     turnoRouter);
 app.use('/api/hotel',     hotelRouter);
+app.use('/api/soporte',   soporteRouter);
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {
