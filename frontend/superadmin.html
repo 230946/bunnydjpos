@@ -887,7 +887,8 @@ function showQR(negocioId, nombre, tipo){
     bar: [
       { label:'🛵 App Domicilios (Clientes)',    url:`${base}/domicilios?n=${negocioId}` },
       { label:'🏍️ App Domiciliario (Repartidor)', url:`${base}/domiciliario?n=${negocioId}` },
-      { label:'⚙️ Admin Bar',                     url:`${base}/bar-admin.html?n=${negocioId}` },
+      { label:'⚙️ Admin Bar',                     url:`${base}/admin-bar.html?n=${negocioId}` },
+      { label:'🖥️ POS Bar',                       url:`${base}/pos-bar.html?n=${negocioId}` },
     ],
   };
   const items = urls[tipo] || [
@@ -1075,7 +1076,7 @@ async function loadNegocios(){
       ferreteria:  [['Admin','/admin-ferreteria.html'],['POS','/pos-ferreteria.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario'],['🕐 Turno','/turno']],
       ropa:        [['Admin','/admin-ropa.html'],['POS','/pos-ropa.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario'],['🕐 Turno','/turno']],
       peluqueria:  [['Admin','/admin-peluqueria.html'],['POS','/pos-peluqueria.html'],['Reservas','/reservas-peluqueria.html'],['Portal','/portal-empleado.html']],
-      bar:         [['Admin','/bar-admin.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
+      bar:         [['Admin','/admin-bar.html'],['POS','/pos-bar.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
       veterinaria: [['Admin','/vet-admin.html']],
       taller:      [['Admin','/taller-admin.html']],
       lavanderia:  [['Admin','/lavanderia-admin.html']],

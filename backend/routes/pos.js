@@ -516,6 +516,23 @@ router.put('/comandas/:id/estado', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Borra un pedido que se envió por error — todavía no se cobró (no hay venta
+// ni descuento de inventario que revertir), así que es un borrado real, no
+// un cambio de estado.
+router.delete('/comandas/:id', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT mesa_id FROM comandas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Pedido no encontrado' });
+    await pool.query(`DELETE FROM comandas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]);
+    req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { id: req.params.id, eliminada: true });
+    res.json({ ok: true, mesa_id: rows[0].mesa_id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Marcar todas las comandas activas como entregadas (limpiar cocina)
 // También libera las mesas que tenían esas comandas pendientes: si se limpia
 // la cocina es porque esas cuentas se cancelaron (ej. el cliente no pidió

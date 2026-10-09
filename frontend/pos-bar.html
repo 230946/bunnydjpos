@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>POS Bar — BUNNYDJPOS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="stylesheet" href="css/responsive.css">
+<style>
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;--red-d:#A32D2D;
+  --amber:#C6F135;--amber-l:#f5ffd6;--amber-d:#8aad00;
+  --purple:#534AB7;--purple-l:#EEEDFE;--purple-d:#26215C;
+  --r:8px;--rl:12px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+    --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+    --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+    --green-l:#04342c;--red-l:#3a1010;--amber-l:#2a1a00;--purple-l:#1a1840;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg2);color:var(--text);font-size:14px}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px}
+h1,h2,h3{margin:0}
+.hide{display:none!important}
+a{color:var(--green-d)}
+
+/* ---------- Login ---------- */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--green-d),#0a1b16);padding:16px}
+.login-card{background:var(--bg);border-radius:var(--rl);padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.login-card h1{font-size:22px;color:var(--green-d)}
+.login-card .sub{color:var(--text2);font-size:13px;margin:4px 0 20px}
+#login-neg-nombre{display:none;font-weight:700;color:var(--green-d);margin-bottom:10px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)}
+.field textarea{resize:vertical}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border:none;border-radius:var(--r);font-weight:700;font-size:13.5px}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{background:var(--green-d)}
+.btn-full{width:100%}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:6px 10px;font-size:12px}
+#login-error{display:none;background:var(--red-l);color:var(--red-d);padding:9px 12px;border-radius:var(--r);font-size:12.5px;margin-bottom:12px}
+
+/* ---------- Shell ---------- */
+#app{display:flex;min-height:100vh}
+.sidebar{width:208px;flex:none;background:var(--green-d);color:#fff;display:flex;flex-direction:column;padding:16px 0}
+.sidebar .brand{padding:0 18px 16px;font-weight:800;font-size:16px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:10px}
+.sidebar .brand small{display:block;font-weight:500;font-size:11px;opacity:.75;margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 18px;color:rgba(255,255,255,.82);text-decoration:none;font-size:13.5px;font-weight:600;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.16);color:#fff;border-right:3px solid var(--amber)}
+.nav-sep{flex:1}
+main{flex:1;min-width:0;display:flex;flex-direction:column}
+header.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+header.topbar h2{font-size:17px}
+.caja-pill{font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px}
+.caja-pill.abierta{background:var(--green-l);color:var(--green-d)}
+.caja-pill.cerrada{background:var(--red-l);color:var(--red-d)}
+.content{padding:20px;flex:1;overflow:auto}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.panel-head h3{font-size:18px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:16px}
+.row2{display:flex;gap:12px;flex-wrap:wrap}
+.row2 > *{flex:1;min-width:180px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--bg);font-size:12.5px;font-weight:600;cursor:pointer}
+.chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+table th{text-align:left;color:var(--text2);font-size:11px;text-transform:uppercase;padding:8px 10px;border-bottom:2px solid var(--border)}
+table td{padding:9px 10px;border-bottom:1px solid var(--border)}
+table tr:hover td{background:var(--bg2)}
+.table-wrap{overflow-x:auto;background:var(--bg);border:1px solid var(--border);border-radius:var(--rl)}
+.empty-msg{color:var(--text2);font-size:13px;padding:24px;text-align:center}
+.badge{display:inline-block;padding:3px 9px;border-radius:14px;font-size:11px;font-weight:700}
+.b-green{background:var(--green-l);color:var(--green-d)}
+.b-red{background:var(--red-l);color:var(--red-d)}
+.b-amber{background:var(--amber-l);color:var(--amber-d)}
+.b-purple{background:var(--purple-l);color:var(--purple-d)}
+.icon-btn{background:none;border:none;color:var(--text2);padding:4px 6px;border-radius:6px}
+.icon-btn:hover{background:var(--bg2);color:var(--text)}
+
+/* ---------- Mesas ---------- */
+.mesas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.mesa-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px 10px;text-align:center;cursor:pointer;transition:.12s;position:relative}
+.mesa-card:hover{border-color:var(--green)}
+.mesa-card.ocupada{border-color:var(--red);background:var(--red-l)}
+.mesa-card.activa{border:2px solid var(--blue,var(--green));background:var(--green-l)}
+.mesa-card .mesa-icon{font-size:24px}
+.mesa-card .mesa-num{font-weight:800;font-size:15px;margin-top:2px}
+.mesa-card .mesa-zona{font-size:11px;color:var(--text2)}
+.mesa-card .mesa-status{font-size:11px;font-weight:700;margin-top:4px;color:var(--text2)}
+.mesa-card.ocupada .mesa-status{color:var(--red-d)}
+.mesa-card .mesa-monto{font-size:12px;font-weight:700;color:var(--red-d);margin-top:2px}
+.mesa-sel-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-l);color:var(--green-d);font-weight:700;font-size:12.5px;padding:7px 12px;border-radius:20px}
+.mesa-sel-badge button{background:none;border:none;color:var(--green-d);font-weight:700;cursor:pointer;text-decoration:underline;font-size:12px}
+
+/* ---------- Barra / comandas ---------- */
+.barra-grid{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+.menu-items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
+.menu-item-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px;text-align:center;cursor:pointer;transition:.12s}
+.menu-item-card:hover{border-color:var(--green);transform:translateY(-1px)}
+.menu-item-card .emoji{font-size:26px}
+.menu-item-card .nom{font-size:12.5px;font-weight:700;margin:4px 0 2px;line-height:1.2}
+.menu-item-card .precio{font-size:12px;color:var(--green-d);font-weight:700}
+.menu-item-card.nodisp{opacity:.4;cursor:not-allowed}
+.cart-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;position:sticky;top:12px}
+.cart-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cart-line .nom{flex:1}
+.cart-line .qtybtns{display:flex;align-items:center;gap:4px}
+.cart-line .qtybtns button{width:22px;height:22px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);font-weight:700;line-height:1}
+.cart-total{display:flex;justify-content:space-between;font-weight:800;font-size:16px;margin:10px 0}
+.ticket-card{background:var(--bg);border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.ticket-card.listo{border-left-color:var(--green)}
+.ticket-card h4{font-size:14px;display:flex;justify-content:space-between}
+.ticket-card .it{font-size:12.5px;color:var(--text2);padding:2px 0}
+.tickets-col{margin-top:18px}
+.tickets-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+
+/* ---------- Dashboard ---------- */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.dash-card{text-align:center}
+.dash-label{font-size:11.5px;text-transform:uppercase;color:var(--text2);font-weight:700;letter-spacing:.4px}
+.dash-value{font-size:22px;font-weight:800;margin-top:4px;color:var(--green-d)}
+.logo-box{width:84px;height:84px;border:1px dashed var(--border2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex:none;background:var(--bg2)}
+.logo-box img{width:100%;height:100%;object-fit:contain}
+.logo-box #logo-placeholder{font-size:11px;color:var(--text2);text-align:center}
+
+/* ---------- Horarios / Nómina ---------- */
+.subtabs{display:flex;gap:8px;margin-bottom:16px}
+.subtab-btn{padding:8px 14px;border:1px solid var(--border2);border-radius:20px;background:var(--bg);font-weight:700;font-size:12.5px;color:var(--text)}
+.subtab-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.hor-dia-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.hor-dia-card{background:var(--bg2);border-radius:var(--r);padding:8px 10px}
+.hor-dia-card h5{font-size:12px;margin-bottom:6px;color:var(--text2);text-transform:uppercase}
+.hor-slot{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:3px 0}
+
+/* ---------- Modal ---------- */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:999;padding:16px}
+.modal-bg.show{display:flex}
+.modal{background:var(--bg);border-radius:var(--rl);padding:22px;width:100%;max-width:440px;max-height:90vh;overflow:auto}
+.modal.wide{max-width:640px}
+.modal h3{margin-bottom:14px}
+.modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:1200}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width: 860px){
+  #app{flex-direction:column}
+  .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:8px}
+  .sidebar .brand{display:none}
+  .nav-item{padding:8px 12px;white-space:nowrap}
+  .nav-item.active{border-right:none;border-bottom:3px solid var(--amber)}
+  .nav-sep{display:none}
+  .barra-grid{grid-template-columns:1fr}
+  .cart-box{position:static}
+}
+#contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
+#contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
+#contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
+#contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
+#contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}
+</style>
+</head>
+<body>
+<div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">Tu contrato ha vencido o fue cancelado.<br>Contacta al administrador del sistema.</p></div>
+<div id="contrato-alert"><span id="contrato-alert-msg"></span> <button onclick="document.getElementById('contrato-alert').style.display='none'">✕</button></div>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div id="login-neg-nombre"></div>
+    <h1>🍹 POS Bar</h1>
+    <div class="sub">BUNNYDJPOS — punto de venta</div>
+    <div id="login-error"></div>
+    <div class="field"><label>Usuario o email</label><input id="l-login" placeholder="usuario" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>Contraseña</label><input id="l-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <aside class="sidebar">
+    <div class="brand">🍹 POS Bar<small id="sb-negocio-nombre">BUNNYDJPOS</small></div>
+    <button class="nav-item active" data-nav="mesas" onclick="nav('mesas')">🪑 Mesas</button>
+    <button class="nav-item" data-nav="barra" onclick="nav('barra')">🍹 Barra</button>
+    <button class="nav-item" data-nav="pedidos" onclick="nav('pedidos')">📋 Pedidos</button>
+    <button class="nav-item" data-nav="caja" onclick="nav('caja')">💵 Caja</button>
+    <div class="nav-sep"></div>
+    <button class="nav-item" onclick="abrirCambiarPassword()">🔑 Contraseña</button>
+    <button class="nav-item" onclick="doLogout()">🚪 Salir</button>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <h2 id="hdr-title">🪑 Mesas</h2>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="caja-pill cerrada" id="caja-pill">Caja cerrada</span>
+        <button class="icon-btn" title="Pantalla completa" onclick="toggleFullscreenBar()">⛶</button>
+        <span id="hdr-user" style="font-size:12.5px;color:var(--text2)"></span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ===== MESAS ===== -->
+      <section id="panel-mesas" hidden>
+        <div class="panel-head">
+          <h3>Mesas</h3>
+        </div>
+        <div class="mesas-grid" id="mesas-grid"><div class="empty-msg">Sin mesas todavía — agrégalas desde el panel de administración.</div></div>
+      </section>
+
+      <!-- ===== BARRA / COMANDAS ===== -->
+      <section id="panel-barra" hidden>
+        <div class="panel-head">
+          <h3>Tomar pedido</h3>
+          <div class="row2" style="min-width:0;flex:none;gap:8px" id="barra-mesa-sel-wrap">
+            <span id="barra-mesa-badge" class="mesa-sel-badge hide"></span>
+            <input id="ticket-nombre" placeholder="Barra / Para llevar" style="padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);min-width:180px" value="Barra">
+          </div>
+        </div>
+        <div class="barra-grid">
+          <div>
+            <div id="barra-categorias" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+            <div id="barra-items" class="menu-items-grid"></div>
+          </div>
+          <div class="cart-box">
+            <h3 style="margin-bottom:10px">🧾 Pedido actual</h3>
+            <div id="cart-lines"><div class="empty-msg">Tocá un producto para agregarlo</div></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;margin-top:8px;cursor:pointer">
+              <input type="checkbox" id="cart-es-cliente" style="width:auto" onchange="toggleCartDescuento()"> 🎖️ Es cliente (aplica descuento)
+            </label>
+            <div id="cart-descuento-monto-wrap" class="hide" style="margin-top:6px">
+              <input id="cart-descuento-monto" type="number" min="0" step="500" placeholder="Monto del descuento" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)" oninput="renderCarrito()">
+            </div>
+            <div id="cart-subtotal-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-top:6px"><span>Subtotal</span><span id="cart-subtotal">$0</span></div>
+            <div id="cart-descuento-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--red-d)"><span>Descuento</span><span id="cart-descuento">-$0</span></div>
+            <div class="cart-total"><span>Total</span><span id="cart-total">$0</span></div>
+            <button class="btn btn-outline btn-full" style="margin-bottom:8px" onclick="enviarComanda()">📨 Enviar a barra</button>
+            <button class="btn btn-primary btn-full" onclick="cobrarCarrito()">💳 Cobrar directo</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===== PEDIDOS ABIERTOS ===== -->
+      <section id="panel-pedidos" hidden>
+        <div class="panel-head">
+          <h3>Pedidos abiertos</h3>
+          <button class="btn btn-outline btn-sm" onclick="cargarTickets()">↻</button>
+        </div>
+        <div id="tickets-wrap" class="tickets-wrap"><div class="empty-msg">No hay pedidos abiertos</div></div>
+      </section>
+
+      <!-- ===== CAJA ===== -->
+      <section id="panel-caja" hidden>
+        <div class="row2" style="align-items:stretch">
+          <div class="card" id="caja-estado-card">
+            <h3 style="margin-bottom:10px">Estado de caja</h3>
+            <div id="caja-estado-body">Cargando…</div>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:10px">Resumen del día</h3>
+            <div id="caja-resumen-body">—</div>
+          </div>
+        </div>
+        <h3 style="margin:20px 0 10px">Historial</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Fecha</th><th>Usuario</th><th>Apertura</th><th>Cierre</th><th>Ventas</th><th>Gastos</th><th>Estado</th></tr></thead>
+          <tbody id="caja-hist-tbody"></tbody>
+        </table></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<!-- Modal: Preguntar mesa al tomar el primer producto del pedido -->
+<div class="modal-bg" id="mesa-prompt-modal">
+  <div class="modal">
+    <h3>¿Mesa para este pedido?</h3>
+    <div id="mesa-prompt-grid" class="mesas-grid" style="margin-bottom:14px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-full" onclick="elegirSinMesa()">🥤 Sin mesa / Para llevar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cambiar contraseña -->
+<div class="modal-bg" id="cambiar-pass-modal">
+  <div class="modal" style="max-width:360px">
+    <h3>Cambiar contraseña</h3>
+    <div class="field"><label>Contraseña actual *</label><input id="cp-actual" type="password" placeholder="••••••••"></div>
+    <div class="field"><label>Contraseña nueva *</label><input id="cp-nueva" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label>Repetir contraseña nueva *</label><input id="cp-nueva2" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div id="cp-err" style="display:none;color:var(--red-d);font-size:12px;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('cambiar-pass-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarCambiarPassword()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cobro -->
+<div class="modal-bg" id="cobro-modal">
+  <div class="modal">
+    <h3>💳 Cobrar</h3>
+    <div id="cobro-items" style="max-height:200px;overflow:auto;margin-bottom:12px;font-size:13px"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;margin-bottom:8px;cursor:pointer">
+      <input type="checkbox" id="cobro-es-cliente" style="width:auto" onchange="toggleCobroDescuento()"> 🎖️ Es cliente (aplica descuento)
+    </label>
+    <div id="cobro-descuento-monto-wrap" class="hide" style="margin-bottom:8px">
+      <input id="cobro-descuento-monto" type="number" min="0" step="500" placeholder="Monto del descuento" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)" oninput="actualizarCobroTotal()">
+    </div>
+    <div id="cobro-subtotal-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:2px"><span>Subtotal</span><span id="cobro-subtotal">$0</span></div>
+    <div id="cobro-descuento-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--red-d);margin-bottom:2px"><span>Descuento</span><span id="cobro-descuento">-$0</span></div>
+    <div class="cart-total"><span>Total</span><span id="cobro-total">$0</span></div>
+    <div class="field"><label>Método de pago</label>
+      <select id="cobro-metodo" onchange="renderCobroCampos()">
+        <option value="efectivo">Efectivo</option>
+        <option value="tarjeta">Tarjeta</option>
+        <option value="nequi">Nequi / transferencia</option>
+        <option value="mixto">Mixto</option>
+      </select>
+    </div>
+    <div id="cobro-campos-efectivo">
+      <div class="field"><label>Recibido</label><input id="cobro-recibido" type="number" oninput="calcCambio()"></div>
+      <div class="field"><label>Cambio</label><input id="cobro-cambio" type="number" readonly></div>
+    </div>
+    <div id="cobro-campos-mixto" class="hide">
+      <div class="row2">
+        <div class="field"><label>Efectivo</label><input id="cobro-mix-efectivo" type="number" value="0"></div>
+        <div class="field"><label>Tarjeta</label><input id="cobro-mix-tarjeta" type="number" value="0"></div>
+        <div class="field"><label>Nequi</label><input id="cobro-mix-nequi" type="number" value="0"></div>
+      </div>
+    </div>
+    <div class="field"><label>Cliente (opcional)</label><input id="cobro-cliente"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('cobro-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarCobro()">Confirmar cobro</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Factura / recibo de venta -->
+<div class="modal-bg" id="recibo-modal">
+  <div class="modal" style="max-width:360px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <h3 style="margin:0">✅ Venta registrada</h3>
+      <button onclick="closeModal('recibo-modal')" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--text2)">×</button>
+    </div>
+    <div id="recibo-wrap" style="max-height:60vh;overflow-y:auto;font-family:monospace;font-size:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('recibo-modal')">Cerrar</button>
+      <button class="btn btn-primary" onclick="imprimirRecibo()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Abrir/Cerrar caja -->
+<div class="modal-bg" id="caja-modal">
+  <div class="modal">
+    <h3 id="caja-modal-title">Abrir caja</h3>
+    <div class="field" id="caja-monto-apertura-wrap"><label>Monto de apertura (base)</label><input id="caja-monto-apertura" type="number" value="0"></div>
+    <div class="field hide" id="caja-monto-cierre-wrap"><label>Monto contado al cierre</label><input id="caja-monto-cierre" type="number" value="0"></div>
+    <div class="field hide" id="caja-notas-wrap"><label>Notas</label><textarea id="caja-notas" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('caja-modal')">Cancelar</button>
+      <button class="btn btn-primary" id="caja-modal-btn" onclick="confirmarAbrirCaja()">Abrir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin + '/api';
+let token = sessionStorage.getItem('bdj_pos_bar_token');
+const urlNegocio = new URLSearchParams(window.location.search).get('n') || '';
+let me = null;
+let NEG_MONEDA = 'COP', NEG_ZONA = 'America/Bogota';
+let DESCUENTO_CLIENTE = 0;
+let CONFIG_FACTURA = {};
+const MONEDA_SIMBOLO = { COP:'$', CRC:'₡', USD:'$', MXN:'$', PEN:'S/' };
+function fmt(n){ return (MONEDA_SIMBOLO[NEG_MONEDA]||'$')+(Math.round(n)||0).toLocaleString('es-CO'); }
+function $(id){ return document.getElementById(id); }
+function today(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function openModal(id){ $(id).classList.add('show'); }
+function closeModal(id){ $(id).classList.remove('show'); }
+function showToast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
+
+if (urlNegocio) {
+  fetch(`/api/negocio-pub/${urlNegocio}`).then(r=>r.ok?r.json():null).then(info=>{
+    if(!info||!info.nombre) return;
+    document.title = `${info.nombre} — POS Bar`;
+    const l = $('login-neg-nombre'); l.textContent = info.nombre; l.style.display = 'block';
+    $('sb-negocio-nombre').textContent = info.nombre;
+  }).catch(()=>{});
+}
+
+// ---------- API ----------
+let _loggingOut = false;
+async function api(path, opts={}) {
+  const r = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`, ...(opts.headers||{})}
+  });
+  if (r.status === 401) {
+    if (!_loggingOut) { _loggingOut = true; doLogout(); }
+    throw new Error('Sesión expirada');
+  }
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Error');
+  return d;
+}
+
+// ---------- Auth ----------
+function toggleFullscreenBar(){
+  if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+}
+async function doLogin(){
+  if (document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  const login = $('l-login').value.trim();
+  const pass  = $('l-pass').value;
+  const err = $('login-error');
+  err.style.display = 'none';
+  try{
+    const r = await fetch(`${API}/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ login, password: pass, negocio_id: urlNegocio || undefined })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Credenciales incorrectas');
+    token = d.token;
+    sessionStorage.setItem('bdj_pos_bar_token', token);
+    me = d.user;
+    await showApp();
+  }catch(e){
+    err.textContent = e.message;
+    err.style.display = 'block';
+  }
+}
+function doLogout(){
+  sessionStorage.removeItem('bdj_pos_bar_token');
+  token = null; me = null;
+  $('app').style.display = 'none';
+  $('login-screen').style.display = 'flex';
+}
+function abrirCambiarPassword(){
+  $('cp-actual').value = ''; $('cp-nueva').value = ''; $('cp-nueva2').value = '';
+  $('cp-err').style.display = 'none';
+  openModal('cambiar-pass-modal');
+}
+async function guardarCambiarPassword(){
+  const actual = $('cp-actual').value, nueva = $('cp-nueva').value, nueva2 = $('cp-nueva2').value;
+  const errEl = $('cp-err'); errEl.style.display = 'none';
+  if (!actual || !nueva || !nueva2) { errEl.textContent = 'Completa todos los campos'; errEl.style.display = 'block'; return; }
+  if (nueva.length < 6) { errEl.textContent = 'La contraseña nueva debe tener mínimo 6 caracteres'; errEl.style.display = 'block'; return; }
+  if (nueva !== nueva2) { errEl.textContent = 'Las contraseñas nuevas no coinciden'; errEl.style.display = 'block'; return; }
+  try{
+    await api('/auth/cambiar-password', { method:'POST', body: JSON.stringify({ password_actual: actual, password_nuevo: nueva }) });
+    closeModal('cambiar-pass-modal');
+    showToast('Contraseña actualizada ✓');
+  }catch(e){ errEl.textContent = e.message; errEl.style.display = 'block'; }
+}
+async function checkContrato(negocioId){
+  if (me?.es_superadmin) return;
+  try{
+    const r = await fetch(`/api/negocio-pub/${negocioId}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    NEG_MONEDA = d.moneda || 'COP';
+    NEG_ZONA = d.zona_horaria || 'America/Bogota';
+    if (!d.contrato) {
+      $('contrato-block-msg').innerHTML = 'No tienes un contrato activo.<br>Contacta al administrador del sistema.';
+      $('contrato-block').style.display = 'flex';
+      return;
+    }
+    const { estado, dias_para_vencer, renovacion, tipo } = d.contrato;
+    const esMensual = tipo === 'mensual';
+    if (estado === 'vencido' || estado === 'cancelado') {
+      const msgs = {
+        vencido: 'Tu contrato ha vencido.<br>Contacta al administrador del sistema.',
+        cancelado: 'Tu contrato fue cancelado.<br>Contacta al administrador del sistema.'
+      };
+      $('contrato-block-msg').innerHTML = msgs[estado] || msgs.vencido;
+      $('contrato-block').style.display = 'flex';
+      return;
+    }
+    if (estado === 'pendiente') {
+      if (renovacion) {
+        $('contrato-block-msg').innerHTML = esMensual
+          ? '⏰ Tu <b>factura mensual ha vencido</b>.<br>El contrato está pendiente por renovación.<br>Contacta al administrador para realizar el pago y continuar usando el sistema.'
+          : '📅 Tu contrato está <b>pendiente por renovación</b>.<br>Solicita la renovación contactando al administrador del sistema.';
+      } else {
+        $('contrato-block-msg').innerHTML = 'Tu contrato aún no ha iniciado.<br>Contacta al administrador del sistema.';
+      }
+      $('contrato-block').style.display = 'flex';
+      return;
+    }
+    if (estado === 'activo' && dias_para_vencer !== null && dias_para_vencer <= 5) {
+      const dias = dias_para_vencer;
+      const msg = esMensual
+        ? (dias <= 0 ? ' Tu factura mensual venció hoy. Realiza el pago para continuar.' : ` Tu factura mensual vence en ${dias} día${dias===1?'':'s'}. Contacta al administrador para renovar.`)
+        : (dias <= 0 ? ' Tu contrato venció hoy. Renuévalo para continuar usando el sistema.' : ` Tu contrato vence en ${dias} día${dias===1?'':'s'}. Contáctanos para renovarlo.`);
+      $('contrato-alert-msg').textContent = msg;
+      $('contrato-alert').style.display = 'flex';
+    }
+  }catch(_){}
+}
+async function showApp(){
+  try{
+    me = me || await api('/auth/me');
+  }catch(e){ doLogout(); return; }
+  $('login-screen').style.display = 'none';
+  $('app').style.display = 'flex';
+  $('hdr-user').textContent = me.nombre || me.email || '';
+  if (me?.negocio_id) checkContrato(me.negocio_id);
+  api('/admin/config/factura').then(c => { CONFIG_FACTURA = c; DESCUENTO_CLIENTE = c.descuentoCliente||0; }).catch(()=>{});
+  await Promise.all([cargarCategorias(), cargarItems(), cargarCajaEstado(), cargarTickets(), cargarMesas()]);
+  renderBarraCategorias();
+  renderBarraItems();
+  renderMesasGrid();
+  conectarWS();
+  nav('mesas');
+}
+
+// Auto-login si ya había sesión
+(async () => { if (token) await showApp(); })();
+
+// ---------- Nav ----------
+const PANELES = ['mesas','barra','pedidos','caja'];
+const TITULOS = { mesas:'🪑 Mesas', barra:'🍹 Barra', pedidos:'📋 Pedidos', caja:'💵 Caja' };
+function nav(p){
+  PANELES.forEach(x => $(`panel-${x}`).hidden = x !== p);
+  document.querySelectorAll('.nav-item[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === p));
+  $('hdr-title').textContent = TITULOS[p];
+  if (p === 'mesas') { Promise.all([cargarMesas(), cargarTickets()]).then(renderMesasGrid); }
+  if (p === 'pedidos') cargarTickets();
+  if (p === 'caja') { cargarCajaEstado(); cargarCajaHistorial(); }
+}
+
+// ================= TIEMPO REAL (WebSocket) =================
+let _barWS = null;
+function conectarWS(){
+  if (!me?.negocio_id) return;
+  try{
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    _barWS = new WebSocket(`${proto}://${location.host}?negocio_id=${me.negocio_id}`);
+    _barWS.onmessage = (ev) => {
+      let msg; try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+      const { tipo, data } = msg;
+      if (tipo === 'nueva_comanda') {
+        showToast(`📨 Nuevo pedido: ${data?.mesa_nombre || 'Barra'}`);
+        cargarTickets().then(renderMesasGrid);
+      } else if (tipo === 'comanda_actualizada' || tipo === 'cocina_limpiada') {
+        cargarTickets().then(renderMesasGrid);
+      } else if (tipo === 'mesa_actualizada' || tipo === 'mesa_liberada') {
+        cargarMesas().then(renderMesasGrid);
+      }
+    };
+    _barWS.onclose = () => { setTimeout(conectarWS, 4000); };
+    _barWS.onerror = () => {};
+  }catch(e){}
+}
+
+// ================= MENÚ (categorías / artículos) =================
+let categorias = [], items = [];
+async function cargarCategorias(){ categorias = await api('/pos/menu/categorias?modulo=bar'); return categorias; }
+async function cargarItems(){ items = await api('/pos/menu/items?modulo=bar'); return items; }
+
+// ================= MESAS =================
+let mesas = [];
+let selMesaId = null, selMesaNum = null;
+
+async function cargarMesas(){ mesas = await api('/pos/mesas'); return mesas; }
+
+// La ocupación/monto de cada mesa se calcula a partir de los pedidos abiertos
+// (ticketsAbiertos, ya sincronizados por cargarTickets) en vez de mesa_estado,
+// porque es ahí donde vive el total real de la cuenta mientras no se cobra.
+function _mesaInfo(mesaId){
+  const its = ticketsAbiertos.filter(t => t.mesa_id === mesaId);
+  if (!its.length) return { ocupada:false, monto:0 };
+  let monto = 0;
+  its.forEach(t => {
+    const items = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
+    monto += items.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+  });
+  return { ocupada:true, monto };
+}
+
+function renderMesasGrid(){
+  const g = $('mesas-grid');
+  if (!mesas.length) { g.innerHTML = '<div class="empty-msg">Sin mesas todavía — agrégalas desde el panel de administración.</div>'; return; }
+  g.innerHTML = mesas.map(m => {
+    const info = _mesaInfo(m.id);
+    const activa = selMesaId === m.id;
+    return `<div class="mesa-card ${info.ocupada?'ocupada':''} ${activa?'activa':''}" onclick="seleccionarMesa('${m.id}')">
+      <div class="mesa-icon">🪑</div>
+      <div class="mesa-num">${m.numero}${m.nombre?' · '+esc(m.nombre):''}</div>
+      <div class="mesa-zona">${esc(m.zona||'')}</div>
+      <div class="mesa-status">${info.ocupada?'Ocupada':'Libre'}</div>
+      ${info.ocupada?`<div class="mesa-monto">${fmt(info.monto)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function seleccionarMesa(id){
+  const m = mesas.find(x => x.id === id); if (!m) return;
+  selMesaId = m.id; selMesaNum = m.numero;
+  pedidoMesaDecidida = true;
+  carrito = []; $('cart-es-cliente').checked = false; $('cart-descuento-monto').value = ''; $('cart-descuento-monto-wrap').classList.add('hide'); renderCarrito();
+  actualizarMesaBadgeBarra();
+  nav('barra');
+  document.querySelector('.content')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function salirDeMesa(){
+  selMesaId = null; selMesaNum = null;
+  pedidoMesaDecidida = false;
+  carrito = []; $('cart-es-cliente').checked = false; $('cart-descuento-monto').value = ''; $('cart-descuento-monto-wrap').classList.add('hide'); renderCarrito();
+  actualizarMesaBadgeBarra();
+  nav('mesas');
+}
+function actualizarMesaBadgeBarra(){
+  const badge = $('barra-mesa-badge'), input = $('ticket-nombre');
+  if (selMesaId){
+    badge.classList.remove('hide');
+    badge.innerHTML = `🪑 Mesa ${selMesaNum} <button onclick="salirDeMesa()">Salir</button>`;
+    input.classList.add('hide');
+  } else {
+    badge.classList.add('hide');
+    input.classList.remove('hide');
+  }
+}
+
+// ================= BARRA (tomar pedidos + cobrar) =================
+let barraCatActiva = '';
+let carrito = []; // [{item_id, nombre, emoji, precio, qty}]
+
+function renderBarraCategorias(){
+  const el = $('barra-categorias');
+  const chips = [`<span class="chip ${barraCatActiva===''?'active':''}" onclick="filtrarBarraCat('')">Todas</span>`]
+    .concat(categorias.map(c => `<span class="chip ${barraCatActiva===c.id?'active':''}" onclick="filtrarBarraCat('${c.id}')">${c.icono||''} ${esc(c.nombre)}</span>`));
+  el.innerHTML = chips.join('');
+}
+function filtrarBarraCat(id){ barraCatActiva = id; renderBarraCategorias(); renderBarraItems(); }
+function renderBarraItems(){
+  const lista = items.filter(it => !barraCatActiva || it.categoria_id === barraCatActiva);
+  if (!lista.length) { $('barra-items').innerHTML = '<div class="empty-msg">No hay artículos. Agregalos en "Menú".</div>'; return; }
+  $('barra-items').innerHTML = lista.map(it => `
+    <div class="menu-item-card ${it.disponible?'':'nodisp'}" onclick="${it.disponible?`agregarAlCarrito('${it.id}')`:''}" style="position:relative">
+      ${it.destacado?'<span style="position:absolute;top:3px;left:3px;font-size:12px">⭐</span>':''}
+      ${it.promo_vigente?'<span style="position:absolute;top:3px;right:3px;font-size:10px" title="Promo">🏷️</span>':''}
+      <div class="emoji">${it.emoji||'🍹'}</div>
+      <div class="nom">${esc(it.nombre)}</div>
+      <div class="precio">${it.promo_vigente
+          ? `<span style="text-decoration:line-through;color:var(--text2);font-size:10px">${fmt(it.precio)}</span> ${fmt(it.precio_efectivo)}`
+          : fmt(it.precio)}</div>
+    </div>`).join('');
+}
+let pedidoMesaDecidida = false;
+let _pendingItemId = null;
+function agregarAlCarrito(id){
+  if (!selMesaId && !pedidoMesaDecidida && carrito.length === 0) {
+    _pendingItemId = id;
+    abrirMesaPromptModal();
+    return;
+  }
+  _agregarAlCarritoCore(id);
+}
+function abrirMesaPromptModal(){
+  $('mesa-prompt-grid').innerHTML = mesas.length ? mesas.map(m => {
+    const info = _mesaInfo(m.id);
+    return `<div class="mesa-card ${info.ocupada?'ocupada':''}" onclick="elegirMesaPrompt('${m.id}')">
+      <div class="mesa-icon">🪑</div>
+      <div class="mesa-num">${m.numero}${m.nombre?' · '+esc(m.nombre):''}</div>
+      <div class="mesa-status">${info.ocupada?'Ocupada':'Libre'}</div>
+    </div>`;
+  }).join('') : '<div class="empty-msg">No hay mesas creadas todavía</div>';
+  openModal('mesa-prompt-modal');
+}
+function elegirMesaPrompt(id){
+  const m = mesas.find(x => x.id === id); if (!m) return;
+  selMesaId = m.id; selMesaNum = m.numero;
+  actualizarMesaBadgeBarra();
+  pedidoMesaDecidida = true;
+  closeModal('mesa-prompt-modal');
+  const pid = _pendingItemId; _pendingItemId = null;
+  if (pid) _agregarAlCarritoCore(pid);
+}
+function elegirSinMesa(){
+  pedidoMesaDecidida = true;
+  closeModal('mesa-prompt-modal');
+  const pid = _pendingItemId; _pendingItemId = null;
+  if (pid) _agregarAlCarritoCore(pid);
+}
+function _agregarAlCarritoCore(id){
+  const it = items.find(x => x.id === id); if (!it) return;
+  const precioFinal = it.promo_vigente ? +it.precio_efectivo : +it.precio;
+  const ex = carrito.find(c => c.item_id === id);
+  if (ex) ex.qty++; else carrito.push({ item_id: id, nombre: it.nombre, emoji: it.emoji, precio: precioFinal, qty: 1 });
+  renderCarrito();
+}
+function cambiarQty(id, delta){
+  const c = carrito.find(x => x.item_id === id); if (!c) return;
+  c.qty += delta;
+  if (c.qty <= 0) carrito = carrito.filter(x => x.item_id !== id);
+  renderCarrito();
+}
+function totalCarrito(){ return carrito.reduce((a,c) => a + c.precio*c.qty, 0); }
+function toggleCartDescuento(){
+  const checked = $('cart-es-cliente').checked;
+  $('cart-descuento-monto-wrap').classList.toggle('hide', !checked);
+  if (checked && !$('cart-descuento-monto').value) $('cart-descuento-monto').value = DESCUENTO_CLIENTE || '';
+  renderCarrito();
+}
+function descuentoCarrito(){
+  if (!$('cart-es-cliente')?.checked) return 0;
+  const monto = +$('cart-descuento-monto').value || 0;
+  return Math.min(Math.max(monto,0), totalCarrito());
+}
+function renderCarrito(){
+  if (!carrito.length) {
+    $('cart-lines').innerHTML = '<div class="empty-msg">Tocá un producto para agregarlo</div>';
+    $('cart-subtotal-row').classList.add('hide'); $('cart-descuento-row').classList.add('hide');
+    $('cart-total').textContent = fmt(0);
+    return;
+  }
+  $('cart-lines').innerHTML = carrito.map(c => `
+    <div class="cart-line">
+      <span class="nom">${c.emoji||''} ${esc(c.nombre)}</span>
+      <div class="qtybtns">
+        <button onclick="cambiarQty('${c.item_id}',-1)">−</button>
+        <span>${c.qty}</span>
+        <button onclick="cambiarQty('${c.item_id}',1)">+</button>
+      </div>
+      <span>${fmt(c.precio*c.qty)}</span>
+    </div>`).join('');
+  const sub = totalCarrito(), desc = descuentoCarrito();
+  $('cart-subtotal-row').classList.toggle('hide', desc<=0);
+  $('cart-descuento-row').classList.toggle('hide', desc<=0);
+  if (desc>0) { $('cart-subtotal').textContent = fmt(sub); $('cart-descuento').textContent = '-'+fmt(desc); }
+  $('cart-total').textContent = fmt(sub-desc);
+}
+async function enviarComanda(){
+  if (!carrito.length) return showToast('El pedido está vacío');
+  const mesa_nombre = selMesaId ? `Mesa ${selMesaNum}` : ($('ticket-nombre').value.trim() || 'Barra');
+  try{
+    await api('/pos/comandas', { method:'POST', body: JSON.stringify({
+      mesa_id: selMesaId || undefined, mesa_num: selMesaNum || undefined, mesa_nombre,
+      items: carrito.map(c => ({ item_id:c.item_id, nombre:c.nombre, emoji:c.emoji, precio:c.precio, qty:c.qty }))
+    })});
+    if (!selMesaId) pedidoMesaDecidida = false;
+    carrito = []; renderCarrito();
+    await cargarTickets(); renderMesasGrid();
+    showToast('Pedido enviado a barra ✓');
+  }catch(e){ showToast('Error: '+e.message); }
+}
+
+let ticketsAbiertos = [];
+async function cargarTickets(){ ticketsAbiertos = await api('/pos/comandas'); renderTickets(); }
+function renderTickets(){
+  if (!ticketsAbiertos.length) { $('tickets-wrap').innerHTML = '<div class="empty-msg">No hay pedidos abiertos</div>'; return; }
+  $('tickets-wrap').innerHTML = ticketsAbiertos.map(t => {
+    const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
+    const lineas = its.map(i => `<div class="it">${i.qty||1}× ${esc(i.nombre)}</div>`).join('');
+    const montoTicket = its.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+    const siguiente = t.estado === 'nuevo' ? ['listo','Marcar listo'] : null;
+    return `<div class="ticket-card ${t.estado==='listo'?'listo':''}">
+      <h4>${esc(t.mesa_nombre || 'Barra')} <span class="badge ${t.estado==='nuevo'?'b-amber':t.estado==='listo'?'b-green':'b-purple'}">${t.estado}</span></h4>
+      ${lineas}
+      <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)"><span>Total</span><span>${fmt(montoTicket)}</span></div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        ${t.mesa_id ? `<button class="btn btn-outline btn-sm" onclick="seleccionarMesa('${t.mesa_id}')">➕ Agregar</button>` : ''}
+        ${siguiente ? `<button class="btn btn-outline btn-sm" onclick="cambiarEstadoTicket('${t.id}','${siguiente[0]}')">${siguiente[1]}</button>` : ''}
+        <button class="btn btn-primary btn-sm" onclick="cobrarTicket('${t.id}')">💳 Cobrar</button>
+        <button class="btn btn-outline btn-sm" style="color:var(--red-d);border-color:var(--red)" onclick="cancelarTicket('${t.id}')">🗑 Borrar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function cambiarEstadoTicket(id, estado){
+  try{ await api(`/pos/comandas/${id}/estado`, { method:'PUT', body: JSON.stringify({ estado }) }); await cargarTickets(); }
+  catch(e){ showToast('Error: '+e.message); }
+}
+async function cancelarTicket(id){
+  if (!confirm('¿Borrar este pedido? Se usa cuando se envió por error — no se puede deshacer.')) return;
+  try{
+    await api(`/pos/comandas/${id}`, { method:'DELETE' });
+    await cargarTickets(); await cargarMesas(); renderMesasGrid();
+    showToast('Pedido borrado');
+  }catch(e){ showToast('Error: '+e.message); }
+}
+
+// ---------- Cobro ----------
+let cobroOrigenTicketId = null;
+let cobroOrigenMesaId = null, cobroOrigenMesaNum = null;
+let cobroItems = [];
+let cobroEsClienteDefault = false;
+let cobroDescuentoMontoDefault = '';
+function cobrarCarrito(){
+  if (!carrito.length) return showToast('El pedido está vacío');
+  cobroOrigenTicketId = null;
+  cobroOrigenMesaId = selMesaId; cobroOrigenMesaNum = selMesaNum;
+  cobroItems = carrito.map(c => ({...c}));
+  cobroEsClienteDefault = $('cart-es-cliente').checked;
+  cobroDescuentoMontoDefault = $('cart-descuento-monto').value || '';
+  abrirCobro();
+}
+function cobrarTicket(id){
+  const t = ticketsAbiertos.find(x => x.id === id); if (!t) return;
+  cobroOrigenTicketId = id;
+  cobroOrigenMesaId = t.mesa_id || null; cobroOrigenMesaNum = t.mesa_num || null;
+  const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
+  cobroItems = its.map(i => ({ item_id:i.item_id, nombre:i.nombre, emoji:i.emoji, precio:+i.precio||0, qty:i.qty||1 }));
+  cobroEsClienteDefault = false;
+  cobroDescuentoMontoDefault = '';
+  abrirCobro();
+}
+function subtotalCobro(){ return cobroItems.reduce((a,i) => a + i.precio*i.qty, 0); }
+function toggleCobroDescuento(){
+  const checked = $('cobro-es-cliente').checked;
+  $('cobro-descuento-monto-wrap').classList.toggle('hide', !checked);
+  if (checked && !$('cobro-descuento-monto').value) $('cobro-descuento-monto').value = DESCUENTO_CLIENTE || '';
+  actualizarCobroTotal();
+}
+function descuentoCobro(){
+  if (!$('cobro-es-cliente')?.checked) return 0;
+  const monto = +$('cobro-descuento-monto').value || 0;
+  return Math.min(Math.max(monto,0), subtotalCobro());
+}
+function abrirCobro(){
+  $('cobro-items').innerHTML = cobroItems.map(i => `<div class="cart-line"><span class="nom">${i.qty}× ${esc(i.nombre)}</span><span>${fmt(i.precio*i.qty)}</span></div>`).join('');
+  $('cobro-es-cliente').checked = cobroEsClienteDefault;
+  $('cobro-descuento-monto').value = cobroDescuentoMontoDefault;
+  $('cobro-descuento-monto-wrap').classList.toggle('hide', !cobroEsClienteDefault);
+  $('cobro-metodo').value = 'efectivo';
+  $('cobro-recibido').value = ''; $('cobro-cambio').value = '';
+  $('cobro-mix-efectivo').value = 0; $('cobro-mix-tarjeta').value = 0; $('cobro-mix-nequi').value = 0;
+  $('cobro-cliente').value = '';
+  renderCobroCampos();
+  actualizarCobroTotal();
+  openModal('cobro-modal');
+}
+function actualizarCobroTotal(){
+  const sub = subtotalCobro(), desc = descuentoCobro();
+  $('cobro-subtotal-row').classList.toggle('hide', desc<=0);
+  $('cobro-descuento-row').classList.toggle('hide', desc<=0);
+  if (desc>0) { $('cobro-subtotal').textContent = fmt(sub); $('cobro-descuento').textContent = '-'+fmt(desc); }
+  $('cobro-total').textContent = fmt(sub-desc);
+  calcCambio();
+}
+function renderCobroCampos(){
+  const m = $('cobro-metodo').value;
+  $('cobro-campos-efectivo').classList.toggle('hide', m !== 'efectivo');
+  $('cobro-campos-mixto').classList.toggle('hide', m !== 'mixto');
+}
+function calcCambio(){
+  const total = subtotalCobro() - descuentoCobro();
+  const recibido = +$('cobro-recibido').value || 0;
+  $('cobro-cambio').value = Math.max(0, recibido - total);
+}
+const _mLabelsRecibo = { efectivo:'Efectivo', tarjeta:'Tarjeta', nequi:'Nequi/transferencia' };
+function buildReciboHTML(v, cf){
+  cf = cf || {};
+  const items = v.items || [];
+  const dt = v.creado ? new Date(v.creado) : new Date();
+  const fecha = dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:NEG_ZONA});
+  const hora = dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA});
+  const tipoDoc = (cf.tipoDoc||'Factura').charAt(0).toUpperCase()+(cf.tipoDoc||'Factura').slice(1);
+  const mostrarIva = cf.togIva!==false && +v.iva>0;
+  const hr = `<hr style="margin:6px 0;border:none;border-top:1px dashed var(--border2)">`;
+  const row = (a,b) => `<div style="display:flex;justify-content:space-between"><span>${a}</span><span>${b}</span></div>`;
+
+  let h = `<div class="recibo">`;
+  if (cf.nombre) h += `<div style="text-align:center;font-weight:700;font-size:13px">${esc(cf.nombre)}</div>`;
+  if (cf.togNit!==false && cf.nit) h += `<div style="text-align:center">NIT: ${esc(cf.nit)}</div>`;
+  if (cf.direccion) h += `<div style="text-align:center">${esc(cf.direccion)}${cf.ciudad?', '+esc(cf.ciudad):''}</div>`;
+  if (cf.telefono) h += `<div style="text-align:center">Tel: ${esc(cf.telefono)}</div>`;
+  h += hr;
+  if (v.cliente_nombre) { h += row('Cliente', esc(v.cliente_nombre)); h += hr; }
+  h += `<div style="display:flex;justify-content:space-between;font-weight:700"><span>${tipoDoc}</span><span>${v.numero_factura||'—'}</span></div>`;
+  h += row(fecha, hora);
+  if (v.mesa_num) h += row('Mesa', v.mesa_num);
+  h += row('Pago', v.metodoStr||'—');
+  if (v.cajero_nombre) h += `<div style="display:flex;justify-content:space-between;color:var(--text2)"><span>Cajero</span><span>${esc(v.cajero_nombre)}</span></div>`;
+  h += hr;
+  items.forEach(i => {
+    h += row(esc(i.nombre), fmt((+i.precio)*(+i.qty)));
+    if (+i.qty > 1) h += `<div style="color:var(--text2);padding-left:6px;font-size:11px">${i.qty} x ${fmt(+i.precio)}</div>`;
+  });
+  h += hr;
+  if (+v.descuento>0 || mostrarIva) h += row('Subtotal', fmt(+v.subtotal));
+  if (+v.descuento>0) h += `<div style="display:flex;justify-content:space-between;color:var(--red-d)"><span>Descuento</span><span>-${fmt(+v.descuento)}</span></div>`;
+  if (mostrarIva) h += `<div style="display:flex;justify-content:space-between;color:var(--text2)"><span>IVA ${cf.iva}%</span><span>${fmt(+v.iva)}</span></div>`;
+  h += `<div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-top:4px"><span>TOTAL</span><span>${fmt(+v.total)}</span></div>`;
+  if (+v.monto_efectivo>0 && +v.recibido>0) {
+    h += hr;
+    h += row('Recibido ef.', fmt(+v.recibido));
+    h += `<div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px"><span>Cambio</span><span>${fmt(+v.cambio)}</span></div>`;
+  }
+  if (cf.gracias || cf.footer) {
+    h += hr;
+    if (cf.gracias) h += `<div style="text-align:center;font-style:italic">${esc(cf.gracias)}</div>`;
+    if (cf.footer) h += `<div style="text-align:center;font-size:11px;color:var(--text2)">${esc(cf.footer)}</div>`;
+  }
+  h += `</div>`;
+  return h;
+}
+function imprimirRecibo(){
+  const html = $('recibo-wrap').innerHTML;
+  const w = window.open('', '_blank', 'width=400,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura</title><style>
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:monospace;font-size:12px;padding:10px;color:#000;background:#fff}
+  </style></head><body>${html}</body></html>`);
+  w.document.close(); w.focus();
+  setTimeout(()=>{ w.print(); }, 300);
+}
+async function confirmarCobro(){
+  if (!cobroItems.length) return;
+  const subtotal = subtotalCobro();
+  const descuento = descuentoCobro();
+  const total = subtotal - descuento;
+  const metodo = $('cobro-metodo').value;
+  let monto_efectivo = 0, monto_tarjeta = 0, monto_nequi = 0, recibido = 0, cambio = 0;
+  if (metodo === 'efectivo') { monto_efectivo = total; recibido = +$('cobro-recibido').value || total; cambio = Math.max(0, recibido - total); }
+  else if (metodo === 'tarjeta') monto_tarjeta = total;
+  else if (metodo === 'nequi') monto_nequi = total;
+  else { monto_efectivo = +$('cobro-mix-efectivo').value||0; monto_tarjeta = +$('cobro-mix-tarjeta').value||0; monto_nequi = +$('cobro-mix-nequi').value||0; }
+  const cliente_nombre = $('cobro-cliente').value.trim() || null;
+  const body = {
+    tipo: 'bar', items: cobroItems, subtotal, descuento, iva: 0, total,
+    metodo_pago: metodo, recibido, cambio,
+    cliente_nombre,
+    monto_efectivo, monto_tarjeta, monto_nequi,
+    mesa_id: cobroOrigenMesaId || undefined, mesa_num: cobroOrigenMesaNum || undefined,
+  };
+  try{
+    const venta = await api('/pos/ventas', { method:'POST', body: JSON.stringify(body) });
+    if (cobroOrigenTicketId) await api(`/pos/comandas/${cobroOrigenTicketId}/estado`, { method:'PUT', body: JSON.stringify({ estado:'entregado' }) });
+    else { carrito = []; if (!selMesaId) pedidoMesaDecidida = false; renderCarrito(); }
+    if (cobroOrigenMesaId){
+      await api(`/pos/mesas/${cobroOrigenMesaId}/liberar`, { method:'POST' }).catch(()=>{});
+      if (selMesaId === cobroOrigenMesaId) salirDeMesa();
+    }
+    closeModal('cobro-modal');
+    const metodoStr = metodo === 'mixto'
+      ? [['efectivo',monto_efectivo],['tarjeta',monto_tarjeta],['nequi',monto_nequi]].filter(([,v])=>v>0).map(([k,v])=>`${_mLabelsRecibo[k]}: ${fmt(v)}`).join(' / ')
+      : (_mLabelsRecibo[metodo]||metodo);
+    $('recibo-wrap').innerHTML = buildReciboHTML({
+      numero_factura: venta.numero_factura, creado: new Date(), items: cobroItems,
+      subtotal, descuento, iva: 0, total, metodoStr, cliente_nombre,
+      mesa_num: cobroOrigenMesaNum, cajero_nombre: me?.nombre,
+      monto_efectivo, recibido, cambio,
+    }, CONFIG_FACTURA);
+    openModal('recibo-modal');
+    await Promise.all([cargarTickets(), cargarCajaEstado(), cargarMesas()]);
+    renderMesasGrid();
+    showToast('Venta registrada ✓');
+  }catch(e){ showToast('Error: '+e.message); }
+}
+
+// ================= CAJA =================
+let cajaActual = null;
+async function cargarCajaEstado(){
+  cajaActual = await api('/admin/caja').catch(()=>null);
+  const pill = $('caja-pill');
+  if (cajaActual && cajaActual.estado === 'abierta') { pill.textContent = 'Caja abierta'; pill.className = 'caja-pill abierta'; }
+  else { pill.textContent = 'Caja cerrada'; pill.className = 'caja-pill cerrada'; }
+  renderCajaEstadoCard();
+}
+function renderCajaEstadoCard(){
+  const body = $('caja-estado-body');
+  if (cajaActual && cajaActual.estado === 'abierta') {
+    body.innerHTML = `
+      <p>Abierta con base de <b>${fmt(cajaActual.monto_apertura)}</b></p>
+      <button class="btn btn-danger btn-sm" onclick="abrirModalCerrarCaja()">Cerrar caja</button>`;
+  } else {
+    body.innerHTML = `<p>No tenés caja abierta hoy.</p><button class="btn btn-primary btn-sm" onclick="abrirModalAbrirCaja()">Abrir caja</button>`;
+  }
+  const resumen = $('caja-resumen-body');
+  if (cajaActual) {
+    resumen.innerHTML = `
+      <p>Ventas: <b>${fmt(cajaActual.total_ventas||0)}</b></p>
+      <p>Gastos: <b>${fmt(cajaActual.total_gastos||0)}</b></p>
+      <p>Efectivo: ${fmt(cajaActual.total_efectivo||0)} · Tarjeta: ${fmt(cajaActual.total_tarjeta||0)} · Nequi: ${fmt(cajaActual.total_nequi||0)}</p>`;
+  } else resumen.textContent = 'Sin datos todavía.';
+}
+function abrirModalAbrirCaja(){
+  $('caja-modal-title').textContent = 'Abrir caja';
+  $('caja-monto-apertura-wrap').classList.remove('hide');
+  $('caja-monto-cierre-wrap').classList.add('hide'); $('caja-notas-wrap').classList.add('hide');
+  $('caja-monto-apertura').value = '0';
+  $('caja-modal-btn').onclick = confirmarAbrirCaja;
+  openModal('caja-modal');
+}
+function abrirModalCerrarCaja(){
+  $('caja-modal-title').textContent = 'Cerrar caja';
+  $('caja-monto-apertura-wrap').classList.add('hide');
+  $('caja-monto-cierre-wrap').classList.remove('hide'); $('caja-notas-wrap').classList.remove('hide');
+  $('caja-monto-cierre').value = '0'; $('caja-notas').value = '';
+  $('caja-modal-btn').onclick = confirmarCerrarCaja;
+  openModal('caja-modal');
+}
+async function confirmarAbrirCaja(){
+  try{ await api('/admin/caja/abrir', { method:'POST', body: JSON.stringify({ monto_apertura: +$('caja-monto-apertura').value||0 }) });
+    closeModal('caja-modal'); await cargarCajaEstado(); showToast('Caja abierta ✓'); }
+  catch(e){ showToast('Error: '+e.message); }
+}
+async function confirmarCerrarCaja(){
+  try{ const r = await api('/admin/caja/cerrar', { method:'POST', body: JSON.stringify({ monto_cierre:+$('caja-monto-cierre').value||0, notas:$('caja-notas').value }) });
+    closeModal('caja-modal'); await cargarCajaEstado(); showToast('Caja cerrada ✓'); }
+  catch(e){ showToast('Error: '+e.message); }
+}
+async function cargarCajaHistorial(){
+  try{
+    const hist = await api('/admin/caja/historial');
+    if (!hist.length) { $('caja-hist-tbody').innerHTML = '<tr><td colspan="7" class="empty-msg">Sin historial</td></tr>'; return; }
+    $('caja-hist-tbody').innerHTML = hist.map(c => `
+      <tr><td>${c.fecha}</td><td>${esc(c.usuario_nombre||'—')}</td><td>${fmt(c.monto_apertura)}</td>
+      <td>${c.monto_cierre!=null?fmt(c.monto_cierre):'—'}</td><td>${fmt(c.total_ventas||0)}</td><td>${fmt(c.total_gastos||0)}</td>
+      <td>${c.estado==='abierta'?'<span class="badge b-green">Abierta</span>':'<span class="badge b-amber">Cerrada</span>'}</td></tr>`).join('');
+  }catch(e){}
+}
+
+// ---------- utils ----------
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

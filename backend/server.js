@@ -459,7 +459,13 @@ async function runMigrations() {
         FOREIGN KEY (menu_item_id)  REFERENCES menu_items(id)  ON DELETE CASCADE,
         FOREIGN KEY (negocio_id)    REFERENCES negocios(id)    ON DELETE CASCADE,
         FOREIGN KEY (inventario_id) REFERENCES inventario(id)  ON DELETE CASCADE
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+      // Sin COLLATE explícito, MariaDB 11+ crea la tabla con el collation
+      // por defecto del charset (utf8mb4_uca1400_ai_ci), que no coincide con
+      // utf8mb4_unicode_ci usado en menu_items/inventario/negocios — eso
+      // rompe las FK con errno 150 "incorrectly formed" en instalaciones
+      // nuevas de MariaDB (no en las viejas, que traían utf8mb4_unicode_ci
+      // como default de servidor).
     },
     {
       table: 'pedidos_cliente', column: '__create__',
@@ -493,6 +499,52 @@ async function runMigrations() {
         actualizado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     },
+
+    // ── Columnas que routes/pos.js y routes/inventario.js ya esperaban pero
+    // nunca quedaron como migración — instalaciones corridas desde un
+    // schema_mariadb.sql viejo (como esta) se quedaban sin ellas y cualquier
+    // alta de artículo de menú, inventario o venta fallaba con "Unknown
+    // column". No son solo para el módulo bar: afectan todo el POS.
+    { table: 'menu_items', column: 'inventario_id', sql: `ALTER TABLE menu_items ADD COLUMN inventario_id VARCHAR(36) NULL` },
+    { table: 'menu_items', column: 'stock',         sql: `ALTER TABLE menu_items ADD COLUMN stock DECIMAL(12,3) NULL` },
+    { table: 'menu_items', column: 'stock_min',      sql: `ALTER TABLE menu_items ADD COLUMN stock_min DECIMAL(12,3) NOT NULL DEFAULT 0` },
+
+    { table: 'inventario', column: 'modulo',           sql: `ALTER TABLE inventario ADD COLUMN modulo VARCHAR(30) NOT NULL DEFAULT 'restaurante'` },
+    { table: 'inventario', column: 'unidad_compra',    sql: `ALTER TABLE inventario ADD COLUMN unidad_compra VARCHAR(30) NULL` },
+    { table: 'inventario', column: 'descripcion',      sql: `ALTER TABLE inventario ADD COLUMN descripcion VARCHAR(300) NULL` },
+    { table: 'inventario', column: 'margen',           sql: `ALTER TABLE inventario ADD COLUMN margen DECIMAL(6,2) NULL` },
+    { table: 'inventario', column: 'es_paquete',       sql: `ALTER TABLE inventario ADD COLUMN es_paquete TINYINT(1) NOT NULL DEFAULT 0` },
+    { table: 'inventario', column: 'cantidad_paquete', sql: `ALTER TABLE inventario ADD COLUMN cantidad_paquete INT NULL` },
+
+    { table: 'ventas', column: 'cliente_id', sql: `ALTER TABLE ventas ADD COLUMN cliente_id VARCHAR(36) NULL` },
+
+    // routes/usuarios.js lee/escribe esta columna en /admin/usuarios y en
+    // nómina, pero solo existía como script manual (migrate_empleado_numero.js,
+    // nunca corrido acá) — sin esto, GET /admin/usuarios tiraba 500 en
+    // cualquier instalación nueva.
+    { table: 'usuarios', column: 'numero_empleado', sql: `ALTER TABLE usuarios ADD COLUMN numero_empleado INT DEFAULT NULL COMMENT 'ID secuencial por negocio'` },
+
+    {
+      table: 'clientes', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS clientes (
+        id         VARCHAR(36)  PRIMARY KEY,
+        negocio_id VARCHAR(36)  NOT NULL,
+        nombre     VARCHAR(120) NOT NULL,
+        telefono   VARCHAR(30)  NULL,
+        email      VARCHAR(150) NULL,
+        documento  VARCHAR(40)  NULL,
+        activo     TINYINT(1)   NOT NULL DEFAULT 1,
+        creado     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE,
+        INDEX idx_negocio_nombre (negocio_id, nombre)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
+    // La creación de `clientes` de arriba se quedó corta — routes/clientes.js
+    // siempre inserta/actualiza estas columnas pero nunca se agregaron.
+    { table: 'clientes', column: 'direccion',    sql: `ALTER TABLE clientes ADD COLUMN direccion VARCHAR(255) NULL` },
+    { table: 'clientes', column: 'notas',        sql: `ALTER TABLE clientes ADD COLUMN notas VARCHAR(500) NULL` },
+    { table: 'clientes', column: 'departamento', sql: `ALTER TABLE clientes ADD COLUMN departamento VARCHAR(80) NULL` },
+    { table: 'clientes', column: 'ciudad',       sql: `ALTER TABLE clientes ADD COLUMN ciudad VARCHAR(80) NULL` },
   ];
   for (const m of migrations) {
     try {
