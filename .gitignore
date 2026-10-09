@@ -9,3 +9,6 @@ Claves importantes_play store/
 # Bases de datos de empleados para la tarjeta de cumpleaños (datos personales — no versionar)
 tarjeta-cumpleanos-excel/*.xlsx
 tarjeta-cumpleanos-excel/~$*
+
+# Respaldos de la base de datos (datos reales de clientes/ventas — no versionar)
+backups/
