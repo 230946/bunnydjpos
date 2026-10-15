@@ -20,6 +20,115 @@ router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
 const localDate = (tz = 'America/Bogota') => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 
+// Suma cantidades de la misma referencia en vez de listarla repetida: los
+// artículos del menú se identifican por item_id, los manuales (sin item_id)
+// por nombre+precio, ya que dos "manuales" distintos pueden compartir nombre.
+function mergeComandaItems(previos, nuevos) {
+  const merged = (previos || []).map(i => ({ ...i }));
+  for (const item of (nuevos || [])) {
+    const existing = merged.find(m => item.item_id
+      ? m.item_id === item.item_id
+      : (!m.item_id && m.nombre === item.nombre && +m.precio === +item.precio));
+    if (existing) existing.qty = (+existing.qty || 0) + (+item.qty || 1);
+    else merged.push({ ...item });
+  }
+  return merged;
+}
+
+// Revisa que haya stock suficiente para los items con item_id (receta >
+// vínculo directo a inventario > stock propio del artículo). Devuelve el
+// objeto de error a responder (400) o null si todo está disponible.
+async function verificarStockItems(items, negocioId) {
+  for (const item of (items || [])) {
+    if (!item.item_id) continue;
+    const qty = item.qty || item.cantidad || 1;
+    const { rows: receta } = await pool.query(
+      `SELECT r.cantidad, inv.stock, inv.nombre AS inv_nombre
+       FROM menu_item_recetas r
+       JOIN inventario inv ON inv.id = r.inventario_id
+       WHERE r.menu_item_id=${ph(1)} AND r.negocio_id=${ph(2)}`,
+      [item.item_id, negocioId]
+    );
+    if (receta.length > 0) {
+      for (const ing of receta) {
+        const needed = ing.cantidad * qty;
+        if (ing.stock < needed) {
+          return {
+            error: ing.stock <= 0
+              ? `Ingrediente "${ing.inv_nombre}" agotado para "${item.nombre}"`
+              : `Stock insuficiente de "${ing.inv_nombre}" para "${item.nombre}". Disponible: ${ing.stock}, necesario: ${needed}`,
+            tipo: 'stock_insuficiente', nombre: ing.inv_nombre, stock_disponible: ing.stock
+          };
+        }
+      }
+      continue;
+    }
+    const { rows: sr } = await pool.query(
+      `SELECT mi.nombre, mi.stock, mi.inventario_id,
+              inv.stock AS inv_stock, inv.nombre AS inv_nombre
+       FROM menu_items mi
+       LEFT JOIN inventario inv ON inv.id = mi.inventario_id
+       WHERE mi.id=${ph(1)} AND mi.negocio_id=${ph(2)} LIMIT 1`,
+      [item.item_id, negocioId]
+    );
+    if (!sr[0]) return { error: `Producto no encontrado: ${item.nombre}`, tipo: 'sin_producto' };
+    const { nombre, stock, inventario_id, inv_stock, inv_nombre } = sr[0];
+    if (inventario_id) {
+      if (inv_stock !== null && inv_stock < qty)
+        return {
+          error: inv_stock <= 0 ? `"${inv_nombre}" está agotado` : `Stock insuficiente para "${inv_nombre}". Disponible: ${inv_stock}`,
+          tipo: 'stock_insuficiente', nombre: inv_nombre, stock_disponible: inv_stock
+        };
+    } else if (stock !== null && stock < qty) {
+      return {
+        error: stock <= 0 ? `"${nombre}" está agotado` : `Stock insuficiente para "${nombre}". Disponible: ${stock}`,
+        tipo: 'stock_insuficiente', nombre, stock_disponible: stock
+      };
+    }
+  }
+  return null;
+}
+
+// Descuenta (signo=-1) o repone (signo=+1) stock para los items con item_id,
+// con la misma cascada receta > vínculo directo a inventario > stock propio.
+async function moverStockItems(items, negocioId, signo) {
+  for (const item of (items || [])) {
+    if (!item.item_id) continue;
+    const base = item.qty || item.cantidad || 1;
+    const { rows: receta } = await pool.query(
+      `SELECT inventario_id, cantidad FROM menu_item_recetas WHERE menu_item_id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [item.item_id, negocioId]
+    );
+    if (receta.length > 0) {
+      for (const ing of receta) {
+        const delta = signo * ing.cantidad * base;
+        await pool.query(
+          `UPDATE inventario SET stock=GREATEST(0, stock+${ph(1)}), actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+          [delta, ing.inventario_id, negocioId]
+        );
+      }
+    } else {
+      const { rows: mi } = await pool.query(
+        `SELECT inventario_id FROM menu_items WHERE id=${ph(1)} AND negocio_id=${ph(2)} LIMIT 1`,
+        [item.item_id, negocioId]
+      );
+      const invId = mi[0]?.inventario_id;
+      const delta = signo * base;
+      if (invId) {
+        await pool.query(
+          `UPDATE inventario SET stock=GREATEST(0, stock+${ph(1)}), actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+          [delta, invId, negocioId]
+        );
+      } else {
+        await pool.query(
+          `UPDATE menu_items SET stock=GREATEST(0, stock+${ph(1)}) WHERE id=${ph(2)} AND negocio_id=${ph(3)} AND stock IS NOT NULL`,
+          [delta, item.item_id, negocioId]
+        );
+      }
+    }
+  }
+}
+
 // Promo realmente vigente HOY (activa + precio + dentro del rango de fechas),
 // evaluado en SQL con CURDATE() (no en JS) para evitar desajustes de
 // timezone/Date con mysql2. `promo_activo` es solo el interruptor que puso
@@ -431,6 +540,13 @@ router.post('/comandas', async (req, res) => {
   try {
     const { mesa_id, mesa_num, mesa_nombre, items, notas, prioridad } = req.body;
 
+    // El stock se descuenta al pasar el pedido (no al cobrar), así que lo
+    // que se verifica/descuenta acá es siempre lo que llega en este request
+    // (`items`) — en una fusión eso es solo lo nuevo que se está agregando,
+    // no el acumulado, para no descontar dos veces lo que ya se pasó antes.
+    const stockError = await verificarStockItems(items, nid(req));
+    if (stockError) return res.status(400).json(stockError);
+
     // Si la mesa ya tiene una comanda activa (no entregada), fusionar los
     // nuevos artículos ahí en vez de crear una tarjeta duplicada. Si la
     // cocina ya la estaba preparando (o ya la dio por lista), se marca
@@ -445,12 +561,13 @@ router.post('/comandas', async (req, res) => {
       if (existentes[0]) {
         const actual = existentes[0];
         const itemsPrevios = typeof actual.items === 'string' ? JSON.parse(actual.items) : (actual.items || []);
-        const itemsMerge = [...itemsPrevios, ...(items || [])];
+        const itemsMerge = mergeComandaItems(itemsPrevios, items);
         const esAdicion = ['cocinando', 'listo'].includes(actual.estado);
         await pool.query(
           `UPDATE comandas SET items=${ph(1)}, es_adicion=${ph(2)}, actualizado=NOW() WHERE id=${ph(3)}`,
           [JSON.stringify(itemsMerge), esAdicion ? 1 : 0, actual.id]
         );
+        await moverStockItems(items, nid(req), -1);
         const comanda = { id: actual.id, mesa_num, mesa_nombre, items: itemsMerge, notas, estado: actual.estado, es_adicion: esAdicion };
         req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', comanda);
         return res.status(200).json({ id: actual.id, fusionada: true });
@@ -464,6 +581,7 @@ router.post('/comandas', async (req, res) => {
       [id, nid(req), mesa_id||null, mesa_num, mesa_nombre||`Mesa ${mesa_num}`,
        req.user.id, JSON.stringify(items||[]), notas||null, prioridad||0]
     );
+    await moverStockItems(items, nid(req), -1);
     const comanda = { id, mesa_num, mesa_nombre, items, notas, estado: 'nuevo', creado: new Date() };
     req.app.locals.broadcast?.(nid(req), 'nueva_comanda', comanda);
     res.status(201).json({ id });
@@ -482,6 +600,7 @@ router.put('/comandas/reducir', async (req, res) => {
       [nid(req), mesa_id]
     );
     let restante = cantidad;
+    const repuestos = [];
     for (const c of activas) {
       if (restante <= 0) break;
       let items = typeof c.items === 'string' ? JSON.parse(c.items) : (c.items || []);
@@ -489,6 +608,7 @@ router.put('/comandas/reducir', async (req, res) => {
         if (restante > 0 && it.nombre === nombre) {
           const quitar = Math.min(it.qty, restante);
           restante -= quitar;
+          repuestos.push({ item_id: it.item_id, nombre: it.nombre, qty: quitar });
           return { ...it, qty: it.qty - quitar };
         }
         return it;
@@ -499,6 +619,10 @@ router.put('/comandas/reducir', async (req, res) => {
         await pool.query(`UPDATE comandas SET items=${ph(1)}, actualizado=NOW() WHERE id=${ph(2)}`, [JSON.stringify(items), c.id]);
       }
     }
+    // Lo que se quita de un pedido activo (no cobrado aún) nunca se consumió,
+    // así que se repone al inventario (stock ya se había descontado al pasar
+    // el pedido).
+    await moverStockItems(repuestos, nid(req), 1);
     req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { mesa_id });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -516,16 +640,97 @@ router.put('/comandas/:id/estado', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Borra un pedido que se envió por error — todavía no se cobró (no hay venta
-// ni descuento de inventario que revertir), así que es un borrado real, no
-// un cambio de estado.
+// Pago parcial (abono) de un pedido de mesa/barra: permite cobrar solo una
+// parte del total ahora (ej. un cliente que se va antes que el resto del
+// grupo) y dejar el saldo pendiente en el mismo pedido. El stock de los
+// artículos no se toca acá — ya se descontó al pasar el pedido. Cuando el
+// abono cubre lo que faltaba, el pedido se cierra y la mesa se libera igual
+// que un cobro completo.
+router.put('/comandas/:id/pago-parcial', async (req, res) => {
+  try {
+    const { monto, metodo_pago } = req.body;
+    const montoAbono = +monto || 0;
+    if (montoAbono <= 0) return res.status(400).json({ error: 'Monto inválido' });
+
+    const { rows } = await pool.query(
+      `SELECT * FROM comandas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]
+    );
+    const c = rows[0];
+    if (!c) return res.status(404).json({ error: 'Pedido no encontrado' });
+
+    const items = typeof c.items === 'string' ? JSON.parse(c.items) : (c.items || []);
+    const total = items.reduce((a, i) => a + (+i.precio || 0) * (+i.qty || 1), 0);
+    const yaPagado = +c.pagado || 0;
+    const saldo = total - yaPagado;
+    if (montoAbono > saldo + 0.01)
+      return res.status(400).json({ error: `El monto supera el saldo pendiente (${saldo})`, tipo: 'monto_excede_saldo', saldo });
+
+    const fecha = localDate(req.user.zona_horaria);
+    const { rows: cajaAbierta } = await pool.query(
+      `SELECT id FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta' AND fecha=${ph(3)}`,
+      [nid(req), req.user.id, fecha]
+    );
+    if (!cajaAbierta.length) return res.status(400).json({ error: 'Abrí tu caja antes de registrar el pago' });
+
+    const metodo = ['efectivo','tarjeta','nequi'].includes(metodo_pago) ? metodo_pago : 'efectivo';
+    const ventaId = uuid();
+    const { rows: cnt } = await pool.query(`SELECT COUNT(*) AS n FROM ventas WHERE negocio_id=${ph(1)}`, [nid(req)]);
+    const numero_factura = `ABN-${String((+cnt[0].n || 0) + 1).padStart(4, '0')}`;
+    const nombreAbono = `Abono — ${c.mesa_nombre || (c.mesa_num ? `Mesa ${c.mesa_num}` : 'Barra')}`;
+
+    await pool.query(
+      `INSERT INTO ventas (id,negocio_id,tipo,mesa_id,mesa_num,items,
+       subtotal,descuento,iva,total,metodo_pago,recibido,cambio,numero_factura,cajero_id,mesero_id,
+       monto_efectivo,monto_tarjeta,monto_nequi)
+       VALUES (${ph(1)},${ph(2)},'bar',${ph(3)},${ph(4)},${ph(5)},
+       ${ph(6)},0,0,${ph(7)},${ph(8)},${ph(9)},0,${ph(10)},${ph(11)},${ph(12)},
+       ${ph(13)},${ph(14)},${ph(15)})`,
+      [ventaId, nid(req), c.mesa_id, c.mesa_num,
+       JSON.stringify([{ item_id: null, nombre: nombreAbono, emoji: '💰', precio: montoAbono, qty: 1 }]),
+       montoAbono, montoAbono, metodo, montoAbono, numero_factura, req.user.id, req.user.id,
+       metodo === 'efectivo' ? montoAbono : 0, metodo === 'tarjeta' ? montoAbono : 0, metodo === 'nequi' ? montoAbono : 0]
+    );
+
+    const nuevoPagado = yaPagado + montoAbono;
+    const completado = nuevoPagado >= total - 0.01;
+    await pool.query(`UPDATE comandas SET pagado=${ph(1)}, actualizado=NOW()${completado ? `, estado='entregado'` : ''} WHERE id=${ph(2)}`,
+      [nuevoPagado, c.id]);
+
+    await pool.query(`
+      UPDATE cajas SET total_ventas=total_ventas+${ph(1)},
+        total_efectivo=total_efectivo+${ph(2)},
+        total_tarjeta=total_tarjeta+${ph(3)},
+        total_nequi=total_nequi+${ph(4)}
+      WHERE negocio_id=${ph(5)} AND usuario_id=${ph(6)} AND estado='abierta' AND fecha=${ph(7)}
+    `, [montoAbono, metodo === 'efectivo' ? montoAbono : 0, metodo === 'tarjeta' ? montoAbono : 0, metodo === 'nequi' ? montoAbono : 0,
+        nid(req), req.user.id, fecha]);
+
+    if (completado && c.mesa_id) {
+      await pool.query(`
+        INSERT INTO mesa_estado (mesa_id, ocupada, pedido, sesion_token, actualizado)
+        VALUES (${ph(1)}, 0, '[]', ${ph(2)}, NOW())
+        ON DUPLICATE KEY UPDATE ocupada=0, pedido='[]', sesion_token=VALUES(sesion_token), actualizado=NOW()
+      `, [c.mesa_id, uuid()]);
+      req.app.locals.broadcast?.(nid(req), 'mesa_liberada', { mesa_id: c.mesa_id });
+    }
+    req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { id: c.id, mesa_id: c.mesa_id });
+
+    res.json({ ok: true, venta_id: ventaId, numero_factura, saldo: Math.max(0, total - nuevoPagado), completado });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Borra un pedido que se envió por error — todavía no se cobró, pero el
+// stock ya se había descontado al pasarlo, así que hay que reponerlo.
 router.delete('/comandas/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT mesa_id FROM comandas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      `SELECT mesa_id, items FROM comandas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
       [req.params.id, nid(req)]
     );
     if (!rows.length) return res.status(404).json({ error: 'Pedido no encontrado' });
+    const items = typeof rows[0].items === 'string' ? JSON.parse(rows[0].items) : (rows[0].items || []);
+    await moverStockItems(items, nid(req), 1);
     await pool.query(`DELETE FROM comandas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
       [req.params.id, nid(req)]);
     req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { id: req.params.id, eliminada: true });
@@ -599,7 +804,7 @@ router.put('/pedidos-cliente/:id/aprobar', async (req, res) => {
     if (existentes[0]) {
       const actual = existentes[0];
       const itemsPrevios = typeof actual.items === 'string' ? JSON.parse(actual.items) : (actual.items || []);
-      const itemsMerge = [...itemsPrevios, ...itemsComanda];
+      const itemsMerge = mergeComandaItems(itemsPrevios, itemsComanda);
       const esAdicion = ['cocinando', 'listo'].includes(actual.estado);
       await pool.query(
         `UPDATE comandas SET items=${ph(1)}, es_adicion=${ph(2)}, actualizado=NOW() WHERE id=${ph(3)}`,
@@ -669,7 +874,7 @@ router.post('/ventas', async (req, res) => {
   try {
     const { mesa_id, mesa_num, tipo='pos', items, subtotal, iva=0, total,
             metodo_pago, recibido, cambio, cliente_nombre, cliente_id, descuento,
-            monto_efectivo=0, monto_tarjeta=0, monto_nequi=0, dom_id } = req.body;
+            monto_efectivo=0, monto_tarjeta=0, monto_nequi=0, dom_id, comanda_id } = req.body;
 
     // Si es cobro de un domicilio, evitar cobrarlo dos veces (p.ej. si el
     // domiciliario ya marcó "Entregado" y eso ya generó la venta, o si la
@@ -696,56 +901,12 @@ router.post('/ventas', async (req, res) => {
     }
     const numero_factura = `${prefijo}${String(consec).padStart(4,'0')}`;
 
-    // Verificar stock antes de procesar
-    for (const item of (items || [])) {
-      if (!item.item_id) continue;
-      const qty = item.qty || item.cantidad || 1;
-
-      // Verificar ingredientes de receta primero
-      const { rows: receta } = await pool.query(
-        `SELECT r.cantidad, inv.stock, inv.nombre AS inv_nombre
-         FROM menu_item_recetas r
-         JOIN inventario inv ON inv.id = r.inventario_id
-         WHERE r.menu_item_id=${ph(1)} AND r.negocio_id=${ph(2)}`,
-        [item.item_id, nid(req)]
-      );
-      if (receta.length > 0) {
-        for (const ing of receta) {
-          const needed = ing.cantidad * qty;
-          if (ing.stock < needed)
-            return res.status(400).json({
-              error: ing.stock <= 0
-                ? `Ingrediente "${ing.inv_nombre}" agotado para "${item.nombre}"`
-                : `Stock insuficiente de "${ing.inv_nombre}" para "${item.nombre}". Disponible: ${ing.stock}, necesario: ${needed}`,
-              tipo: 'stock_insuficiente', nombre: ing.inv_nombre, stock_disponible: ing.stock
-            });
-        }
-        continue; // receta verificada, pasar al siguiente item
-      }
-
-      // Sin receta: verificar vínculo directo a inventario o stock de menu_items
-      const { rows: sr } = await pool.query(
-        `SELECT mi.nombre, mi.stock, mi.inventario_id,
-                inv.stock AS inv_stock, inv.nombre AS inv_nombre
-         FROM menu_items mi
-         LEFT JOIN inventario inv ON inv.id = mi.inventario_id
-         WHERE mi.id=${ph(1)} AND mi.negocio_id=${ph(2)} LIMIT 1`,
-        [item.item_id, nid(req)]
-      );
-      if (!sr[0]) return res.status(400).json({ error: `Producto no encontrado: ${item.nombre}`, tipo: 'sin_producto' });
-      const { nombre, stock, inventario_id, inv_stock, inv_nombre } = sr[0];
-      if (inventario_id) {
-        if (inv_stock !== null && inv_stock < qty)
-          return res.status(400).json({
-            error: inv_stock <= 0 ? `"${inv_nombre}" está agotado` : `Stock insuficiente para "${inv_nombre}". Disponible: ${inv_stock}`,
-            tipo: 'stock_insuficiente', nombre: inv_nombre, stock_disponible: inv_stock
-          });
-      } else if (stock !== null && stock < qty) {
-        return res.status(400).json({
-          error: stock <= 0 ? `"${nombre}" está agotado` : `Stock insuficiente para "${nombre}". Disponible: ${stock}`,
-          tipo: 'stock_insuficiente', nombre, stock_disponible: stock
-        });
-      }
+    // Verificar stock antes de procesar — salvo que la venta venga de una
+    // comanda (pedido de mesa/barra), caso en el que el stock ya se
+    // verificó y descontó al pasar el pedido, no al cobrarlo.
+    if (!comanda_id) {
+      const stockError = await verificarStockItems(items, nid(req));
+      if (stockError) return res.status(400).json(stockError);
     }
 
     // Incrementar consecutivo
@@ -798,47 +959,17 @@ router.post('/ventas', async (req, res) => {
          item.precio||item.precio_unit||item.precio_unitario||0,
          (item.qty||item.cantidad||1)*(item.precio||item.precio_unit||item.precio_unitario||0)]
       );
-      // Descontar stock según receta o vínculo directo
-      if (item.item_id) {
-        const qty = item.qty || item.cantidad || 1;
-        // Receta: descontar cada ingrediente
-        const { rows: receta } = await pool.query(
-          `SELECT inventario_id, cantidad FROM menu_item_recetas WHERE menu_item_id=${ph(1)} AND negocio_id=${ph(2)}`,
-          [item.item_id, nid(req)]
-        );
-        if (receta.length > 0) {
-          for (const ing of receta) {
-            await pool.query(
-              `UPDATE inventario SET stock=GREATEST(0, stock-${ph(1)}), actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
-              [ing.cantidad * qty, ing.inventario_id, nid(req)]
-            );
-          }
-        } else {
-          // Sin receta: vínculo directo a inventario o stock de menu_items
-          const { rows: mi } = await pool.query(
-            `SELECT inventario_id FROM menu_items WHERE id=${ph(1)} AND negocio_id=${ph(2)} LIMIT 1`,
-            [item.item_id, nid(req)]
-          );
-          const invId = mi[0]?.inventario_id;
-          if (invId) {
-            await pool.query(
-              `UPDATE inventario SET stock=GREATEST(0, stock-${ph(1)}), actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
-              [qty, invId, nid(req)]
-            );
-          } else {
-            await pool.query(
-              `UPDATE menu_items SET stock=GREATEST(0, stock-${ph(1)}) WHERE id=${ph(2)} AND negocio_id=${ph(3)} AND stock IS NOT NULL`,
-              [qty, item.item_id, nid(req)]
-            );
-          }
-        }
-      } else if (item.inventario_id) {
+      // Sin comanda_id: venta directa (ej. venta rápida sin pasar pedido),
+      // descuenta acá. Con comanda_id el stock ya se descontó al pasar el
+      // pedido — no volver a tocarlo.
+      if (!comanda_id && !item.item_id && item.inventario_id) {
         await pool.query(
           `UPDATE inventario SET stock=GREATEST(0,stock-${ph(1)}), actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
           [item.qty||1, item.inventario_id, nid(req)]
         );
       }
     }
+    if (!comanda_id) await moverStockItems(items, nid(req), -1);
 
     // Actualizar la caja del cajero que procesa el pago.
     // Se usan los montos por método (ya calculados por el cliente, incluido
@@ -886,10 +1017,182 @@ router.post('/ventas', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ════════════════════════════════════════════════════════════════
+// FIADOS — clientes con deuda (venta sin cobro, mesa se libera igual)
+// ════════════════════════════════════════════════════════════════
+
+router.post('/fiados', async (req, res) => {
+  try {
+    const { mesa_id, mesa_num, cliente_nombre, cliente_telefono, items, subtotal, descuento, total, comanda_id } = req.body;
+    if (!cliente_nombre?.trim() || !cliente_telefono?.trim())
+      return res.status(400).json({ error: 'Nombre y teléfono del cliente son requeridos' });
+    if (!items?.length) return res.status(400).json({ error: 'Sin artículos' });
+
+    // Verificar stock antes de procesar — salvo que venga de una comanda,
+    // cuyo stock ya se verificó/descontó al pasar el pedido.
+    if (!comanda_id) {
+      const stockError = await verificarStockItems(items, nid(req));
+      if (stockError) return res.status(400).json(stockError);
+    }
+
+    // Cliente: buscar por teléfono, luego por nombre, o crear
+    let clienteId = null;
+    const { rows: cTel } = await pool.query(
+      `SELECT id FROM clientes WHERE negocio_id=${ph(1)} AND telefono=${ph(2)} AND activo=1 LIMIT 1`,
+      [nid(req), cliente_telefono.trim()]
+    );
+    if (cTel[0]) {
+      clienteId = cTel[0].id;
+    } else {
+      const { rows: cNom } = await pool.query(
+        `SELECT id FROM clientes WHERE negocio_id=${ph(1)} AND LOWER(TRIM(nombre))=LOWER(TRIM(${ph(2)})) AND activo=1 LIMIT 1`,
+        [nid(req), cliente_nombre]
+      );
+      if (cNom[0]) {
+        clienteId = cNom[0].id;
+        await pool.query(`UPDATE clientes SET telefono=${ph(1)} WHERE id=${ph(2)} AND (telefono IS NULL OR telefono='')`,
+          [cliente_telefono.trim(), clienteId]);
+      } else {
+        clienteId = uuid();
+        await pool.query(`INSERT INTO clientes (id,negocio_id,nombre,telefono) VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)})`,
+          [clienteId, nid(req), cliente_nombre.trim(), cliente_telefono.trim()]);
+      }
+    }
+
+    // Descontar stock — salvo que venga de una comanda, cuyo stock ya se
+    // descontó al pasar el pedido.
+    if (!comanda_id) await moverStockItems(items, nid(req), -1);
+
+    const id = uuid();
+    await pool.query(
+      `INSERT INTO fiados (id,negocio_id,cliente_id,cliente_nombre,cliente_telefono,mesa_id,mesa_num,items,subtotal,descuento,total,usuario_id)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)},${ph(11)},${ph(12)})`,
+      [id, nid(req), clienteId, cliente_nombre.trim(), cliente_telefono.trim(), mesa_id||null, mesa_num||null,
+       JSON.stringify(items), subtotal||0, descuento||0, total||0, req.user.id]
+    );
+
+    // Liberar la mesa (mismo efecto que /mesas/:id/liberar)
+    if (mesa_id) {
+      await pool.query(`
+        INSERT INTO mesa_estado (mesa_id, ocupada, pedido, sesion_token, actualizado)
+        VALUES (${ph(1)}, 0, '[]', ${ph(2)}, NOW())
+        ON DUPLICATE KEY UPDATE ocupada=0, pedido='[]', sesion_token=VALUES(sesion_token), actualizado=NOW()
+      `, [mesa_id, uuid()]);
+      await pool.query(`
+        UPDATE comandas SET estado='entregado', actualizado=NOW()
+        WHERE mesa_id=${ph(1)} AND negocio_id=${ph(2)} AND estado != 'entregado'
+      `, [mesa_id, nid(req)]);
+      req.app.locals.broadcast?.(nid(req), 'mesa_liberada', { mesa_id });
+    }
+
+    res.status(201).json({ id, cliente_id: clienteId });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/fiados', async (req, res) => {
+  try {
+    const { estado } = req.query;
+    let sql = `SELECT * FROM fiados WHERE negocio_id=${ph(1)}`;
+    const params = [nid(req)];
+    if (estado) { params.push(estado); sql += ` AND estado=${ph(params.length)}`; }
+    sql += ' ORDER BY creado DESC';
+    const { rows } = await pool.query(sql, params);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/fiados/:id/pagar', async (req, res) => {
+  try {
+    const { metodo_pago } = req.body;
+    const { rows } = await pool.query(`SELECT * FROM fiados WHERE id=${ph(1)} AND negocio_id=${ph(2)}`, [req.params.id, nid(req)]);
+    const f = rows[0];
+    if (!f) return res.status(404).json({ error: 'No encontrado' });
+    if (f.estado === 'pagada') return res.status(400).json({ error: 'Ya está pagada' });
+
+    // El pago de una deuda es una venta más: necesita caja abierta para
+    // poder sumarse a los totales del día, igual que cualquier otro cobro.
+    const fecha = localDate(req.user.zona_horaria);
+    const { rows: cajaAbierta } = await pool.query(
+      `SELECT id FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta' AND fecha=${ph(3)}`,
+      [nid(req), req.user.id, fecha]
+    );
+    if (!cajaAbierta.length) return res.status(400).json({ error: 'Abrí tu caja antes de registrar el pago' });
+
+    const metodo = ['efectivo','tarjeta','nequi'].includes(metodo_pago) ? metodo_pago : 'efectivo';
+    const total = +f.total || 0;
+    const ventaId = uuid();
+    const prefijo = 'FIA-';
+    const { rows: cnt } = await pool.query(`SELECT COUNT(*) AS n FROM ventas WHERE negocio_id=${ph(1)}`, [nid(req)]);
+    const numero_factura = `${prefijo}${String((+cnt[0].n||0)+1).padStart(4,'0')}`;
+    // La venta y la caja afectadas son las del día en que se hizo el fiado
+    // (cuando el producto salió de verdad), no el día en que se termina de
+    // cobrar — así el historial y los reportes de ese día quedan correctos.
+    const fechaDeuda = new Intl.DateTimeFormat('en-CA', { timeZone: req.user.zona_horaria || 'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(f.creado));
+
+    await pool.query(
+      `INSERT INTO ventas (id,negocio_id,tipo,mesa_id,mesa_num,cliente_nombre,cliente_id,items,
+       subtotal,descuento,iva,total,metodo_pago,recibido,cambio,numero_factura,cajero_id,
+       monto_efectivo,monto_tarjeta,monto_nequi,creado)
+       VALUES (${ph(1)},${ph(2)},'bar',${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},
+       ${ph(8)},${ph(9)},0,${ph(10)},${ph(11)},${ph(12)},0,${ph(13)},${ph(14)},${ph(15)},${ph(16)},${ph(17)},${ph(18)})`,
+      [ventaId, nid(req), f.mesa_id, f.mesa_num, f.cliente_nombre, f.cliente_id,
+       typeof f.items === 'string' ? f.items : JSON.stringify(f.items),
+       f.subtotal, f.descuento, total, metodo, total, numero_factura, req.user.id,
+       metodo==='efectivo'?total:0, metodo==='tarjeta'?total:0, metodo==='nequi'?total:0, f.creado]
+    );
+    await pool.query(
+      `UPDATE fiados SET estado='pagada', venta_id=${ph(1)}, pagado_metodo=${ph(2)}, pagado_en=NOW() WHERE id=${ph(3)}`,
+      [ventaId, metodo, f.id]
+    );
+    // Afecta la caja de ESE día (esté abierta o ya cerrada) — no la de hoy.
+    await pool.query(`
+      UPDATE cajas SET total_ventas=total_ventas+${ph(1)},
+        total_efectivo=total_efectivo+${ph(2)},
+        total_tarjeta=total_tarjeta+${ph(3)},
+        total_nequi=total_nequi+${ph(4)}
+      WHERE negocio_id=${ph(5)} AND fecha=${ph(6)}
+    `, [total, metodo==='efectivo'?total:0, metodo==='tarjeta'?total:0, metodo==='nequi'?total:0, nid(req), fechaDeuda]);
+    res.json({ ok: true, venta_id: ventaId, numero_factura, fecha_afectada: fechaDeuda });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/fiados/:id', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT * FROM fiados WHERE id=${ph(1)} AND negocio_id=${ph(2)}`, [req.params.id, nid(req)]);
+    const f = rows[0];
+    if (!f) return res.status(404).json({ error: 'No encontrado' });
+    if (f.estado === 'pagada') return res.status(400).json({ error: 'No se puede cancelar una deuda ya pagada' });
+    // Devolver el stock descontado
+    const items = typeof f.items === 'string' ? JSON.parse(f.items) : f.items;
+    for (const item of (items||[])) {
+      if (!item.item_id) continue;
+      const qty = item.qty || item.cantidad || 1;
+      const { rows: receta } = await pool.query(
+        `SELECT inventario_id, cantidad FROM menu_item_recetas WHERE menu_item_id=${ph(1)} AND negocio_id=${ph(2)}`,
+        [item.item_id, nid(req)]
+      );
+      if (receta.length > 0) {
+        for (const ing of receta) {
+          await pool.query(`UPDATE inventario SET stock=stock+${ph(1)}, actualizado=NOW() WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+            [ing.cantidad * qty, ing.inventario_id, nid(req)]);
+        }
+      } else {
+        const { rows: mi } = await pool.query(`SELECT inventario_id FROM menu_items WHERE id=${ph(1)} AND negocio_id=${ph(2)} LIMIT 1`,
+          [item.item_id, nid(req)]);
+        const invId = mi[0]?.inventario_id;
+        if (invId) await pool.query(`UPDATE inventario SET stock=stock+${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`, [qty, invId, nid(req)]);
+        else await pool.query(`UPDATE menu_items SET stock=stock+${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)} AND stock IS NOT NULL`, [qty, item.item_id, nid(req)]);
+      }
+    }
+    await pool.query(`DELETE FROM fiados WHERE id=${ph(1)}`, [f.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/clientes', async (req, res) => {
   try {
     const { q } = req.query;
-    let sql = `SELECT id, nombre, telefono, email, documento FROM clientes WHERE negocio_id=${ph(1)} AND activo=1`;
+    let sql = `SELECT id, nombre, telefono, email, documento, notas FROM clientes WHERE negocio_id=${ph(1)} AND activo=1`;
     const params = [nid(req)];
     if (q) { params.push(`%${q}%`); sql += ` AND (nombre LIKE ${ph(params.length)} OR documento LIKE ${ph(params.length)})`; }
     sql += ' ORDER BY nombre LIMIT 100';

@@ -101,6 +101,7 @@ window.addEventListener('pageshow', e => {
 const SS_KEYS = {
   peluqueria:  { admin: 'pel_token',     pos: 'pos_pel_token' },
   minimercado: { admin: 'bdj_adm_token', pos: 'mini_pos_tok'  },
+  bar:         { admin: 'bdj_bar_token', pos: 'bdj_pos_bar_token' },
 };
 function getKeys(t){ return SS_KEYS[t] || { admin: 'bdj_adm_token', pos: 'bdj_pos_token' }; }
 
@@ -120,6 +121,9 @@ function guardarSesion(tipo, token, user){
     sessionStorage.setItem('mini_pos_tok', token);
     sessionStorage.setItem('mini_pos_nombre', user.nombre || '');
     sessionStorage.setItem('mini_pos_rol', user.rol_nombre || '');
+  } else if (tipo === 'bar') {
+    sessionStorage.setItem('bdj_bar_token', token);
+    sessionStorage.setItem('bdj_pos_bar_token', token);
   } else {
     sessionStorage.setItem('bdj_adm_token', token);
     sessionStorage.setItem('bdj_pos_token', token);

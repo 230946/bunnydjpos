@@ -185,7 +185,7 @@ const TIPOS = {
 };
 const ADMIN_URL = {
   restaurante:'admin-restaurante.html', peluqueria:'admin-peluqueria.html',
-  minimercado:'admin-minimercado.html', bar:'admin-restaurante.html',
+  minimercado:'admin-minimercado.html', bar:'admin-bar.html',
   veterinaria:'admin-restaurante.html', taller:'admin-restaurante.html',
   lavanderia:'admin-restaurante.html', gimnasio:'admin-restaurante.html',
   farmacia:'admin-restaurante.html', ferreteria:'admin-ferreteria.html',
@@ -193,7 +193,7 @@ const ADMIN_URL = {
 };
 const POS_URL = {
   restaurante:'pos-restaurante.html', peluqueria:'pos-peluqueria.html',
-  minimercado:'pos-minimercado.html', bar:'pos-restaurante.html',
+  minimercado:'pos-minimercado.html', bar:'pos-bar.html',
   veterinaria:'pos-restaurante.html', taller:'pos-restaurante.html',
   lavanderia:'pos-restaurante.html', gimnasio:'pos-restaurante.html',
   farmacia:'pos-restaurante.html', ferreteria:'pos-ferreteria.html',
@@ -205,6 +205,7 @@ const SS_KEYS = {
   peluqueria:  { admin: 'pel_token',     pos: 'pos_pel_token' },
   minimercado: { admin: 'bdj_adm_token', pos: 'mini_pos_tok'  },
   hotel:       { admin: 'htl_adm_token', pos: 'htl_pos_tok'  },
+  bar:         { admin: 'bdj_bar_token', pos: 'bdj_pos_bar_token' },
 };
 function getKeys(t){ return SS_KEYS[t] || { admin:'bdj_adm_token', pos:'bdj_pos_token' }; }
 
@@ -251,6 +252,8 @@ function guardarSesion(token, user){
     sessionStorage.setItem('bdj_adm_token',   token);
   } else if(t === 'hotel'){
     sessionStorage.setItem('htl_adm_token',   token);
+  } else if(t === 'bar'){
+    sessionStorage.setItem('bdj_bar_token',   token);
   } else {
     sessionStorage.setItem('bdj_adm_token',   token);
   }
@@ -265,6 +268,8 @@ function limpiarSesion(){
     ['bdj_adm_token','mini_pos_tok','mini_pos_nombre','mini_pos_rol'].forEach(k => sessionStorage.removeItem(k));
   } else if(t === 'hotel'){
     ['htl_adm_token'].forEach(k => sessionStorage.removeItem(k));
+  } else if(t === 'bar'){
+    ['bdj_bar_token','bdj_pos_bar_token'].forEach(k => sessionStorage.removeItem(k));
   } else {
     ['bdj_adm_token','bdj_pos_token'].forEach(k => sessionStorage.removeItem(k));
   }

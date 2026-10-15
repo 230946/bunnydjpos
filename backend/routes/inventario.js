@@ -63,6 +63,11 @@ async function _sincronizarMenuItem(negocioId, invId, { nombre, categoria, preci
     );
     return menuItemId;
   }
+  // En Bar no se crea el artículo de Menú automáticamente al marcar "Se
+  // vende directo" — eso se hace a mano desde "+ Artículo" (y ahí se vincula
+  // por nombre). Evita que cada insumo marcado como producto duplique un
+  // artículo de Menú que nadie pidió.
+  if (modulo === 'bar') return null;
   const newId = uuid();
   await pool.query(
     `INSERT INTO menu_items (id,negocio_id,categoria_id,nombre,precio,disponible,inventario_id)

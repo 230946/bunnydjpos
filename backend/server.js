@@ -348,6 +348,10 @@ async function runMigrations() {
     { table: 'negocios',   column: 'moneda',       sql: `ALTER TABLE negocios ADD COLUMN moneda VARCHAR(3) NOT NULL DEFAULT 'COP'` },
     { table: 'negocios',   column: 'zona_horaria', sql: `ALTER TABLE negocios ADD COLUMN zona_horaria VARCHAR(50) NOT NULL DEFAULT 'America/Bogota'` },
     { table: 'comandas',   column: 'es_adicion',   sql: `ALTER TABLE comandas ADD COLUMN es_adicion TINYINT(1) NOT NULL DEFAULT 0` },
+    { table: 'comandas',   column: 'pagado',       sql: `ALTER TABLE comandas ADD COLUMN pagado DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'gastos',     column: 'proveedor_id', sql: `ALTER TABLE gastos ADD COLUMN proveedor_id VARCHAR(36) NULL` },
+    { table: 'gastos',     column: 'pagado_en',    sql: `ALTER TABLE gastos ADD COLUMN pagado_en DATETIME NULL` },
+    { table: 'gastos',     column: 'pagado_metodo', sql: `ALTER TABLE gastos ADD COLUMN pagado_metodo VARCHAR(20) NULL` },
     { table: 'menu_items', column: 'nombre_zh',    sql: `ALTER TABLE menu_items ADD COLUMN nombre_zh VARCHAR(200) NULL` },
     { table: 'menu_items', column: 'descripcion_zh', sql: `ALTER TABLE menu_items ADD COLUMN descripcion_zh TEXT NULL` },
     { table: 'domicilios_pedidos', column: 'pago_estado', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente'` },
@@ -545,6 +549,31 @@ async function runMigrations() {
     { table: 'clientes', column: 'notas',        sql: `ALTER TABLE clientes ADD COLUMN notas VARCHAR(500) NULL` },
     { table: 'clientes', column: 'departamento', sql: `ALTER TABLE clientes ADD COLUMN departamento VARCHAR(80) NULL` },
     { table: 'clientes', column: 'ciudad',       sql: `ALTER TABLE clientes ADD COLUMN ciudad VARCHAR(80) NULL` },
+
+    {
+      table: 'fiados', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS fiados (
+        id              VARCHAR(36)   PRIMARY KEY,
+        negocio_id      VARCHAR(36)   NOT NULL,
+        cliente_id      VARCHAR(36)   NULL,
+        cliente_nombre  VARCHAR(120)  NOT NULL,
+        cliente_telefono VARCHAR(30)  NOT NULL,
+        mesa_id         VARCHAR(36)   NULL,
+        mesa_num        VARCHAR(20)   NULL,
+        items           JSON          NOT NULL,
+        subtotal        DECIMAL(12,2) NOT NULL DEFAULT 0,
+        descuento       DECIMAL(12,2) NOT NULL DEFAULT 0,
+        total           DECIMAL(12,2) NOT NULL DEFAULT 0,
+        estado          VARCHAR(20)   NOT NULL DEFAULT 'pendiente',
+        venta_id        VARCHAR(36)   NULL,
+        pagado_metodo   VARCHAR(20)   NULL,
+        pagado_en       TIMESTAMP     NULL,
+        usuario_id      VARCHAR(36)   NULL,
+        creado          TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE,
+        INDEX idx_negocio_estado (negocio_id, estado)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
   ];
   for (const m of migrations) {
     try {

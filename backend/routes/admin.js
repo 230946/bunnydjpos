@@ -79,10 +79,11 @@ router.get('/gastos', requirePermiso('gastos'), async (req, res) => {
     const h = hasta  || localDate(req.user.zona_horaria);
     let sql = `
       SELECT g.*, gc.nombre AS categoria_nombre, gc.color AS categoria_color,
-             u.nombre AS usuario_nombre
+             u.nombre AS usuario_nombre, p.nombre AS proveedor_nombre
       FROM gastos g
       LEFT JOIN gasto_categorias gc ON gc.id = g.categoria_id
       LEFT JOIN usuarios u ON u.id = g.usuario_id
+      LEFT JOIN proveedores p ON p.id = g.proveedor_id
       WHERE g.negocio_id=${ph(1)} AND g.fecha BETWEEN ${ph(2)} AND ${ph(3)}
     `;
     const params = [nid(req), d, h];
@@ -95,32 +96,62 @@ router.get('/gastos', requirePermiso('gastos'), async (req, res) => {
 
 router.post('/gastos', requirePermiso('gastos'), async (req, res) => {
   try {
-    const { descripcion, monto, metodo_pago, categoria_id, fecha, comprobante } = req.body;
+    const { descripcion, monto, metodo_pago, categoria_id, fecha, comprobante, proveedor_id } = req.body;
     if (!descripcion || !monto) return res.status(400).json({ error: 'descripcion y monto requeridos' });
+    const metodo = metodo_pago || 'efectivo';
     const id = uuid();
     await pool.query(
-      `INSERT INTO gastos (id,negocio_id,usuario_id,categoria_id,descripcion,monto,metodo_pago,fecha,comprobante)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)})`,
+      `INSERT INTO gastos (id,negocio_id,usuario_id,categoria_id,descripcion,monto,metodo_pago,fecha,comprobante,proveedor_id)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)})`,
       [id, nid(req), req.user.id, categoria_id||null, descripcion, monto,
-       metodo_pago||'efectivo', fecha||localDate(req.user.zona_horaria), comprobante||null]
+       metodo, fecha||localDate(req.user.zona_horaria), comprobante||null, metodo === 'credito' ? (proveedor_id||null) : null]
     );
-    // Actualizar total_gastos de la caja del usuario que registra el gasto
-    await pool.query(
-      `UPDATE cajas SET total_gastos = total_gastos + ${ph(1)}
-       WHERE negocio_id=${ph(2)} AND usuario_id=${ph(3)} AND estado='abierta' AND fecha=${ph(4)}`,
-      [monto, nid(req), req.user.id, localDate(req.user.zona_horaria)]
-    );
+    // Un gasto "a crédito" todavía no salió de la caja — no se descuenta hasta
+    // que se pague de verdad, así que no afecta total_gastos acá.
+    if (metodo !== 'credito') {
+      await pool.query(
+        `UPDATE cajas SET total_gastos = total_gastos + ${ph(1)}
+         WHERE negocio_id=${ph(2)} AND usuario_id=${ph(3)} AND estado='abierta' AND fecha=${ph(4)}`,
+        [monto, nid(req), req.user.id, localDate(req.user.zona_horaria)]
+      );
+    }
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.put('/gastos/:id', requirePermiso('gastos'), async (req, res) => {
   try {
-    const { descripcion, monto, metodo_pago, categoria_id, fecha } = req.body;
+    const { descripcion, monto, metodo_pago, categoria_id, fecha, proveedor_id } = req.body;
     await pool.query(
       `UPDATE gastos SET descripcion=${ph(1)},monto=${ph(2)},metodo_pago=${ph(3)},
-       categoria_id=${ph(4)},fecha=${ph(5)} WHERE id=${ph(6)} AND negocio_id=${ph(7)}`,
-      [descripcion, monto, metodo_pago, categoria_id||null, fecha, req.params.id, nid(req)]
+       categoria_id=${ph(4)},fecha=${ph(5)},proveedor_id=${ph(6)} WHERE id=${ph(7)} AND negocio_id=${ph(8)}`,
+      [descripcion, monto, metodo_pago, categoria_id||null, fecha,
+       metodo_pago === 'credito' ? (proveedor_id||null) : null, req.params.id, nid(req)]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Marca como pagado un gasto a crédito (ej. ya se le pagó al proveedor) —
+// recién ahí sale la plata de la caja de verdad, así que afecta total_gastos
+// en este momento y no cuando se registró el gasto.
+router.put('/gastos/:id/pagar', requirePermiso('gastos'), async (req, res) => {
+  try {
+    const { metodo_pago } = req.body;
+    const metodo = ['efectivo','tarjeta','transferencia'].includes(metodo_pago) ? metodo_pago : 'efectivo';
+    const { rows } = await pool.query(`SELECT * FROM gastos WHERE id=${ph(1)} AND negocio_id=${ph(2)}`, [req.params.id, nid(req)]);
+    const g = rows[0];
+    if (!g) return res.status(404).json({ error: 'Gasto no encontrado' });
+    if (g.metodo_pago !== 'credito') return res.status(400).json({ error: 'Este gasto no es a crédito' });
+    if (g.pagado_en) return res.status(400).json({ error: 'Ya está pagado' });
+    await pool.query(
+      `UPDATE gastos SET pagado_en=NOW(), pagado_metodo=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+      [metodo, g.id, nid(req)]
+    );
+    await pool.query(
+      `UPDATE cajas SET total_gastos = total_gastos + ${ph(1)}
+       WHERE negocio_id=${ph(2)} AND usuario_id=${ph(3)} AND estado='abierta' AND fecha=${ph(4)}`,
+      [g.monto, nid(req), req.user.id, localDate(req.user.zona_horaria)]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -237,6 +268,20 @@ router.post('/caja/abrir', async (req, res) => {
     if (existe.length) {
       if (existe[0].estado === 'abierta') return res.status(400).json({ error: 'Ya tienes una caja abierta hoy' });
       return res.status(400).json({ error: 'Ya tienes una caja para hoy. Usa "Reabrir" para continuar.' });
+    }
+    // Solo puede existir una caja por negocio y día (es un registro compartido,
+    // no uno por cajero) — si otro usuario ya la abrió, avisar con su nombre
+    // en vez de dejar que el INSERT choque contra la restricción UNIQUE.
+    const { rows: otraCaja } = await pool.query(
+      `SELECT c.estado, u.nombre AS usuario_nombre FROM cajas c LEFT JOIN usuarios u ON u.id = c.usuario_id
+       WHERE c.negocio_id=${ph(1)} AND c.fecha=${ph(2)} LIMIT 1`,
+      [nid(req), fecha]
+    );
+    if (otraCaja.length) {
+      const otro = otraCaja[0];
+      return res.status(400).json({ error: otro.estado === 'abierta'
+        ? `${otro.usuario_nombre || 'Otro usuario'} ya abrió la caja de hoy.`
+        : `La caja de hoy ya fue abierta y cerrada por ${otro.usuario_nombre || 'otro usuario'}.` });
     }
     const id = uuid();
     await pool.query(
@@ -435,6 +480,34 @@ router.get('/pedidos-proveedor', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Artículos más comprados a proveedores (solo pedidos ya recibidos — lo que
+// de verdad entró, no lo pendiente ni lo cancelado), con el valor gastado.
+router.get('/pedidos-proveedor/top-articulos', async (req, res) => {
+  try {
+    const { desde, hasta } = req.query;
+    const d = desde || '2000-01-01';
+    const h = hasta  || localDate(req.user.zona_horaria);
+    const { rows } = await pool.query(`
+      SELECT items FROM pedidos_proveedor
+      WHERE negocio_id=${ph(1)} AND estado='recibido' AND fecha_pedido BETWEEN ${ph(2)} AND ${ph(3)}
+    `, [nid(req), d, h]);
+    const acum = {};
+    for (const row of rows) {
+      const items = typeof row.items === 'string' ? JSON.parse(row.items||'[]') : (row.items||[]);
+      for (const it of items) {
+        const nombre = it.nombre || 'Sin nombre';
+        const cantidad = +it.cantidad || 0;
+        const total = +it.total || (+it.cantidad||0) * (+it.costo_unitario||0);
+        if (!acum[nombre]) acum[nombre] = { nombre, cantidad: 0, total: 0 };
+        acum[nombre].cantidad += cantidad;
+        acum[nombre].total += total;
+      }
+    }
+    const resultado = Object.values(acum).sort((a,b) => b.total - a.total).slice(0, 15);
+    res.json(resultado);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.post('/pedidos-proveedor', requirePermiso('proveedores'), async (req, res) => {
   try {
     const { proveedor_id, items, total, notas, fecha_entrega } = req.body;
@@ -466,7 +539,9 @@ router.put('/pedidos-proveedor/:id/estado', requirePermiso('proveedores'), async
   try {
     const { estado } = req.body;
     const { rows: cur } = await pool.query(
-      `SELECT estado, items FROM pedidos_proveedor WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      `SELECT pp.estado, pp.items, pp.total, pp.proveedor_id, p.nombre AS proveedor_nombre
+       FROM pedidos_proveedor pp JOIN proveedores p ON p.id = pp.proveedor_id
+       WHERE pp.id=${ph(1)} AND pp.negocio_id=${ph(2)}`,
       [req.params.id, nid(req)]
     );
     if (!cur[0]) return res.status(404).json({ error: 'Pedido no encontrado' });
@@ -498,6 +573,44 @@ router.put('/pedidos-proveedor/:id/estado', requirePermiso('proveedores'), async
           `INSERT INTO inventario_movimientos (inventario_id,negocio_id,tipo,cantidad,stock_antes,stock_despues,nota,usuario_id)
            VALUES (${ph(1)},${ph(2)},'entrada',${ph(3)},${ph(4)},${ph(5)},'Recepción de pedido a proveedor',${ph(6)})`,
           [it.id, nid(req), cantidadBase, stockAntes, stockDespues, req.user.id]
+        );
+      }
+      // El stock ya subió — ahora se deja registrada la plata que costó,
+      // como gasto "a crédito" (se marca pagado después, desde Gastos,
+      // en el momento en que de verdad se le paga al proveedor).
+      if (+cur[0].total > 0) {
+        // Si todos los artículos del pedido son de la misma categoría de
+        // inventario, se usa esa categoría para el gasto (creándola si no
+        // existe todavía) — igual que al elegir un artículo a mano.
+        let categoriaId = null;
+        const idsItems = items.map(it => it.id).filter(Boolean);
+        if (idsItems.length) {
+          const { rows: invRows } = await pool.query(
+            `SELECT DISTINCT categoria FROM inventario WHERE negocio_id=${ph(1)} AND id IN (${idsItems.map((_,i)=>ph(i+2)).join(',')}) AND categoria IS NOT NULL AND categoria != ''`,
+            [nid(req), ...idsItems]
+          );
+          if (invRows.length === 1) {
+            const nombreCat = invRows[0].categoria;
+            const { rows: catRows } = await pool.query(
+              `SELECT id FROM gasto_categorias WHERE negocio_id=${ph(1)} AND LOWER(nombre)=LOWER(${ph(2)}) LIMIT 1`,
+              [nid(req), nombreCat]
+            );
+            if (catRows[0]) categoriaId = catRows[0].id;
+            else {
+              categoriaId = uuid();
+              await pool.query(
+                `INSERT INTO gasto_categorias (id, negocio_id, nombre, color) VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)})`,
+                [categoriaId, nid(req), nombreCat, '#378ADD']
+              );
+            }
+          }
+        }
+        await pool.query(
+          `INSERT INTO gastos (id,negocio_id,usuario_id,descripcion,monto,metodo_pago,fecha,proveedor_id,categoria_id)
+           VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},'credito',${ph(6)},${ph(7)},${ph(8)})`,
+          [uuid(), nid(req), req.user.id,
+           `Pedido a proveedor — ${cur[0].proveedor_nombre} (${items.length} artículo${items.length===1?'':'s'})`,
+           cur[0].total, localDate(req.user.zona_horaria), cur[0].proveedor_id, categoriaId]
         );
       }
     }
