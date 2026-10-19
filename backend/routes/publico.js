@@ -71,6 +71,53 @@ router.get('/mesa/:mesa_id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/publico/cuenta/:mesa_id?n=<negocio_id> — solo lectura: lo que la
+// mesa tiene pedido ahora mismo y cuánto debe. Para el QR de "ver la cuenta"
+// (distinto del QR de autopedido, que sí deja agregar productos).
+router.get('/cuenta/:mesa_id', async (req, res) => {
+  try {
+    const { mesa_id } = req.params;
+    const { n } = req.query;
+    if (!n) return res.status(400).json({ error: 'Falta negocio' });
+    const { rows: mesaRows } = await pool.query(
+      `SELECT id, numero, nombre FROM mesas WHERE id=${ph(1)} AND negocio_id=${ph(2)} AND activa=1 LIMIT 1`,
+      [mesa_id, n]
+    );
+    if (!mesaRows.length) return res.status(404).json({ error: 'Mesa no encontrada' });
+
+    const { rows: neg } = await pool.query(
+      `SELECT nombre, logo_url FROM negocios WHERE id=${ph(1)} AND activo=1 LIMIT 1`, [n]
+    );
+
+    const { rows: comandas } = await pool.query(
+      `SELECT items, pagado FROM comandas WHERE negocio_id=${ph(1)} AND mesa_id=${ph(2)} AND estado != 'entregado'`,
+      [n, mesa_id]
+    );
+
+    const itemsMerged = [];
+    let pagado = 0;
+    for (const c of comandas) {
+      pagado += +c.pagado || 0;
+      const its = typeof c.items === 'string' ? JSON.parse(c.items||'[]') : (c.items||[]);
+      for (const it of its) {
+        const key = it.item_id || it.nombre;
+        const existing = itemsMerged.find(m => m._key === key);
+        if (existing) existing.qty = (+existing.qty||0) + (+it.qty||1);
+        else itemsMerged.push({ _key: key, nombre: it.nombre, precio: +it.precio||0, qty: +it.qty||1 });
+      }
+    }
+    const total = itemsMerged.reduce((a,i) => a + i.precio*i.qty, 0);
+
+    res.json({
+      negocio_nombre: neg[0]?.nombre || null, negocio_logo: neg[0]?.logo_url || null,
+      mesa: { numero: mesaRows[0].numero, nombre: mesaRows[0].nombre },
+      items: itemsMerged.map(({ nombre, precio, qty }) => ({ nombre, precio, qty })),
+      total, pagado, saldo: Math.max(0, total - pagado),
+      hay_pedido: itemsMerged.length > 0,
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/publico/pedidos — el cliente confirma su pedido desde la mesa
 router.post('/pedidos', async (req, res) => {
   try {

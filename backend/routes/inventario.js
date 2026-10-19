@@ -180,6 +180,7 @@ router.post('/', requirePermiso('inventario'), async (req, res) => {
       );
     }
     const menuItemId = await _sincronizarMenuItem(nid(req), id, { nombre, categoria, precioVenta: precio_venta, esProducto: !!es_producto, modulo });
+    req.app.locals.broadcast?.(nid(req), 'inventario_actualizado', { id });
     res.status(201).json({ id, menu_item_id: menuItemId, menu_item_creado: !!menuItemId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -222,6 +223,7 @@ router.put('/:id', requirePermiso('inventario'), async (req, res) => {
        modulo||'restaurante', req.params.id, nid(req)]
     );
     const menuItemId = await _sincronizarMenuItem(nid(req), req.params.id, { nombre, categoria, precioVenta: precio_venta, esProducto: !!es_producto, modulo });
+    req.app.locals.broadcast?.(nid(req), 'inventario_actualizado', { id: req.params.id });
     res.json({ ok: true, menu_item_id: menuItemId, menu_item_creado: !!es_producto && !!menuItemId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -230,6 +232,7 @@ router.delete('/:id', requirePermiso('inventario_borrar'), async (req, res) => {
   try {
     await pool.query(`UPDATE inventario SET activo=0 WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
       [req.params.id, nid(req)]);
+    req.app.locals.broadcast?.(nid(req), 'inventario_actualizado', { id: req.params.id });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -275,6 +278,7 @@ router.post('/:id/movimiento', requirePermiso('inventario'), async (req, res) =>
       [req.params.id, nid(req), tipo, Math.abs(parseFloat(cantidad)),
        stock_antes, stock_despues, nota||null, referencia||null, req.user.id]
     );
+    req.app.locals.broadcast?.(nid(req), 'inventario_actualizado', { id: req.params.id });
     res.json({ ok: true, stock_despues });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -393,6 +397,7 @@ router.post('/importar/excel', requirePermiso('inventario'), uploadExcel.single(
         errores.push({ fila: row['Nombre']||'?', error: rowErr.message });
       }
     }
+    if (creados || actualizados) req.app.locals.broadcast?.(nid(req), 'inventario_actualizado', {});
     res.json({ ok: true, creados, actualizados, errores });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

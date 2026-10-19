@@ -95,10 +95,10 @@ table tr:hover td{background:var(--bg2)}
 .b-purple{background:var(--purple-l);color:var(--purple-d)}
 .icon-btn{background:none;border:none;color:var(--text2);padding:4px 6px;border-radius:6px}
 .icon-btn:hover{background:var(--bg2);color:var(--text)}
-.btn-qty{width:24px;height:24px;line-height:22px;text-align:center;border-radius:50%;font-weight:700;font-size:15px;padding:0;flex:none;cursor:pointer}
-.btn-qty-plus{background:var(--green-l);color:var(--green-d);border:1.5px solid var(--green)}
+.btn-qty{width:44px;height:44px;line-height:40px;text-align:center;border-radius:50%;font-weight:700;font-size:24px;padding:0;flex:none;cursor:pointer}
+.btn-qty-plus{background:var(--green-l);color:var(--green-d);border:2px solid var(--green)}
 .btn-qty-plus:hover{background:var(--green);color:#fff}
-.btn-qty-minus{background:var(--red-l);color:var(--red-d);border:1.5px solid var(--red)}
+.btn-qty-minus{background:var(--red-l);color:var(--red-d);border:2px solid var(--red)}
 .btn-qty-minus:hover{background:var(--red);color:#fff}
 .mesa-chip{width:34px;height:34px;border-radius:50%;background:var(--green-l);color:var(--green-d);border:1.5px solid var(--green);font-weight:700;font-size:13px;cursor:pointer}
 .mesa-chip:hover{background:var(--green);color:#fff}
@@ -117,6 +117,8 @@ table tr:hover td{background:var(--bg2)}
 .mesa-card .mesa-monto{font-size:12px;font-weight:700;color:var(--red-d);margin-top:2px}
 .mesa-sel-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-l);color:var(--green-d);font-weight:700;font-size:12.5px;padding:7px 12px;border-radius:20px}
 .mesa-sel-badge button{background:none;border:none;color:var(--green-d);font-weight:700;cursor:pointer;text-decoration:underline;font-size:12px}
+.mesa-activa-banner{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--green-d);color:#fff;padding:13px 16px;border-radius:var(--rl);margin-bottom:12px;font-size:17px;font-weight:800;letter-spacing:.3px}
+.mesa-activa-banner button{background:rgba(255,255,255,.22);border:none;color:#fff;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px}
 
 /* ---------- Barra / comandas ---------- */
 .barra-grid{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
@@ -128,6 +130,22 @@ table tr:hover td{background:var(--bg2)}
 .menu-item-card .precio{font-size:12px;color:var(--green-d);font-weight:700}
 .menu-item-card.nodisp{opacity:.4;cursor:not-allowed}
 .cart-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;position:sticky;top:12px}
+.quick-send-bar{
+  position:fixed; left:16px; right:16px; bottom:16px; max-width:520px; margin:0 auto;
+  z-index:60; display:flex; align-items:center; justify-content:space-between; gap:14px;
+  background:var(--bg); border:2px solid var(--green); border-radius:var(--rl);
+  padding:14px 14px 14px 20px; box-shadow:0 12px 32px rgba(0,0,0,.35);
+  transform:translateY(140%); opacity:0; pointer-events:none;
+  transition:transform .25s ease, opacity .2s ease;
+}
+.quick-send-bar.visible{ transform:translateY(0); opacity:1; pointer-events:auto; }
+.quick-send-bar .qsb-info{ font-size:16px; font-weight:700; color:var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.quick-send-bar .btn{ flex:none; white-space:nowrap; font-size:16px; padding:14px 22px; }
+@media (max-width:480px){
+  .quick-send-bar{ flex-direction:column; padding:14px 16px; }
+  .quick-send-bar .qsb-info{ white-space:normal; text-align:center; }
+  .quick-send-bar .btn{ width:100%; justify-content:center; }
+}
 .cart-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
 .cart-line .nom{flex:1}
 .cart-line .qtybtns{display:flex;align-items:center;gap:4px}
@@ -135,6 +153,15 @@ table tr:hover td{background:var(--bg2)}
 .cart-total{display:flex;justify-content:space-between;font-weight:800;font-size:16px;margin:10px 0}
 .ticket-card{background:var(--bg);border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:var(--r);padding:12px;margin-bottom:10px;transition:box-shadow .3s,border-color .3s}
 .ticket-card.ticket-highlight{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.ticket-actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.ticket-actions-grid .btn{font-size:13.5px;padding:11px 10px}
+.mesa-actions{display:flex;gap:8px;margin-top:10px}
+.mesa-actions .btn{flex:1;font-size:14px;padding:12px 14px}
+.mesa-actions .icon-btn{flex:none;align-self:center;padding:10px 12px}
+@media (max-width:480px){
+  .ticket-actions-grid{grid-template-columns:1fr}
+  .mesa-actions{flex-direction:column}
+}
 .ticket-card.listo{border-left-color:var(--green)}
 .ticket-card h4{font-size:14px;display:flex;justify-content:space-between}
 .ticket-card .it{font-size:12.5px;color:var(--text2);padding:2px 0}
@@ -171,12 +198,6 @@ table tr:hover td{background:var(--bg2)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @media (max-width: 860px){
-  #app{flex-direction:column}
-  .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:8px}
-  .sidebar .brand{display:none}
-  .nav-item{padding:8px 12px;white-space:nowrap}
-  .nav-item.active{border-right:none;border-bottom:3px solid var(--amber)}
-  .nav-sep{display:none}
   .barra-grid{grid-template-columns:1fr}
   .cart-box{position:static}
 }
@@ -221,7 +242,7 @@ table tr:hover td{background:var(--bg2)}
       <span style="font-size:9px;font-weight:600;letter-spacing:0.5px;color:rgba(255,255,255,.75);line-height:1">DJPOS</span>
     </div>
     <button class="nav-icon active" data-nav="mesas" onclick="nav('mesas')" title="Mesas">🪑<span class="lbl">Mesas</span></button>
-    <button class="nav-icon" data-nav="barra" onclick="nav('barra')" title="Barra">🍹<span class="lbl">Barra</span></button>
+    <button class="nav-icon" data-nav="barra" onclick="irABarraGeneral()" title="Barra">🍹<span class="lbl">Barra</span></button>
     <button class="nav-icon" data-nav="pedidos" onclick="nav('pedidos')" title="Pedidos">📋<span class="lbl">Pedidos</span></button>
     <button class="nav-icon" data-nav="fiados" onclick="nav('fiados')" title="Clientes con deuda">📝<span class="lbl">Deudas</span></button>
     <button class="nav-icon" data-nav="caja" onclick="nav('caja')" title="Caja">💵<span class="lbl">Caja</span></button>
@@ -232,10 +253,14 @@ table tr:hover td{background:var(--bg2)}
       <button class="nav-icon" onclick="doLogout()" title="Salir">🚪<span class="lbl">Salir</span></button>
     </div>
   </aside>
+  <div id="sb-overlay" onclick="closeMobileSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90"></div>
 
   <main>
     <header class="topbar">
-      <h2 id="hdr-title">🪑 Mesas</h2>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="sb-hamburger" class="show-mobile icon-btn" onclick="openMobileSidebar()" style="font-size:20px;padding:4px">☰</button>
+        <h2 id="hdr-title">🪑 Mesas</h2>
+      </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="caja-pill cerrada" id="caja-pill">Caja cerrada</span>
         <button class="icon-btn" title="Pantalla completa" onclick="toggleFullscreenBar()">⛶</button>
@@ -255,16 +280,20 @@ table tr:hover td{background:var(--bg2)}
 
       <!-- ===== BARRA / COMANDAS ===== -->
       <section id="panel-barra" hidden>
+        <div id="mesa-activa-banner" class="mesa-activa-banner hide"></div>
         <div class="panel-head">
-          <h3>Tomar pedido</h3>
+          <h3 id="barra-titulo">Tomar pedido</h3>
           <div class="row2" style="min-width:0;flex:none;gap:8px" id="barra-mesa-sel-wrap">
-            <span id="barra-mesa-badge" class="mesa-sel-badge hide"></span>
             <input id="ticket-nombre" placeholder="Barra / Para llevar" style="padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);min-width:180px" value="Barra">
           </div>
         </div>
+        <div id="mesa-pedido-existente" class="hide" style="margin-bottom:14px"></div>
         <div class="barra-grid">
           <div>
-            <input id="barra-buscar" placeholder="🔍 Buscar producto..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);margin-bottom:8px" oninput="renderBarraItems()">
+            <div style="position:relative;margin-bottom:8px">
+              <input id="barra-buscar" placeholder="🔍 Buscar producto o categoría..." style="width:100%;padding:9px 34px 9px 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)" oninput="renderBarraItems()">
+              <button id="barra-buscar-clear" class="hide" onclick="$('barra-buscar').value='';renderBarraItems();$('barra-buscar').focus()" title="Limpiar búsqueda" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--text2);font-size:18px;line-height:1;cursor:pointer;padding:4px">✕</button>
+            </div>
             <div id="barra-categorias" style="display:flex;gap:8px;flex-wrap:wrap"></div>
             <div style="font-size:12px;color:var(--text2);margin:8px 0 4px" id="barra-items-count"></div>
             <div id="barra-items" class="menu-items-grid"></div>
@@ -276,19 +305,20 @@ table tr:hover td{background:var(--bg2)}
             </div>
             <div id="cart-lines"><div class="empty-msg">Tocá un producto para agregarlo</div></div>
             <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;margin-top:8px;cursor:pointer">
-              <input type="checkbox" id="cart-es-cliente" style="width:auto" onchange="toggleCartDescuento()"> 🎖️ Es cliente (aplica descuento)
+              <input type="checkbox" id="cart-es-cliente" style="width:auto" onchange="toggleCartDescuento()"> 🎖️ Es cliente (aplica descuento por artículo)
             </label>
-            <div id="cart-descuento-monto-wrap" class="hide" style="margin-top:6px">
-              <input id="cart-descuento-monto" type="number" min="0" step="500" placeholder="Monto del descuento" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)" oninput="renderCarrito()">
-            </div>
             <div id="cart-subtotal-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-top:6px"><span>Subtotal</span><span id="cart-subtotal">$0</span></div>
             <div id="cart-descuento-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--red-d)"><span>Descuento</span><span id="cart-descuento">-$0</span></div>
             <div class="cart-total"><span>Total</span><span id="cart-total">$0</span></div>
-            <button class="btn btn-outline btn-full" style="margin-bottom:8px" onclick="enviarComanda()">📨 Enviar a barra</button>
+            <button class="btn btn-outline btn-full" id="btn-enviar-comanda" style="margin-bottom:8px" onclick="enviarComanda()">📨 Enviar a barra</button>
             <button class="btn btn-primary btn-full" onclick="cobrarCarrito()">💳 Cobrar directo</button>
           </div>
         </div>
 
+        <div class="quick-send-bar" id="quick-send-bar">
+          <span class="qsb-info" id="quick-send-info"></span>
+          <button class="btn btn-primary btn-sm" id="quick-send-btn" onclick="enviarComanda()">📨 Enviar</button>
+        </div>
       </section>
 
       <!-- ===== PEDIDOS ABIERTOS ===== -->
@@ -378,6 +408,9 @@ table tr:hover td{background:var(--bg2)}
   <div class="modal" style="max-width:360px">
     <h3>💰 Abono / pago parcial</h3>
     <p id="abono-info" style="font-size:12px;color:var(--text2);margin-bottom:10px">Saldo pendiente: —</p>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:8px">
+      <input type="checkbox" id="abono-es-cliente" onchange="renderAbonoItems()"> Es cliente (aplica descuento por artículo)
+    </label>
     <label style="font-size:12px;font-weight:600;color:var(--text2)">Elegí cuántas unidades paga (opcional)</label>
     <div id="abono-items" style="margin:6px 0 10px;max-height:200px;overflow-y:auto"></div>
     <div class="field"><label>Monto a pagar ahora *</label><input id="abono-monto" type="number" min="0" step="100"></div>
@@ -391,6 +424,67 @@ table tr:hover td{background:var(--bg2)}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('abono-modal')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarAbono()">Pagar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalle de lo que consumió el cliente (deuda) -->
+<div class="modal-bg" id="fiado-ver-modal">
+  <div class="modal" style="max-width:380px">
+    <h3 id="fiado-ver-title">Detalle</h3>
+    <div id="fiado-ver-body" style="font-size:13px;max-height:260px;overflow-y:auto"></div>
+    <div id="fiado-add-panel" class="hide" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+      <input id="fiado-add-buscar" placeholder="🔍 Buscar producto..." style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);margin-bottom:8px" oninput="renderFiadoAddLista()">
+      <div id="fiado-add-lista" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('fiado-ver-modal')">Cerrar</button>
+      <span id="fiado-ver-acciones"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Abonar / pagar deuda (fiado) -->
+<div class="modal-bg" id="fiado-pago-modal">
+  <div class="modal" style="max-width:340px">
+    <h3>💰 Abonar a la deuda</h3>
+    <p id="fp-info" style="font-size:12px;color:var(--text2);margin-bottom:10px">Saldo pendiente: —</p>
+    <div class="field" id="fp-item-field" style="display:none">
+      <label>¿A qué abonar?</label>
+      <select id="fp-item" onchange="fpSeleccionarItem()">
+        <option value="">Al total de la deuda</option>
+      </select>
+    </div>
+    <label id="fp-descuento-toggle" style="display:flex;align-items:center;gap:6px;font-size:13px;margin:4px 0">
+      <input type="checkbox" id="fp-es-cliente" style="width:auto" onchange="toggleFpDescuento()"> 🎖️ Es cliente (aplica descuento)
+    </label>
+    <div class="field hide" id="fp-descuento-field"><label>Descuento (monto fijo $)</label><input id="fp-descuento" type="number" min="0" step="100" value="0" oninput="fpActualizarInfo()"></div>
+    <div class="field"><label>Monto a pagar ahora *</label><input id="fp-monto" type="number" min="0" step="100"></div>
+    <div class="field"><label>Método de pago</label>
+      <select id="fp-metodo">
+        <option value="efectivo">Efectivo</option>
+        <option value="tarjeta">Tarjeta</option>
+        <option value="nequi">Nequi</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('fiado-pago-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarFiadoPago()">Pagar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Activar deuda (convierte una nota manual del cliente en un fiado real con seguimiento de abonos) -->
+<div class="modal-bg" id="activar-deuda-modal">
+  <div class="modal" style="max-width:360px">
+    <h3>✅ Activar deuda</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Convierte esta nota en una deuda real, con abonos y pagos registrados.</p>
+    <div class="field"><label>Cliente</label><input id="ad-cliente" type="text" disabled></div>
+    <div class="field"><label>Descripción *</label><textarea id="ad-desc" rows="2" style="width:100%;resize:vertical;padding:8px;border:1px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);font:inherit"></textarea></div>
+    <div class="field"><label>Monto total *</label><input id="ad-monto" type="number" min="0" step="100"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('activar-deuda-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarActivarDeuda()">Activar</button>
     </div>
   </div>
 </div>
@@ -416,14 +510,12 @@ table tr:hover td{background:var(--bg2)}
     <h3>💳 Cobrar</h3>
     <div id="cobro-items" style="max-height:200px;overflow:auto;margin-bottom:12px;font-size:13px"></div>
     <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;margin-bottom:8px;cursor:pointer">
-      <input type="checkbox" id="cobro-es-cliente" style="width:auto" onchange="toggleCobroDescuento()"> 🎖️ Es cliente (aplica descuento)
+      <input type="checkbox" id="cobro-es-cliente" style="width:auto" onchange="toggleCobroDescuento()"> 🎖️ Es cliente (aplica descuento por artículo)
     </label>
-    <div id="cobro-descuento-monto-wrap" class="hide" style="margin-bottom:8px">
-      <input id="cobro-descuento-monto" type="number" min="0" step="500" placeholder="Monto del descuento" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)" oninput="actualizarCobroTotal()">
-    </div>
     <div id="cobro-subtotal-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:2px"><span>Subtotal</span><span id="cobro-subtotal">$0</span></div>
     <div id="cobro-descuento-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--red-d);margin-bottom:2px"><span>Descuento</span><span id="cobro-descuento">-$0</span></div>
-    <div class="cart-total"><span>Total</span><span id="cobro-total">$0</span></div>
+    <div id="cobro-pagado-row" class="hide" style="display:flex;justify-content:space-between;font-size:13px;color:var(--green-d);margin-bottom:2px"><span>Ya pagado</span><span id="cobro-pagado">-$0</span></div>
+    <div class="cart-total"><span id="cobro-total-label">Total</span><span id="cobro-total">$0</span></div>
     <div class="field"><label>Método de pago</label>
       <select id="cobro-metodo" onchange="renderCobroCampos()">
         <option value="efectivo">Efectivo</option>
@@ -683,14 +775,35 @@ async function showApp(){
 // ---------- Nav ----------
 const PANELES = ['mesas','barra','pedidos','fiados','caja'];
 const TITULOS = { mesas:'🪑 Mesas', barra:'🍹 Barra', pedidos:'📋 Pedidos', fiados:'📝 Clientes con deuda', caja:'💵 Caja' };
+let currentPage = 'mesas';
 function nav(p){
+  currentPage = p;
   PANELES.forEach(x => $(`panel-${x}`).hidden = x !== p);
   document.querySelectorAll('.nav-icon[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === p));
   $('hdr-title').textContent = TITULOS[p];
+  closeMobileSidebar();
   if (p === 'mesas') { Promise.all([cargarMesas(), cargarTickets()]).then(renderMesasGrid); }
   if (p === 'pedidos') cargarTickets();
   if (p === 'fiados') cargarFiados();
   if (p === 'caja') { cargarCajaEstado(); cargarCajaHistorial(); }
+}
+function openMobileSidebar(){
+  const sb = document.querySelector('.sidebar'), ov = $('sb-overlay');
+  if (!sb || !ov) return;
+  sb.style.setProperty('display','flex','important');
+  sb.style.position='fixed'; sb.style.left='0'; sb.style.top='0'; sb.style.bottom='0';
+  sb.style.width='80px'; sb.style.zIndex='100'; sb.style.boxShadow='4px 0 20px rgba(0,0,0,.3)';
+  ov.style.display='block';
+}
+function closeMobileSidebar(){
+  const sb = document.querySelector('.sidebar'), ov = $('sb-overlay');
+  if (!sb || !ov) return;
+  if (window.innerWidth <= 700) {
+    sb.style.removeProperty('display');
+    sb.style.position=''; sb.style.left=''; sb.style.top=''; sb.style.bottom='';
+    sb.style.width=''; sb.style.zIndex=''; sb.style.boxShadow='';
+  }
+  ov.style.display='none';
 }
 
 // ================= TIEMPO REAL (WebSocket) =================
@@ -706,10 +819,19 @@ function conectarWS(){
       if (tipo === 'nueva_comanda') {
         showToast(`📨 Nuevo pedido: ${data?.mesa_nombre || 'Barra'}`);
         cargarTickets().then(renderMesasGrid);
+        cargarItems().then(renderBarraItems);
       } else if (tipo === 'comanda_actualizada' || tipo === 'cocina_limpiada') {
         cargarTickets().then(renderMesasGrid);
+        cargarItems().then(renderBarraItems);
       } else if (tipo === 'mesa_actualizada' || tipo === 'mesa_liberada') {
         cargarMesas().then(renderMesasGrid);
+      } else if (tipo === 'inventario_actualizado') {
+        cargarItems().then(renderBarraItems);
+      } else if (tipo === 'caja_actualizada') {
+        if (typeof cargarCajaEstado === 'function') cargarCajaEstado();
+        if (currentPage === 'caja' && typeof cargarCajaHistorial === 'function') cargarCajaHistorial();
+      } else if (tipo === 'fiados_actualizado') {
+        if (currentPage === 'fiados' && typeof cargarFiados === 'function') cargarFiados();
       }
     };
     _barWS.onclose = () => { setTimeout(conectarWS, 4000); };
@@ -765,45 +887,94 @@ function renderMesasGrid(){
   }).join('');
 }
 
-async function abrirMesaDesdeGrid(id){
-  const info = _mesaInfo(id);
-  if (!info.ocupada) return seleccionarMesa(id);
-  // Mesa ocupada: ir directo a su pedido actual en vez de abrir un carrito
-  // vacío — el mesero ya tiene el pedido hecho, no quiere empezar de cero.
-  nav('pedidos');
-  await cargarTickets();
-  const el = document.getElementById('ticket-mesa-' + id);
-  if (!el) return;
-  el.scrollIntoView({ behavior:'smooth', block:'center' });
-  el.classList.add('ticket-highlight');
-  setTimeout(() => el.classList.remove('ticket-highlight'), 1600);
+function abrirMesaDesdeGrid(id){
+  // Ocupada o libre, siempre al mismo lugar: la pantalla de la mesa en
+  // Barra ya muestra el pedido existente (si hay) justo arriba del
+  // producto a agregar — no hace falta saltar a otra pestaña para verlo.
+  seleccionarMesa(id);
 }
 function seleccionarMesa(id){
   const m = mesas.find(x => x.id === id); if (!m) return;
   selMesaId = m.id; selMesaNum = m.numero;
   pedidoMesaDecidida = true;
-  carrito = []; $('cart-es-cliente').checked = false; $('cart-descuento-monto').value = ''; $('cart-descuento-monto-wrap').classList.add('hide'); renderCarrito();
+  carrito = []; $('cart-es-cliente').checked = false; renderCarrito();
   actualizarMesaBadgeBarra();
   nav('barra');
   document.querySelector('.content')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
+// Entrar a "Barra" desde el ícono del menú (no desde una mesa puntual) —
+// si quedó una mesa seleccionada de antes, se limpia acá: es la causa más
+// común de agregar productos a la mesa equivocada por error.
+function irABarraGeneral(){
+  if (selMesaId){
+    selMesaId = null; selMesaNum = null; pedidoMesaDecidida = false;
+    carrito = []; $('cart-es-cliente').checked = false; renderCarrito();
+    actualizarMesaBadgeBarra();
+  }
+  nav('barra');
+}
 function salirDeMesa(){
   selMesaId = null; selMesaNum = null;
   pedidoMesaDecidida = false;
-  carrito = []; $('cart-es-cliente').checked = false; $('cart-descuento-monto').value = ''; $('cart-descuento-monto-wrap').classList.add('hide'); renderCarrito();
+  carrito = []; $('cart-es-cliente').checked = false; renderCarrito();
   actualizarMesaBadgeBarra();
   nav('mesas');
 }
 function actualizarMesaBadgeBarra(){
-  const badge = $('barra-mesa-badge'), input = $('ticket-nombre');
+  const banner = $('mesa-activa-banner'), input = $('ticket-nombre'), titulo = $('barra-titulo');
   if (selMesaId){
-    badge.classList.remove('hide');
-    badge.innerHTML = `🪑 Mesa ${selMesaNum} <button onclick="salirDeMesa()">Salir</button>`;
-    input.classList.add('hide');
+    banner.classList.remove('hide');
+    banner.innerHTML = `<span>🪑 MESA ${esc(String(selMesaNum))}</span><button onclick="salirDeMesa()">✕ Salir de la mesa</button>`;
+    input.value = `Mesa ${selMesaNum}`;
+    input.disabled = true;
+    if (titulo) titulo.textContent = `Mesa ${selMesaNum}`;
   } else {
-    badge.classList.add('hide');
-    input.classList.remove('hide');
+    banner.classList.add('hide');
+    banner.innerHTML = '';
+    input.disabled = false;
+    if (input.value.startsWith('Mesa ')) input.value = 'Barra';
+    if (titulo) titulo.textContent = 'Tomar pedido';
   }
+  const btnEnviar = $('btn-enviar-comanda');
+  if (btnEnviar) btnEnviar.textContent = selMesaId ? `📨 Enviar a Mesa ${selMesaNum}` : '📨 Enviar a barra';
+  renderMesaPedidoExistente();
+}
+// Si la mesa seleccionada ya tiene un pedido enviado, se muestra acá mismo
+// (con +/- en vivo) para que quede clarísimo qué hay antes de agregar algo
+// más — en vez de tener que ir a la pestaña "Pedidos" a revisarlo.
+function renderMesaPedidoExistente(){
+  const box = $('mesa-pedido-existente'); if (!box) return;
+  const t = selMesaId ? ticketsAbiertos.find(x => x.mesa_id === selMesaId) : null;
+  if (!t){ box.classList.add('hide'); box.innerHTML = ''; return; }
+  const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
+  const montoBruto = its.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+  const descuento = +t.descuento || 0;
+  const montoTicket = Math.max(0, montoBruto - descuento);
+  const pagado = +t.pagado || 0;
+  const saldo = Math.max(0, montoTicket - pagado);
+  const lineas = its.map(i => `<div class="it" style="display:flex;align-items:center;gap:10px">
+    <button class="btn-qty btn-qty-minus" title="Quitar 1" onclick="quitarUnidadTicket('${t.mesa_id}','${esc(i.nombre).replace(/'/g,"\\'")}')">−</button>
+    <span style="flex:1;display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.qty||1}× ${esc(i.nombre)}</span>
+      <span style="font-weight:600;flex:none">${fmt((+i.precio||0)*(i.qty||1))}</span>
+    </span>
+    <button class="btn-qty btn-qty-plus" title="Agregar 1" onclick="agregarUnidadTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}','${i.item_id||''}','${esc(i.nombre).replace(/'/g,"\\'")}','${i.emoji||''}',${+i.precio||0})">+</button>
+  </div>`).join('');
+  box.classList.remove('hide');
+  box.innerHTML = `<div class="ticket-card">
+    <h4>Ya pedido en esta mesa <span class="badge ${t.estado==='nuevo'?'b-amber':t.estado==='listo'?'b-green':'b-purple'}">${t.estado}</span></h4>
+    ${lineas}
+    ${descuento>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--amber-d)"><span>Descuento</span><span>-${fmt(descuento)}</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)"><span>Total</span><span>${fmt(montoTicket)}</span></div>
+    ${pagado>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d)"><span>Pagado</span><span>${fmt(pagado)}</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:20px;font-weight:800;color:var(--red-d)"><span style="font-size:14px">Saldo</span><span>${fmt(saldo)}</span></div>` : ''}
+    <div class="mesa-actions">
+      <button class="btn btn-outline" onclick="abrirAbonoModal('${t.id}',${saldo})">💰 Abono</button>
+      ${pagado>0
+        ? `<button class="btn btn-primary" onclick="cobrarSaldoTicket('${t.id}')">💳 Cobrar saldo</button>`
+        : `<button class="btn btn-primary" onclick="cobrarTicket('${t.id}')">💳 Cobrar</button>`}
+    </div>
+  </div>`;
 }
 
 // ================= BARRA (tomar pedidos + cobrar) =================
@@ -825,9 +996,23 @@ function itemBajoStock(it){
   const s = stockEfectivo(it), min = stockMinEfectivo(it);
   return s !== null && s !== undefined && +s > 0 && +min > 0 && +s < +min;
 }
+// Sin tildes y en minúscula, para que buscar "cigarrillo" también encuentre
+// "Cigarrillo" o "añejo" con "anejo" — sin esto una tilde de más/de menos ya
+// no encontraba nada.
+function normTxt(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 function renderBarraItems(){
-  const q = ($('barra-buscar')?.value||'').trim().toLowerCase();
-  const lista = items.filter(it => (!barraCatActiva || it.categoria_id === barraCatActiva) && (!q || it.nombre.toLowerCase().includes(q)));
+  const q = normTxt($('barra-buscar')?.value||'');
+  $('barra-buscar-clear')?.classList.toggle('hide', !q);
+  const catNom = {}; categorias.forEach(c => { catNom[c.id] = normTxt(c.nombre); });
+  const lista = items.filter(it => {
+    // Al buscar se ignora la categoría activa (si no, "no encuentra nada"
+    // cuando el producto que buscás no es de la categoría que tenías
+    // seleccionada) y también matchea por nombre de categoría, no solo del
+    // artículo — así "cerveza" trae todo lo de esa categoría, no solo lo
+    // que tenga "cerveza" en el nombre.
+    if (q) return normTxt(it.nombre).includes(q) || (catNom[it.categoria_id]||'').includes(q);
+    return !barraCatActiva || it.categoria_id === barraCatActiva;
+  });
   $('barra-items-count').textContent = `${lista.length} artículo${lista.length===1?'':'s'}`;
   if (!lista.length) { $('barra-items').innerHTML = '<div class="empty-msg">No hay artículos. Agregalos en "Menú".</div>'; return; }
   $('barra-items').innerHTML = lista.map(it => {
@@ -934,24 +1119,25 @@ function cambiarQty(cid, delta){
   renderCarrito();
 }
 function totalCarrito(){ return carrito.reduce((a,c) => a + c.precio*c.qty, 0); }
-function toggleCartDescuento(){
-  const checked = $('cart-es-cliente').checked;
-  $('cart-descuento-monto-wrap').classList.toggle('hide', !checked);
-  if (checked && !$('cart-descuento-monto').value) $('cart-descuento-monto').value = DESCUENTO_CLIENTE || '';
-  renderCarrito();
-}
+function toggleCartDescuento(){ renderCarrito(); }
 function descuentoCarrito(){
   if (!$('cart-es-cliente')?.checked) return 0;
-  const monto = +$('cart-descuento-monto').value || 0;
-  return Math.min(Math.max(monto,0), totalCarrito());
+  return carrito.reduce((a,c) => a + Math.min(Math.max(+c.descuento||0,0), c.precio*c.qty), 0);
+}
+function cambiarDescuentoLinea(cid, valor){
+  const c = carrito.find(x => x._cid === cid); if (!c) return;
+  c.descuento = Math.max(0, +valor||0);
+  renderCarrito();
 }
 function renderCarrito(){
   if (!carrito.length) {
     $('cart-lines').innerHTML = '<div class="empty-msg">Tocá un producto para agregarlo</div>';
     $('cart-subtotal-row').classList.add('hide'); $('cart-descuento-row').classList.add('hide');
     $('cart-total').textContent = fmt(0);
+    updateQuickSendBar();
     return;
   }
+  const esCliente = $('cart-es-cliente')?.checked;
   $('cart-lines').innerHTML = carrito.map(c => `
     <div class="cart-line">
       <span class="nom">${c.emoji||''} ${esc(c.nombre)}</span>
@@ -961,12 +1147,26 @@ function renderCarrito(){
         <button onclick="cambiarQty(${c._cid},1)">+</button>
       </div>
       <span>${fmt(c.precio*c.qty)}</span>
+      ${esCliente ? `<input type="number" min="0" step="100" value="${c.descuento||''}" placeholder="Desc." title="Descuento para este artículo" style="width:64px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px" oninput="cambiarDescuentoLinea(${c._cid}, this.value)">` : ''}
     </div>`).join('');
   const sub = totalCarrito(), desc = descuentoCarrito();
   $('cart-subtotal-row').classList.toggle('hide', desc<=0);
   $('cart-descuento-row').classList.toggle('hide', desc<=0);
   if (desc>0) { $('cart-subtotal').textContent = fmt(sub); $('cart-descuento').textContent = '-'+fmt(desc); }
   $('cart-total').textContent = fmt(sub-desc);
+  updateQuickSendBar();
+}
+// Barra flotante que aparece apenas se agrega un producto, para poder
+// enviar el pedido sin tener que bajar hasta el carrito (en el celular el
+// carrito queda debajo de toda la grilla de productos).
+function updateQuickSendBar(){
+  const bar = $('quick-send-bar'); if (!bar) return;
+  if (!carrito.length){ bar.classList.remove('visible'); return; }
+  const count = carrito.reduce((a,c) => a + (+c.qty||1), 0);
+  const total = Math.max(0, totalCarrito() - descuentoCarrito());
+  $('quick-send-info').textContent = `${count} artículo${count===1?'':'s'} · ${fmt(total)}`;
+  $('quick-send-btn').textContent = selMesaId ? `📨 Enviar a Mesa ${selMesaNum}` : '📨 Enviar pedido';
+  bar.classList.add('visible');
 }
 async function enviarComanda(){
   if (!cajaLista()) return showToast('Abrí la caja antes de tomar pedidos');
@@ -985,7 +1185,7 @@ async function enviarComanda(){
 }
 
 let ticketsAbiertos = [];
-async function cargarTickets(){ ticketsAbiertos = await api('/pos/comandas'); renderTickets(); }
+async function cargarTickets(){ ticketsAbiertos = await api('/pos/comandas'); renderTickets(); renderMesaPedidoExistente(); }
 async function quitarUnidadTicket(mesaId, nombre){
   if (!confirm(`¿Quitar 1 × ${nombre}?`)) return;
   try{ await api('/pos/comandas/reducir', { method:'PUT', body: JSON.stringify({ mesa_id: mesaId, nombre, cantidad: 1 }) }); await cargarTickets(); }
@@ -1000,22 +1200,40 @@ async function agregarUnidadTicket(mesaId, mesaNum, mesaNombre, itemId, nombre, 
     await cargarTickets();
   }catch(e){ showToast('Error: ' + e.message); }
 }
-let abonoTicketId = null, abonoSaldo = 0, abonoItemsRef = [];
+let abonoTicketId = null, abonoSaldo = 0, abonoItemsRef = [], abonoDescuentos = [];
 function abrirAbonoModal(ticketId, saldo){
   if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); return; }
   const t = ticketsAbiertos.find(x => x.id === ticketId); if (!t) return;
   abonoTicketId = ticketId; abonoSaldo = saldo;
   abonoItemsRef = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
-  $('abono-info').textContent = `Saldo pendiente: ${fmt(saldo)}`;
-  $('abono-items').innerHTML = abonoItemsRef.map((i,idx) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
-      <span style="flex:1;font-size:13px">${esc(i.nombre)}<br><span style="font-size:11px;color:var(--text2)">${fmt(i.precio)} c/u · hay ${i.qty||1}</span></span>
-      <input type="number" min="0" max="${i.qty||1}" value="0" data-idx="${idx}" oninput="recalcAbonoMonto()" style="width:56px;padding:6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text)">
-    </div>`).join('');
-  $('abono-monto').value = saldo;
+  abonoDescuentos = abonoItemsRef.map(()=>0);
+  $('abono-es-cliente').checked = false;
   $('abono-metodo').value = 'efectivo';
+  renderAbonoItems();
   openModal('abono-modal');
 }
+function renderAbonoItems(){
+  const esCliente = $('abono-es-cliente').checked;
+  $('abono-items').innerHTML = abonoItemsRef.map((i,idx) => {
+    const precioOriginal = +i.precio || 0;
+    const precioActual = precioOriginal - (abonoDescuentos[idx]||0) / (i.qty||1);
+    return `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+      <span style="flex:1;font-size:13px">${esc(i.nombre)}<br><span style="font-size:11px;color:var(--text2)">${fmt(precioOriginal)} c/u · hay ${i.qty||1}</span></span>
+      <input type="number" min="0" max="${i.qty||1}" value="0" data-idx="${idx}" title="Unidades que paga ahora" oninput="recalcAbonoMonto()" style="width:56px;padding:6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text)">
+      ${esCliente ? `<input type="number" min="0" max="${precioOriginal}" step="100" value="${Math.round(precioActual)}" placeholder="${precioOriginal}" title="Precio por unidad para este cliente" oninput="cambiarAbonoPrecio(${idx}, this.value)" style="width:72px;padding:6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px">` : ''}
+    </div>`;
+  }).join('');
+  recalcAbonoMonto();
+}
+function cambiarAbonoPrecio(idx, valor){
+  const it = abonoItemsRef[idx]; if (!it) return;
+  const precioOriginal = +it.precio || 0;
+  const precioNuevo = Math.min(Math.max(+valor||0, 0), precioOriginal);
+  abonoDescuentos[idx] = (precioOriginal - precioNuevo) * (it.qty||1);
+  recalcAbonoMonto();
+}
+function totalAbonoDescuento(){ return abonoDescuentos.reduce((a,d) => a + (+d||0), 0); }
 function recalcAbonoMonto(){
   let total = 0;
   $('abono-items').querySelectorAll('input[data-idx]').forEach(inp => {
@@ -1023,14 +1241,21 @@ function recalcAbonoMonto(){
     const qty = Math.min(Math.max(+inp.value||0, 0), it.qty||1);
     total += qty * (+it.precio||0);
   });
-  $('abono-monto').value = Math.min(total, abonoSaldo);
+  const descuento = totalAbonoDescuento();
+  const saldoConDescuento = Math.max(0, abonoSaldo - descuento);
+  $('abono-info').textContent = descuento > 0
+    ? `Saldo pendiente: ${fmt(abonoSaldo)} · Descuento: -${fmt(descuento)} · A pagar: ${fmt(saldoConDescuento)}`
+    : `Saldo pendiente: ${fmt(abonoSaldo)}`;
+  $('abono-monto').value = Math.min(total || saldoConDescuento, saldoConDescuento);
 }
 async function confirmarAbono(){
   const monto = +$('abono-monto').value;
+  const descuento = totalAbonoDescuento();
+  const saldoConDescuento = Math.max(0, abonoSaldo - descuento);
   if (!monto || monto <= 0) return showToast('Ingresá un monto válido');
-  if (monto > abonoSaldo + 0.01) return showToast('El monto supera el saldo pendiente');
+  if (monto > saldoConDescuento + 0.01) return showToast('El monto supera el saldo pendiente');
   try{
-    const r = await api(`/pos/comandas/${abonoTicketId}/pago-parcial`, { method:'PUT', body: JSON.stringify({ monto, metodo_pago: $('abono-metodo').value }) });
+    const r = await api(`/pos/comandas/${abonoTicketId}/pago-parcial`, { method:'PUT', body: JSON.stringify({ monto, metodo_pago: $('abono-metodo').value, descuento }) });
     closeModal('abono-modal');
     await Promise.all([cargarTickets(), cargarCajaEstado(), cargarMesas()]);
     renderMesasGrid();
@@ -1051,34 +1276,40 @@ function renderTickets(){
   if (!ticketsAbiertos.length) { $('tickets-wrap').innerHTML = '<div class="empty-msg">No hay pedidos abiertos</div>'; return; }
   $('tickets-wrap').innerHTML = ticketsAbiertos.map(t => {
     const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
-    const lineas = its.map(i => `<div class="it" style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-      <span>${i.qty||1}× ${esc(i.nombre)}</span>
-      <span style="display:flex;align-items:center;gap:6px">
-        <span style="font-weight:600">${fmt((+i.precio||0)*(i.qty||1))}</span>
-        ${t.mesa_id ? `<button class="btn-qty btn-qty-minus" title="Quitar 1" onclick="quitarUnidadTicket('${t.mesa_id}','${esc(i.nombre).replace(/'/g,"\\'")}')">−</button>
-        <button class="btn-qty btn-qty-plus" title="Agregar 1" onclick="agregarUnidadTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}','${i.item_id||''}','${esc(i.nombre).replace(/'/g,"\\'")}','${i.emoji||''}',${+i.precio||0})">+</button>` : ''}
+    const lineas = its.map(i => t.mesa_id ? `<div class="it" style="display:flex;align-items:center;gap:10px">
+      <button class="btn-qty btn-qty-minus" title="Quitar 1" onclick="quitarUnidadTicket('${t.mesa_id}','${esc(i.nombre).replace(/'/g,"\\'")}')">−</button>
+      <span style="flex:1;display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.qty||1}× ${esc(i.nombre)}</span>
+        <span style="font-weight:600;flex:none">${fmt((+i.precio||0)*(i.qty||1))}</span>
       </span>
+      <button class="btn-qty btn-qty-plus" title="Agregar 1" onclick="agregarUnidadTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}','${i.item_id||''}','${esc(i.nombre).replace(/'/g,"\\'")}','${i.emoji||''}',${+i.precio||0})">+</button>
+    </div>` : `<div class="it" style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <span>${i.qty||1}× ${esc(i.nombre)}</span>
+      <span style="font-weight:600">${fmt((+i.precio||0)*(i.qty||1))}</span>
     </div>`).join('');
-    const montoTicket = its.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+    const montoBruto = its.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+    const descuento = +t.descuento || 0;
+    const montoTicket = Math.max(0, montoBruto - descuento);
     const pagado = +t.pagado || 0;
     const saldo = Math.max(0, montoTicket - pagado);
     const siguiente = t.estado === 'nuevo' ? ['listo','Marcar listo'] : null;
     return `<div class="ticket-card ${t.estado==='listo'?'listo':''}" ${t.mesa_id?`id="ticket-mesa-${t.mesa_id}"`:''}>
       <h4>${esc(t.mesa_nombre || 'Barra')} <span class="badge ${t.estado==='nuevo'?'b-amber':t.estado==='listo'?'b-green':'b-purple'}">${t.estado}</span></h4>
       ${lineas}
+      ${descuento>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--amber-d)"><span>Descuento</span><span>-${fmt(descuento)}</span></div>` : ''}
       <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)"><span>Total</span><span>${fmt(montoTicket)}</span></div>
       ${pagado>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d)"><span>Pagado</span><span>${fmt(pagado)}</span></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:20px;font-weight:800;color:var(--red-d)"><span style="font-size:14px">Saldo</span><span>${fmt(saldo)}</span></div>` : ''}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-        ${t.mesa_id ? `<button class="btn btn-outline btn-sm" onclick="seleccionarMesa('${t.mesa_id}')">➕ Agregar</button>` : ''}
-        ${t.mesa_id ? `<button class="btn btn-outline btn-sm" onclick="abrirProductoManualTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}')">✏️ Manual</button>` : ''}
-        <button class="btn btn-outline btn-sm" onclick="abrirAbonoModal('${t.id}',${saldo})">💰 Abono</button>
-        ${siguiente ? `<button class="btn btn-outline btn-sm" onclick="cambiarEstadoTicket('${t.id}','${siguiente[0]}')">${siguiente[1]}</button>` : ''}
+      <div class="ticket-actions-grid">
+        ${t.mesa_id ? `<button class="btn btn-outline" onclick="seleccionarMesa('${t.mesa_id}')">➕ Agregar</button>` : ''}
+        ${t.mesa_id ? `<button class="btn btn-outline" onclick="abrirProductoManualTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}')">✏️ Manual</button>` : ''}
+        <button class="btn btn-outline" onclick="abrirAbonoModal('${t.id}',${saldo})">💰 Abono</button>
+        ${siguiente ? `<button class="btn btn-outline" onclick="cambiarEstadoTicket('${t.id}','${siguiente[0]}')">${siguiente[1]}</button>` : ''}
       </div>
-      <div style="display:flex;gap:6px;margin-top:6px">
+      <div class="mesa-actions" style="margin-top:8px">
         ${pagado>0
-          ? `<button class="btn btn-primary btn-sm" style="flex:1" onclick="abrirAbonoModal('${t.id}',${saldo})">💳 Cobrar saldo</button>`
-          : `<button class="btn btn-primary btn-sm" style="flex:1" onclick="cobrarTicket('${t.id}')">💳 Cobrar</button>`}
+          ? `<button class="btn btn-primary" onclick="cobrarSaldoTicket('${t.id}')">💳 Cobrar saldo</button>`
+          : `<button class="btn btn-primary" onclick="cobrarTicket('${t.id}')">💳 Cobrar</button>`}
         <button class="icon-btn" title="Borrar pedido" style="border:1px solid var(--red);color:var(--red-d);border-radius:var(--r)" onclick="cancelarTicket('${t.id}')">🗑</button>
       </div>
     </div>`;
@@ -1102,14 +1333,14 @@ let cobroOrigenTicketId = null;
 let cobroOrigenMesaId = null, cobroOrigenMesaNum = null;
 let cobroItems = [];
 let cobroEsClienteDefault = false;
-let cobroDescuentoMontoDefault = '';
+let cobroYaPagado = 0, cobroEsSaldo = false;
 function cobrarCarrito(){
   if (!carrito.length) return showToast('El pedido está vacío');
   cobroOrigenTicketId = null;
   cobroOrigenMesaId = selMesaId; cobroOrigenMesaNum = selMesaNum;
   cobroItems = carrito.map(c => ({...c}));
   cobroEsClienteDefault = $('cart-es-cliente').checked;
-  cobroDescuentoMontoDefault = $('cart-descuento-monto').value || '';
+  cobroYaPagado = 0; cobroEsSaldo = false;
   abrirCobro();
 }
 function cobrarTicket(id){
@@ -1119,42 +1350,67 @@ function cobrarTicket(id){
   const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
   cobroItems = its.map(i => ({ item_id:i.item_id, nombre:i.nombre, emoji:i.emoji, precio:+i.precio||0, qty:i.qty||1 }));
   cobroEsClienteDefault = false;
-  cobroDescuentoMontoDefault = '';
+  cobroYaPagado = 0; cobroEsSaldo = false;
+  abrirCobro();
+}
+// Cobrar el saldo restante de un pedido que ya tiene abonos — abre el mismo
+// modal completo de cobro (métodos, mixto, fiado, descuento), en vez del
+// modal simplificado de abono.
+function cobrarSaldoTicket(id){
+  const t = ticketsAbiertos.find(x => x.id === id); if (!t) return;
+  cobroOrigenTicketId = id;
+  cobroOrigenMesaId = t.mesa_id || null; cobroOrigenMesaNum = t.mesa_num || null;
+  const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
+  cobroItems = its.map(i => ({ item_id:i.item_id, nombre:i.nombre, emoji:i.emoji, precio:+i.precio||0, qty:i.qty||1 }));
+  cobroEsClienteDefault = false;
+  cobroYaPagado = +t.pagado || 0;
+  cobroEsSaldo = true;
   abrirCobro();
 }
 function subtotalCobro(){ return cobroItems.reduce((a,i) => a + i.precio*i.qty, 0); }
-function toggleCobroDescuento(){
-  const checked = $('cobro-es-cliente').checked;
-  $('cobro-descuento-monto-wrap').classList.toggle('hide', !checked);
-  if (checked && !$('cobro-descuento-monto').value) $('cobro-descuento-monto').value = DESCUENTO_CLIENTE || '';
-  actualizarCobroTotal();
-}
+function toggleCobroDescuento(){ renderCobroItems(); actualizarCobroTotal(); }
 function descuentoCobro(){
   if (!$('cobro-es-cliente')?.checked) return 0;
-  const monto = +$('cobro-descuento-monto').value || 0;
-  return Math.min(Math.max(monto,0), subtotalCobro());
+  return cobroItems.reduce((a,i) => a + Math.min(Math.max(+i.descuento||0,0), i.precio*i.qty), 0);
+}
+function totalCobro(){ return Math.max(0, subtotalCobro() - descuentoCobro() - cobroYaPagado); }
+function cambiarDescuentoCobroLinea(idx, valor){
+  const i = cobroItems[idx]; if (!i) return;
+  i.descuento = Math.max(0, +valor||0);
+  actualizarCobroTotal();
+}
+function renderCobroItems(){
+  const esCliente = $('cobro-es-cliente')?.checked;
+  $('cobro-items').innerHTML = cobroItems.map((i,idx) => `<div class="cart-line">
+    <span class="nom">${i.qty}× ${esc(i.nombre)}</span>
+    <span>${fmt(i.precio*i.qty)}</span>
+    ${esCliente ? `<input type="number" min="0" step="100" value="${i.descuento||''}" placeholder="Desc." title="Descuento para este artículo" style="width:64px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px" oninput="cambiarDescuentoCobroLinea(${idx}, this.value)">` : ''}
+  </div>`).join('');
 }
 function abrirCobro(){
   if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); return; }
-  $('cobro-items').innerHTML = cobroItems.map(i => `<div class="cart-line"><span class="nom">${i.qty}× ${esc(i.nombre)}</span><span>${fmt(i.precio*i.qty)}</span></div>`).join('');
   $('cobro-es-cliente').checked = cobroEsClienteDefault;
-  $('cobro-descuento-monto').value = cobroDescuentoMontoDefault;
-  $('cobro-descuento-monto-wrap').classList.toggle('hide', !cobroEsClienteDefault);
+  renderCobroItems();
   $('cobro-metodo').value = 'efectivo';
   $('cobro-recibido').value = ''; $('cobro-cambio').value = '';
   $('cobro-mix-efectivo').value = 0; $('cobro-mix-tarjeta').value = 0; $('cobro-mix-nequi').value = 0;
   $('cobro-cliente').value = '';
   $('cobro-fiado-nombre').value = ''; $('cobro-fiado-telefono').value = '';
+  $('cobro-total-label').textContent = cobroEsSaldo ? 'Saldo a cobrar' : 'Total';
   renderCobroCampos();
   actualizarCobroTotal();
   openModal('cobro-modal');
 }
 function actualizarCobroTotal(){
   const sub = subtotalCobro(), desc = descuentoCobro();
-  $('cobro-subtotal-row').classList.toggle('hide', desc<=0);
+  const mostrarDesglose = desc>0 || cobroYaPagado>0;
+  $('cobro-subtotal-row').classList.toggle('hide', !mostrarDesglose);
   $('cobro-descuento-row').classList.toggle('hide', desc<=0);
-  if (desc>0) { $('cobro-subtotal').textContent = fmt(sub); $('cobro-descuento').textContent = '-'+fmt(desc); }
-  $('cobro-total').textContent = fmt(sub-desc);
+  $('cobro-pagado-row').classList.toggle('hide', cobroYaPagado<=0);
+  if (mostrarDesglose) $('cobro-subtotal').textContent = fmt(sub);
+  if (desc>0) $('cobro-descuento').textContent = '-'+fmt(desc);
+  if (cobroYaPagado>0) $('cobro-pagado').textContent = '-'+fmt(cobroYaPagado);
+  $('cobro-total').textContent = fmt(totalCobro());
   calcCambio();
 }
 function renderCobroCampos(){
@@ -1166,7 +1422,7 @@ function renderCobroCampos(){
   $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : 'Confirmar cobro';
 }
 function calcCambio(){
-  const total = subtotalCobro() - descuentoCobro();
+  const total = totalCobro();
   const recibido = +$('cobro-recibido').value || 0;
   $('cobro-cambio').value = Math.max(0, recibido - total);
 }
@@ -1228,18 +1484,34 @@ function imprimirRecibo(){
 }
 async function confirmarFiado(){
   if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); closeModal('cobro-modal'); return; }
-  const subtotal = subtotalCobro();
-  const descuento = descuentoCobro();
-  const total = subtotal - descuento;
   const cliente_nombre = $('cobro-fiado-nombre').value.trim();
   const cliente_telefono = $('cobro-fiado-telefono').value.trim();
   if (!cliente_nombre || !cliente_telefono) return showToast('Nombre y teléfono del cliente son obligatorios');
-  const body = {
-    items: cobroItems, subtotal, descuento, total,
-    cliente_nombre, cliente_telefono,
-    mesa_id: cobroOrigenMesaId || undefined, mesa_num: cobroOrigenMesaNum || undefined,
-    comanda_id: cobroOrigenTicketId || undefined,
-  };
+  let body;
+  if (cobroEsSaldo) {
+    // Ya hay abonos sobre este pedido — el monto que queda en fiado es solo
+    // el saldo, pero se guardan los artículos reales del pedido completo
+    // (no un renglón genérico) para poder ver después qué se consumió.
+    const totalSaldo = totalCobro();
+    if (totalSaldo <= 0) return showToast('No hay saldo pendiente para dejar en fiado');
+    body = {
+      items: cobroItems,
+      subtotal: totalSaldo, descuento: 0, total: totalSaldo,
+      cliente_nombre, cliente_telefono,
+      mesa_id: cobroOrigenMesaId || undefined, mesa_num: cobroOrigenMesaNum || undefined,
+      comanda_id: cobroOrigenTicketId || undefined,
+    };
+  } else {
+    const subtotal = subtotalCobro();
+    const descuento = descuentoCobro();
+    const total = subtotal - descuento;
+    body = {
+      items: cobroItems, subtotal, descuento, total,
+      cliente_nombre, cliente_telefono,
+      mesa_id: cobroOrigenMesaId || undefined, mesa_num: cobroOrigenMesaNum || undefined,
+      comanda_id: cobroOrigenTicketId || undefined,
+    };
+  }
   try{
     await api('/pos/fiados', { method:'POST', body: JSON.stringify(body) });
     if (cobroOrigenTicketId) await api(`/pos/comandas/${cobroOrigenTicketId}/estado`, { method:'PUT', body: JSON.stringify({ estado:'entregado' }) });
@@ -1251,10 +1523,31 @@ async function confirmarFiado(){
     showToast(`📝 Deuda registrada para ${cliente_nombre} ✓`);
   }catch(e){ showToast('Error: '+e.message); }
 }
+async function confirmarCobroSaldo(){
+  if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); closeModal('cobro-modal'); return; }
+  const descuento = descuentoCobro();
+  const monto = totalCobro();
+  if (monto <= 0) return showToast('No hay saldo pendiente');
+  const metodo = $('cobro-metodo').value;
+  const body = { monto, metodo_pago: metodo, descuento };
+  if (metodo === 'mixto') {
+    body.monto_efectivo = +$('cobro-mix-efectivo').value||0;
+    body.monto_tarjeta = +$('cobro-mix-tarjeta').value||0;
+    body.monto_nequi = +$('cobro-mix-nequi').value||0;
+  }
+  try{
+    const r = await api(`/pos/comandas/${cobroOrigenTicketId}/pago-parcial`, { method:'PUT', body: JSON.stringify(body) });
+    closeModal('cobro-modal');
+    await Promise.all([cargarTickets(), cargarCajaEstado(), cargarMesas()]);
+    renderMesasGrid();
+    showToast(r.completado ? 'Pedido cobrado ✓' : `Abono registrado — saldo: ${fmt(r.saldo)}`);
+  }catch(e){ showToast('Error: '+e.message); }
+}
 async function confirmarCobro(){
   if (!cobroItems.length) return;
   if ($('cobro-metodo').value === 'fiado') return confirmarFiado();
   if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); closeModal('cobro-modal'); return; }
+  if (cobroEsSaldo) return confirmarCobroSaldo();
   const subtotal = subtotalCobro();
   const descuento = descuentoCobro();
   const total = subtotal - descuento;
@@ -1301,7 +1594,7 @@ async function confirmarCobro(){
 // ================= CAJA =================
 let cajaActual = null;
 let cajaPendiente = null;
-function cajaLista(){ return !cajaPendiente && !!cajaActual && cajaActual.estado === 'abierta'; }
+function cajaLista(){ return !!cajaActual && cajaActual.estado === 'abierta'; }
 async function cargarCajaEstado(){
   const [caja, pendiente] = await Promise.all([
     api('/admin/caja').catch(()=>null),
@@ -1310,7 +1603,7 @@ async function cargarCajaEstado(){
   cajaActual = caja;
   cajaPendiente = pendiente || null;
   const pill = $('caja-pill');
-  if (cajaPendiente) { pill.textContent = '⚠️ Caja atrasada'; pill.className = 'caja-pill cerrada'; }
+  if (cajaPendiente) { pill.textContent = '⚠️ Caja atrasada'; pill.className = 'caja-pill abierta'; }
   else if (cajaLista()) { pill.textContent = 'Caja abierta'; pill.className = 'caja-pill abierta'; }
   else { pill.textContent = 'Caja cerrada'; pill.className = 'caja-pill cerrada'; }
   renderCajaEstadoCard();
@@ -1318,9 +1611,12 @@ async function cargarCajaEstado(){
 function renderCajaEstadoCard(){
   const body = $('caja-estado-body');
   if (cajaPendiente) {
+    // Se puede seguir cobrando con esta misma caja aunque sea de un día
+    // anterior (un bar que trabaja hasta la madrugada no la cierra justo a
+    // medianoche) — se ofrece cerrarla, pero no es obligatorio para operar.
     body.innerHTML = `
-      <p style="color:var(--red-d);font-weight:600">⚠️ Tenés una caja del ${esc(String(cajaPendiente.fecha).slice(0,10))} sin cerrar.</p>
-      <p style="color:var(--text2);font-size:13px;margin:4px 0 8px">No podés operar hasta cerrarla.</p>
+      <p style="color:var(--amber-d);font-weight:600">⚠️ Seguís con la caja del ${esc(String(cajaPendiente.fecha).slice(0,10))} sin cerrar.</p>
+      <p style="color:var(--text2);font-size:13px;margin:4px 0 8px">Podés seguir cobrando con ella — cerrala cuando termines el turno.</p>
       <button class="btn btn-danger btn-sm" onclick="abrirModalCerrarCajaAtrasada()">Cerrar caja atrasada</button>`;
   } else if (cajaLista()) {
     body.innerHTML = `
@@ -1397,59 +1693,231 @@ async function confirmarCerrarCaja(){
   }catch(e){ showToast('Error: '+e.message); }
 }
 // ================= CLIENTES CON DEUDA (FIADOS) =================
+let fiadosCache = [], notasCache = [];
+// Intenta extraer de una nota manual el monto más alto mencionado (ej. "...
+// = 35.000 + 100.000" o "$ 61.800"), para mostrar un saldo aproximado antes
+// de activarla como deuda real.
+function estimarMontoNota(texto){
+  const montos = (texto.match(/[\d][\d.,]*\d/g) || [])
+    .map(s => +s.replace(/\./g,'').replace(',','.'))
+    .filter(n => n >= 100);
+  return montos.length ? Math.max(...montos) : 0;
+}
 async function cargarFiados(){
   const estado = $('fiados-filtro').value;
   const data = await api(`/pos/fiados${estado ? '?estado='+estado : ''}`);
+  fiadosCache = data;
   const pendientes = data.filter(f => f.estado === 'pendiente');
-  const totalPend = pendientes.reduce((a,f) => a + (+f.total||0), 0);
+  const totalPend = pendientes.reduce((a,f) => a + Math.max(0, (+f.total||0) - (+f.pagado_monto||0)), 0);
   $('fiados-total-pendiente').textContent = pendientes.length ? `${fmt(totalPend)} pendiente${pendientes.length>1?'s':''} (${pendientes.length})` : '';
 
   // Deudas anotadas a mano en la ficha del cliente (previas al sistema de
   // fiados) — se muestran igual acá, salvo en el filtro "Pagadas" donde no
   // aplica (una nota no tiene estado de pago).
   let notasRows = '';
+  notasCache = [];
   if (estado !== 'pagada') {
     try{
       const clientes = await api('/pos/clientes');
-      notasRows = clientes.filter(c => (c.notas||'').trim()).map(c => {
+      notasCache = clientes.filter(c => (c.notas||'').trim());
+      notasRows = notasCache.map((c,idx) => {
         const nota = c.notas.trim();
         const corta = nota.length > 50 ? nota.slice(0,50)+'…' : nota;
+        const montoEst = estimarMontoNota(nota);
         return `<tr>
-          <td>${esc(c.nombre)}</td>
+          <td><a href="#" onclick="verNotaCliente(${idx});return false;" style="color:var(--blue-d);font-weight:600;text-decoration:none">${esc(c.nombre)}</a></td>
           <td>${esc(c.telefono||'—')}</td>
           <td>—</td>
           <td>—</td>
-          <td>—</td>
-          <td colspan="2"><span class="badge b-purple" title="${esc(nota)}">📝 ${esc(corta)}</span></td>
+          <td>${montoEst>0 ? `<b>≈ ${fmt(montoEst)}</b>` : '—'}</td>
+          <td><span class="badge b-purple">📝 ${esc(corta)}</span></td>
+          <td><button class="btn btn-outline btn-sm" onclick="verNotaCliente(${idx})">✅ Activar</button></td>
         </tr>`;
       }).join('');
     }catch(e){}
   }
 
   if (!data.length && !notasRows) { $('fiados-tbody').innerHTML = '<tr><td colspan="7" class="empty-msg">Sin deudas registradas</td></tr>'; return; }
-  $('fiados-tbody').innerHTML = data.map(f => `
+  $('fiados-tbody').innerHTML = data.map(f => {
+    const saldo = Math.max(0, (+f.total||0) - (+f.pagado_monto||0));
+    return `
     <tr>
-      <td>${esc(f.cliente_nombre)}</td>
+      <td><a href="#" onclick="verDetalleFiado('${f.id}');return false;" style="color:var(--blue-d);font-weight:600;text-decoration:none">${esc(f.cliente_nombre)}</a></td>
       <td>${esc(f.cliente_telefono)}</td>
       <td>${f.mesa_num ? 'Mesa '+esc(f.mesa_num) : '—'}</td>
       <td>${fmtDate(f.creado)}</td>
-      <td><b>${fmt(f.total)}</b></td>
+      <td><b>${fmt(f.total)}</b>${(+f.pagado_monto||0)>0 ? `<div style="font-size:11px;font-weight:400;color:var(--green-d)">Abonado ${fmt(f.pagado_monto)}</div>
+        ${f.estado==='pendiente' ? `<div style="font-size:11px;font-weight:600;color:var(--red-d)">Saldo ${fmt(saldo)}</div>` : ''}` : ''}</td>
       <td><span class="badge ${f.estado==='pendiente'?'b-amber':'b-green'}">${f.estado==='pendiente'?'Pendiente':'Pagada'}</span></td>
-      <td>${f.estado==='pendiente' ? `<button class="btn btn-primary btn-sm" onclick="abrirPagarFiado('${f.id}')">💰 Marcar pagada</button>` : (f.pagado_en?fmtDate(f.pagado_en):'—')}</td>
-    </tr>`).join('') + notasRows;
+      <td>${f.estado==='pendiente'
+        ? `<button class="btn btn-outline btn-sm" onclick="abrirFiadoPagoModal('${f.id}',${saldo})">💰 Abono</button>
+           <button class="btn btn-primary btn-sm" onclick="abrirFiadoPagoModal('${f.id}',${saldo},true)">✅ Pagar todo</button>`
+        : (f.pagado_en?fmtDate(f.pagado_en):'—')}</td>
+    </tr>`;
+  }).join('') + notasRows;
 }
-let _fiadoPagarId = null;
-function abrirPagarFiado(id){
-  _fiadoPagarId = id;
-  const metodo = prompt('¿Con qué método se pagó? (efectivo / tarjeta / nequi)', 'efectivo');
-  if (!metodo) return;
-  pagarFiado(id, metodo.trim().toLowerCase());
+let fiadoVerId = null;
+function renderFiadoDetalleBody(f){
+  const items = typeof f.items === 'string' ? JSON.parse(f.items||'[]') : (f.items||[]);
+  const sumItems = items.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+  // Si lo consumido suma más que el total del fiado, es porque ya se había
+  // pagado una parte en efectivo antes de dejar el resto fiado.
+  const yaPagadoAntes = Math.max(0, sumItems - (+f.total||0));
+  const pagadoFiado = +f.pagado_monto || 0;
+  const saldoFiado = Math.max(0, (+f.total||0) - pagadoFiado);
+  $('fiado-ver-title').textContent = `${f.cliente_nombre}${f.mesa_num ? ' — Mesa '+f.mesa_num : ''}`;
+  $('fiado-ver-body').innerHTML = (items.length ? items.map(i => `
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);${i.pagado?'opacity:0.55':''}">
+      <span>${i.qty||1}× ${esc(i.nombre)}${i.pagado?' <span style="color:var(--green-d);font-size:11px">✓ pagado</span>':''}</span><span>${fmt((+i.precio||0)*(i.qty||1))}</span>
+    </div>`).join('') : '<p style="color:var(--text2)">Sin detalle de artículos.</p>')
+    + (yaPagadoAntes>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d);margin-top:8px"><span>Consumo total</span><span>${fmt(sumItems)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d)"><span>Ya pagado</span><span>-${fmt(yaPagadoAntes)}</span></div>` : '')
+    + `<div style="display:flex;justify-content:space-between;font-weight:700;margin-top:4px;padding-top:6px"><span>${yaPagadoAntes>0?'Saldo en fiado':'Total'}</span><span>${fmt(f.total)}</span></div>`
+    + (pagadoFiado>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d);margin-top:4px"><span>Abonado</span><span>-${fmt(pagadoFiado)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--red-d)"><span>Saldo pendiente</span><span>${fmt(saldoFiado)}</span></div>` : '');
+  $('fiado-ver-acciones').innerHTML = f.estado==='pendiente'
+    ? `<button class="btn btn-outline btn-sm" onclick="abrirFiadoPagoModal('${f.id}',${saldoFiado})">💰 Abono</button>
+       <button class="btn btn-outline btn-sm" onclick="toggleFiadoAddPanel()">➕ Agregar</button>
+       <button class="btn btn-primary btn-sm" onclick="abrirFiadoPagoModal('${f.id}',${saldoFiado},true)">✅ Pagar todo</button>`
+    : '';
 }
-async function pagarFiado(id, metodo){
+function verDetalleFiado(id){
+  const f = fiadosCache.find(x => x.id === id); if (!f) return;
+  fiadoVerId = id;
+  renderFiadoDetalleBody(f);
+  $('fiado-add-panel').classList.add('hide');
+  openModal('fiado-ver-modal');
+}
+function toggleFiadoAddPanel(){
+  const panel = $('fiado-add-panel');
+  panel.classList.toggle('hide');
+  if (!panel.classList.contains('hide')){ $('fiado-add-buscar').value = ''; renderFiadoAddLista(); $('fiado-add-buscar').focus(); }
+}
+function renderFiadoAddLista(){
+  const q = ($('fiado-add-buscar').value||'').trim().toLowerCase();
+  const lista = items.filter(it => !q || it.nombre.toLowerCase().includes(q)).slice(0, 30);
+  $('fiado-add-lista').innerHTML = lista.length ? lista.map(it => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 9px;border:1px solid var(--border);border-radius:8px">
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.emoji||''} ${esc(it.nombre)}</span>
+      <span style="font-weight:600;flex:none">${fmt(it.precio)}</span>
+      <button class="btn-qty btn-qty-plus" title="Agregar" onclick="agregarItemFiado('${it.id}','${esc(it.nombre).replace(/'/g,"\\'")}',${+it.precio||0},'${it.emoji||''}')">+</button>
+    </div>`).join('') : '<div class="empty-msg" style="padding:10px 0">Sin resultados</div>';
+}
+async function agregarItemFiado(item_id, nombre, precio, emoji){
+  if (!fiadoVerId) return;
   try{
-    await api(`/pos/fiados/${id}/pagar`, { method:'PUT', body: JSON.stringify({ metodo_pago: metodo }) });
-    showToast('Deuda marcada como pagada ✓');
-    cargarFiados();
+    await api(`/pos/fiados/${fiadoVerId}/agregar-item`, { method:'PUT', body: JSON.stringify({ item_id, nombre, precio, emoji, qty: 1 }) });
+    showToast(`${nombre} agregado ✓`);
+    await cargarFiados();
+    const f = fiadosCache.find(x => x.id === fiadoVerId);
+    if (f) renderFiadoDetalleBody(f);
+  }catch(e){ showToast('Error: '+e.message); }
+}
+function verNotaCliente(idx){
+  const c = notasCache[idx]; if (!c) return;
+  fiadoVerId = null;
+  $('fiado-ver-title').textContent = `${c.nombre}${c.telefono ? ' · '+c.telefono : ''}`;
+  $('fiado-ver-body').innerHTML = `<p style="white-space:pre-wrap;margin:0">${esc(c.notas.trim())}</p>`;
+  $('fiado-ver-acciones').innerHTML = `<button class="btn btn-primary btn-sm" onclick="abrirActivarDeudaModal(${idx})">✅ Activar deuda</button>`;
+  $('fiado-add-panel').classList.add('hide');
+  openModal('fiado-ver-modal');
+}
+let _activarDeudaIdx = null;
+function abrirActivarDeudaModal(idx){
+  const c = notasCache[idx]; if (!c) return;
+  _activarDeudaIdx = idx;
+  closeModal('fiado-ver-modal');
+  $('ad-cliente').value = c.nombre + (c.telefono ? ' · '+c.telefono : '');
+  $('ad-desc').value = c.notas.trim();
+  const montoEst = estimarMontoNota(c.notas.trim());
+  $('ad-monto').value = montoEst > 0 ? montoEst : '';
+  openModal('activar-deuda-modal');
+}
+async function confirmarActivarDeuda(){
+  const c = notasCache[_activarDeudaIdx]; if (!c) return;
+  const desc = $('ad-desc').value.trim();
+  const monto = +$('ad-monto').value;
+  if (!desc) return showToast('Ingresá una descripción');
+  if (!monto || monto <= 0) return showToast('Ingresá un monto válido');
+  try{
+    await api('/pos/fiados', { method:'POST', body: JSON.stringify({
+      cliente_id: c.id,
+      items: [{ item_id: null, nombre: desc, precio: monto, qty: 1 }],
+      subtotal: monto, descuento: 0, total: monto
+    })});
+    await api(`/pos/clientes/${c.id}/notas`, { method:'PUT', body: JSON.stringify({ notas: '' }) });
+    closeModal('activar-deuda-modal');
+    await cargarFiados();
+    showToast('Deuda activada ✓');
+  }catch(e){ showToast('Error: '+e.message); }
+}
+let _fiadoPagoId = null, _fiadoPagoSaldo = 0, _fiadoPagoItems = [], _fiadoPagoTodo = false;
+function abrirFiadoPagoModal(id, saldo, pagarTodo){
+  closeModal('fiado-ver-modal');
+  _fiadoPagoId = id; _fiadoPagoSaldo = saldo; _fiadoPagoTodo = !!pagarTodo;
+  const f = fiadosCache.find(x => x.id === id);
+  _fiadoPagoItems = f ? (typeof f.items === 'string' ? JSON.parse(f.items||'[]') : (f.items||[])) : [];
+  $('fp-monto').disabled = false;
+  $('fp-metodo').value = 'efectivo';
+  $('fp-es-cliente').checked = false;
+  $('fp-descuento').value = 0;
+  $('fp-descuento-field').classList.add('hide');
+  const itemField = $('fp-item-field');
+  const sel = $('fp-item');
+  const pendientes = _fiadoPagoItems.map((it,i)=>({...it,_i:i})).filter(it => !it.pagado);
+  if (!pagarTodo && pendientes.length > 1) {
+    itemField.style.display = '';
+    sel.innerHTML = '<option value="">Al total de la deuda</option>' +
+      pendientes.map(it => `<option value="${it._i}">${it.qty||1}× ${esc(it.nombre)} — ${fmt((+it.precio||0)*(+it.qty||1))}</option>`).join('');
+    sel.value = '';
+  } else {
+    itemField.style.display = 'none';
+    sel.innerHTML = '<option value="">Al total de la deuda</option>';
+  }
+  $('fp-monto').value = pagarTodo ? saldo : '';
+  fpActualizarInfo();
+  openModal('fiado-pago-modal');
+}
+function fpSeleccionarItem(){
+  const v = $('fp-item').value;
+  $('fp-descuento-toggle').classList.toggle('hide', v !== '');
+  if (v !== '') { $('fp-es-cliente').checked = false; $('fp-descuento').value = 0; $('fp-descuento-field').classList.add('hide'); }
+  if (v === '') { $('fp-monto').value = ''; $('fp-monto').disabled = false; fpActualizarInfo(); return; }
+  const it = _fiadoPagoItems[+v];
+  $('fp-monto').value = (+it.precio||0)*(+it.qty||1);
+  $('fp-monto').disabled = true;
+  fpActualizarInfo();
+}
+function toggleFpDescuento(){
+  const on = $('fp-es-cliente').checked;
+  $('fp-descuento-field').classList.toggle('hide', !on);
+  if (!on) $('fp-descuento').value = 0;
+  fpActualizarInfo();
+}
+function fpActualizarInfo(){
+  const itemSel = $('fp-item-field').style.display !== 'none' ? $('fp-item').value : '';
+  const descuento = itemSel === '' ? Math.max(0, +$('fp-descuento').value || 0) : 0;
+  const saldoConDescuento = Math.max(0, _fiadoPagoSaldo - descuento);
+  $('fp-info').textContent = descuento > 0
+    ? `Saldo pendiente: ${fmt(_fiadoPagoSaldo)} · Descuento: -${fmt(descuento)} · A pagar: ${fmt(saldoConDescuento)}`
+    : `Saldo pendiente: ${fmt(_fiadoPagoSaldo)}`;
+  if (_fiadoPagoTodo) $('fp-monto').value = saldoConDescuento;
+}
+async function confirmarFiadoPago(){
+  const itemSel = $('fp-item-field').style.display !== 'none' ? $('fp-item').value : '';
+  const itemIndex = itemSel !== '' ? +itemSel : null;
+  const descuento = itemIndex == null ? Math.max(0, +$('fp-descuento').value || 0) : 0;
+  const saldoConDescuento = Math.max(0, _fiadoPagoSaldo - descuento);
+  const monto = +$('fp-monto').value;
+  if (!monto || monto <= 0) return showToast('Ingresá un monto válido');
+  if (monto > saldoConDescuento + 0.01) return showToast('El monto supera el saldo pendiente');
+  try{
+    const body = { metodo_pago: $('fp-metodo').value };
+    if (itemIndex != null) body.item_index = itemIndex; else { body.monto = monto; body.descuento = descuento; }
+    const r = await api(`/pos/fiados/${_fiadoPagoId}/pagar`, { method:'PUT', body: JSON.stringify(body) });
+    closeModal('fiado-pago-modal');
+    await cargarFiados();
+    showToast(r.completado ? 'Deuda pagada ✓' : `Abono registrado — saldo: ${fmt(r.saldo)}`);
   }catch(e){ showToast('Error: '+e.message); }
 }
 
@@ -1466,6 +1934,31 @@ async function cargarCajaHistorial(){
 
 // ---------- utils ----------
 function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+<script>
+/* Eye toggle para campos de contraseña */
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('input[type="password"]').forEach(function(inp){
+    var w=document.createElement('div');
+    w.style.cssText='position:relative;display:block';
+    inp.parentNode.insertBefore(w,inp);
+    w.appendChild(inp);
+    inp.style.paddingRight='38px';
+    var b=document.createElement('button');
+    b.type='button';
+    b.title='Ver/ocultar contraseña';
+    b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    b.style.cssText='position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;padding:2px;line-height:0;display:flex;align-items:center;justify-content:center;opacity:.6;transition:.1s';
+    b.onmousedown=function(e){e.preventDefault()};
+    b.onclick=function(){
+      var show=inp.type==='password';
+      inp.type=show?'text':'password';
+      b.style.opacity=show?'1':'.6';
+      b.style.color=show?'#0B8457':'#888';
+    };
+    w.appendChild(b);
+  });
+});
 </script>
 </body>
 </html>

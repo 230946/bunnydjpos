@@ -1,0 +1,676 @@
+<title>Arcana Mayor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout concept: a velvet reading table with three rites — tarot (deck
+   that cuts and deals into a spread), carta astral (a single sun-sign
+   medallion) and numerología (a row of number tiles) — sharing one
+   gilt-on-indigo token system so the three feel like one grimoire. */
+:root{
+  --bg: #0f0e1a;
+  --bg2: #16142a;
+  --ink: #ece7f5;
+  --ink-dim: #a79fc4;
+  --gold: #c7a456;
+  --gold-soft: #8d7640;
+  --plum: #4a2a4f;
+  --line: rgba(199,164,86,0.35);
+  --display: "Cinzel", "Georgia", serif;
+  --body: "EB Garamond", "Iowan Old Style", Georgia, serif;
+  --r: 14px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg: #0f0e1a; --bg2:#16142a; --ink:#ece7f5; --ink-dim:#a79fc4;
+  }
+}
+:root[data-theme="light"]{ --bg:#0f0e1a; --bg2:#16142a; --ink:#ece7f5; --ink-dim:#a79fc4; }
+
+*{ box-sizing:border-box; }
+body{
+  margin:0; min-height:100%;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(199,164,86,0.10), transparent 55%),
+    radial-gradient(ellipse at 10% 110%, rgba(74,42,79,0.35), transparent 50%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--body);
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+.wrap{ max-width:760px; margin:0 auto; padding-block:48px 64px; }
+
+/* ---- header ---- */
+.eyebrow{
+  text-align:center; font-family:var(--display); font-size:11px;
+  letter-spacing:.28em; text-transform:uppercase; color:var(--gold-soft);
+  margin:0 0 10px;
+}
+h1{
+  font-family:var(--display); text-align:center; font-weight:600;
+  font-size:clamp(28px,6vw,42px); letter-spacing:.04em; margin:0 0 10px;
+  text-wrap:balance;
+}
+.sub{
+  text-align:center; color:var(--ink-dim); font-size:17px; font-style:italic;
+  max-width:480px; margin:0 auto 32px; line-height:1.5;
+}
+.rule{
+  width:220px; height:1px; margin:0 auto 32px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* ---- tabs ---- */
+.tabs{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:40px; }
+.tab-btn{
+  font-family:var(--display); font-size:13px; letter-spacing:.05em;
+  background:transparent; color:var(--ink-dim); border:1px solid var(--line); border-radius:999px;
+  padding:10px 20px; cursor:pointer; transition:.2s;
+}
+.tab-btn:hover{ color:var(--gold); border-color:var(--gold); }
+.tab-btn.active{ background:var(--plum); border-color:var(--gold); color:var(--ink); }
+
+/* ---- spread picker ---- */
+.spreads{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:34px; }
+.spread-btn{
+  font-family:var(--display); font-size:13px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink);
+  background:transparent; border:1px solid var(--line); border-radius:999px;
+  padding:11px 22px; cursor:pointer; transition:.2s;
+}
+.spread-btn:hover{ border-color:var(--gold); color:var(--gold); }
+.spread-btn.active{ background:var(--gold); border-color:var(--gold); color:#1a1526; font-weight:600; }
+
+/* ---- deck / draw button ---- */
+.deck-zone{ display:flex; flex-direction:column; align-items:center; margin-bottom:8px; }
+.deck{
+  position:relative; width:96px; height:150px; margin-bottom:22px; cursor:pointer;
+  filter:drop-shadow(0 14px 24px rgba(0,0,0,.45));
+}
+.deck .card-back{ position:absolute; inset:0; transition:transform .4s cubic-bezier(.3,.8,.3,1); }
+.deck .card-back:nth-child(1){ transform:rotate(-6deg) translateX(-6px); }
+.deck .card-back:nth-child(2){ transform:rotate(0deg); }
+.deck .card-back:nth-child(3){ transform:rotate(6deg) translateX(6px); }
+.deck:hover .card-back:nth-child(1){ transform:rotate(-9deg) translateX(-10px); }
+.deck:hover .card-back:nth-child(3){ transform:rotate(9deg) translateX(10px); }
+.deck.cut .card-back:nth-child(1){ transform:rotate(-16deg) translateX(-34px) translateY(4px); }
+.deck.cut .card-back:nth-child(2){ transform:rotate(-14deg) translateX(-30px) translateY(4px); }
+.deck.cut .card-back:nth-child(3){ transform:rotate(16deg) translateX(34px) translateY(-4px); }
+
+.draw-btn{
+  font-family:var(--display); font-size:14px; letter-spacing:.12em; text-transform:uppercase;
+  background:var(--gold); color:#1a1526; border:none; border-radius:999px;
+  padding:14px 34px; cursor:pointer; font-weight:700; transition:.2s;
+  box-shadow:0 8px 20px rgba(199,164,86,.25);
+}
+.draw-btn:hover{ transform:translateY(-1px); box-shadow:0 12px 26px rgba(199,164,86,.35); }
+.draw-btn:active{ transform:translateY(0); }
+.hint{ color:var(--ink-dim); font-size:13px; margin-top:12px; text-align:center; max-width:380px; }
+
+/* ---- simple spread grid (1 / 3 cards) ---- */
+.spread{
+  display:grid; gap:22px; margin-top:44px;
+  grid-template-columns:repeat(var(--cols,1), minmax(0,1fr));
+}
+.slot{ display:flex; flex-direction:column; align-items:center; min-width:0; }
+.slot-label{
+  font-family:var(--display); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--gold-soft); margin-bottom:12px; text-align:center;
+}
+@media (min-width:620px){
+  .spread[data-count="3"]{ --cols:3; }
+}
+
+/* ---- Celtic Cross spread ---- */
+.cross-spread{ margin-top:44px; display:flex; flex-direction:column; gap:26px; }
+.cross-spread .slot{ display:flex; flex-direction:column; align-items:center; }
+@media (min-width:760px){
+  .cross-spread{
+    display:grid; justify-content:center; gap:16px;
+    grid-template-columns: repeat(3, minmax(0,148px)) 36px minmax(0,148px);
+    grid-template-areas:
+      ".  c5  .  .  c10"
+      "c4 c1  c6 .  c9"
+      ".  c2  .  .  c8"
+      ".  c3  .  .  c7";
+  }
+  .cross-spread .card{ max-width:148px; }
+  .cross-spread .cc-5{ grid-area:c5; } .cross-spread .cc-4{ grid-area:c4; }
+  .cross-spread .cc-1{ grid-area:c1; } .cross-spread .cc-6{ grid-area:c6; }
+  .cross-spread .cc-2{ grid-area:c2; } .cross-spread .cc-3{ grid-area:c3; }
+  .cross-spread .cc-10{ grid-area:c10; } .cross-spread .cc-9{ grid-area:c9; }
+  .cross-spread .cc-8{ grid-area:c8; } .cross-spread .cc-7{ grid-area:c7; }
+}
+
+/* ---- tarot card ---- */
+.card{
+  width:100%; max-width:220px; aspect-ratio:5/8; perspective:1200px; cursor:pointer;
+}
+.card-inner{
+  position:relative; width:100%; height:100%; transition:transform .7s cubic-bezier(.3,.9,.3,1);
+  transform-style:preserve-3d;
+}
+.card.flipped .card-inner{ transform:rotateY(180deg); }
+.card-face{
+  position:absolute; inset:0; backface-visibility:hidden; border-radius:10px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border:1px solid var(--gold-soft);
+  box-shadow:0 10px 26px rgba(0,0,0,.4);
+  padding:14px;
+  text-align:center;
+}
+.card-back{
+  background:
+    repeating-conic-gradient(from 0deg, rgba(199,164,86,.14) 0deg 8deg, transparent 8deg 16deg),
+    linear-gradient(160deg, #1d1935, #120f22);
+}
+.card-back::before{
+  content:""; position:absolute; inset:9px; border:1px solid var(--line); border-radius:6px;
+}
+.card-back .emblem{ width:34%; opacity:.85; }
+.card-front{
+  background:linear-gradient(175deg, #1c1833, #130f22);
+  transform:rotateY(180deg);
+  justify-content:flex-start;
+  padding-top:18px;
+}
+.card-front::before{
+  content:""; position:absolute; inset:8px; border:1px solid var(--line); border-radius:6px; pointer-events:none;
+}
+.card-numeral{
+  font-family:var(--display); font-size:12px; letter-spacing:.14em; color:var(--gold);
+  border:1px solid var(--gold-soft); border-radius:999px; padding:3px 11px; margin-bottom:10px;
+}
+.card-name{
+  font-family:var(--display); font-weight:600; font-size:clamp(15px,3.6vw,19px);
+  letter-spacing:.03em; line-height:1.15; margin:0 0 6px; text-wrap:balance;
+}
+.card-orient{
+  font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color: var(--ink-dim); margin-bottom:10px;
+}
+.card-orient.rev{ color:#c98a8a; }
+.card-divider{ width:34px; height:1px; background:var(--gold-soft); margin:0 0 10px; }
+.card-meaning{
+  font-size:13.5px; line-height:1.5; color:var(--ink-dim); overflow-y:auto; min-height:0;
+  padding:0 2px;
+}
+
+.actions{ display:flex; justify-content:center; gap:12px; margin-top:38px; flex-wrap:wrap; }
+.ghost-btn{
+  font-family:var(--display); font-size:12.5px; letter-spacing:.1em; text-transform:uppercase;
+  background:transparent; color:var(--ink-dim); border:1px solid var(--line);
+  border-radius:999px; padding:10px 20px; cursor:pointer; transition:.2s;
+}
+.ghost-btn:hover{ color:var(--gold); border-color:var(--gold); }
+
+/* ---- paywall (Cruz Celta premium) ---- */
+.paywall{
+  max-width:420px; margin:44px auto 0; text-align:center;
+  border:1px solid var(--gold); border-radius:var(--r); padding:34px 26px;
+  background:linear-gradient(175deg,#241c3d,#160f28);
+}
+.paywall-badge{
+  display:inline-block; font-family:var(--display); font-size:10.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:#1a1526; background:var(--gold); border-radius:999px;
+  padding:4px 12px; margin-bottom:14px;
+}
+.paywall-title{ font-family:var(--display); font-size:24px; margin:0 0 10px; }
+.paywall-text{ font-size:14px; line-height:1.6; color:var(--ink-dim); margin:0 0 18px; }
+.paywall-price{ font-family:var(--display); font-size:30px; color:var(--gold); font-weight:700; margin-bottom:18px; }
+.paywall .draw-btn{ display:inline-block; text-decoration:none; margin-bottom:22px; }
+.paywall-code{ border-top:1px solid var(--line); padding-top:18px; }
+.paywall-code label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:8px; }
+.paywall-code-row{ display:flex; gap:8px; }
+.paywall-code-row input{
+  flex:1; min-width:0; font-family:var(--body); font-size:15px; color:var(--ink);
+  background:var(--bg2); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.paywall-code-row input:focus{ outline:none; border-color:var(--gold); }
+.paywall-err{ color:#c98a8a; font-size:12px; margin:10px 0 0; }
+
+/* ---- forms (astro / numerología) ---- */
+.mini-form{ max-width:380px; margin:0 auto; display:flex; flex-direction:column; gap:16px; align-items:center; }
+.mini-form .field{ width:100%; display:flex; flex-direction:column; gap:6px; }
+.mini-form label{ font-size:12.5px; letter-spacing:.04em; color:var(--gold-soft); text-transform:uppercase; }
+.mini-form input{
+  font-family:var(--body); font-size:16px; color:var(--ink);
+  background:var(--bg2); border:1px solid var(--line); border-radius:8px; padding:11px 13px;
+  width:100%;
+}
+.mini-form input:focus{ outline:none; border-color:var(--gold); }
+.mini-form input::-webkit-calendar-picker-indicator{ filter:invert(.8) sepia(1) saturate(3) hue-rotate(5deg); }
+
+/* ---- result cards ---- */
+.result-card{
+  max-width:440px; margin:38px auto 0; border:1px solid var(--gold-soft); border-radius:var(--r);
+  padding:30px 26px; text-align:center; background:linear-gradient(175deg,#1c1833,#130f22);
+}
+.result-symbol{ font-size:48px; color:var(--gold); margin-bottom:6px; line-height:1; }
+.result-title{ font-family:var(--display); font-size:24px; font-weight:600; margin:0 0 4px; }
+.result-tags{ font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-soft); margin-bottom:18px; }
+.result-text{ font-size:14.5px; line-height:1.6; color:var(--ink-dim); text-align:left; margin:0 0 10px; }
+.result-text b{ color:var(--gold); font-weight:600; }
+
+.result-grid{ display:grid; gap:18px; margin-top:38px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); }
+.result-tile{
+  border:1px solid var(--gold-soft); border-radius:var(--r); padding:22px 20px;
+  background:linear-gradient(175deg,#1c1833,#130f22); text-align:center;
+}
+.result-tile .num{ font-family:var(--display); font-size:36px; color:var(--gold); font-weight:700; line-height:1; }
+.result-tile .tipo{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold-soft); margin:8px 0 10px; }
+.result-tile .texto{ font-size:13px; line-height:1.55; color:var(--ink-dim); text-align:left; }
+
+[hidden]{ display:none!important; }
+
+@media (prefers-reduced-motion:reduce){
+  .card-inner, .draw-btn, .deck .card-back{ transition:none!important; }
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<div class="wrap">
+  <p class="eyebrow">Tarot · Carta Astral · Numerología</p>
+  <h1>Arcana Mayor</h1>
+  <p class="sub">Tirá las cartas, descubrí tu signo solar o calculá tus números — tres caminos para una misma pregunta.</p>
+  <div class="rule"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tarot">🔮 Tarot</button>
+    <button class="tab-btn" data-tab="astro">✨ Carta astral</button>
+    <button class="tab-btn" data-tab="numero">🔢 Numerología</button>
+  </div>
+
+  <!-- ===== TAROT ===== -->
+  <section id="tab-tarot" class="tab-panel">
+    <div class="spreads">
+      <button class="spread-btn active" data-spread="1">Una carta</button>
+      <button class="spread-btn" data-spread="3">Pasado · Presente · Futuro</button>
+      <button class="spread-btn" data-spread="10">Cruz Celta</button>
+    </div>
+
+    <div class="deck-zone">
+      <div class="deck" id="deck" title="Tocá para cortar el mazo">
+        <div class="card-back"><svg class="emblem" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#c7a456" stroke-width="1.4"/><path d="M50 20 L50 80 M20 50 L80 50" stroke="#c7a456" stroke-width="1"/><circle cx="50" cy="50" r="6" fill="#c7a456"/></svg></div>
+        <div class="card-back"><svg class="emblem" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#c7a456" stroke-width="1.4"/><path d="M50 20 L50 80 M20 50 L80 50" stroke="#c7a456" stroke-width="1"/><circle cx="50" cy="50" r="6" fill="#c7a456"/></svg></div>
+        <div class="card-back"><svg class="emblem" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#c7a456" stroke-width="1.4"/><path d="M50 20 L50 80 M20 50 L80 50" stroke="#c7a456" stroke-width="1"/><circle cx="50" cy="50" r="6" fill="#c7a456"/></svg></div>
+      </div>
+      <button class="draw-btn" id="drawBtn">Cortar y tirar las cartas</button>
+      <p class="hint" id="hint">Tocá el mazo para cortarlo, o el botón para cortar y repartir.</p>
+    </div>
+
+    <div class="spread" id="spread" data-count="1" hidden></div>
+    <div class="cross-spread" id="crossSpread" hidden></div>
+
+    <div class="actions" id="actions" hidden>
+      <button class="ghost-btn" id="revealAll">Revelar todas</button>
+      <button class="ghost-btn" id="again">Nueva tirada</button>
+    </div>
+  </section>
+
+  <!-- ===== CARTA ASTRAL ===== -->
+  <section id="tab-astro" class="tab-panel" hidden>
+    <p class="sub" style="margin-top:0">Tu signo solar, calculado a partir de tu fecha de nacimiento.</p>
+    <form class="mini-form" id="astroForm">
+      <div class="field">
+        <label for="astroDate">Fecha de nacimiento</label>
+        <input type="date" id="astroDate" required>
+      </div>
+      <button type="submit" class="draw-btn">Calcular mi signo</button>
+    </form>
+    <div class="result-card" id="astroResult" hidden></div>
+  </section>
+
+  <!-- ===== NUMEROLOGÍA ===== -->
+  <section id="tab-numero" class="tab-panel" hidden>
+    <p class="sub" style="margin-top:0">Camino de vida, expresión, alma y personalidad numerológica.</p>
+    <form class="mini-form" id="numeroForm">
+      <div class="field">
+        <label for="numeroNombre">Nombre completo de nacimiento</label>
+        <input type="text" id="numeroNombre" placeholder="Ej: María José Gómez Rivas" required>
+      </div>
+      <div class="field">
+        <label for="numeroFecha">Fecha de nacimiento</label>
+        <input type="date" id="numeroFecha" required>
+      </div>
+      <button type="submit" class="draw-btn">Calcular mis números</button>
+    </form>
+    <div class="result-grid" id="numeroResult" hidden></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+
+  /* ============== TABS ============== */
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const panels = { tarot: $('#tab-tarot'), astro: $('#tab-astro'), numero: $('#tab-numero') };
+  tabBtns.forEach(b => b.addEventListener('click', () => {
+    tabBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    Object.entries(panels).forEach(([k, el]) => { el.hidden = k !== b.dataset.tab; });
+  }));
+
+  /* ============== TAROT ============== */
+  const DECK = [
+    ["El Loco", "0", "Comienzos, fe en lo desconocido, un salto sin red.", "Imprudencia, dudas de último momento, un riesgo mal medido."],
+    ["El Mago", "I", "Voluntad enfocada, los recursos ya están en tu mano.", "Potencial sin usar, manipulación, talento disperso."],
+    ["La Sacerdotisa", "II", "Intuición, misterios aún sin revelar, quietud que sabe.", "Secretos guardados de más, desconexión de tu propia voz interior."],
+    ["La Emperatriz", "III", "Abundancia, creatividad fértil, cuidado maternal.", "Bloqueo creativo, dependencia, exceso que agota."],
+    ["El Emperador", "IV", "Estructura, autoridad firme, orden que sostiene.", "Rigidez, control excesivo, autoridad sin empatía."],
+    ["El Sumo Sacerdote", "V", "Tradición, guía confiable, aprendizaje formal.", "Dogma asfixiante, rebeldía necesaria, reglas que ya no sirven."],
+    ["Los Enamorados", "VI", "Una elección del corazón, alineación de valores.", "Desarmonía, decisión evitada, valores en conflicto."],
+    ["El Carro", "VII", "Voluntad en movimiento, victoria por disciplina.", "Rumbo perdido, fuerzas que tiran en direcciones opuestas."],
+    ["La Fuerza", "VIII", "Coraje sereno, dominio por compasión, no por fuerza bruta.", "Duda de tu propio poder, autocontrol que se quiebra."],
+    ["El Ermitaño", "IX", "Introspección, sabiduría buscada en soledad.", "Aislamiento excesivo, retraimiento que ya no ayuda."],
+    ["La Rueda de la Fortuna", "X", "Un giro del destino, ciclos que cambian de signo.", "Mala racha, resistirse al cambio inevitable."],
+    ["La Justicia", "XI", "Verdad, causa y efecto, una decisión equilibrada.", "Injusticia, deshonestidad, consecuencias evitadas."],
+    ["El Colgado", "XII", "Rendición consciente, ver todo desde otro ángulo.", "Estancamiento, sacrificio inútil, resistencia al cambio."],
+    ["La Muerte", "XIII", "Un final necesario que abre paso a algo nuevo.", "Miedo al cambio, un final que se posterga sin sentido."],
+    ["La Templanza", "XIV", "Equilibrio paciente, mezcla armoniosa de opuestos.", "Desequilibrio, excesos, impaciencia que rompe el ritmo."],
+    ["El Diablo", "XV", "Ataduras, deseo, una sombra que merece mirarse.", "Liberación de un patrón, romper las cadenas propias."],
+    ["La Torre", "XVI", "Ruptura súbita, una verdad que derrumba lo falso.", "Crisis evitada a medias, caos interno sin resolver."],
+    ["La Estrella", "XVII", "Esperanza renovada, fe tranquila después de la tormenta.", "Desánimo, fe debilitada, desconexión del propio propósito."],
+    ["La Luna", "XVIII", "Lo que no se ve aún, intuición entre sombras.", "Confusión, miedos que se agigantan, ilusiones a punto de disolverse."],
+    ["El Sol", "XIX", "Claridad, alegría genuina, éxito a la vista.", "Optimismo pospuesto, una luz todavía parcial."],
+    ["El Juicio", "XX", "Un llamado a despertar, balance de lo vivido.", "Autocrítica dura, un llamado que se ignora."],
+    ["El Mundo", "XXI", "Cierre pleno, un ciclo completado con maestría.", "Un final que falta rematar, casi — pero no del todo."]
+  ].map(([nombre, numeral, up, rev]) => ({ nombre, numeral, up, rev }));
+
+  const LABELS3 = ['Pasado', 'Presente', 'Futuro'];
+  const LABELS10 = [
+    'Situación presente', 'Desafío', 'Raíz del asunto', 'Pasado reciente', 'Meta consciente',
+    'Futuro cercano', 'Tu actitud', 'Entorno e influencias', 'Esperanzas y miedos', 'Resultado final'
+  ];
+
+  const spreadBtns = document.querySelectorAll('.spread-btn');
+  const spreadEl = $('#spread');
+  const crossEl = $('#crossSpread');
+  const actionsEl = $('#actions');
+  const deckEl = $('#deck');
+  const drawBtn = $('#drawBtn');
+  const hintEl = $('#hint');
+
+  let spreadSize = 1;
+  let current = [];
+
+  // ---- Cruz Celta: lectura premium -------------------------------------
+  // TODO antes de cobrar de verdad: reemplazar PAYMENT_URL por tu link de
+  // pago (Stripe Payment Link, Gumroad, etc.) y PREMIUM_CODE por el código
+  // que le entregás al cliente después de pagar (o uno distinto por venta).
+  const PAYMENT_URL = '#';
+  const PREMIUM_PRICE = '$9.900';
+  const PREMIUM_CODE = 'ARCANA2026';
+  function isUnlocked(){
+    try { return localStorage.getItem('arcanaMayorPremium') === '1'; } catch(e){ return false; }
+  }
+  function unlock(){
+    try { localStorage.setItem('arcanaMayorPremium', '1'); } catch(e){}
+  }
+  function refreshLockBadge(){
+    const btn = document.querySelector('.spread-btn[data-spread="10"]');
+    if (btn) btn.textContent = isUnlocked() ? 'Cruz Celta' : '🔒 Cruz Celta';
+  }
+  refreshLockBadge();
+
+  spreadBtns.forEach(b => b.addEventListener('click', () => {
+    spreadBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    spreadSize = +b.dataset.spread;
+    hintEl.textContent = 'Tocá el mazo para cortarlo, o el botón para cortar y repartir.';
+  }));
+
+  function shuffleDraw(n){
+    const idx = DECK.map((_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    return idx.slice(0, n).map(i => ({ ...DECK[i], reversed: Math.random() < 0.5 }));
+  }
+
+  function backSVG(){
+    return `<svg class="emblem" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#c7a456" stroke-width="1.4"/><path d="M50 20 L50 80 M20 50 L80 50" stroke="#c7a456" stroke-width="1"/><circle cx="50" cy="50" r="6" fill="#c7a456"/></svg>`;
+  }
+
+  function cardHTML(c){
+    return `<div class="card">
+      <div class="card-inner">
+        <div class="card-face card-back">${backSVG()}</div>
+        <div class="card-face card-front">
+          <div class="card-numeral">${c.numeral}</div>
+          <div class="card-name">${c.nombre}</div>
+          <div class="card-orient ${c.reversed ? 'rev' : ''}">${c.reversed ? 'Invertida' : 'Al derecho'}</div>
+          <div class="card-divider"></div>
+          <div class="card-meaning">${c.reversed ? c.rev : c.up}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function wireCards(container){
+    container.querySelectorAll('.card').forEach(el => {
+      el.addEventListener('click', () => el.classList.toggle('flipped'));
+    });
+  }
+
+  function render(){
+    if (spreadSize === 10){
+      spreadEl.hidden = true;
+      crossEl.hidden = false;
+      crossEl.innerHTML = current.map((c, i) => `
+        <div class="slot cc-${i + 1}">
+          <div class="slot-label">${i + 1}. ${LABELS10[i]}</div>
+          ${cardHTML(c)}
+        </div>`).join('');
+      wireCards(crossEl);
+    } else {
+      crossEl.hidden = true;
+      spreadEl.hidden = false;
+      spreadEl.dataset.count = String(spreadSize);
+      spreadEl.innerHTML = current.map((c, i) => `
+        <div class="slot">
+          ${spreadSize === 3 ? `<div class="slot-label">${LABELS3[i]}</div>` : ''}
+          ${cardHTML(c)}
+        </div>`).join('');
+      wireCards(spreadEl);
+    }
+    actionsEl.hidden = false;
+    hintEl.textContent = 'Tocá cada carta para revelarla.';
+  }
+
+  function draw(){
+    if (spreadSize === 10 && !isUnlocked()){
+      renderPaywall();
+      return;
+    }
+    current = shuffleDraw(spreadSize);
+    render();
+  }
+
+  function renderPaywall(){
+    spreadEl.hidden = true;
+    crossEl.hidden = false;
+    crossEl.innerHTML = `
+      <div class="paywall">
+        <div class="paywall-badge">Lectura premium</div>
+        <h3 class="paywall-title">Cruz Celta</h3>
+        <p class="paywall-text">La tirada más completa: diez posiciones que cubren tu situación, tus influencias ocultas y el resultado final. Pago único — queda desbloqueada para siempre en este dispositivo.</p>
+        <div class="paywall-price">${PREMIUM_PRICE}</div>
+        <a class="draw-btn" href="${PAYMENT_URL}" target="_blank" rel="noopener">Pagar y desbloquear</a>
+        <div class="paywall-code">
+          <label for="codeInput">¿Ya pagaste? Ingresá tu código</label>
+          <div class="paywall-code-row">
+            <input type="text" id="codeInput" placeholder="CÓDIGO" autocomplete="off">
+            <button class="ghost-btn" id="codeBtn" type="button">Desbloquear</button>
+          </div>
+          <p class="paywall-err" id="codeErr" hidden>Código inválido — revisá mayúsculas y espacios.</p>
+        </div>
+      </div>`;
+    actionsEl.hidden = true;
+    hintEl.textContent = '';
+    const codeInput = $('#codeInput'), codeErr = $('#codeErr');
+    function tryUnlock(){
+      const val = codeInput.value.trim().toUpperCase();
+      if (val === PREMIUM_CODE){
+        unlock();
+        refreshLockBadge();
+        current = shuffleDraw(10);
+        render();
+      } else {
+        codeErr.hidden = false;
+      }
+    }
+    $('#codeBtn').addEventListener('click', tryUnlock);
+    codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+  }
+
+  // Cortar el mazo: gesto ritual (se puede tocar suelto, sin repartir) —
+  // el botón siempre corta y reparte en una sola tirada.
+  function cutDeck(){
+    deckEl.classList.add('cut');
+    setTimeout(() => deckEl.classList.remove('cut'), 520);
+  }
+  deckEl.addEventListener('click', cutDeck);
+  drawBtn.addEventListener('click', () => { cutDeck(); setTimeout(draw, 300); });
+
+  $('#revealAll').addEventListener('click', () => {
+    document.querySelectorAll('#spread .card, #crossSpread .card').forEach(el => el.classList.add('flipped'));
+  });
+  $('#again').addEventListener('click', () => { cutDeck(); setTimeout(draw, 300); });
+
+  /* ============== CARTA ASTRAL ============== */
+  const SIGNS = [
+    { nombre:'Capricornio', simbolo:'♑', desde:[12,22], hasta:[1,19], elemento:'Tierra', cualidad:'Cardinal', regente:'Saturno',
+      claves:'Disciplina, ambición a largo plazo, paciencia', texto:'Construye despacio y de abajo hacia arriba, sin atajos. Le cuesta pedir ayuda, pero su constancia termina sosteniendo lo que otros abandonan a mitad de camino.' },
+    { nombre:'Acuario', simbolo:'♒', desde:[1,20], hasta:[2,18], elemento:'Aire', cualidad:'Fijo', regente:'Urano',
+      claves:'Originalidad, independencia, visión colectiva', texto:'Piensa en sistemas más que en individuos y necesita libertad para sentirse en casa. Su lealtad es a las ideas tanto como a las personas.' },
+    { nombre:'Piscis', simbolo:'♓', desde:[2,19], hasta:[3,20], elemento:'Agua', cualidad:'Mutable', regente:'Neptuno',
+      claves:'Sensibilidad, imaginación, empatía', texto:'Absorbe el ánimo de lo que lo rodea casi sin querer. Su imaginación es un refugio y, bien canalizada, una fuente real de creación.' },
+    { nombre:'Aries', simbolo:'♈', desde:[3,21], hasta:[4,19], elemento:'Fuego', cualidad:'Cardinal', regente:'Marte',
+      claves:'Iniciativa, coraje, impulso', texto:'Actúa primero y piensa después, y rara vez se arrepiente de haber empezado. Necesita un desafío nuevo para sentirse realmente vivo.' },
+    { nombre:'Tauro', simbolo:'♉', desde:[4,20], hasta:[5,20], elemento:'Tierra', cualidad:'Fijo', regente:'Venus',
+      claves:'Estabilidad, placer, constancia', texto:'Se mueve despacio pero no se detiene, y desconfía de lo que promete demasiado rápido. Disfruta del cuerpo, la belleza y lo bien hecho.' },
+    { nombre:'Géminis', simbolo:'♊', desde:[5,21], hasta:[6,20], elemento:'Aire', cualidad:'Mutable', regente:'Mercurio',
+      claves:'Curiosidad, comunicación, versatilidad', texto:'Necesita variedad de estímulos para no aburrirse, y pasa de un tema a otro con una facilidad que a veces lo deja sin terminar nada.' },
+    { nombre:'Cáncer', simbolo:'♋', desde:[6,21], hasta:[7,22], elemento:'Agua', cualidad:'Cardinal', regente:'Luna',
+      claves:'Sensibilidad, protección, memoria emocional', texto:'Recuerda todo con el cuerpo, no solo con la cabeza, y construye un hogar — real o simbólico — donde sea que esté.' },
+    { nombre:'Leo', simbolo:'♌', desde:[7,23], hasta:[8,22], elemento:'Fuego', cualidad:'Fijo', regente:'Sol',
+      claves:'Generosidad, orgullo sano, expresión personal', texto:'Brilla mejor cuando puede ser plenamente él mismo frente a otros. Su generosidad es genuina, aunque también necesita ser vista.' },
+    { nombre:'Virgo', simbolo:'♍', desde:[8,23], hasta:[9,22], elemento:'Tierra', cualidad:'Mutable', regente:'Mercurio',
+      claves:'Precisión, servicio, mejora constante', texto:'Ve el detalle que a otros se les escapa y lo usa para ayudar más que para criticar. Su exigencia empieza siempre por sí mismo.' },
+    { nombre:'Libra', simbolo:'♎', desde:[9,23], hasta:[10,22], elemento:'Aire', cualidad:'Cardinal', regente:'Venus',
+      claves:'Equilibrio, belleza, vínculos', texto:'Busca el punto medio casi por instinto y le cuesta decidir cuando eso implica dejar a alguien afuera. Florece en compañía.' },
+    { nombre:'Escorpio', simbolo:'♏', desde:[10,23], hasta:[11,21], elemento:'Agua', cualidad:'Fijo', regente:'Plutón',
+      claves:'Intensidad, transformación, profundidad', texto:'No se conforma con la superficie de nada, ni de las personas ni de los problemas. Lo que atraviesa lo transforma de verdad.' },
+    { nombre:'Sagitario', simbolo:'♐', desde:[11,22], hasta:[12,21], elemento:'Fuego', cualidad:'Mutable', regente:'Júpiter',
+      claves:'Expansión, libertad, búsqueda de sentido', texto:'Necesita horizonte — un viaje, una idea grande, una pregunta sin responder — para no sentirse encerrado. Es optimista casi por principio.' },
+  ];
+  function calcularSigno(mes, dia){
+    for (const s of SIGNS){
+      const [m1, d1] = s.desde, [m2, d2] = s.hasta;
+      if (m1 > m2){
+        if ((mes === m1 && dia >= d1) || (mes === m2 && dia <= d2)) return s;
+      } else {
+        if ((mes === m1 && dia >= d1) || (mes === m2 && dia <= d2) || (mes > m1 && mes < m2)) return s;
+      }
+    }
+    return SIGNS[0];
+  }
+
+  $('#astroForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = $('#astroDate').value;
+    if (!val) return;
+    const [, m, d] = val.split('-').map(Number);
+    const s = calcularSigno(m, d);
+    const out = $('#astroResult');
+    out.hidden = false;
+    out.innerHTML = `
+      <div class="result-symbol">${s.simbolo}</div>
+      <div class="result-title">${s.nombre}</div>
+      <div class="result-tags">${s.elemento} · ${s.cualidad} · Rige ${s.regente}</div>
+      <p class="result-text"><b>Claves —</b> ${s.claves}</p>
+      <p class="result-text" style="margin-bottom:0">${s.texto}</p>
+    `;
+    out.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+
+  /* ============== NUMEROLOGÍA ============== */
+  const LETRAS = {
+    a:1,j:1,s:1, b:2,k:2,t:2, c:3,l:3,u:3, d:4,m:4,v:4, e:5,n:5,w:5,
+    f:6,o:6,x:6, g:7,p:7,y:7, h:8,q:8,z:8, i:9,r:9
+  };
+  const VOCALES = new Set(['a','e','i','o','u']);
+  const NUM_MEANINGS = {
+    1: 'Liderazgo e iniciativa. La energía de abrir camino, confiar en el propio criterio y animarse a empezar de cero.',
+    2: 'Cooperación y sensibilidad. La energía de la escucha, la diplomacia y construir de a dos antes que en soledad.',
+    3: 'Expresión y alegría. La energía creativa, la palabra y el arte — la necesidad genuina de comunicar lo que se siente.',
+    4: 'Estructura y constancia. La energía de construir con método, paso a paso, sobre bases sólidas y duraderas.',
+    5: 'Libertad y cambio. La energía de explorar, adaptarse y resistir cualquier rutina que empiece a sentirse una jaula.',
+    6: 'Responsabilidad y cuidado. La energía del hogar, la familia y la armonía que se sostiene cuidando a los demás.',
+    7: 'Introspección y análisis. La energía de la búsqueda interior, la reflexión profunda y la verdad más allá de lo evidente.',
+    8: 'Poder y materia. La energía de la ambición bien dirigida, el manejo de recursos y la autoridad ganada con esfuerzo.',
+    9: 'Compasión y cierre. La energía de soltar, servir a algo más grande que uno mismo y completar ciclos con generosidad.',
+    11: 'Número maestro — intuición elevada. Sensibilidad espiritual intensa, canal de inspiración para otros, a veces difícil de sostener.',
+    22: 'Número maestro — el constructor. Capacidad de tomar una visión grande y volverla realidad concreta, con disciplina y alcance.',
+    33: 'Número maestro — entrega altruista. Vocación de guía y sanación a gran escala, poniendo el bienestar colectivo por delante.'
+  };
+
+  function reducir(n){
+    while (n > 9 && n !== 11 && n !== 22 && n !== 33){
+      n = String(n).split('').reduce((a, d) => a + (+d), 0);
+    }
+    return n;
+  }
+  function caminoDeVida(fechaStr){
+    const digitos = fechaStr.replace(/-/g, '').split('').reduce((a, d) => a + (+d), 0);
+    return reducir(digitos);
+  }
+  function normalizar(nombre){
+    return nombre.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z ]/g, '');
+  }
+  function sumarLetras(nombre, filtro){
+    const limpio = normalizar(nombre);
+    let total = 0;
+    for (const ch of limpio){
+      if (ch === ' ') continue;
+      if (filtro && !filtro(ch)) continue;
+      total += LETRAS[ch] || 0;
+    }
+    return reducir(total);
+  }
+  const expresion = nombre => sumarLetras(nombre, null);
+  const almaDeseo = nombre => sumarLetras(nombre, ch => VOCALES.has(ch));
+  const personalidad = nombre => sumarLetras(nombre, ch => !VOCALES.has(ch));
+
+  $('#numeroForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const nombre = $('#numeroNombre').value.trim();
+    const fecha = $('#numeroFecha').value;
+    if (!nombre || !fecha) return;
+    const resultados = [
+      { tipo:'Camino de vida', sub:'Tu propósito central', num: caminoDeVida(fecha) },
+      { tipo:'Expresión', sub:'Tus talentos naturales', num: expresion(nombre) },
+      { tipo:'Alma', sub:'Tus deseos internos', num: almaDeseo(nombre) },
+      { tipo:'Personalidad', sub:'Cómo te perciben los demás', num: personalidad(nombre) },
+    ];
+    const out = $('#numeroResult');
+    out.hidden = false;
+    out.innerHTML = resultados.map(r => `
+      <div class="result-tile">
+        <div class="num">${r.num}</div>
+        <div class="tipo">${r.tipo} · ${r.sub}</div>
+        <div class="texto">${NUM_MEANINGS[r.num] || ''}</div>
+      </div>
+    `).join('');
+    out.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+})();
+</script>

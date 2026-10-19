@@ -1,0 +1,144 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mi cuenta</title>
+<link rel="icon" href="/img/logo.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;--red-d:#A32D2D;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --red-l:#3a1010;--green-l:#04342c;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3)}
+.hide{display:none!important}
+.header{background:var(--bg);border-bottom:0.5px solid var(--border);padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;position:sticky;top:0}
+.header img{width:48px;height:48px;object-fit:contain;border-radius:10px}
+.header .neg{font-size:15px;font-weight:700}
+.header .mesa{font-size:13px;color:var(--text2)}
+.content{max-width:480px;margin:0 auto;padding:16px}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:4px 16px;margin-bottom:14px}
+.linea{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:0.5px solid var(--border);font-size:14px}
+.linea:last-child{border-bottom:none}
+.linea .nom{flex:1;min-width:0}
+.linea .cant{color:var(--text2);margin-right:6px}
+.resumen{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:14px 16px}
+.fila{display:flex;justify-content:space-between;padding:4px 0;font-size:14px;color:var(--text2)}
+.fila.total{font-size:18px;font-weight:800;color:var(--text);border-top:0.5px solid var(--border);margin-top:6px;padding-top:10px}
+.fila.pagado{color:var(--green-d)}
+.fila.saldo{font-size:18px;font-weight:800;color:var(--red-d)}
+.empty{text-align:center;color:var(--text2);padding:60px 20px;font-size:14px}
+.empty .big{font-size:40px;margin-bottom:10px}
+.refresh-note{text-align:center;color:var(--text3);font-size:11px;margin-top:14px}
+#pantalla-error{display:none;position:fixed;inset:0;background:var(--bg3);align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px;gap:10px;z-index:50}
+#pantalla-error.show{display:flex}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img id="neg-logo" src="/img/logo.png" alt="Logo">
+  <div class="neg" id="neg-nombre">—</div>
+  <div class="mesa" id="mesa-label">Cargando...</div>
+</div>
+
+<div class="content" id="content" style="display:none">
+  <div class="card" id="items-wrap"></div>
+  <div class="resumen">
+    <div class="fila"><span>Subtotal</span><span id="r-total">$0</span></div>
+    <div class="fila pagado hide" id="r-pagado-wrap"><span>Pagado</span><span id="r-pagado">$0</span></div>
+    <div class="fila saldo" id="r-saldo-row"><span>Total</span><span id="r-saldo">$0</span></div>
+  </div>
+  <div class="refresh-note">Se actualiza solo — llamá al mesero si querés pagar</div>
+</div>
+
+<div class="empty hide" id="empty-state">
+  <div class="big">🧾</div>
+  <div>Todavía no hay nada pedido en esta mesa.</div>
+</div>
+
+<div id="pantalla-error">
+  <div style="font-size:40px">⚠️</div>
+  <h2 id="error-title" style="font-size:16px">No pudimos cargar la cuenta</h2>
+  <p id="error-msg" style="color:var(--text2);font-size:13px"></p>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const negocioId = params.get('n');
+const mesaId = params.get('mesa');
+const $ = id => document.getElementById(id);
+function fmt(n){ return '$'+Math.round(n||0).toLocaleString('es-CO'); }
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function mostrarError(msg){
+  $('error-msg').textContent = msg;
+  $('pantalla-error').classList.add('show');
+}
+
+async function cargar(){
+  try{
+    const r = await fetch(`/api/publico/cuenta/${mesaId}?n=${negocioId}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Error');
+    $('mesa-label').textContent = `Mesa ${d.mesa.numero}${d.mesa.nombre?' · '+d.mesa.nombre:''}`;
+    if (d.negocio_nombre){ $('neg-nombre').textContent = d.negocio_nombre; document.title = `${d.negocio_nombre} — Mi cuenta`; }
+    if (d.negocio_logo){ $('neg-logo').src = d.negocio_logo; }
+
+    if (!d.hay_pedido){
+      $('content').style.display = 'none';
+      $('empty-state').classList.remove('hide');
+      return;
+    }
+    $('empty-state').classList.add('hide');
+    $('content').style.display = 'block';
+
+    $('items-wrap').innerHTML = d.items.map(i => `
+      <div class="linea">
+        <span class="nom"><span class="cant">${i.qty}×</span>${esc(i.nombre)}</span>
+        <span>${fmt(i.precio*i.qty)}</span>
+      </div>`).join('');
+
+    $('r-total').textContent = fmt(d.total);
+    if (d.pagado > 0){
+      $('r-pagado-wrap').classList.remove('hide');
+      $('r-pagado').textContent = fmt(d.pagado);
+      $('r-saldo-row').querySelector('span').textContent = 'Saldo pendiente';
+      $('r-saldo').textContent = fmt(d.saldo);
+    } else {
+      $('r-pagado-wrap').classList.add('hide');
+      $('r-saldo-row').querySelector('span').textContent = 'Total';
+      $('r-saldo').textContent = fmt(d.total);
+    }
+  }catch(e){
+    mostrarError(e.message || 'Este enlace no es válido. Escaneá el código QR de la mesa.');
+  }
+}
+
+if (!negocioId || !mesaId){
+  mostrarError('Este enlace no es válido. Escaneá el código QR de la mesa.');
+} else {
+  cargar();
+  setInterval(cargar, 6000);
+}
+</script>
+</body>
+</html>

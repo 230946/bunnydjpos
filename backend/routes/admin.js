@@ -22,9 +22,53 @@ const empFotoStorage = multer.diskStorage({
 });
 const uploadEmpFoto = multer({ storage: empFotoStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 
+const provCatalogoStorage = multer.diskStorage({
+  destination: process.env.UPLOADS_DIR || './uploads',
+  filename: (_, file, cb) => cb(null, 'catalogo-' + uuid() + path.extname(file.originalname))
+});
+const uploadProvCatalogo = multer({
+  storage: provCatalogoStorage,
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => cb(null, file.mimetype === 'application/pdf'),
+});
+
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
 const localDate = (tz = 'America/Bogota') => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+
+// Para un solo día (desde===hasta), usa la ventana real de la caja de ese
+// día (apertura_en → cierre_en, o "ahora" si sigue abierta) en vez de
+// medianoche a medianoche — así un turno que cruza la madrugada (ej. 6pm a
+// 3am) no se reparte entre "ayer" y "hoy" en el dashboard y los reportes.
+async function ventanaDelDia(negocioId, fecha, zonaHoraria) {
+  const { rows } = await pool.query(
+    `SELECT apertura_en, cierre_en, estado FROM cajas WHERE negocio_id=${ph(1)} AND fecha=${ph(2)} ORDER BY apertura_en ASC LIMIT 1`,
+    [negocioId, fecha]
+  );
+  const caja = rows[0];
+  const medianoche = `${fecha} 00:00:00`;
+  let inicio = caja ? caja.apertura_en : medianoche;
+
+  if (!caja) {
+    // Todavía no se abrió caja hoy — puede ser que la de un día anterior
+    // siga corriendo pasada la medianoche; mientras tanto el "día" de
+    // reportes de hoy no empezó de verdad, así que se excluye esa franja
+    // (que ya le pertenece al día anterior) en vez de contarla dos veces.
+    const { rows: previas } = await pool.query(
+      `SELECT cierre_en, estado FROM cajas WHERE negocio_id=${ph(1)} AND fecha<${ph(2)} ORDER BY fecha DESC, apertura_en DESC LIMIT 1`,
+      [negocioId, fecha]
+    );
+    const prev = previas[0];
+    if (prev && prev.estado === 'abierta') inicio = new Date();
+    else if (prev && prev.cierre_en && new Date(prev.cierre_en) > new Date(medianoche)) inicio = prev.cierre_en;
+  }
+
+  let fin;
+  if (caja && caja.estado === 'cerrada') fin = caja.cierre_en;
+  else if (fecha === localDate(zonaHoraria)) fin = new Date();
+  else fin = `${fecha} 23:59:59`;
+  return { inicio, fin };
+}
 
 // Todos los endpoints de admin requieren negocio_id en el token
 router.use((req, res, next) => {
@@ -35,6 +79,49 @@ router.use((req, res, next) => {
   }
   next();
 });
+
+// Si todos los artículos dados (ids de inventario) son de la misma
+// categoría, devuelve el id de la categoría de gasto con ese nombre
+// (creándola si no existe todavía) — null si no hay una única categoría.
+async function resolverCategoriaPorArticulos(negocioId, idsItems) {
+  if (!idsItems.length) return null;
+  const { rows: invRows } = await pool.query(
+    `SELECT DISTINCT categoria FROM inventario WHERE negocio_id=${ph(1)} AND id IN (${idsItems.map((_,i)=>ph(i+2)).join(',')}) AND categoria IS NOT NULL AND categoria != ''`,
+    [negocioId, ...idsItems]
+  );
+  if (invRows.length !== 1) return null;
+  const nombreCat = invRows[0].categoria;
+  const { rows: catRows } = await pool.query(
+    `SELECT id FROM gasto_categorias WHERE negocio_id=${ph(1)} AND LOWER(nombre)=LOWER(${ph(2)}) LIMIT 1`,
+    [negocioId, nombreCat]
+  );
+  if (catRows[0]) return catRows[0].id;
+  const nuevoId = uuid();
+  await pool.query(
+    `INSERT INTO gasto_categorias (id, negocio_id, nombre, color) VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)})`,
+    [nuevoId, negocioId, nombreCat, '#378ADD']
+  );
+  return nuevoId;
+}
+
+// Crea (una sola vez — ver pp.gasto_id) el gasto a crédito que representa la
+// plata de un pedido a proveedor, sin tocar stock. La usan tanto "marcar
+// Recibido" (que además sube el stock) como "Registrar como gasto" (que no
+// lo toca, para pedidos ya contabilizados antes en el inventario).
+async function crearGastoPedidoProveedor(req, pp, items) {
+  const categoriaId = await resolverCategoriaPorArticulos(nid(req), items.map(it => it.id).filter(Boolean));
+  const gastoId = uuid();
+  await pool.query(
+    `INSERT INTO gastos (id,negocio_id,usuario_id,descripcion,monto,metodo_pago,fecha,proveedor_id,categoria_id)
+     VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},'credito',${ph(6)},${ph(7)},${ph(8)})`,
+    [gastoId, nid(req), req.user.id,
+     `Pedido a proveedor — ${pp.proveedor_nombre} (${items.length} artículo${items.length===1?'':'s'})`,
+     pp.total, localDate(req.user.zona_horaria), pp.proveedor_id, categoriaId]
+  );
+  await pool.query(`UPDATE pedidos_proveedor SET gasto_id=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+    [gastoId, pp.id, nid(req)]);
+  return gastoId;
+}
 
 // ════════════════════════════════════════════════════════════════
 // GASTOS
@@ -111,11 +198,79 @@ router.post('/gastos', requirePermiso('gastos'), async (req, res) => {
     if (metodo !== 'credito') {
       await pool.query(
         `UPDATE cajas SET total_gastos = total_gastos + ${ph(1)}
-         WHERE negocio_id=${ph(2)} AND usuario_id=${ph(3)} AND estado='abierta' AND fecha=${ph(4)}`,
-        [monto, nid(req), req.user.id, localDate(req.user.zona_horaria)]
+         WHERE negocio_id=${ph(2)} AND usuario_id=${ph(3)} AND estado='abierta'`,
+        [monto, nid(req), req.user.id]
       );
+      req.app.locals.broadcast?.(nid(req), 'caja_actualizada', {});
     }
+    req.app.locals.broadcast?.(nid(req), 'gastos_actualizado', { id });
     res.status(201).json({ id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Saldo consolidado a crédito por proveedor — para pagar "a la cuenta" en
+// vez de factura por factura. Registrado antes de /gastos/:id para que no
+// quede tapado por ese comodín.
+router.get('/gastos/cuentas-proveedor', requirePermiso('gastos'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT g.proveedor_id, p.nombre AS proveedor_nombre,
+             SUM(g.monto - g.pagado_monto) AS saldo, COUNT(*) AS facturas
+      FROM gastos g JOIN proveedores p ON p.id = g.proveedor_id
+      WHERE g.negocio_id=${ph(1)} AND g.metodo_pago='credito' AND g.pagado_en IS NULL AND g.proveedor_id IS NOT NULL
+      GROUP BY g.proveedor_id, p.nombre
+      HAVING saldo > 0
+      ORDER BY saldo DESC
+    `, [nid(req)]);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Abona un monto a la cuenta de un proveedor, repartiéndolo entre sus
+// facturas a crédito pendientes (la más vieja primero) hasta agotarlo —
+// alternativa a pagar factura por factura desde /gastos/:id/pagar. También
+// va antes de /gastos/:id por el mismo motivo de orden de rutas.
+router.put('/gastos/abonar-proveedor', requirePermiso('gastos'), async (req, res) => {
+  try {
+    const { proveedor_id, monto, metodo_pago } = req.body;
+    const metodo = ['efectivo','tarjeta','transferencia'].includes(metodo_pago) ? metodo_pago : 'efectivo';
+    if (!proveedor_id) return res.status(400).json({ error: 'proveedor_id requerido' });
+    let montoRestante = +monto || 0;
+    if (montoRestante <= 0) return res.status(400).json({ error: 'Monto inválido' });
+
+    const { rows: pendientes } = await pool.query(
+      `SELECT * FROM gastos WHERE negocio_id=${ph(1)} AND proveedor_id=${ph(2)} AND metodo_pago='credito' AND pagado_en IS NULL ORDER BY creado ASC`,
+      [nid(req), proveedor_id]
+    );
+    const saldoTotal = pendientes.reduce((a,g) => a + (+g.monto - (+g.pagado_monto||0)), 0);
+    if (montoRestante > saldoTotal + 0.01) return res.status(400).json({ error: `El monto supera el saldo de la cuenta (${saldoTotal})`, tipo: 'monto_excede_saldo', saldo: saldoTotal });
+
+    const aplicadoTotal = montoRestante;
+    for (const g of pendientes) {
+      if (montoRestante <= 0) break;
+      const yaPagado = +g.pagado_monto || 0;
+      const saldoFactura = +g.monto - yaPagado;
+      const aplicar = Math.min(saldoFactura, montoRestante);
+      const nuevoPagado = yaPagado + aplicar;
+      const completado = nuevoPagado >= +g.monto - 0.01;
+      await pool.query(
+        `UPDATE gastos SET pagado_monto=${ph(1)}, pagado_metodo=${ph(2)}, pagado_en=${completado ? 'NOW()' : 'NULL'}
+         WHERE id=${ph(3)} AND negocio_id=${ph(4)}`,
+        [nuevoPagado, metodo, g.id, nid(req)]
+      );
+      montoRestante -= aplicar;
+    }
+    // Igual que en /gastos/:id/pagar: se suma a la caja abierta si hay una
+    // (sea de hoy o quedó abierta de un día anterior), pero no se bloquea
+    // el pago si no la hay.
+    await pool.query(
+      `UPDATE cajas SET total_gastos = total_gastos + ${ph(1)}
+       WHERE negocio_id=${ph(2)} AND estado='abierta'`,
+      [aplicadoTotal, nid(req)]
+    );
+    req.app.locals.broadcast?.(nid(req), 'gastos_actualizado', { proveedor_id });
+    req.app.locals.broadcast?.(nid(req), 'caja_actualizada', {});
+    res.json({ ok: true, aplicado: aplicadoTotal, saldo: Math.max(0, saldoTotal - aplicadoTotal) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -128,32 +283,48 @@ router.put('/gastos/:id', requirePermiso('gastos'), async (req, res) => {
       [descripcion, monto, metodo_pago, categoria_id||null, fecha,
        metodo_pago === 'credito' ? (proveedor_id||null) : null, req.params.id, nid(req)]
     );
+    req.app.locals.broadcast?.(nid(req), 'gastos_actualizado', { id: req.params.id });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Marca como pagado un gasto a crédito (ej. ya se le pagó al proveedor) —
-// recién ahí sale la plata de la caja de verdad, así que afecta total_gastos
-// en este momento y no cuando se registró el gasto.
+// Pago (total o parcial/abono) de un gasto a crédito. Sin `monto` en el
+// body, paga el saldo completo de una — con `monto`, abona esa parte y deja
+// el resto pendiente (misma mecánica que el abono de pedidos de mesa).
 router.put('/gastos/:id/pagar', requirePermiso('gastos'), async (req, res) => {
   try {
-    const { metodo_pago } = req.body;
+    const { metodo_pago, monto } = req.body;
     const metodo = ['efectivo','tarjeta','transferencia'].includes(metodo_pago) ? metodo_pago : 'efectivo';
     const { rows } = await pool.query(`SELECT * FROM gastos WHERE id=${ph(1)} AND negocio_id=${ph(2)}`, [req.params.id, nid(req)]);
     const g = rows[0];
     if (!g) return res.status(404).json({ error: 'Gasto no encontrado' });
     if (g.metodo_pago !== 'credito') return res.status(400).json({ error: 'Este gasto no es a crédito' });
     if (g.pagado_en) return res.status(400).json({ error: 'Ya está pagado' });
+
+    const yaPagado = +g.pagado_monto || 0;
+    const saldo = +g.monto - yaPagado;
+    const montoAbono = monto != null ? +monto : saldo;
+    if (!montoAbono || montoAbono <= 0) return res.status(400).json({ error: 'Monto inválido' });
+    if (montoAbono > saldo + 0.01) return res.status(400).json({ error: `El monto supera el saldo pendiente (${saldo})`, tipo: 'monto_excede_saldo', saldo });
+
+    const nuevoPagado = yaPagado + montoAbono;
+    const completado = nuevoPagado >= +g.monto - 0.01;
     await pool.query(
-      `UPDATE gastos SET pagado_en=NOW(), pagado_metodo=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
-      [metodo, g.id, nid(req)]
+      `UPDATE gastos SET pagado_monto=${ph(1)}, pagado_metodo=${ph(2)}, pagado_en=${completado ? 'NOW()' : 'NULL'}
+       WHERE id=${ph(3)} AND negocio_id=${ph(4)}`,
+      [nuevoPagado, metodo, g.id, nid(req)]
     );
+    // Pagarle a un proveedor no depende de si la caja de ventas del día está
+    // abierta — se suma al cierre del día si hay una caja abierta (para que
+    // cuadre), pero no se bloquea el pago si no la hay.
     await pool.query(
       `UPDATE cajas SET total_gastos = total_gastos + ${ph(1)}
-       WHERE negocio_id=${ph(2)} AND usuario_id=${ph(3)} AND estado='abierta' AND fecha=${ph(4)}`,
-      [g.monto, nid(req), req.user.id, localDate(req.user.zona_horaria)]
+       WHERE negocio_id=${ph(2)} AND estado='abierta'`,
+      [montoAbono, nid(req)]
     );
-    res.json({ ok: true });
+    req.app.locals.broadcast?.(nid(req), 'gastos_actualizado', { id: g.id });
+    req.app.locals.broadcast?.(nid(req), 'caja_actualizada', {});
+    res.json({ ok: true, saldo: Math.max(0, +g.monto - nuevoPagado), completado });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -191,12 +362,35 @@ router.get('/gastos/resumen', requirePermiso('gastos'), async (req, res) => {
 router.get('/caja', async (req, res) => {
   try {
     const { fecha } = req.query;
-    const f = fecha || localDate(req.user.zona_horaria);
+    if (fecha) {
+      // Consulta histórica de una fecha puntual (reportes, etc.)
+      const { rows } = await pool.query(
+        `SELECT c.*, u.nombre AS usuario_nombre
+         FROM cajas c LEFT JOIN usuarios u ON u.id = c.usuario_id
+         WHERE c.negocio_id=${ph(1)} AND c.fecha=${ph(2)} AND c.usuario_id=${ph(3)}`,
+        [nid(req), fecha, req.user.id]
+      );
+      return res.json(rows[0] || null);
+    }
+    // "Mi caja actual": si quedó una abierta de un día anterior sin cerrar,
+    // es esa la que sigue operativa (un bar que trabaja hasta la madrugada
+    // no tiene por qué cerrarla justo a medianoche) — se prioriza sobre la
+    // de hoy. Si no hay ninguna abierta, se cae a la de hoy (p.ej. para
+    // poder ofrecer "reabrir" si ya se cerró).
+    const { rows: abierta } = await pool.query(
+      `SELECT c.*, u.nombre AS usuario_nombre
+       FROM cajas c LEFT JOIN usuarios u ON u.id = c.usuario_id
+       WHERE c.negocio_id=${ph(1)} AND c.usuario_id=${ph(2)} AND c.estado='abierta'
+       ORDER BY c.fecha ASC LIMIT 1`,
+      [nid(req), req.user.id]
+    );
+    if (abierta.length) return res.json(abierta[0]);
+    const hoy = localDate(req.user.zona_horaria);
     const { rows } = await pool.query(
       `SELECT c.*, u.nombre AS usuario_nombre
        FROM cajas c LEFT JOIN usuarios u ON u.id = c.usuario_id
        WHERE c.negocio_id=${ph(1)} AND c.fecha=${ph(2)} AND c.usuario_id=${ph(3)}`,
-      [nid(req), f, req.user.id]
+      [nid(req), hoy, req.user.id]
     );
     res.json(rows[0] || null);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -289,6 +483,7 @@ router.post('/caja/abrir', async (req, res) => {
        VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)})`,
       [id, nid(req), req.user.id, fecha, monto_apertura || 0]
     );
+    req.app.locals.broadcast?.(nid(req), 'caja_actualizada', { id });
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -309,6 +504,7 @@ router.post('/caja/reabrir', async (req, res) => {
        WHERE negocio_id=${ph(2)} AND fecha=${ph(3)} AND usuario_id=${ph(4)} AND estado='cerrada'`,
       [monto_apertura || 0, nid(req), fecha, req.user.id]
     );
+    req.app.locals.broadcast?.(nid(req), 'caja_actualizada', {});
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -324,20 +520,21 @@ router.post('/caja/cerrar', async (req, res) => {
     );
     if (!abiertas.length) return res.status(400).json({ error: 'No tienes ninguna caja abierta' });
     const caja = abiertas[0];
-    const fecha = new Intl.DateTimeFormat('en-CA', { timeZone: req.user.zona_horaria || 'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(caja.fecha));
-    // Solo ventas procesadas por este cajero, del día de esa caja
+    // Se suma todo lo ocurrido desde que se abrió esta caja hasta ahora (no
+    // solo "el día de su fecha") — así, si quedó abierta pasada la
+    // medianoche, las ventas/gastos de después también quedan incluidos en
+    // el cierre en vez de perderse.
     const { rows: ventas } = await pool.query(`
       SELECT
         COALESCE(SUM(total),0) AS total_ventas,
         COALESCE(SUM(CASE WHEN monto_efectivo>0 THEN monto_efectivo WHEN metodo_pago='efectivo' THEN total ELSE 0 END),0) AS efectivo,
         COALESCE(SUM(CASE WHEN monto_tarjeta>0  THEN monto_tarjeta  WHEN metodo_pago='tarjeta'  THEN total ELSE 0 END),0) AS tarjeta,
         COALESCE(SUM(CASE WHEN monto_nequi>0    THEN monto_nequi    WHEN metodo_pago='nequi'    THEN total ELSE 0 END),0) AS nequi
-      FROM ventas WHERE negocio_id=${ph(1)} AND DATE(creado)=${ph(2)} AND cajero_id=${ph(3)} AND estado!='anulada'
-    `, [nid(req), fecha, req.user.id]);
-    // Solo gastos registrados por este usuario, del día de esa caja
+      FROM ventas WHERE negocio_id=${ph(1)} AND creado>=${ph(2)} AND cajero_id=${ph(3)} AND estado!='anulada'
+    `, [nid(req), caja.apertura_en, req.user.id]);
     const { rows: gastos } = await pool.query(
-      `SELECT COALESCE(SUM(monto),0) AS total FROM gastos WHERE negocio_id=${ph(1)} AND fecha=${ph(2)} AND usuario_id=${ph(3)}`,
-      [nid(req), fecha, req.user.id]
+      `SELECT COALESCE(SUM(monto),0) AS total FROM gastos WHERE negocio_id=${ph(1)} AND creado>=${ph(2)} AND usuario_id=${ph(3)}`,
+      [nid(req), caja.apertura_en, req.user.id]
     );
     const v = ventas[0];
     await pool.query(`
@@ -349,6 +546,7 @@ router.post('/caja/cerrar', async (req, res) => {
       WHERE id=${ph(8)}
     `, [monto_cierre||0, notas||'', v.total_ventas, gastos[0].total,
         v.efectivo, v.tarjeta, v.nequi, caja.id]);
+    req.app.locals.broadcast?.(nid(req), 'caja_actualizada', { id: caja.id });
     res.json({ ok: true, resumen: { ...v, total_gastos: gastos[0].total } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -463,6 +661,24 @@ router.put('/proveedores/:id', requirePermiso('proveedores'), async (req, res) =
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.post('/proveedores/:id/catalogo', requirePermiso('proveedores'), uploadProvCatalogo.single('catalogo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Subí un archivo PDF' });
+    const url = `/uploads/${req.file.filename}`;
+    await pool.query(`UPDATE proveedores SET catalogo_url=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+      [url, req.params.id, nid(req)]);
+    res.json({ url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/proveedores/:id/catalogo', requirePermiso('proveedores'), async (req, res) => {
+  try {
+    await pool.query(`UPDATE proveedores SET catalogo_url=NULL WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ════════════════════════════════════════════════════════════════
 // PEDIDOS A PROVEEDOR
 // ════════════════════════════════════════════════════════════════
@@ -539,7 +755,7 @@ router.put('/pedidos-proveedor/:id/estado', requirePermiso('proveedores'), async
   try {
     const { estado } = req.body;
     const { rows: cur } = await pool.query(
-      `SELECT pp.estado, pp.items, pp.total, pp.proveedor_id, p.nombre AS proveedor_nombre
+      `SELECT pp.id, pp.estado, pp.items, pp.total, pp.proveedor_id, pp.gasto_id, p.nombre AS proveedor_nombre
        FROM pedidos_proveedor pp JOIN proveedores p ON p.id = pp.proveedor_id
        WHERE pp.id=${ph(1)} AND pp.negocio_id=${ph(2)}`,
       [req.params.id, nid(req)]
@@ -576,45 +792,35 @@ router.put('/pedidos-proveedor/:id/estado', requirePermiso('proveedores'), async
         );
       }
       // El stock ya subió — ahora se deja registrada la plata que costó,
-      // como gasto "a crédito" (se marca pagado después, desde Gastos,
-      // en el momento en que de verdad se le paga al proveedor).
-      if (+cur[0].total > 0) {
-        // Si todos los artículos del pedido son de la misma categoría de
-        // inventario, se usa esa categoría para el gasto (creándola si no
-        // existe todavía) — igual que al elegir un artículo a mano.
-        let categoriaId = null;
-        const idsItems = items.map(it => it.id).filter(Boolean);
-        if (idsItems.length) {
-          const { rows: invRows } = await pool.query(
-            `SELECT DISTINCT categoria FROM inventario WHERE negocio_id=${ph(1)} AND id IN (${idsItems.map((_,i)=>ph(i+2)).join(',')}) AND categoria IS NOT NULL AND categoria != ''`,
-            [nid(req), ...idsItems]
-          );
-          if (invRows.length === 1) {
-            const nombreCat = invRows[0].categoria;
-            const { rows: catRows } = await pool.query(
-              `SELECT id FROM gasto_categorias WHERE negocio_id=${ph(1)} AND LOWER(nombre)=LOWER(${ph(2)}) LIMIT 1`,
-              [nid(req), nombreCat]
-            );
-            if (catRows[0]) categoriaId = catRows[0].id;
-            else {
-              categoriaId = uuid();
-              await pool.query(
-                `INSERT INTO gasto_categorias (id, negocio_id, nombre, color) VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)})`,
-                [categoriaId, nid(req), nombreCat, '#378ADD']
-              );
-            }
-          }
-        }
-        await pool.query(
-          `INSERT INTO gastos (id,negocio_id,usuario_id,descripcion,monto,metodo_pago,fecha,proveedor_id,categoria_id)
-           VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},'credito',${ph(6)},${ph(7)},${ph(8)})`,
-          [uuid(), nid(req), req.user.id,
-           `Pedido a proveedor — ${cur[0].proveedor_nombre} (${items.length} artículo${items.length===1?'':'s'})`,
-           cur[0].total, localDate(req.user.zona_horaria), cur[0].proveedor_id, categoriaId]
-        );
+      // como gasto "a crédito" (se marca pagado después, desde Gastos, en el
+      // momento en que de verdad se le paga al proveedor). Guardado por
+      // gasto_id en vez de por el estado, para no duplicarlo si el pedido
+      // se pasa de "recibido" a otro estado y se vuelve a marcar recibido.
+      if (+cur[0].total > 0 && !cur[0].gasto_id) {
+        await crearGastoPedidoProveedor(req, cur[0], items);
       }
     }
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Registra el gasto a crédito de un pedido SIN tocar el stock — para pedidos
+// anteriores que ya se contaron en el inventario por otro lado (ajuste
+// manual, etc.) y solo faltan quedar anotados del lado de la plata.
+router.put('/pedidos-proveedor/:id/registrar-gasto', requirePermiso('proveedores'), async (req, res) => {
+  try {
+    const { rows: cur } = await pool.query(
+      `SELECT pp.id, pp.items, pp.total, pp.proveedor_id, pp.gasto_id, p.nombre AS proveedor_nombre
+       FROM pedidos_proveedor pp JOIN proveedores p ON p.id = pp.proveedor_id
+       WHERE pp.id=${ph(1)} AND pp.negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]
+    );
+    if (!cur[0]) return res.status(404).json({ error: 'Pedido no encontrado' });
+    if (cur[0].gasto_id) return res.status(400).json({ error: 'Este pedido ya tiene un gasto registrado' });
+    if (!(+cur[0].total > 0)) return res.status(400).json({ error: 'El pedido no tiene total para registrar' });
+    const items = typeof cur[0].items === 'string' ? JSON.parse(cur[0].items) : (cur[0].items || []);
+    const gastoId = await crearGastoPedidoProveedor(req, cur[0], items);
+    res.json({ ok: true, gasto_id: gastoId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -627,6 +833,13 @@ router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => 
     const { desde, hasta, tipo } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
+    // Para un solo día se usa la ventana real de la caja (ver ventanaDelDia)
+    // en vez de medianoche a medianoche, para no partir un turno nocturno.
+    const unDia = d === h;
+    const ventana = unDia ? await ventanaDelDia(nid(req), d, req.user.zona_horaria) : null;
+    const condV = unDia ? `v.creado >= ${ph(2)} AND v.creado <= ${ph(3)}` : `DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    const condPlain = unDia ? `creado >= ${ph(2)} AND creado <= ${ph(3)}` : `DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    const rango = unDia ? [ventana.inicio, ventana.fin] : [d, h];
     let vSql = `
         SELECT COUNT(v.id) AS pedidos,
                COALESCE(SUM(v.total),0) AS total_ventas,
@@ -648,8 +861,8 @@ router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => 
           FROM pel_ventas pv WHERE pv.estado='completada'
         ) v
         LEFT JOIN (SELECT venta_id, SUM(cantidad) AS cant FROM venta_items GROUP BY venta_id) vi_s ON vi_s.venta_id=v.vid
-        WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
-    const vParams = [nid(req), d, h];
+        WHERE v.negocio_id=${ph(1)} AND ${condV}`;
+    const vParams = [nid(req), ...rango];
     if (tipo) { vParams.push(tipo); vSql += ` AND v.tipo=${ph(vParams.length)}`; }
     const [ventas, gastos, cajas, breakdown] = await Promise.all([
       pool.query(vSql, vParams),
@@ -666,9 +879,9 @@ router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => 
       pool.query(`
         SELECT tipo, COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
         FROM ventas
-        WHERE negocio_id=${ph(1)} AND DATE(creado) BETWEEN ${ph(2)} AND ${ph(3)} AND estado!='anulada'
+        WHERE negocio_id=${ph(1)} AND ${condPlain} AND estado!='anulada'
         GROUP BY tipo
-      `, [nid(req), d, h]),
+      `, [nid(req), ...rango]),
     ]);
     res.json({
       ventas:    ventas.rows[0],
@@ -686,14 +899,18 @@ router.get('/reportes/ventas-por-hora', requirePermiso('reportes'), async (req, 
     const { desde, hasta, metodo_pago, tipo } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
     const h = hasta || d;
+    const unDia = d === h;
+    const ventana = unDia ? await ventanaDelDia(nid(req), d, req.user.zona_horaria) : null;
+    const condV = unDia ? `v.creado >= ${ph(2)} AND v.creado <= ${ph(3)}` : `DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    const rango = unDia ? [ventana.inicio, ventana.fin] : [d, h];
     let sql = `SELECT HOUR(v.creado) AS hora, COUNT(*) AS pedidos, COALESCE(SUM(v.total),0) AS total
                FROM (
                  SELECT negocio_id, total, creado, tipo, metodo_pago FROM ventas WHERE estado!='anulada'
                  UNION ALL
                  SELECT negocio_id, total, fecha AS creado, 'servicio', 'efectivo' FROM pel_ventas WHERE estado='completada'
                ) v
-               WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
-    const params = [nid(req), d, h];
+               WHERE v.negocio_id=${ph(1)} AND ${condV}`;
+    const params = [nid(req), ...rango];
     if (tipo)        { params.push(tipo);        sql += ` AND v.tipo=${ph(params.length)}`; }
     if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
     sql += ' GROUP BY hora ORDER BY hora';
@@ -708,17 +925,30 @@ router.get('/reportes/ventas-por-dia', requirePermiso('reportes'), async (req, r
     const { desde, hasta } = req.query;
     const h = hasta || localDate(req.user.zona_horaria);
     const d = desde || new Intl.DateTimeFormat('en-CA', { timeZone: req.user.zona_horaria, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(Date.now() - 6*86400000));
-    const { rows } = await pool.query(
-      `SELECT DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') AS fecha, COUNT(*) AS pedidos, COALESCE(SUM(v.total),0) AS total
-       FROM (
-         SELECT negocio_id, total, creado FROM ventas WHERE estado!='anulada'
-         UNION ALL
-         SELECT negocio_id, total, fecha AS creado FROM pel_ventas WHERE estado='completada'
-       ) v
-       WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}
-       GROUP BY DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') ORDER BY 1`,
-      [nid(req), d, h]
-    );
+
+    // Un día por consulta (en vez de un solo GROUP BY por DATE(creado)):
+    // así cada barra usa la ventana real de su caja — si la caja de ayer
+    // siguió abierta pasada la medianoche, esas horas de la madrugada
+    // siguen sumando para ayer, no se le pegan de más al día de hoy.
+    const dias = [];
+    for (let cursor = new Date(`${d}T12:00:00Z`), fin = new Date(`${h}T12:00:00Z`); cursor <= fin; cursor.setUTCDate(cursor.getUTCDate()+1)) {
+      dias.push(new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', year:'numeric', month:'2-digit', day:'2-digit' }).format(cursor));
+    }
+
+    const rows = [];
+    for (const fecha of dias) {
+      const ventana = await ventanaDelDia(nid(req), fecha, req.user.zona_horaria);
+      const { rows: r } = await pool.query(`
+        SELECT COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS total
+        FROM (
+          SELECT negocio_id, total, creado FROM ventas WHERE estado!='anulada'
+          UNION ALL
+          SELECT negocio_id, total, fecha AS creado FROM pel_ventas WHERE estado='completada'
+        ) v
+        WHERE v.negocio_id=${ph(1)} AND v.creado >= ${ph(2)} AND v.creado <= ${ph(3)}
+      `, [nid(req), ventana.inicio, ventana.fin]);
+      rows.push({ fecha, pedidos: +r[0].pedidos, total: +r[0].total });
+    }
     res.json(rows);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -731,6 +961,10 @@ router.get('/ventas/recientes', async (req, res) => {
     const { tipo, desde, hasta } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
+    const unDia = d === h;
+    const ventana = unDia ? await ventanaDelDia(nid(req), d, req.user.zona_horaria) : null;
+    const condV = unDia ? `v.creado >= ${ph(2)} AND v.creado <= ${ph(3)}` : `DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    const rango = unDia ? [ventana.inicio, ventana.fin] : [d, h];
     let sql = `
       SELECT v.id, v.tipo, v.mesa_id, v.mesa_num,
              COALESCE(m.nombre, CASE WHEN v.tipo='domicilio' THEN '🛵 Domicilio'
@@ -741,9 +975,9 @@ router.get('/ventas/recientes', async (req, res) => {
       FROM ventas v
       LEFT JOIN usuarios u ON u.id = v.cajero_id
       LEFT JOIN mesas m ON m.id = v.mesa_id
-      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)} AND v.estado!='anulada'
+      WHERE v.negocio_id=${ph(1)} AND ${condV} AND v.estado!='anulada'
     `;
-    const params = [nid(req), d, h];
+    const params = [nid(req), ...rango];
     if (tipo) { params.push(tipo); sql += ` AND v.tipo=${ph(params.length)}`; }
     sql += ' ORDER BY v.creado DESC LIMIT 30';
     const { rows } = await pool.query(sql, params);
@@ -757,6 +991,9 @@ router.get('/ventas', requirePermiso('reportes'), async (req, res) => {
     const { desde, hasta, metodo_pago, tipo } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
+    const unDia = d === h;
+    const ventana = unDia ? await ventanaDelDia(nid(req), d, req.user.zona_horaria) : null;
+    const condV = unDia ? `v.creado >= ${ph(2)} AND v.creado <= ${ph(3)}` : `DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
     let sql = `
       SELECT v.id, DATE_FORMAT(DATE(v.creado),'%Y-%m-%d') AS fecha,
              TIME_FORMAT(v.creado,'%H:%i') AS hora,
@@ -771,8 +1008,8 @@ router.get('/ventas', requirePermiso('reportes'), async (req, res) => {
       FROM ventas v
       LEFT JOIN usuarios u ON u.id = v.cajero_id
       LEFT JOIN mesas m ON m.id = v.mesa_id
-      WHERE v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)} AND v.estado!='anulada'`;
-    const params = [nid(req), d, h];
+      WHERE v.negocio_id=${ph(1)} AND ${condV} AND v.estado!='anulada'`;
+    const params = [nid(req), unDia ? ventana.inicio : d, unDia ? ventana.fin : h];
     if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
     if (tipo)        { params.push(tipo);         sql += ` AND v.tipo=${ph(params.length)}`; }
     sql += ' ORDER BY v.creado DESC';
@@ -921,8 +1158,11 @@ router.get('/facturas', async (req, res) => {
     const { desde, hasta, q } = req.query;
     const d = desde || localDate(req.user.zona_horaria);
     const h = hasta  || d;
-    const params = [nid(req), d, h];
-    let where = `v.negocio_id=${ph(1)} AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    const unDia = d === h;
+    const ventana = unDia ? await ventanaDelDia(nid(req), d, req.user.zona_horaria) : null;
+    const params = [nid(req), unDia ? ventana.inicio : d, unDia ? ventana.fin : h];
+    const condV = unDia ? `v.creado >= ${ph(2)} AND v.creado <= ${ph(3)}` : `DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    let where = `v.negocio_id=${ph(1)} AND ${condV}`;
     if (q && q.trim()) {
       params.push(`%${q.trim()}%`);
       const n = params.length;
@@ -965,7 +1205,11 @@ router.patch('/facturas/:id/anular', requirePermiso('reportes'), async (req, res
     let items = venta.items;
     if (typeof items === 'string') { try { items = JSON.parse(items); } catch { items = []; } }
 
-    for (const item of (items || [])) {
+    // Si la venta vino de un pedido de mesa/barra, el stock ya se había
+    // descontado al pasar ese pedido (no acá) — no hay nada que reponer; si
+    // además se quiere reabrir el pedido, eso se hace aparte reactivando la
+    // comanda, no devolviendo stock desde la factura.
+    for (const item of (venta.comanda_id ? [] : (items || []))) {
       if (item.item_id) {
         const qty = item.qty || item.cantidad || 1;
         const { rows: receta } = await pool.query(

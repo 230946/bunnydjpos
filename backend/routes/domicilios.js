@@ -45,6 +45,36 @@ function localDateHaceDias(dias, tz = 'America/Bogota') {
   return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
+// Para un solo día (desde===hasta), usa la ventana real de la caja de ese
+// día (apertura_en → cierre_en, o "ahora" si sigue abierta) en vez de
+// medianoche a medianoche — la caja es la que marca el día del negocio
+// completo, domicilios incluidos, no solo las ventas de barra.
+async function ventanaDelDia(negocioId, fecha, zonaHoraria) {
+  const { rows } = await pool.query(
+    `SELECT apertura_en, cierre_en, estado FROM cajas WHERE negocio_id=${ph(1)} AND fecha=${ph(2)} ORDER BY apertura_en ASC LIMIT 1`,
+    [negocioId, fecha]
+  );
+  const caja = rows[0];
+  const medianoche = `${fecha} 00:00:00`;
+  let inicio = caja ? caja.apertura_en : medianoche;
+
+  if (!caja) {
+    const { rows: previas } = await pool.query(
+      `SELECT cierre_en, estado FROM cajas WHERE negocio_id=${ph(1)} AND fecha<${ph(2)} ORDER BY fecha DESC, apertura_en DESC LIMIT 1`,
+      [negocioId, fecha]
+    );
+    const prev = previas[0];
+    if (prev && prev.estado === 'abierta') inicio = new Date();
+    else if (prev && prev.cierre_en && new Date(prev.cierre_en) > new Date(medianoche)) inicio = prev.cierre_en;
+  }
+
+  let fin;
+  if (caja && caja.estado === 'cerrada') fin = caja.cierre_en;
+  else if (fecha === localDate(zonaHoraria)) fin = new Date();
+  else fin = `${fecha} 23:59:59`;
+  return { inicio, fin };
+}
+
 // Confirma entrega y cierra el ciclo: marca pago_estado='pagado' e inserta en ventas.
 // Usa venta_id como cerrojo atómico (AND venta_id IS NULL en el UPDATE) para que solo
 // un llamado concurrente gane la carrera y cree la venta.
@@ -929,6 +959,16 @@ router.get('/reportes/resumen', verifyToken, async (req, res) => {
     const hoy = localDate(req.user.zona_horaria);
     const d = req.query.desde || hoy;
     const h = req.query.hasta || d;
+    // Para un solo día se usa la ventana real de la caja (ver ventanaDelDia)
+    // en vez de medianoche a medianoche, para que un domicilio despachado
+    // de madrugada (con la caja de ayer todavía abierta) no se le sume al
+    // día siguiente.
+    const unDia = d === h;
+    const ventana = unDia ? await ventanaDelDia(nid, d, req.user.zona_horaria) : null;
+    const condActualizado = unDia ? 'actualizado >= ? AND actualizado <= ?' : 'DATE(actualizado) BETWEEN ? AND ?';
+    const condCreated = unDia ? 'created_at >= ? AND created_at <= ?' : 'DATE(created_at) BETWEEN ? AND ?';
+    const condActualizadoP = unDia ? 'p.actualizado >= ? AND p.actualizado <= ?' : 'DATE(p.actualizado) BETWEEN ? AND ?';
+    const rango = unDia ? [ventana.inicio, ventana.fin] : [d, h];
 
     const [{ rows: totales }, { rows: enCurso }, { rows: porRider }] = await Promise.all([
       pool.query(
@@ -936,14 +976,14 @@ router.get('/reportes/resumen', verifyToken, async (req, res) => {
                 AVG(calificacion) AS promedio_calificacion,
                 SUM(CASE WHEN calificacion IS NOT NULL THEN 1 ELSE 0 END) AS calificados
          FROM domicilios_pedidos
-         WHERE negocio_id=? AND estado='entregado' AND DATE(actualizado) BETWEEN ? AND ?`,
-        [nid, d, h]
+         WHERE negocio_id=? AND estado='entregado' AND ${condActualizado}`,
+        [nid, ...rango]
       ),
       pool.query(
         `SELECT COUNT(*) AS en_curso
          FROM domicilios_pedidos
-         WHERE negocio_id=? AND estado NOT IN ('entregado','cancelado') AND DATE(created_at) BETWEEN ? AND ?`,
-        [nid, d, h]
+         WHERE negocio_id=? AND estado NOT IN ('entregado','cancelado') AND ${condCreated}`,
+        [nid, ...rango]
       ),
       pool.query(
         `SELECT COALESCE(r.nombre, e.nombre, 'Sin asignar') AS domiciliario,
@@ -953,10 +993,10 @@ router.get('/reportes/resumen', verifyToken, async (req, res) => {
          FROM domicilios_pedidos p
          LEFT JOIN domicilios_riders r ON r.id = p.domiciliario_id
          LEFT JOIN empleados e ON e.id = p.domiciliario_id AND r.id IS NULL
-         WHERE p.negocio_id=? AND p.estado='entregado' AND DATE(p.actualizado) BETWEEN ? AND ?
+         WHERE p.negocio_id=? AND p.estado='entregado' AND ${condActualizadoP}
          GROUP BY COALESCE(r.id, e.id, 'sin_asignar'), domiciliario
          ORDER BY entregas DESC`,
-        [nid, d, h]
+        [nid, ...rango]
       ),
     ]);
 

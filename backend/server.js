@@ -87,6 +87,7 @@ app.get('/peluqueria',       (_, res) => res.sendFile(path.join(frontendPath, 'p
 app.get('/hotel',            (_, res) => res.sendFile(path.join(frontendPath, 'pos-hotel.html')));
 app.get('/cocina',           (_, res) => res.sendFile(path.join(frontendPath, 'cocina.html')));
 app.get('/menu',             (_, res) => res.sendFile(path.join(frontendPath, 'menu-cliente.html')));
+app.get('/cuenta',           (_, res) => res.sendFile(path.join(frontendPath, 'cuenta-cliente.html')));
 // Domicilios
 app.get('/domicilios',       (_, res) => res.sendFile(path.join(frontendPath, 'domicilios.html')));
 app.get('/domiciliario',     (_, res) => res.sendFile(path.join(frontendPath, 'domiciliario.html')));
@@ -349,9 +350,15 @@ async function runMigrations() {
     { table: 'negocios',   column: 'zona_horaria', sql: `ALTER TABLE negocios ADD COLUMN zona_horaria VARCHAR(50) NOT NULL DEFAULT 'America/Bogota'` },
     { table: 'comandas',   column: 'es_adicion',   sql: `ALTER TABLE comandas ADD COLUMN es_adicion TINYINT(1) NOT NULL DEFAULT 0` },
     { table: 'comandas',   column: 'pagado',       sql: `ALTER TABLE comandas ADD COLUMN pagado DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'comandas',   column: 'descuento',    sql: `ALTER TABLE comandas ADD COLUMN descuento DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'fiados',     column: 'pagado_monto', sql: `ALTER TABLE fiados ADD COLUMN pagado_monto DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'gastos',     column: 'proveedor_id', sql: `ALTER TABLE gastos ADD COLUMN proveedor_id VARCHAR(36) NULL` },
     { table: 'gastos',     column: 'pagado_en',    sql: `ALTER TABLE gastos ADD COLUMN pagado_en DATETIME NULL` },
     { table: 'gastos',     column: 'pagado_metodo', sql: `ALTER TABLE gastos ADD COLUMN pagado_metodo VARCHAR(20) NULL` },
+    { table: 'gastos',     column: 'pagado_monto', sql: `ALTER TABLE gastos ADD COLUMN pagado_monto DECIMAL(10,2) NOT NULL DEFAULT 0` },
+    { table: 'pedidos_proveedor', column: 'gasto_id', sql: `ALTER TABLE pedidos_proveedor ADD COLUMN gasto_id VARCHAR(36) NULL` },
+    { table: 'proveedores', column: 'catalogo_url', sql: `ALTER TABLE proveedores ADD COLUMN catalogo_url VARCHAR(300) NULL` },
+    { table: 'ventas', column: 'comanda_id', sql: `ALTER TABLE ventas ADD COLUMN comanda_id VARCHAR(36) NULL` },
     { table: 'menu_items', column: 'nombre_zh',    sql: `ALTER TABLE menu_items ADD COLUMN nombre_zh VARCHAR(200) NULL` },
     { table: 'menu_items', column: 'descripcion_zh', sql: `ALTER TABLE menu_items ADD COLUMN descripcion_zh TEXT NULL` },
     { table: 'domicilios_pedidos', column: 'pago_estado', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente'` },
