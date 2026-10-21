@@ -1,0 +1,14 @@
+{
+  "name": "DJPOS — POS Barra",
+  "short_name": "POS Barra",
+  "description": "Punto de venta del bar — DJPOS",
+  "start_url": "/pos-bar.html",
+  "scope": "/pos-bar.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#086644",
+  "icons": [
+    { "src": "/img/logo-bar.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }
+  ]
+}

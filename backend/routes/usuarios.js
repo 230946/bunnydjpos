@@ -362,6 +362,24 @@ router.put('/usuarios/:id/password', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Baja de empleado: desactiva en vez de borrar la fila — un DELETE real
+// dejaría huérfanas sus ventas, comandas, horarios, etc. (todo lo que
+// referencia usuarios.id). Con activo=0 no puede volver a iniciar sesión
+// y desaparece de los listados activos, pero su historial queda intacto.
+router.delete('/usuarios/:id', requirePermiso('personal'), async (req, res) => {
+  try {
+    if (req.params.id === req.user.id) return res.status(400).json({ error: 'No podés eliminar tu propio usuario' });
+    const { rows } = await pool.query(
+      `SELECT id FROM usuarios WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, req.user.negocio_id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Empleado no encontrado' });
+    await pool.query(`UPDATE usuarios SET activo=0, actualizado=NOW() WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, req.user.negocio_id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ════════════════════════════════════════════════════════════════
 // HORARIOS
 // ════════════════════════════════════════════════════════════════

@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <title>POS Bar — BUNNYDJPOS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#086644">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="POS Barra">
+<link rel="icon" href="/img/logo-bar.png" type="image/png">
+<link rel="manifest" href="/manifest-pos-bar.json">
+<link rel="apple-touch-icon" href="/img/logo-bar.png">
 <link rel="stylesheet" href="css/responsive.css">
 <style>
 :root{
@@ -118,7 +126,7 @@ table tr:hover td{background:var(--bg2)}
 .mesa-sel-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-l);color:var(--green-d);font-weight:700;font-size:12.5px;padding:7px 12px;border-radius:20px}
 .mesa-sel-badge button{background:none;border:none;color:var(--green-d);font-weight:700;cursor:pointer;text-decoration:underline;font-size:12px}
 .mesa-activa-banner{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--green-d);color:#fff;padding:13px 16px;border-radius:var(--rl);margin-bottom:12px;font-size:17px;font-weight:800;letter-spacing:.3px}
-.mesa-activa-banner button{background:rgba(255,255,255,.22);border:none;color:#fff;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px}
+.mesa-activa-banner button{background:rgba(255,255,255,.22);border:none;color:#fff;font-weight:700;padding:11px 16px;min-height:44px;border-radius:8px;cursor:pointer;font-size:13px;flex-shrink:0;touch-action:manipulation}
 
 /* ---------- Barra / comandas ---------- */
 .barra-grid{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
@@ -214,7 +222,7 @@ table tr:hover td{background:var(--bg2)}
 
 <div id="login-screen">
   <div class="login-card">
-    <div style="text-align:center;margin-bottom:12px"><img src="/img/logo.png" alt="DJPOS" style="width:110px;height:110px;object-fit:contain;border-radius:50%;margin:0 auto"></div>
+    <div style="text-align:center;margin-bottom:12px"><img src="/img/logo-bar.png" alt="DJPOS" style="width:110px;height:110px;object-fit:contain;border-radius:50%;margin:0 auto"></div>
     <div id="login-neg-nombre"></div>
     <h1>🍹 POS Bar</h1>
     <div class="sub">BUNNYDJPOS — punto de venta</div>
@@ -230,7 +238,7 @@ table tr:hover td{background:var(--bg2)}
     </div>
   </div>
   <div style="margin-top:20px;color:rgba(255,255,255,.65);font-size:12px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">
-    <img src="/img/logo.png" alt="DJPOS" style="width:16px;height:16px;object-fit:contain;border-radius:4px;vertical-align:middle">
+    <img src="/img/logo-bar.png" alt="DJPOS" style="width:16px;height:16px;object-fit:contain;border-radius:4px;vertical-align:middle">
     Powered by DJPOS
   </div>
 </div>
@@ -238,7 +246,7 @@ table tr:hover td{background:var(--bg2)}
 <div id="app" style="display:none">
   <aside class="sidebar">
     <div style="margin-bottom:8px;padding-bottom:8px;border-bottom:0.5px solid rgba(255,255,255,.15);width:100%;text-align:center">
-      <img src="/img/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:10px;display:block;margin:0 auto 5px">
+      <img src="/img/logo-bar.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:10px;display:block;margin:0 auto 5px">
       <span style="font-size:9px;font-weight:600;letter-spacing:0.5px;color:rgba(255,255,255,.75);line-height:1">DJPOS</span>
     </div>
     <button class="nav-icon active" data-nav="mesas" onclick="nav('mesas')" title="Mesas">🪑<span class="lbl">Mesas</span></button>
@@ -264,6 +272,7 @@ table tr:hover td{background:var(--bg2)}
       <div style="display:flex;align-items:center;gap:10px">
         <span class="caja-pill cerrada" id="caja-pill">Caja cerrada</span>
         <button class="icon-btn" title="Pantalla completa" onclick="toggleFullscreenBar()">⛶</button>
+        <button onclick="window.open('/manual-pos-bar.html','_blank')" title="Ayuda" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text2)">?</button>
         <span id="hdr-user" style="font-size:12.5px;color:var(--text2)"></span>
       </div>
     </header>

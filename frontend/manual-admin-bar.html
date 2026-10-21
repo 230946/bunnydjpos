@@ -1,0 +1,587 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Admin Barra — BUNNYDJPOS</title>
+<link rel="icon" href="/img/logo-bar.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.08);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.08);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);line-height:1.6}
+.layout{display:flex;min-height:100vh}
+.toc{width:240px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.toc-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.toc-logo h2{font-size:14px;font-weight:700;color:var(--green)}
+.toc-logo p{font-size:11px;color:var(--text3);margin-top:2px}
+.toc a{display:block;padding:6px 18px;font-size:12.5px;color:var(--text2);text-decoration:none;border-left:3px solid transparent;transition:all .15s}
+.toc a:hover{background:var(--bg2);color:var(--text);border-left-color:var(--green)}
+.toc a.active{background:var(--green-l);color:var(--green-d);border-left-color:var(--green);font-weight:600}
+.toc-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:10px 18px 3px}
+.content{flex:1;padding:36px;max-width:860px}
+.manual-header{background:var(--green);color:#fff;border-radius:var(--rl);padding:28px 32px;margin-bottom:28px}
+.manual-header h1{font-size:22px;font-weight:700;margin-bottom:5px}
+.manual-header p{font-size:13px;opacity:.85}
+.manual-header .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:11px;margin-top:8px}
+.section{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px;scroll-margin-top:20px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.section-icon{font-size:22px;width:40px;height:40px;background:var(--green-l);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-header h2{font-size:16px;font-weight:700}
+.section-header p{font-size:12px;color:var(--text3);margin-top:2px}
+.steps{counter-reset:step}
+.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-num{counter-increment:step;background:var(--green);color:#fff;font-size:11px;font-weight:700;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-num::before{content:counter(step)}
+.step-body{flex:1}
+.step-body strong{font-weight:600}
+.step-body p{font-size:13px;color:var(--text2);margin-top:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:10px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.card-icon{font-size:18px;margin-bottom:5px}
+.card h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.card p{font-size:12px;color:var(--text2)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th{background:var(--bg2);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:1px solid var(--border)}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.alert{border-radius:var(--r);padding:10px 14px;margin:10px 0;font-size:13px;display:flex;gap:9px;align-items:flex-start}
+.alert-tip{background:var(--green-l);border-left:3px solid var(--green);color:var(--green-d)}
+.alert-warn{background:var(--amber-l);border-left:3px solid var(--amber);color:#92400e}
+.alert-info{background:var(--blue-l);border-left:3px solid var(--blue);color:#1e40af}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-green{background:var(--green-l);color:var(--green-d)}
+.tag-red{background:var(--red-l);color:var(--red)}
+.tag-amber{background:var(--amber-l);color:var(--amber)}
+.btn-demo{display:inline-block;background:var(--green);color:#fff;border-radius:var(--r);padding:4px 12px;font-size:11px;font-weight:500;margin:2px}
+.btn-demo.outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-demo.red{background:var(--red)}
+.btn-demo.amber{background:#d97706}
+h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
+@media(max-width:700px){.layout{flex-direction:column}.toc{width:100%;height:auto;position:static}.content{padding:18px}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ÍNDICE -->
+  <nav class="toc">
+    <div class="toc-logo" style="display:flex;align-items:center;gap:10px">
+      <img src="/img/logo-bar.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+      <div>
+        <h2 style="font-size:13px;font-weight:700;color:var(--green)">DJPOS</h2>
+        <p style="font-size:11px;color:var(--text3);margin-top:1px">Manual Admin Barra</p>
+      </div>
+    </div>
+    <div class="toc-section">Inicio</div>
+    <a href="#acceso" onclick="setActive(this)">Acceso al sistema</a>
+    <div class="toc-section">General</div>
+    <a href="#dashboard" onclick="setActive(this)">🏠 Dashboard</a>
+    <a href="#reportes" onclick="setActive(this)">📊 Reportes</a>
+    <div class="toc-section">Finanzas</div>
+    <a href="#caja" onclick="setActive(this)">💵 Caja</a>
+    <a href="#gastos" onclick="setActive(this)">🧾 Gastos</a>
+    <a href="#clientes" onclick="setActive(this)">👤 Clientes</a>
+    <a href="#fiados" onclick="setActive(this)">📝 Clientes con deuda</a>
+    <a href="#facturas" onclick="setActive(this)">🖨️ Facturas</a>
+    <div class="toc-section">Inventarios / Servicios</div>
+    <a href="#mesas" onclick="setActive(this)">🪑 Mesas</a>
+    <a href="#barra" onclick="setActive(this)">🍹 Barra</a>
+    <a href="#pedidos" onclick="setActive(this)">📋 Pedidos</a>
+    <a href="#cobro-admin" onclick="setActive(this)">💳 Cobro, fiar y abonar</a>
+    <a href="#domicilios" onclick="setActive(this)">🛵 Domicilios</a>
+    <a href="#menu" onclick="setActive(this)">📋 Menú</a>
+    <a href="#inventario" onclick="setActive(this)">📦 Inventario</a>
+    <a href="#proveedores" onclick="setActive(this)">🚚 Proveedores</a>
+    <a href="#pedidos-prov" onclick="setActive(this)">🛒 Pedidos a proveedores</a>
+    <div class="toc-section">Personal</div>
+    <a href="#personal" onclick="setActive(this)">👤 Empleados</a>
+    <a href="#roles" onclick="setActive(this)">🔐 Roles</a>
+    <a href="#horarios" onclick="setActive(this)">👥 Horarios y Nómina</a>
+    <div class="toc-section">Configuración</div>
+    <a href="#config" onclick="setActive(this)">⚙️ Config. factura</a>
+    <a href="#cfg-impresora" onclick="setActive(this)">🖨️ Impresora</a>
+  </nav>
+
+  <!-- CONTENIDO -->
+  <div class="content">
+
+    <div class="manual-header">
+      <h1>Manual del Administrador</h1>
+      <p>Barra — Gestión completa de mesas, inventario, fiados, personal y reportes del bar.</p>
+      <span class="badge">Versión 1.0 — Octubre 2026</span>
+    </div>
+
+    <!-- ACCESO -->
+    <div class="section" id="acceso">
+      <div class="section-header">
+        <div class="section-icon">🔐</div>
+        <div><h2>Acceso al sistema</h2><p>Cómo ingresar al panel administrativo</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Abre el navegador</strong><p>Ve a la URL del negocio seguida de <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">/admin-bar</code> — ejemplo: <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">http://tu-dominio/admin-bar?n=ID_NEGOCIO</code></p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa usuario o email y contraseña</strong><p>Credenciales asignadas por el superadmin o creadas al registrar el negocio.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Entra con tu rol</strong><p>Si tienes permisos de administrador verás todos los módulos. Los roles restringidos solo ven lo que tienen autorizado (ver sección <strong>Roles</strong>).</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>El panel Admin Barra es distinto del <strong>POS Bar</strong>: el Admin es para gestión; el POS es la pantalla que usan los meseros/cajeros para tomar pedidos y cobrar. Desde el menú lateral, en <strong>Accesos directos → POS Bar ↗</strong>, puedes abrir el POS en una pestaña nueva.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Puedes cambiar tu contraseña en cualquier momento desde <strong>🔑 Contraseña</strong> al final del menú lateral. Si la olvidaste, usa <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de inicio de sesión — te llega una contraseña temporal por correo.</span></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="section" id="dashboard">
+      <div class="section-header">
+        <div class="section-icon">🏠</div>
+        <div><h2>Dashboard</h2><p>Resumen del bar en tiempo real</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Primera pantalla al ingresar. Tiene un filtro de período (Hoy, Ayer, Esta semana, Este mes, o un rango Desde/Hasta) y se actualiza sola cada 30 segundos cuando el período es "Hoy".</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">💰</div><h4>Ingresos del período</h4><p>Total facturado, con tendencia (↑/↓) contra el período anterior equivalente</p></div>
+        <div class="card"><div class="card-icon">🧾</div><h4>Tickets cerrados</h4><p>Cantidad de ventas procesadas</p></div>
+        <div class="card"><div class="card-icon">📊</div><h4>Ticket promedio</h4><p>Valor promedio por venta</p></div>
+        <div class="card"><div class="card-icon">🍹</div><h4>Artículos vendidos</h4><p>Unidades totales vendidas en el período</p></div>
+        <div class="card"><div class="card-icon">📈</div><h4>Ventas por hora</h4><p>Gráfica de barras con la hora pico resaltada</p></div>
+        <div class="card"><div class="card-icon">📉</div><h4>Tendencia de ingresos</h4><p>Gráfica de línea — si filtras un solo día, igual muestra los últimos 3 días de contexto</p></div>
+        <div class="card"><div class="card-icon">💳</div><h4>Métodos de pago</h4><p>Desglose en efectivo, tarjeta y Nequi/QR</p></div>
+        <div class="card"><div class="card-icon">📋</div><h4>Gastos por categoría</h4><p>Gráfica de barras horizontales con los gastos del período</p></div>
+        <div class="card"><div class="card-icon">💵</div><h4>Estado de caja</h4><p>Si está abierta, monto de apertura y ventas/gastos acumulados</p></div>
+        <div class="card"><div class="card-icon">🛵</div><h4>Domicilios y calificaciones</h4><p>Domicilios entregados y calificación promedio</p></div>
+        <div class="card"><div class="card-icon">📦</div><h4>Estado de inventario</h4><p>Total de artículos, bajo stock y agotados, con lista de alertas</p></div>
+      </div>
+      <div class="alert alert-tip" style="margin-top:12px">💡 <span>Mientras estés en el Dashboard con el período en "Hoy", los datos se refrescan solos cada 30 segundos — además, varias tarjetas (caja, inventario) se actualizan al instante por WebSocket apenas ocurre algo (nueva venta, cambio de stock), sin esperar al refresco automático.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>También puedes subir el <strong>logo del negocio</strong> desde la tarjeta al final del Dashboard — aparece en el login, en el sidebar y en los recibos impresos.</span></div>
+    </div>
+
+    <!-- REPORTES -->
+    <div class="section" id="reportes">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div><h2>Reportes</h2><p>Análisis de ventas, gastos e inventario por período</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">A diferencia del Dashboard, Reportes permite filtros más amplios (hasta "Este año") y además por método de pago y por canal de venta.</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">📅</div><h4>Rangos rápidos</h4><p>Hoy, Ayer, Esta semana, Este mes, Este trimestre, Este año o 30 días — o un rango Desde/Hasta manual</p></div>
+        <div class="card"><div class="card-icon">💳</div><h4>Filtro por método</h4><p>Efectivo, tarjeta o Nequi/QR</p></div>
+        <div class="card"><div class="card-icon">🍹</div><h4>Filtro por canal</h4><p>🍹 Barra/POS o 🛵 Domicilio</p></div>
+        <div class="card"><div class="card-icon">📈</div><h4>Ventas, gastos y utilidad</h4><p>Totales del período y utilidad resultante</p></div>
+        <div class="card"><div class="card-icon">🏆</div><h4>Productos más vendidos / horas pico</h4><p>Ranking de artículos y distribución por hora</p></div>
+        <div class="card"><div class="card-icon">⬇️</div><h4>Exportar Excel</h4><p>Descarga el detalle de ventas del período consultado</p></div>
+        <div class="card"><div class="card-icon">📦</div><h4>Inventario actual</h4><p>Totales OK / bajo stock / agotado y el detalle completo con costo y valor total</p></div>
+      </div>
+      <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>La tarjeta <strong>Comisión total ventas del mes</strong> siempre se calcula sobre el mes calendario en curso — se reinicia en $0 el día 1 de cada mes, sin importar el filtro de fechas que uses en esta pantalla.</span></div>
+    </div>
+
+    <!-- CAJA -->
+    <div class="section" id="caja">
+      <div class="section-header">
+        <div class="section-icon">💵</div>
+        <div><h2>Caja</h2><p>Apertura, cierre e historial — compartida para todo el turno</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">La caja de barra es <strong>una sola por negocio</strong>, no por cajero: si otro usuario ya la abrió en el turno, cualquiera puede seguir usándola para vender, cobrar o abonar.</p>
+
+      <h3 class="sub">Abrir caja</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a 💵 Caja</strong></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de apertura</strong><p>El efectivo con el que inicia la caja (fondo de cambio). Si no hay base, escribe 0.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirma</strong><p>Botón <span class="btn-demo">Abrir</span>. A partir de ahí se puede vender, cobrar, fiar y abonar.</p></div></div>
+      </div>
+
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span><strong>La caja de barra no se cierra sola a medianoche.</strong> Un bar que trabaja hasta la madrugada puede seguir cobrando con la misma caja después de cambiar la fecha calendario, sin tener que reabrir nada — mientras su estado siga "abierta", el sistema la sigue usando para todas las ventas, abonos y fiados, sea cual sea la fecha de hoy.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Si entrás un día y la caja sigue abierta de un turno anterior, verás el aviso <strong>⚠️ Caja atrasada</strong> con la fecha de apertura original — podés seguir cobrando normalmente con ella y cerrarla cuando termine el turno, con el botón <strong>Cerrar caja atrasada</strong>. No es obligatorio cerrarla antes de seguir operando.</span></div>
+
+      <h3 class="sub">Cerrar caja</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cuenta el efectivo físico</strong><p>Todo el efectivo que hay en caja al terminar el turno.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de cierre y notas opcionales</strong></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirma el cierre</strong><p>El sistema suma automáticamente <em>todo</em> lo ocurrido desde la hora real de apertura (ventas, gastos, efectivo/tarjeta/Nequi) — no solo lo del día calendario de hoy.</p></div></div>
+      </div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Si cerraste por error, usa <strong>Reabrir caja</strong> para volver a dejarla abierta con el mismo monto de apertura.</span></div>
+
+      <h3 class="sub">Resumen e historial</h3>
+      <p style="color:var(--text2);margin-bottom:12px">El resumen del día muestra ventas, gastos y el desglose por efectivo/tarjeta/Nequi de la caja actual. Debajo, el historial lista todas las cajas anteriores con fecha, usuario, apertura, cierre, ventas, gastos y estado (<span class="tag tag-green">Abierta</span> / <span class="tag tag-amber">Cerrada</span>).</p>
+    </div>
+
+    <!-- GASTOS -->
+    <div class="section" id="gastos">
+      <div class="section-header">
+        <div class="section-icon">🧾</div>
+        <div><h2>Gastos</h2><p>Registro de egresos del bar, incluidas cuentas a crédito con proveedores</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Categoría</strong><p>Crea categorías de gasto propias (insumos, servicios, nómina, etc.) para organizar los reportes.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Gasto</strong><p>Descripción, monto, categoría, fecha y método de pago. El método puede ser efectivo/tarjeta/Nequi, o <strong>crédito</strong> con un proveedor.</p></div></div>
+      </div>
+      <h3 class="sub">Gastos a crédito</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Un gasto a crédito queda marcado <span class="tag tag-amber">Crédito — proveedor</span> y aparece en la tarjeta <strong>Cuentas por proveedor</strong> con su saldo pendiente. Se puede <span class="btn-demo outline">💰 Abono</span> parcial o <span class="btn-demo outline">✅ Pagar todo</span>; una vez pagado por completo queda <span class="tag tag-green">Pagado (era crédito)</span>.</p>
+      <div style="display:flex;gap:16px;margin-bottom:4px;font-size:13px">
+        <span>Total pagado: <b>resumen arriba de la tabla</b></span>
+      </div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Los gastos pagados entran en el cálculo de utilidad de Reportes y en el cierre de caja del turno en que se registraron.</span></div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="section" id="clientes">
+      <div class="section-header">
+        <div class="section-icon">👤</div>
+        <div><h2>Clientes</h2><p>Base de datos de clientes del bar</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Registro de clientes para asociarlos a ventas, fiados y notas. Se puede buscar por nombre, teléfono o documento.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Nuevo</strong><p>Nombre, teléfono, documento y email.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Notas</strong><p>Campo de texto libre en la ficha del cliente — útil para apuntar deudas a mano antes de activarlas como fiado real (ver siguiente sección).</p></div></div>
+      </div>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Un cliente con una nota escrita aparece también en <strong>Clientes con deuda</strong> con un ícono 📝, para no perder de vista esas deudas informales.</span></div>
+    </div>
+
+    <!-- FIADOS -->
+    <div class="section" id="fiados">
+      <div class="section-header">
+        <div class="section-icon">📝</div>
+        <div><h2>Clientes con deuda (Fiados)</h2><p>Control de cuentas fiadas, abonos y notas manuales</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Lista todas las deudas de clientes, con filtro por <strong>Pendientes</strong>, <strong>Pagadas</strong> o <strong>Todas</strong>, y el total pendiente en la cabecera.</p>
+
+      <h3 class="sub">Abonar a una deuda</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>💰 Abono</strong><p>Abre el modal de pago parcial. Podés abonar <strong>al total de la deuda</strong> o, si la deuda tiene varios artículos pendientes, elegir <strong>un artículo específico</strong> del selector "¿A qué abonar?".</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Pagar un artículo puntual</strong><p>Se cobra exactamente el precio de ese artículo y queda marcado <strong>✓ pagado</strong> dentro de la deuda, para que no se pueda volver a cobrar por error.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🎖️ Es cliente (descuento)</strong><p>Disponible solo cuando se abona <strong>al total</strong> de la deuda (no al elegir un artículo específico) — permite restar un monto fijo antes de calcular lo que falta.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>✅ Pagar todo</strong><p>Precarga el monto con el saldo completo pendiente.</p></div></div>
+      </div>
+
+      <h3 class="sub">Agregar más consumo a una deuda abierta</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Desde el detalle de una deuda pendiente, el botón <strong>➕ Agregar</strong> abre un buscador de productos del menú para sumarlos a esa misma deuda — útil cuando el cliente sigue pidiendo mientras queda fiado.</p>
+
+      <h3 class="sub">Notas manuales → Activar deuda</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Notas previas al sistema de fiados</strong><p>Si un cliente tiene una nota de texto libre en su ficha (deudas anotadas a mano), aparece en esta misma tabla con un saldo <strong>estimado</strong> (el sistema intenta leer el monto más alto mencionado en el texto de la nota).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>✅ Activar</strong><p>Convierte la nota en una deuda real con seguimiento de abonos: pide confirmar la descripción y el monto total, crea el fiado y <strong>borra la nota</strong> de la ficha del cliente (ya no hace falta, quedó registrada como deuda formal).</p></div></div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>El monto estimado de una nota es solo una ayuda de lectura — revisalo siempre antes de activar la deuda, porque se calcula adivinando el número más alto escrito en el texto.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Las deudas se registran cuando se cobra una mesa/pedido eligiendo <strong>📝 Fiado</strong> como método de pago (ver sección <strong>Barra</strong>), o manualmente al activar una nota.</span></div>
+    </div>
+
+    <!-- FACTURAS -->
+    <div class="section" id="facturas">
+      <div class="section-header">
+        <div class="section-icon">🖨️</div>
+        <div><h2>Facturas</h2><p>Reimpresión y consulta de ventas facturadas</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Filtra por rango de fechas y por número de factura o nombre de cliente.</p>
+      <table>
+        <thead><tr><th>Columna</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>N° Factura</strong></td><td>Se marca <span class="tag tag-red">ANULADA</span> si fue anulada</td></tr>
+          <tr><td><strong>Mesa / Cajero / Método</strong></td><td>Datos de la venta, incluido el desglose si fue pago mixto</td></tr>
+          <tr><td><span class="btn-demo outline">🖨️ Ver</span></td><td>Abre el recibo completo, con opción de reimprimir</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>El prefijo y los demás datos que salen impresos en el recibo se configuran en <strong>⚙️ Config. factura</strong>.</span></div>
+    </div>
+
+    <!-- MESAS -->
+    <div class="section" id="mesas">
+      <div class="section-header">
+        <div class="section-icon">🪑</div>
+        <div><h2>Mesas</h2><p>Mesas del bar, con QR de autopedido y QR de cuenta</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Mesa</strong><p>Número, nombre opcional (ej. "Terraza 1"), capacidad y zona. Al crearla se ofrece directamente el QR de autopedido.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🔗 QR autopedido</strong><p>El cliente escanea y puede pedir productos por su cuenta desde su celular — el pedido llega como comanda normal a Barra/Pedidos.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🧾 QR ver cuenta</strong><p>QR de solo lectura: el cliente ve lo que lleva pedido y lo que debe, <strong>sin poder agregar nada</strong> — distinto del QR de autopedido. Abre <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">cuenta-cliente.html</code> con la cuenta de esa mesa.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🗑️ Borrar</strong><p>Solo se puede borrar una mesa <strong>libre</strong> (sin pedido abierto).</p></div></div>
+      </div>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>No existe una función para "unir mesas". Si una mesa necesita más cupos, agrégale capacidad o usá otra mesa — cada mesa mantiene su propio pedido de forma independiente.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Tocar una mesa (libre u ocupada) te lleva siempre a la misma pantalla de <strong>Barra</strong> para esa mesa — ver la siguiente sección.</span></div>
+    </div>
+
+    <!-- BARRA -->
+    <div class="section" id="barra">
+      <div class="section-header">
+        <div class="section-icon">🍹</div>
+        <div><h2>Barra</h2><p>Pantalla única para tomar pedidos, ver lo ya pedido y cobrar</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Es la misma pantalla sea cual sea la mesa (o "Barra / Para llevar" si no hay mesa). Al entrar con una mesa seleccionada aparece un banner fijo arriba — <strong>🪑 MESA X</strong> — con el botón <strong>✕ Salir de la mesa</strong>.</p>
+      <div class="alert alert-info" style="margin-top:0">ℹ️ <span>Si la mesa ya tiene algo pedido, se muestra <strong>arriba de la grilla de productos</strong>, con botones +/− por artículo, el total, lo abonado y el saldo — así nunca se agrega un producto nuevo sin ver primero lo que ya hay.</span></div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Entrar a <strong>Barra</strong> desde el ícono del menú lateral (no desde una mesa puntual) limpia automáticamente cualquier mesa que haya quedado seleccionada de antes — así se evita agregar productos por error a la mesa equivocada.</span></div>
+
+      <h3 class="sub">Tomar un pedido</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Buscar o filtrar por categoría</strong><p>El cuadro de búsqueda filtra por nombre de producto <em>o</em> por nombre de categoría, sin importar tildes.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Tocar el producto</strong><p>Se agrega al carrito de la derecha. Si todavía no elegiste mesa y es el primer producto, el sistema pregunta "¿Mesa para este pedido?" (o "Sin mesa / Para llevar").</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>✏️ Manual</strong><p>Para algo puntual que no está cargado en el Menú: nombre, precio y cantidad libres.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>📨 Enviar a barra</strong><p>Envía el pedido como comanda — también aparece la <strong>barra flotante</strong> en la parte inferior apenas hay algo en el carrito, para enviar sin bajar hasta el botón.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>💳 Cobrar directo</strong><p>Si el cliente paga de inmediato sin pasar por comanda, cobra el carrito directamente (ver sección <strong>Cobro, fiar y abonar</strong> más abajo).</p></div></div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Un producto con stock agotado se ve gris con la etiqueta <strong>Agotado</strong> y no se puede agregar. "Bajo stock" solo avisa, no bloquea.</span></div>
+    </div>
+
+    <!-- PEDIDOS -->
+    <div class="section" id="pedidos">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div><h2>Pedidos abiertos</h2><p>Todas las comandas enviadas, en mesa o para llevar</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Cada tarjeta de pedido muestra sus artículos (con +/− para mesas), el total, lo abonado y el saldo si ya tuvo pagos parciales.</p>
+      <table>
+        <thead><tr><th>Acción</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td><span class="btn-demo outline">➕ Agregar</span></td><td>Lleva a Barra con esa mesa seleccionada, para seguir agregando</td></tr>
+          <tr><td><span class="btn-demo outline">✏️ Manual</span></td><td>Agrega un producto suelto directo a ese pedido sin pasar por Barra</td></tr>
+          <tr><td><span class="btn-demo outline">💰 Abono</span></td><td>Pago parcial del pedido</td></tr>
+          <tr><td><span class="btn-demo">💳 Cobrar / Cobrar saldo</span></td><td>Cobra el total o lo que queda pendiente si ya hubo abonos</td></tr>
+          <tr><td>🗑 (borrar)</td><td>Elimina el pedido completo — se usa cuando se envió por error, no se puede deshacer</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Encima de la lista aparece una fila de mesas libres para tomar un pedido nuevo sin ir hasta la pestaña Mesas.</span></div>
+    </div>
+
+    <!-- COBRO / FIAR / ABONAR -->
+    <div class="section" id="cobro-admin">
+      <div class="section-header">
+        <div class="section-icon">💳</div>
+        <div><h2>Cobro, fiar y abonar</h2><p>Qué pasa al confirmar el pago de un pedido</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">El mismo modal de cobro sirve para cobrar un carrito nuevo, un pedido abierto o el saldo restante de uno con abonos.</p>
+      <table>
+        <thead><tr><th>Método</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td>💵 Efectivo</td><td>Pide el monto recibido y calcula el cambio</td></tr>
+          <tr><td>💳 Tarjeta / 📱 Nequi</td><td>Registra el total por ese medio (no procesa el cobro electrónico, solo lo anota)</td></tr>
+          <tr><td>🔀 Mixto</td><td>Reparte el total entre efectivo, tarjeta y Nequi</td></tr>
+          <tr><td>📝 Fiado</td><td>No se cobra nada: pide nombre y teléfono del cliente, registra la deuda y <strong>la mesa se libera igual</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>🎖️ <strong>Es cliente</strong> habilita un campo de descuento (monto fijo) por cada artículo del carrito o del cobro — útil para fidelización puntual sin tocar el precio del menú.</span></div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Sin caja abierta no se puede cobrar, fiar ni abonar — el sistema avisa "Abrí la caja antes de cobrar".</span></div>
+    </div>
+
+    <!-- DOMICILIOS -->
+    <div class="section" id="domicilios">
+      <div class="section-header">
+        <div class="section-icon">🛵</div>
+        <div><h2>Domicilios</h2><p>Panel en vivo de pedidos a domicilio hechos por clientes</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Pedidos hechos desde el link público del bar, con estado en tiempo real.</p>
+      <table>
+        <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td>⏳ Pendiente</td><td>Pedido nuevo, sin aceptar (filtro por defecto)</td></tr>
+          <tr><td>✅ Aceptado</td><td>El bar confirmó el pedido</td></tr>
+          <tr><td>👨‍🍳 En preparación</td><td>Se está preparando</td></tr>
+          <tr><td>📦 Listo</td><td>Listo para que el domiciliario lo recoja</td></tr>
+          <tr><td>🛵 En camino</td><td>El domiciliario ya lo recogió</td></tr>
+          <tr><td>🎉 Entregado</td><td>Entregado — el cliente puede calificar</td></tr>
+          <tr><td>❌ Cancelado</td><td>Pedido anulado</td></tr>
+        </tbody>
+      </table>
+      <div class="steps" style="margin-top:14px">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🔗 Link tienda / 🏍️ Link Repartidores</strong><p>Copia el enlace público para clientes, y el enlace de acceso para repartidores.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🗺️ Mapa</strong><p>Ubicación en vivo de los repartidores disponibles.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>👤 Domiciliarios</strong><p>Listado rápido de repartidores sin salir del panel de pedidos.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>⚙️ Costo de domicilio</strong><p>Configura el valor que se cobra por el envío.</p></div></div>
+      </div>
+      <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Un pedido nuevo de domicilio dispara un aviso sonoro y un contador en el ícono de Domicilios del menú lateral, en tiempo real.</span></div>
+    </div>
+
+    <!-- MENÚ -->
+    <div class="section" id="menu">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div><h2>Menú</h2><p>Categorías y artículos que ven los meseros en Barra</p></div>
+      </div>
+      <h3 class="sub">Categorías</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Nombre y emoji; definen los chips de filtro en Barra.</p>
+      <h3 class="sub">Artículos</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Artículo</strong><p>Nombre, categoría, emoji, precio y disponibilidad.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🔍 Buscador de artículos</strong><p>Encima de la tabla hay un cuadro de búsqueda que filtra por nombre <strong>o</strong> por categoría, sin distinguir tildes.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Vincular a inventario</strong><p>Un artículo puede estar ligado a un ítem de Inventario — cuando se vende, descuenta stock automáticamente y se bloquea como "Agotado" en Barra si llega a 0.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>⭐ Destacado / 🏷️ Promo</strong><p>Un artículo destacado o en promoción vigente se marca con un ícono en su tarjeta dentro de Barra.</p></div></div>
+      </div>
+    </div>
+
+    <!-- INVENTARIO -->
+    <div class="section" id="inventario">
+      <div class="section-header">
+        <div class="section-icon">📦</div>
+        <div><h2>Inventario</h2><p>Stock del bar, con ganancia por artículo y alertas en vivo</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">La tabla se actualiza por WebSocket apenas cambia el stock en cualquier parte del sistema (una venta, un pedido a proveedor recibido, un ajuste manual) — no hace falta recargar la página.</p>
+
+      <h3 class="sub">Agregar / editar un artículo</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Código</strong><p>Se autogenera (COD-001, COD-002…) al crear uno nuevo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Categoría</strong><p>El campo sugiere las <strong>mismas categorías del Menú</strong> (no textos sueltos inventados) — sigue siendo de texto libre, así que puede quedarse con la categoría actual aunque no esté en la lista de sugerencias.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Stock y stock mínimo</strong><p>El mínimo dispara la alerta de "bajo stock" en Dashboard, Reportes e Inventario.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Precio de compra</strong><p>Lo que cuesta comprar el artículo (antes llamado "costo" internamente).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>¿Es producto para la venta?</strong><p>Si se marca, se habilita el campo <strong>Precio de venta</strong> para calcular la ganancia.</p></div></div>
+      </div>
+      <h3 class="sub">Columna Ganancia</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Se calcula sola: Precio de venta − Precio de compra. Se muestra el monto en pesos y el margen en porcentaje, en verde si es positivo y en rojo si es negativo.</p>
+
+      <h3 class="sub">Movimientos de stock</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>📥 Agregar / quitar stock</strong><p>Entrada (llegó mercancía) o salida (merma, pérdida) con cantidad y nota.</p></div></div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Si un artículo vinculado a inventario llega a stock 0, se marca <strong>Agotado</strong> en Barra y no se puede vender hasta reponerlo.</span></div>
+    </div>
+
+    <!-- PROVEEDORES -->
+    <div class="section" id="proveedores">
+      <div class="section-header">
+        <div class="section-icon">🚚</div>
+        <div><h2>Proveedores</h2><p>Directorio de proveedores del bar</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Nombre, contacto, teléfono y email. Se usan para asociar pedidos de compra y para las cuentas a crédito en Gastos.</p>
+    </div>
+
+    <!-- PEDIDOS PROVEEDORES -->
+    <div class="section" id="pedidos-prov">
+      <div class="section-header">
+        <div class="section-icon">🛒</div>
+        <div><h2>Pedidos a proveedores</h2><p>Órdenes de compra de insumos y bebidas</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Solicitud</strong><p>Elige el proveedor y agrega productos con cantidad y costo — se arma el total general.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Crear nuevo producto</strong><p>Si el producto no existe todavía en inventario, lo creás sin salir del pedido.</p></div></div>
+      </div>
+      <table>
+        <thead><tr><th>Estado</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-amber">pendiente</span></td><td>Creado, esperando confirmación</td></tr>
+          <tr><td><span class="tag" style="background:var(--blue-l);color:var(--blue)">enviado</span></td><td>Proveedor confirmó y está en camino</td></tr>
+          <tr><td><span class="tag tag-green">recibido</span></td><td>Llegó — el stock se actualiza automáticamente</td></tr>
+          <tr><td><span class="tag tag-red">cancelado</span></td><td>Anulado</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PERSONAL -->
+    <div class="section" id="personal">
+      <div class="section-header">
+        <div class="section-icon">👤</div>
+        <div><h2>Empleados</h2><p>Usuarios del Admin y del POS Bar</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Nuevo</strong><p>Nombre y email son obligatorios; documento, cargo, teléfono, sueldo base y tarifa por hora son opcionales. La contraseña es obligatoria solo al crear.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Usuario y rol</strong><p>Usuario para iniciar sesión, y el rol que define qué puede ver y hacer (ver sección <strong>Roles</strong>).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>✏️ Editar</strong><p>Actualiza cualquier dato o desactiva el usuario con la casilla "Activo" sin borrarlo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>🗑️ Eliminar</strong><p>No es un borrado destructivo: deja al empleado sin poder iniciar sesión, pero <strong>conserva su historial de ventas y turnos</strong>. No podés eliminar tu propia cuenta de esta forma.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ROLES -->
+    <div class="section" id="roles">
+      <div class="section-header">
+        <div class="section-icon">🔐</div>
+        <div><h2>Roles</h2><p>Permisos por perfil de usuario</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Cada rol define qué módulos puede usar un empleado. Los roles del sistema no se pueden borrar; los que creaste sí.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Nuevo rol</strong><p>Nombre, descripción y los permisos que quieras activar.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Pensá en roles típicos: "Mesero/Cajero" (solo POS), "Encargado de barra" (POS + inventario), "Admin completo" (todos los permisos).</span></div>
+    </div>
+
+    <!-- HORARIOS -->
+    <div class="section" id="horarios">
+      <div class="section-header">
+        <div class="section-icon">👥</div>
+        <div><h2>Horarios y Nómina</h2><p>Turnos programados, asistencia real y pago de personal</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Tiene tres pestañas: Horarios, Asistencia y Nómina.</p>
+
+      <h3 class="sub">Horarios</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Define el turno semanal esperado de cada empleado (día, hora de entrada/salida, o "día libre"). Es la plantilla contra la que se compara el fichaje real.</p>
+
+      <h3 class="sub">Asistencia</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Historial del fichaje real de entrada/salida de cada empleado, filtrable por rango de fechas.</p>
+
+      <h3 class="sub">Nómina</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Calcula el pago mensual por empleado: sueldo base + horas trabajadas × tarifa por hora, más bonos y menos descuentos.</p>
+      <table>
+        <thead><tr><th>Acción</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td>Calcular</td><td>Congela los montos del período según horas fichadas</td></tr>
+          <tr><td>+ Bono/Descuento</td><td>Ajuste puntual antes de calcular</td></tr>
+          <tr><td>Aprobar</td><td>Confirma los montos calculados</td></tr>
+          <tr><td>Marcar pagada</td><td>Registra el gasto de nómina correspondiente</td></tr>
+          <tr><td>Reabrir</td><td>Vuelve el período a editable si algo quedó mal</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CONFIG FACTURA -->
+    <div class="section" id="config">
+      <div class="section-header">
+        <div class="section-icon">⚙️</div>
+        <div><h2>Config. factura</h2><p>Datos que se imprimen en cada recibo</p></div>
+      </div>
+      <table>
+        <thead><tr><th>Campo</th><th>Para qué sirve</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Nombre del negocio / NIT / Dirección / Ciudad / Teléfono</strong></td><td>Encabezado del recibo impreso</td></tr>
+          <tr><td><strong>Prefijo factura</strong></td><td>Ej: FAC-, BAR-, etc. — antepuesto al número de cada venta</td></tr>
+          <tr><td><strong>IVA % por defecto</strong></td><td>Porcentaje de IVA que se aplica si corresponde</td></tr>
+          <tr><td><strong>Descuento cliente (monto fijo $)</strong></td><td>Se guarda como valor de referencia, pero <strong>no se aplica solo</strong> — los descuentos "Es cliente" del carrito, cobro, abono y fiados siempre se escriben a mano artículo por artículo</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>Este campo hoy es solo informativo: guárdalo como recordatorio del monto que suelen usar tus cajeros, pero cada descuento "Es cliente" (en Carrito, Cobro, Abono de mesa o Abono de fiado) hay que escribirlo manualmente en esa pantalla — no se precarga automáticamente desde acá.</span></div>
+    </div>
+
+    <!-- CONFIG IMPRESORA -->
+    <div class="section" id="cfg-impresora">
+      <div class="section-header">
+        <div class="section-icon">🖨️</div>
+        <div><h2>Impresora</h2><p>Configuración de la impresora de tickets</p></div>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🖨️</div><h4>Tipo</h4><p>Térmica (USB/Red), Láser/Tinta, o solo PDF sin impresora física</p></div>
+        <div class="card"><div class="card-icon">📄</div><h4>Ancho de papel</h4><p>58mm o 80mm</p></div>
+        <div class="card"><div class="card-icon">🔗</div><h4>IP y puerto</h4><p>Para impresoras térmicas en red local</p></div>
+        <div class="card"><div class="card-icon">🧪</div><h4>Ticket de prueba</h4><p>Genera una vista previa para verificar el formato</p></div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:12px">⚠️ <span>Una impresora térmica en red debe estar en la <strong>misma red</strong> que el dispositivo que usa el sistema.</span></div>
+    </div>
+
+    <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">
+      BUNNYDJPOS — Manual Admin Barra v1.0 · Octubre 2026
+    </div>
+  </div>
+</div>
+
+<script>
+function setActive(el){
+  document.querySelectorAll('.toc a').forEach(a=>a.classList.remove('active'));
+  el.classList.add('active');
+}
+window.addEventListener('scroll', () => {
+  let current = '';
+  document.querySelectorAll('.section').forEach(s => { if(window.scrollY >= s.offsetTop - 80) current = s.id; });
+  document.querySelectorAll('.toc a').forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+}, {passive:true});
+</script>
+</body>
+</html>

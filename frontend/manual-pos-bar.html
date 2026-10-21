@@ -1,0 +1,407 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual POS Barra — BUNNYDJPOS</title>
+<link rel="icon" href="/img/logo-bar.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f0faf5;--bg3:#e5f7ee;
+  --text:#102A24;--text2:#2a5040;--text3:#4a7060;
+  --border:rgba(0,0,0,0.08);
+  --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
+  --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.08);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);line-height:1.6}
+.layout{display:flex;min-height:100vh}
+.toc{width:230px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.toc-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.toc a{display:block;padding:6px 18px;font-size:12.5px;color:var(--text2);text-decoration:none;border-left:3px solid transparent;transition:all .15s}
+.toc a:hover{background:var(--bg2);color:var(--text);border-left-color:var(--green)}
+.toc a.active{background:var(--green-l);color:var(--green-d);border-left-color:var(--green);font-weight:600}
+.toc-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:10px 18px 3px}
+.content{flex:1;padding:36px;max-width:860px}
+.manual-header{background:var(--green);color:#fff;border-radius:var(--rl);padding:28px 32px;margin-bottom:28px}
+.manual-header h1{font-size:22px;font-weight:700;margin-bottom:5px}
+.manual-header p{font-size:13px;opacity:.85}
+.manual-header .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:11px;margin-top:8px}
+.section{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px;scroll-margin-top:20px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.section-icon{font-size:22px;width:40px;height:40px;background:var(--green-l);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-header h2{font-size:16px;font-weight:700}
+.section-header p{font-size:12px;color:var(--text3);margin-top:2px}
+.steps{counter-reset:step}
+.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-num{counter-increment:step;background:var(--green);color:#fff;font-size:11px;font-weight:700;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-num::before{content:counter(step)}
+.step-body{flex:1}
+.step-body strong{font-weight:600}
+.step-body p{font-size:13px;color:var(--text2);margin-top:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.card-icon{font-size:18px;margin-bottom:5px}
+.card h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.card p{font-size:12px;color:var(--text2)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th{background:var(--bg2);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:1px solid var(--border)}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.alert{border-radius:var(--r);padding:10px 14px;margin:10px 0;font-size:13px;display:flex;gap:9px;align-items:flex-start}
+.alert-tip{background:var(--green-l);border-left:3px solid var(--green);color:var(--green-d)}
+.alert-warn{background:var(--amber-l);border-left:3px solid var(--amber);color:#92400e}
+.alert-info{background:var(--blue-l);border-left:3px solid var(--blue);color:#1e40af}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-green{background:var(--green-l);color:var(--green-d)}
+.tag-red{background:var(--red-l);color:var(--red)}
+.tag-amber{background:var(--amber-l);color:var(--amber)}
+.tag-blue{background:var(--blue-l);color:var(--blue)}
+.btn-demo{display:inline-block;background:var(--green);color:#fff;border-radius:var(--r);padding:4px 12px;font-size:11px;font-weight:500;margin:2px}
+.btn-demo.outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-demo.red{background:var(--red)}
+.btn-demo.amber{background:#d97706}
+h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
+/* Flujo visual */
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0}
+.flow-step{background:var(--green-l);color:var(--green-d);border-radius:var(--r);padding:8px 14px;font-size:12px;font-weight:600;text-align:center}
+.flow-arrow{color:var(--text3);font-size:16px;font-weight:300}
+@media(max-width:700px){.layout{flex-direction:column}.toc{width:100%;height:auto;position:static}.content{padding:18px}.flow{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ÍNDICE -->
+  <nav class="toc">
+    <div class="toc-logo">
+      <img src="/img/logo-bar.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--green)">DJPOS</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">Manual POS Barra</div>
+      </div>
+    </div>
+    <div class="toc-section">Inicio</div>
+    <a href="#acceso" onclick="setActive(this)">🔐 Acceso al sistema</a>
+    <a href="#pantalla" onclick="setActive(this)">🖥️ Pantalla principal</a>
+    <div class="toc-section">Operación diaria</div>
+    <a href="#caja" onclick="setActive(this)">💵 Caja</a>
+    <a href="#mesas" onclick="setActive(this)">🪑 Mesas</a>
+    <a href="#barra" onclick="setActive(this)">🍹 Tomar pedido en Barra</a>
+    <a href="#pedidos" onclick="setActive(this)">📋 Pedidos abiertos</a>
+    <div class="toc-section">Cobro</div>
+    <a href="#cobrar" onclick="setActive(this)">💳 Cobrar</a>
+    <a href="#pago-efectivo" onclick="setActive(this)">💵 Pago en efectivo</a>
+    <a href="#pago-tarjeta" onclick="setActive(this)">💳 Tarjeta / Nequi</a>
+    <a href="#pago-mixto" onclick="setActive(this)">🔀 Pago mixto</a>
+    <div class="toc-section">Fiados</div>
+    <a href="#fiar" onclick="setActive(this)">📝 Fiar (dejar deuda)</a>
+    <a href="#fiados" onclick="setActive(this)">💰 Abonar y cobrar deudas</a>
+    <div class="toc-section">Extras</div>
+    <a href="#descuento-cliente" onclick="setActive(this)">🎖️ Descuento "Es cliente"</a>
+    <a href="#alertas" onclick="setActive(this)">⚠️ Mensajes de alerta</a>
+  </nav>
+
+  <!-- CONTENIDO -->
+  <div class="content">
+
+    <div class="manual-header">
+      <h1>Manual del Mesero / Cajero</h1>
+      <p>POS Barra — Toma de pedidos, mesas, fiados y cobro.</p>
+      <span class="badge">Versión 1.0 — Octubre 2026</span>
+    </div>
+
+    <!-- ACCESO -->
+    <div class="section" id="acceso">
+      <div class="section-header">
+        <div class="section-icon">🔐</div>
+        <div><h2>Acceso al sistema</h2><p>Cómo ingresar al POS Bar</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Abre el navegador en el dispositivo del bar</strong><p>Tablet, computador o celular conectado a la red del local.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa a la URL del POS</strong><p>El administrador te dará la dirección. Ejemplo: <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">http://tu-dominio/pos-bar?n=ID</code></p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Escribe tu usuario/email y contraseña</strong><p>Credenciales asignadas por el administrador del bar.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Entrar</strong><p>Si no hay caja abierta, el sistema te lleva directo al panel de Caja para que la abras antes de empezar.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span><strong>Sin caja abierta no puedes tomar pedidos, cobrar, fiar ni abonar.</strong> Siempre revisá el estado de caja al iniciar tu turno.</span></div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div class="section" id="pantalla">
+      <div class="section-header">
+        <div class="section-icon">🖥️</div>
+        <div><h2>Pantalla principal</h2><p>Descripción de la interfaz del POS</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:14px">El POS tiene una barra de navegación lateral (o deslizable con el ☰ en celular) con 5 secciones:</p>
+      <table>
+        <thead><tr><th>Ícono</th><th>Sección</th><th>Para qué sirve</th></tr></thead>
+        <tbody>
+          <tr><td style="font-size:18px">🪑</td><td><strong>Mesas</strong></td><td>Ver el estado de todas las mesas — libres y ocupadas</td></tr>
+          <tr><td style="font-size:18px">🍹</td><td><strong>Barra</strong></td><td>Agregar productos al pedido (de una mesa o "para llevar") y cobrar</td></tr>
+          <tr><td style="font-size:18px">📋</td><td><strong>Pedidos</strong></td><td>Ver todos los pedidos abiertos, cobrarlos o abonarles</td></tr>
+          <tr><td style="font-size:18px">📝</td><td><strong>Clientes con deuda</strong></td><td>Ver y cobrar/abonar las cuentas fiadas</td></tr>
+          <tr><td style="font-size:18px">💵</td><td><strong>Caja</strong></td><td>Abrir, cerrar y consultar el historial de caja</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip" style="margin-top:12px">💡 <span>Este POS no tiene un panel de "Menú" ni "Inventario" propios — eso se administra desde el panel de administración del bar. El mesero solo ve y vende lo que ya está cargado ahí.</span></div>
+    </div>
+
+    <!-- CAJA -->
+    <div class="section" id="caja">
+      <div class="section-header">
+        <div class="section-icon">💵</div>
+        <div><h2>Caja</h2><p>Primer paso del turno — es una sola caja compartida</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ve a 💵 Caja</strong><p>El sistema te lleva aquí automáticamente si al entrar no hay ninguna caja abierta.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de apertura</strong><p>El efectivo con el que inicia la caja (fondo de cambio). Si no hay base, escribe 0.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Abrir</strong><p>Desde ese momento se puede tomar pedidos, cobrar, fiar y abonar.</p></div></div>
+      </div>
+      <div class="alert alert-info">ℹ️ <span>La caja de barra <strong>no es por cajero ni por fecha de calendario</strong> — es una sola para todo el negocio durante el turno. Si tu compañero ya la abrió, vos seguís usando esa misma caja sin tener que abrir otra.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Si el bar trabaja hasta la madrugada, la caja sigue funcionando después de la medianoche sin bloquearse ni pedir que se reabra — mientras siga "abierta", podés seguir vendiendo con ella aunque haya cambiado la fecha.</span></div>
+      <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Si ves el aviso <strong>⚠️ Caja atrasada</strong>, es una caja que quedó abierta de un turno anterior — podés seguir cobrando con ella normalmente, y cerrarla cuando termines (botón "Cerrar caja atrasada"). No es obligatorio cerrarla antes de seguir vendiendo.</span></div>
+
+      <h3 class="sub">Cerrar caja</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cuenta el efectivo físico</strong><p>Todo el efectivo que hay en caja al terminar el turno.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa el monto de cierre</strong><p>El sistema calcula automáticamente el total de ventas, gastos y métodos de pago desde la hora real en que se abrió esa caja — no solo lo del día de hoy.</p></div></div>
+      </div>
+    </div>
+
+    <!-- MESAS -->
+    <div class="section" id="mesas">
+      <div class="section-header">
+        <div class="section-icon">🪑</div>
+        <div><h2>Mesas</h2><p>Vista del bar y estado de cada mesa</p></div>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="card-icon" style="color:var(--green)">🟢</div><h4>Mesa libre</h4><p>Disponible para recibir clientes</p></div>
+        <div class="card"><div class="card-icon" style="color:var(--red)">🔴</div><h4>Mesa ocupada</h4><p>Tiene un pedido en curso — se ve el monto acumulado</p></div>
+      </div>
+      <p style="color:var(--text2);margin:12px 0">Las mesas libres se listan primero para encontrarlas rápido al sentar clientes nuevos.</p>
+      <h3 class="sub">Seleccionar una mesa</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Toca cualquier mesa</strong><p>Esté libre u ocupada, siempre te lleva a la misma pantalla de <strong>Barra</strong> para esa mesa.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Si ya tenía pedido</strong><p>Lo verás de inmediato arriba de la grilla de productos, con lo que ya pidieron, el total y el saldo si hubo abonos.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Las mesas se crean y se borran desde el panel de administración — el mesero solo las usa, no las crea. Tampoco existe una función para "unir" varias mesas en un mismo pedido.</span></div>
+    </div>
+
+    <!-- BARRA -->
+    <div class="section" id="barra">
+      <div class="section-header">
+        <div class="section-icon">🍹</div>
+        <div><h2>Tomar pedido en Barra</h2><p>Agregar productos, enviar la comanda y cobrar</p></div>
+      </div>
+
+      <h3 class="sub">Flujo completo de un pedido</h3>
+      <div class="flow">
+        <div class="flow-step">1. Elegir mesa (o "para llevar")</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">2. Agregar productos</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">3. Enviar a barra</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">4. Cobrar</div>
+      </div>
+
+      <h3 class="sub">El banner de mesa activa</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Al entrar a Barra con una mesa seleccionada, aparece un banner fijo arriba: <strong>🪑 MESA X</strong> con el botón <strong>✕ Salir de la mesa</strong>. Mientras esté puesto, todo lo que agregues va a esa mesa.</p>
+      <div class="alert alert-warn">⚠️ <span>Si entrás a Barra tocando el ícono del menú lateral (no desde una mesa puntual), el sistema <strong>limpia automáticamente</strong> cualquier mesa que haya quedado seleccionada de un pedido anterior — así evitás agregar productos a la mesa equivocada por error.</span></div>
+
+      <h3 class="sub">Agregar productos</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Buscar o filtrar por categoría</strong><p>El buscador encuentra por nombre de producto o por nombre de categoría (sin importar tildes), ignorando el filtro de categoría activo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Toca el producto</strong><p>Se agrega al carrito de la derecha. Tócalo otra vez para sumar unidades.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Primer producto sin mesa</strong><p>Si todavía no elegiste mesa, el sistema te pregunta "¿Mesa para este pedido?" — elegí una mesa o "🥤 Sin mesa / Para llevar".</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ajustar cantidades</strong><p>En el carrito usa <strong>+</strong> / <strong>−</strong> junto a cada línea.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>✏️ Manual</strong><p>Para algo puntual que no está cargado en el menú: nombre, precio y cantidad libres.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>Un producto gris con la etiqueta <strong>Agotado</strong> no tiene stock y no se puede agregar.</span></div>
+
+      <h3 class="sub">Enviar a barra</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>📨 Enviar a barra</strong><p>Envía el pedido como comanda — queda guardado en esa mesa aunque cierres el POS y vuelvas después.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Barra flotante rápida</strong><p>Apenas hay algo en el carrito aparece una barra fija abajo con el total y un botón "📨 Enviar" — útil en celular, para no tener que bajar hasta el carrito.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Si el cliente paga de inmediato sin pasar por comanda, usa <strong>💳 Cobrar directo</strong> en vez de "Enviar a barra" — ver la sección <strong>Cobrar</strong>.</span></div>
+    </div>
+
+    <!-- PEDIDOS -->
+    <div class="section" id="pedidos">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div><h2>Pedidos abiertos</h2><p>Todo lo enviado a barra, en mesa o para llevar</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">Cada pedido es una tarjeta con sus productos, el total, lo abonado y el saldo si ya tuvo pagos parciales.</p>
+      <table>
+        <thead><tr><th>Acción</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td><span class="btn-demo outline">➕ Agregar</span></td><td>Te lleva a Barra con esa mesa seleccionada para seguir agregando productos</td></tr>
+          <tr><td><span class="btn-demo outline">✏️ Manual</span></td><td>Agrega un producto suelto directo a ese pedido</td></tr>
+          <tr><td><span class="btn-demo outline">💰 Abono</span></td><td>Registra un pago parcial (ver <strong>Abonar y cobrar deudas</strong>)</td></tr>
+          <tr><td><span class="btn-demo">💳 Cobrar / Cobrar saldo</span></td><td>Cobra el total, o lo que falta si ya hubo abonos</td></tr>
+          <tr><td>🗑 (borrar)</td><td>Elimina el pedido completo — úsalo si se envió por error; no se puede deshacer</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-tip">💡 <span>Arriba de la lista hay una fila de mesas libres para tomar un pedido nuevo sin ir hasta la sección Mesas.</span></div>
+    </div>
+
+    <!-- COBRAR -->
+    <div class="section" id="cobrar">
+      <div class="section-header">
+        <div class="section-icon">💳</div>
+        <div><h2>Cobrar</h2><p>Procesar el pago de un carrito o de un pedido</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>💳 Cobrar directo (desde Barra) o 💳 Cobrar (desde Pedidos)</strong><p>Abre el modal de cobro con el detalle y el total.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elegí el método de pago</strong><p>Efectivo, Tarjeta, Nequi/transferencia, Mixto, o 📝 Fiado (ver sección <strong>Fiar</strong>).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cliente (opcional)</strong><p>Podés escribir el nombre del cliente para que quede en la factura, aunque no sea un cliente registrado.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro</strong><p>Registra la venta, libera la mesa (si era de mesa) y muestra el recibo con opción de imprimir.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>Sin caja abierta no se puede confirmar ningún cobro — el sistema avisa "Abrí la caja antes de cobrar".</span></div>
+    </div>
+
+    <!-- PAGO EFECTIVO -->
+    <div class="section" id="pago-efectivo">
+      <div class="section-header">
+        <div class="section-icon">💵</div>
+        <div><h2>Pago en efectivo</h2><p>Cómo calcular el cambio</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elegí "Efectivo"</strong></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Escribí el monto recibido</strong><p>El campo "Cambio" se calcula solo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro</strong></div></div>
+      </div>
+    </div>
+
+    <!-- PAGO TARJETA/NEQUI -->
+    <div class="section" id="pago-tarjeta">
+      <div class="section-header">
+        <div class="section-icon">💳</div>
+        <div><h2>Tarjeta o Nequi</h2><p>Pagos electrónicos</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elegí "Tarjeta" o "Nequi / transferencia"</strong></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cobra en el datáfono o app por fuera del sistema</strong></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro en el POS</strong><p>Solo cuando el pago electrónico ya fue aprobado.</p></div></div>
+      </div>
+      <div class="alert alert-warn">⚠️ <span>El sistema <strong>no</strong> procesa el pago electrónico — solo registra que se cobró por ese medio. Asegurate de que el pago en el datáfono o Nequi haya sido exitoso antes de confirmar.</span></div>
+    </div>
+
+    <!-- PAGO MIXTO -->
+    <div class="section" id="pago-mixto">
+      <div class="section-header">
+        <div class="section-icon">🔀</div>
+        <div><h2>Pago mixto</h2><p>Dividir el cobro entre varios métodos</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elegí "Mixto"</strong></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Reparte el monto</strong><p>Entre efectivo, tarjeta y Nequi — la suma debe cubrir el total.</p></div></div>
+      </div>
+    </div>
+
+    <!-- FIAR -->
+    <div class="section" id="fiar">
+      <div class="section-header">
+        <div class="section-icon">📝</div>
+        <div><h2>Fiar (dejar deuda)</h2><p>Cuando el cliente consume y paga después</p></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>En el cobro, elegí "📝 Fiado (dejar deuda)"</strong></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nombre y teléfono del cliente *</strong><p>Obligatorios — es lo que identifica la deuda después.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Registrar deuda</strong><p>No se cobra nada en este momento. Se guarda la deuda con el detalle de artículos y <strong>la mesa se libera igual</strong>, como si se hubiera cobrado.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>La deuda queda visible en <strong>📝 Clientes con deuda</strong>, donde después se puede abonar o pagar por completo.</span></div>
+    </div>
+
+    <!-- FIADOS / ABONAR -->
+    <div class="section" id="fiados">
+      <div class="section-header">
+        <div class="section-icon">💰</div>
+        <div><h2>Abonar y cobrar deudas</h2><p>Clientes con deuda — pagos parciales y totales</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">En 📝 <strong>Clientes con deuda</strong> filtrás por Pendientes, Pagadas o Todas, y ves el total pendiente arriba.</p>
+
+      <h3 class="sub">Abonar al total de la deuda</h3>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>💰 Abono</strong><p>Escribí el monto que paga ahora el cliente y el método de pago.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>✅ Pagar todo</strong><p>Precarga el monto con el saldo completo pendiente.</p></div></div>
+      </div>
+
+      <h3 class="sub">Abonar a un artículo específico</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Si la deuda tiene varios artículos todavía pendientes, el modal muestra un selector <strong>"¿A qué abonar?"</strong> — elegí un artículo puntual para cobrarlo exactamente a su precio. Ese artículo queda marcado <strong>✓ pagado</strong> dentro de la deuda y no se puede volver a cobrar.</p>
+      <div class="alert alert-info">ℹ️ <span>El descuento "Es cliente" solo está disponible al abonar <strong>al total</strong> de la deuda, no al pagar un artículo específico.</span></div>
+
+      <h3 class="sub">Agregar más consumo</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Dentro del detalle de una deuda pendiente, el botón <strong>➕ Agregar</strong> abre un buscador para sumar más productos a esa misma deuda — por ejemplo si el cliente sigue pidiendo mientras queda fiado.</p>
+
+      <h3 class="sub">Deudas anotadas a mano (✅ Activar)</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Si un cliente tiene una deuda vieja escrita como nota de texto en su ficha (de antes de usar el sistema de fiados), aparece igual en esta tabla con un saldo <strong>estimado</strong> (el sistema intenta leer el monto más alto mencionado en el texto). Tocá <strong>✅ Activar</strong>, revisá/ajustá la descripción y el monto total, y confirmá — queda convertida en una deuda real, con abono, pago y seguimiento igual que cualquier fiado nuevo, y la nota original se borra para que no quede duplicada.</p>
+    </div>
+
+    <!-- DESCUENTO CLIENTE -->
+    <div class="section" id="descuento-cliente">
+      <div class="section-header">
+        <div class="section-icon">🎖️</div>
+        <div><h2>Descuento "Es cliente"</h2><p>Rebaja puntual por artículo</p></div>
+      </div>
+      <p style="color:var(--text2);margin-bottom:12px">En el carrito de Barra, en el cobro y al abonar, la casilla <strong>🎖️ Es cliente</strong> habilita un campo de descuento (monto fijo en pesos) junto a cada artículo — útil para fidelización puntual sin cambiar el precio del menú para todos.</p>
+      <div class="alert alert-tip">💡 <span>El descuento se aplica línea por línea: podés dejar unos artículos sin descuento y a otros sí, dentro del mismo cobro.</span></div>
+    </div>
+
+    <!-- ALERTAS -->
+    <div class="section" id="alertas">
+      <div class="section-header">
+        <div class="section-icon">⚠️</div>
+        <div><h2>Mensajes de alerta</h2><p>Qué hacer cuando aparece un aviso</p></div>
+      </div>
+      <table>
+        <thead><tr><th>Mensaje</th><th>Causa</th><th>Solución</th></tr></thead>
+        <tbody>
+          <tr><td>Abrí la caja antes de cobrar / tomar pedidos</td><td>No hay ninguna caja abierta</td><td>Ve a 💵 Caja y abrila</td></tr>
+          <tr><td>⚠️ Caja atrasada</td><td>Quedó una caja abierta de un turno anterior</td><td>Podés seguir cobrando normalmente — cerrala cuando termines el turno</td></tr>
+          <tr><td>"…" está agotado</td><td>El producto no tiene stock disponible</td><td>Avisa al administrador para reponer inventario</td></tr>
+          <tr><td>El pedido está vacío</td><td>Intentaste enviar o cobrar sin productos en el carrito</td><td>Agregá al menos un producto</td></tr>
+          <tr><td>El monto supera el saldo pendiente</td><td>En un abono, el monto ingresado es mayor a lo que falta</td><td>Corregí el monto a pagar</td></tr>
+          <tr><td>Nombre y teléfono del cliente son obligatorios</td><td>Intentaste fiar sin esos datos</td><td>Completá ambos campos antes de registrar la deuda</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align:center;padding:28px 0;color:var(--text3);font-size:12px">
+      DJPOS — Manual POS Barra v1.0 · Octubre 2026
+    </div>
+  </div>
+</div>
+
+<script>
+function setActive(el){
+  document.querySelectorAll('.toc a').forEach(a=>a.classList.remove('active'));
+  el.classList.add('active');
+}
+window.addEventListener('scroll', () => {
+  let current = '';
+  document.querySelectorAll('.section').forEach(s => { if(window.scrollY >= s.offsetTop - 80) current = s.id; });
+  document.querySelectorAll('.toc a').forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+}, {passive:true});
+</script>
+</body>
+</html>

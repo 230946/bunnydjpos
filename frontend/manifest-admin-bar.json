@@ -1,0 +1,14 @@
+{
+  "name": "DJPOS — Admin Barra",
+  "short_name": "Admin Barra",
+  "description": "Panel administrativo del bar — DJPOS",
+  "start_url": "/admin-bar.html",
+  "scope": "/admin-bar.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#086644",
+  "icons": [
+    { "src": "/img/logo-bar.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }
+  ]
+}

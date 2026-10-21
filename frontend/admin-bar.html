@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <title>Admin Bar — BUNNYDJPOS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#086644">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Admin Barra">
+<link rel="icon" href="/img/logo-bar.png" type="image/png">
+<link rel="manifest" href="/manifest-admin-bar.json">
+<link rel="apple-touch-icon" href="/img/logo-bar.png">
 <link rel="stylesheet" href="css/responsive.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
@@ -62,8 +70,9 @@ a{color:var(--green-d)}
 .sidebar{width:142px;min-width:142px;flex:none;background:var(--green-d);color:#fff;display:flex;flex-direction:column;gap:2px;padding:14px 8px;overflow-y:auto;overflow-x:hidden}
 .sidebar .brand{padding:0 4px 14px;font-weight:800;font-size:15px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:8px;text-align:center}
 .sidebar .brand small{display:block;font-weight:500;font-size:10px;opacity:.75;margin-top:2px}
-.sidebar-logo{padding:4px 4px 14px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:8px;display:flex;align-items:center;justify-content:center}
+.sidebar-logo{padding:4px 4px 14px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .sidebar-logo img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.sidebar-logo-text{font-size:11px;font-weight:700;letter-spacing:.04em;color:#fff}
 .sb-user{padding:8px 4px;text-align:center}
 .sb-user-name{font-size:11px;font-weight:600;color:#fff;overflow-wrap:break-word}
 .sb-user-rol{font-size:9px;color:#fff;opacity:.85;margin-top:2px}
@@ -175,7 +184,7 @@ table tr:hover td{background:var(--bg2)}
 .mesa-sel-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-l);color:var(--green-d);font-weight:700;font-size:12.5px;padding:7px 12px;border-radius:20px}
 .mesa-sel-badge button{background:none;border:none;color:var(--green-d);font-weight:700;cursor:pointer;text-decoration:underline;font-size:12px}
 .mesa-activa-banner{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--green-d);color:#fff;padding:13px 16px;border-radius:var(--rl);margin-bottom:12px;font-size:17px;font-weight:800;letter-spacing:.3px}
-.mesa-activa-banner button{background:rgba(255,255,255,.22);border:none;color:#fff;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px}
+.mesa-activa-banner button{background:rgba(255,255,255,.22);border:none;color:#fff;font-weight:700;padding:11px 16px;min-height:44px;border-radius:8px;cursor:pointer;font-size:13px;flex-shrink:0;touch-action:manipulation}
 
 /* ---------- Barra / comandas ---------- */
 .barra-grid{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
@@ -271,7 +280,7 @@ table tr:hover td{background:var(--bg2)}
 
 <div id="login-screen">
   <div class="login-card">
-    <div style="text-align:center;margin-bottom:12px"><img src="/img/logo.png" alt="DJPOS" style="width:110px;height:110px;object-fit:contain;border-radius:50%;margin:0 auto"></div>
+    <div style="text-align:center;margin-bottom:12px"><img src="/img/logo-bar.png" alt="DJPOS" style="width:110px;height:110px;object-fit:contain;border-radius:50%;margin:0 auto"></div>
     <div id="login-neg-nombre"></div>
     <h1>🍹 Admin Bar</h1>
     <div class="sub">BUNNYDJPOS — gestión de bar</div>
@@ -287,14 +296,14 @@ table tr:hover td{background:var(--bg2)}
     </div>
   </div>
   <div style="margin-top:20px;color:rgba(255,255,255,.65);font-size:12px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">
-    <img src="/img/logo.png" alt="DJPOS" style="width:16px;height:16px;object-fit:contain;border-radius:4px;vertical-align:middle">
+    <img src="/img/logo-bar.png" alt="DJPOS" style="width:16px;height:16px;object-fit:contain;border-radius:4px;vertical-align:middle">
     Powered by DJPOS
   </div>
 </div>
 
 <div id="app" style="display:none">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo"><img id="sb-logo" src="/img/logo.png" alt="Logo"></div>
+    <div class="sidebar-logo"><img id="sb-logo" src="/img/logo-bar.png" alt="Logo"><span class="sidebar-logo-text">DJPOS</span></div>
 
     <div class="nav-section" data-seccion="general" onclick="toggleNavGroup('general')"><span class="nav-label">General</span><span class="nav-group-arrow">›</span></div>
     <div class="nav-group" id="navg-general">
@@ -363,6 +372,7 @@ table tr:hover td{background:var(--bg2)}
       <div style="display:flex;align-items:center;gap:10px">
         <span class="caja-pill cerrada" id="caja-pill">Caja cerrada</span>
         <button class="icon-btn" title="Pantalla completa" onclick="toggleFullscreenBar()">⛶</button>
+        <button onclick="window.open('/manual-admin-bar.html','_blank')" title="Ayuda" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text2)">?</button>
         <span id="hdr-user" style="font-size:12.5px;color:var(--text2)"></span>
       </div>
     </header>
@@ -607,7 +617,10 @@ table tr:hover td{background:var(--bg2)}
 
         <div class="panel-head">
           <h3>Artículos <span id="items-count" class="badge b-green" style="font-size:12px"></span></h3>
-          <button class="btn btn-primary btn-sm" onclick="abrirItemModal()">+ Artículo</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="menu-item-buscar" placeholder="Buscar por nombre o categoría..." style="padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);width:240px" oninput="filtrarItemsMenu()">
+            <button class="btn btn-primary btn-sm" onclick="abrirItemModal()">+ Artículo</button>
+          </div>
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr></thead>
@@ -629,7 +642,7 @@ table tr:hover td{background:var(--bg2)}
           <div id="inv-alertas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px"></div>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Costo</th><th>Precio</th><th></th></tr></thead>
+          <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Precio de compra</th><th>Precio</th><th>Ganancia</th><th></th></tr></thead>
           <tbody id="inv-tbody"></tbody>
         </table></div>
       </section>
@@ -1402,7 +1415,7 @@ table tr:hover td{background:var(--bg2)}
     </div>
     <div class="row2">
       <div class="field"><label>Unidad</label><input id="inv-unidad" value="unidades"></div>
-      <div class="field"><label>Costo</label><input id="inv-costo" type="number" value="0"></div>
+      <div class="field"><label>Precio de compra</label><input id="inv-costo" type="number" value="0"></div>
     </div>
     <div class="field"><label><input type="checkbox" id="inv-es-producto" style="width:auto"> Se vende directo (crea/actualiza artículo en Menú)</label></div>
     <div class="field hide" id="inv-precio-venta-wrap"><label>Precio de venta</label><input id="inv-precio-venta" type="number" value="0"></div>
@@ -2585,11 +2598,12 @@ function llenarSelectCategorias(){
   $('item-categoria').innerHTML = '<option value="">Sin categoría</option>' + categorias.map(c => `<option value="${c.id}">${c.icono||''} ${esc(c.nombre)}</option>`).join('');
 }
 
-function renderItemsTabla(){
+function renderItemsTabla(lista){
   llenarSelectCategorias();
+  lista = lista || items;
   $('items-count').textContent = items.length;
-  if (!items.length) { $('items-tbody').innerHTML = '<tr><td colspan="7" class="empty-msg">Sin artículos todavía</td></tr>'; return; }
-  $('items-tbody').innerHTML = items.map(it => `
+  if (!lista.length) { $('items-tbody').innerHTML = `<tr><td colspan="7" class="empty-msg">${items.length?'Sin resultados':'Sin artículos todavía'}</td></tr>`; return; }
+  $('items-tbody').innerHTML = lista.map(it => `
     <tr>
       <td style="font-size:20px">${it.emoji||'🍹'}</td>
       <td>${esc(it.nombre)} ${it.destacado?'<span class="badge b-amber">⭐</span>':''}</td>
@@ -2601,6 +2615,13 @@ function renderItemsTabla(){
       <td>${it.disponible ? '<span class="badge b-green">Disponible</span>' : '<span class="badge b-red">Oculto</span>'}</td>
       <td><button class="icon-btn" onclick="editarItem('${it.id}')">✏️</button><button class="icon-btn" onclick="borrarItem('${it.id}')">🗑️</button></td>
     </tr>`).join('');
+}
+function filtrarItemsMenu(){
+  const q = normTxt($('menu-item-buscar').value||'').trim();
+  const filtrado = q ? items.filter(it =>
+    normTxt(it.nombre).includes(q) || normTxt(it.categoria_nombre).includes(q)
+  ) : items;
+  renderItemsTabla(filtrado);
 }
 let itemEditId = null;
 let _itemNombreInvMatch = null;
@@ -3493,14 +3514,24 @@ async function cargarInventario(){
 }
 function renderInvTabla(lista){
   lista = lista || inventario;
-  if (!lista.length) { $('inv-tbody').innerHTML = `<tr><td colspan="8" class="empty-msg">${inventario.length?'Sin resultados':'Sin artículos de inventario'}</td></tr>`; return; }
-  $('inv-tbody').innerHTML = lista.map(i => `
+  if (!lista.length) { $('inv-tbody').innerHTML = `<tr><td colspan="9" class="empty-msg">${inventario.length?'Sin resultados':'Sin artículos de inventario'}</td></tr>`; return; }
+  $('inv-tbody').innerHTML = lista.map(i => {
+    const costo = +i.costo || 0, precio = +i.precio_venta || 0;
+    const ganancia = precio - costo;
+    const margen = costo > 0 ? (ganancia / costo * 100) : null;
+    const colorGan = ganancia > 0 ? 'var(--green-d)' : (ganancia < 0 ? 'var(--red-d)' : 'var(--text2)');
+    const gananciaCell = precio > 0
+      ? `<b style="color:${colorGan}">${fmt(ganancia)}</b>${margen!=null ? `<div style="font-size:11px;color:${colorGan}">${margen>=0?'+':''}${margen.toFixed(0)}%</div>` : ''}`
+      : '—';
+    return `
     <tr>
       <td>${esc(i.codigo||'—')}</td><td>${esc(i.nombre)}</td><td>${esc(i.categoria||'—')}</td>
       <td style="${+i.stock_min>0 && +i.stock<+i.stock_min ? 'color:var(--red-d);font-weight:700' : ''}">${fmtQty(i.stock)}</td>
       <td>${fmtQty(i.stock_min)}</td><td>${fmt(i.costo)}</td><td>${fmt(i.precio_venta)}</td>
+      <td>${gananciaCell}</td>
       <td><button class="icon-btn" title="Agregar / quitar stock" onclick="abrirMovStock('${i.id}')">📥</button><button class="icon-btn" onclick="editarInv('${i.id}')">✏️</button><button class="icon-btn" onclick="borrarInv('${i.id}')">🗑️</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 function filtrarInventario(){
   const q = ($('inv-buscar').value||'').trim().toLowerCase();
@@ -3514,7 +3545,13 @@ function filtrarInventario(){
 let invEditId = null;
 $('inv-es-producto').addEventListener('change', e => $('inv-precio-venta-wrap').classList.toggle('hide', !e.target.checked));
 function llenarDatalistCategoriasInv(){
-  const cats = [...new Set(inventario.map(i => (i.categoria||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  // Mismas categorías que usa el menú (categorias, ya cargado al iniciar la
+  // app) en vez de los valores de texto sueltos del inventario — evita que
+  // nombres de producto usados como categoría por error (ej. "Cerveza Poker
+  // 1.000") queden sugeridos como si fueran categorías reales. Sigue siendo
+  // un campo de texto libre: el ítem conserva su categoría actual aunque no
+  // esté en esta lista de sugerencias.
+  const cats = categorias.map(c => c.nombre.trim()).sort((a,b)=>a.localeCompare(b));
   $('inv-categoria-list').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
 }
 async function abrirInvModal(){
@@ -4514,8 +4551,17 @@ function renderPersonalTabla(){
       <td>${esc(u.cargo||'—')}</td>
       <td>${esc(u.rol_nombre||'—')}</td>
       <td>${u.activo ? '<span class="badge b-green">Activo</span>' : '<span class="badge b-red">Inactivo</span>'}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="abrirPersonalModal('${u.id}')">Editar</button></td>
+      <td><button class="btn btn-outline btn-sm" onclick="abrirPersonalModal('${u.id}')">Editar</button>
+          <button class="icon-btn" title="Eliminar empleado" onclick="borrarPersonal('${u.id}','${esc(u.nombre)}')">🗑️</button></td>
     </tr>`).join('');
+}
+async function borrarPersonal(id, nombre){
+  if (!confirm(`¿Eliminar a ${nombre}? No podrá volver a iniciar sesión, pero su historial de ventas y turnos se conserva.`)) return;
+  try{
+    await api(`/admin/usuarios/${id}`, { method:'DELETE' });
+    await cargarPersonal();
+    showToast('Empleado eliminado ✓');
+  }catch(e){ showToast('Error: '+e.message); }
 }
 let personalEditId = null;
 async function abrirPersonalModal(id){
