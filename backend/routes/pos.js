@@ -48,6 +48,29 @@ async function ventanaDelDia(negocioId, fecha, zonaHoraria) {
   return { inicio, fin };
 }
 
+// Si una caja quedó abierta de un día anterior y ya pasó la hora en que
+// arranca el siguiente turno (configurable en Config. factura →
+// horaInicioTurno, "HH:MM"; por defecto 14:00), se considera "atrasada":
+// hay que cerrarla antes de poder seguir vendiendo/cobrando con ella. Antes
+// de esa hora no bloquea nada — así una caja de anoche sigue sirviendo con
+// normalidad durante la madrugada (eso no cambia).
+async function cajaAtrasada(negocioId, cajaFechaRaw, zonaHoraria) {
+  const tz = zonaHoraria || 'America/Bogota';
+  const fCaja = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(cajaFechaRaw));
+  const hoy = localDate(tz);
+  if (fCaja >= hoy) return false;
+  let horaInicio = '14:00';
+  try {
+    const { rows } = await pool.query(`SELECT datos FROM config_factura WHERE negocio_id=${ph(1)}`, [negocioId]);
+    if (rows[0]) {
+      const d = typeof rows[0].datos === 'string' ? JSON.parse(rows[0].datos) : rows[0].datos;
+      if (d.horaInicioTurno) horaInicio = d.horaInicioTurno;
+    }
+  } catch (_) {}
+  const horaActual = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false }).format(new Date());
+  return horaActual >= horaInicio;
+}
+
 // Suma cantidades de la misma referencia en vez de listarla repetida: los
 // artículos del menú se identifican por item_id, los manuales (sin item_id)
 // por nombre+precio, ya que dos "manuales" distintos pueden compartir nombre.
@@ -720,12 +743,16 @@ router.put('/comandas/:id/pago-parcial', async (req, res) => {
       return res.status(400).json({ error: `El monto supera el saldo pendiente (${saldo})`, tipo: 'monto_excede_saldo', saldo });
 
     // No se exige que la caja sea justo la de hoy: si quedó una abierta de
-    // un día anterior sin cerrar, sigue siendo válida para operar con ella.
+    // un día anterior sin cerrar, sigue siendo válida para operar con ella
+    // — salvo que ya esté "atrasada" (ver cajaAtrasada), en cuyo caso hay
+    // que cerrarla antes de seguir.
     const { rows: cajaAbierta } = await pool.query(
-      `SELECT id FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta'`,
+      `SELECT id, fecha FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta'`,
       [nid(req), req.user.id]
     );
     if (!cajaAbierta.length) return res.status(400).json({ error: 'Abrí tu caja antes de registrar el pago' });
+    if (await cajaAtrasada(nid(req), cajaAbierta[0].fecha, req.user.zona_horaria))
+      return res.status(400).json({ error: 'La caja quedó abierta del turno anterior y ya pasó la hora de cierre. Cerrala antes de seguir vendiendo.', tipo: 'caja_atrasada' });
 
     const metodo = ['efectivo','tarjeta','nequi','mixto'].includes(metodo_pago) ? metodo_pago : 'efectivo';
     // En 'mixto' los montos por método vienen del cliente (igual que en
@@ -934,6 +961,18 @@ router.post('/ventas', async (req, res) => {
     const { mesa_id, mesa_num, tipo='pos', items, subtotal, iva=0, total,
             metodo_pago, recibido, cambio, cliente_nombre, cliente_id, descuento,
             monto_efectivo=0, monto_tarjeta=0, monto_nequi=0, dom_id, comanda_id } = req.body;
+
+    // Si la caja abierta de este cajero quedó "atrasada" (del turno
+    // anterior, y ya pasó la hora de inicio del siguiente), bloquear la
+    // venta hasta que la cierre — no aplica si no tiene caja abierta en
+    // absoluto (eso lo controla el front) ni mientras siga dentro de la
+    // misma madrugada de su turno.
+    const { rows: _cajaVenta } = await pool.query(
+      `SELECT fecha FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta'`,
+      [nid(req), req.user.id]
+    );
+    if (_cajaVenta.length && await cajaAtrasada(nid(req), _cajaVenta[0].fecha, req.user.zona_horaria))
+      return res.status(400).json({ error: 'La caja quedó abierta del turno anterior y ya pasó la hora de cierre. Cerrala antes de seguir vendiendo.', tipo: 'caja_atrasada' });
 
     // Si es cobro de un domicilio, evitar cobrarlo dos veces (p.ej. si el
     // domiciliario ya marcó "Entregado" y eso ya generó la venta, o si la
@@ -1255,12 +1294,15 @@ router.put('/fiados/:id/pagar', async (req, res) => {
     // El pago de una deuda es una venta más: necesita caja abierta para
     // poder sumarse a los totales del día, igual que cualquier otro cobro.
     // No se exige que la caja sea justo la de hoy: si quedó una abierta de
-    // un día anterior sin cerrar, sigue siendo válida para operar con ella.
+    // un día anterior sin cerrar, sigue siendo válida para operar con ella
+    // — salvo que ya esté "atrasada" (ver cajaAtrasada).
     const { rows: cajaAbierta } = await pool.query(
-      `SELECT id FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta'`,
+      `SELECT id, fecha FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta'`,
       [nid(req), req.user.id]
     );
     if (!cajaAbierta.length) return res.status(400).json({ error: 'Abrí tu caja antes de registrar el pago' });
+    if (await cajaAtrasada(nid(req), cajaAbierta[0].fecha, req.user.zona_horaria))
+      return res.status(400).json({ error: 'La caja quedó abierta del turno anterior y ya pasó la hora de cierre. Cerrala antes de seguir vendiendo.', tipo: 'caja_atrasada' });
 
     const metodo = ['efectivo','tarjeta','nequi'].includes(metodo_pago) ? metodo_pago : 'efectivo';
     const nuevoPagado = yaPagado + montoAbono;

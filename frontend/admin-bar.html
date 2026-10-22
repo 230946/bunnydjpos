@@ -95,6 +95,7 @@ header.topbar h2{font-size:17px}
 .caja-pill{font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px}
 .caja-pill.abierta{background:var(--green-l);color:var(--green-d)}
 .caja-pill.cerrada{background:var(--red-l);color:var(--red-d)}
+.caja-pill.atrasada{background:var(--red-l);color:var(--red-d)}
 .content{padding:20px;flex:1;overflow:auto}
 .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
 .panel-head h3{font-size:18px}
@@ -1079,6 +1080,9 @@ table tr:hover td{background:var(--bg2)}
             <div class="field"><label>IVA % por defecto</label><input id="cf-iva" type="number" step="0.1"></div>
           </div>
           <div class="field"><label>Descuento cliente (monto fijo $)</label><input id="cf-descuento-cliente" type="number" min="0" step="500" placeholder="0"></div>
+          <div class="field"><label>Hora de inicio del siguiente turno</label><input id="cf-hora-turno" type="time" value="14:00">
+            <p style="font-size:11px;color:var(--text2);margin-top:3px">Si a esta hora sigue abierta la caja de un día anterior, se bloquea vender hasta cerrarla.</p>
+          </div>
           <button class="btn btn-primary" onclick="guardarConfigFactura()">Guardar</button>
         </div>
       </section>
@@ -3112,7 +3116,7 @@ function updateQuickSendBar(){
   bar.classList.add('visible');
 }
 async function enviarComanda(){
-  if (!cajaLista()) return showToast('Abrí la caja antes de tomar pedidos');
+  if (!cajaLista()) return showToast(mensajeCajaNoLista());
   if (!carrito.length) return showToast('El pedido está vacío');
   const mesa_nombre = selMesaId ? `Mesa ${selMesaNum}` : ($('ticket-nombre').value.trim() || 'Barra');
   try{
@@ -3145,7 +3149,7 @@ async function agregarUnidadTicket(mesaId, mesaNum, mesaNombre, itemId, nombre, 
 }
 let abonoTicketId = null, abonoSaldo = 0, abonoItemsRef = [], abonoDescuentos = [];
 function abrirAbonoModal(ticketId, saldo){
-  if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); return; }
+  if (!cajaLista()) { showToast(mensajeCajaNoLista()); return; }
   const t = ticketsAbiertos.find(x => x.id === ticketId); if (!t) return;
   abonoTicketId = ticketId; abonoSaldo = saldo;
   abonoItemsRef = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
@@ -3331,7 +3335,7 @@ function renderCobroItems(){
   </div>`).join('');
 }
 function abrirCobro(){
-  if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); return; }
+  if (!cajaLista()) { showToast(mensajeCajaNoLista()); return; }
   $('cobro-es-cliente').checked = cobroEsClienteDefault;
   renderCobroItems();
   $('cobro-metodo').value = 'efectivo';
@@ -3370,7 +3374,7 @@ function calcCambio(){
   $('cobro-cambio').value = Math.max(0, recibido - total);
 }
 async function confirmarFiado(){
-  if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); closeModal('cobro-modal'); return; }
+  if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
   const cliente_nombre = $('cobro-fiado-nombre').value.trim();
   const cliente_telefono = $('cobro-fiado-telefono').value.trim();
   if (!cliente_nombre || !cliente_telefono) return showToast('Nombre y teléfono del cliente son obligatorios');
@@ -3411,7 +3415,7 @@ async function confirmarFiado(){
   }catch(e){ showToast('Error: '+e.message); }
 }
 async function confirmarCobroSaldo(){
-  if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); closeModal('cobro-modal'); return; }
+  if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
   const descuento = descuentoCobro();
   const monto = totalCobro();
   if (monto <= 0) return showToast('No hay saldo pendiente');
@@ -3433,7 +3437,7 @@ async function confirmarCobroSaldo(){
 async function confirmarCobro(){
   if (!cobroItems.length) return;
   if ($('cobro-metodo').value === 'fiado') return confirmarFiado();
-  if (!cajaLista()) { showToast('Abrí la caja antes de cobrar'); closeModal('cobro-modal'); return; }
+  if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
   if (cobroEsSaldo) return confirmarCobroSaldo();
   const subtotal = subtotalCobro();
   const descuento = descuentoCobro();
@@ -3631,7 +3635,12 @@ async function guardarMovStock(){
 // ================= CAJA =================
 let cajaActual = null;
 let cajaPendiente = null;
-function cajaLista(){ return !!cajaActual && cajaActual.estado === 'abierta'; }
+// Si la caja quedó atrasada (turno anterior, ya pasó la hora de inicio del
+// siguiente), no cuenta como "lista" — hay que cerrarla antes de poder
+// seguir vendiendo. Antes de esa hora (p.ej. de madrugada) sigue sirviendo
+// con normalidad aunque sea de un día anterior.
+function cajaLista(){ return !cajaPendiente && !!cajaActual && cajaActual.estado === 'abierta'; }
+function mensajeCajaNoLista(){ return cajaPendiente ? 'Cerrá la caja atrasada antes de seguir vendiendo' : 'Abrí la caja antes de cobrar'; }
 async function cargarCajaEstado(){
   const [caja, pendiente] = await Promise.all([
     api('/admin/caja').catch(()=>null),
@@ -3640,7 +3649,7 @@ async function cargarCajaEstado(){
   cajaActual = caja;
   cajaPendiente = pendiente || null;
   const pill = $('caja-pill');
-  if (cajaPendiente) { pill.textContent = '⚠️ Caja atrasada'; pill.className = 'caja-pill abierta'; }
+  if (cajaPendiente) { pill.textContent = '⚠️ Caja atrasada'; pill.className = 'caja-pill atrasada'; }
   else if (cajaLista()) { pill.textContent = 'Caja abierta'; pill.className = 'caja-pill abierta'; }
   else { pill.textContent = 'Caja cerrada'; pill.className = 'caja-pill cerrada'; }
   renderCajaEstadoCard();
@@ -3648,12 +3657,11 @@ async function cargarCajaEstado(){
 function renderCajaEstadoCard(){
   const body = $('caja-estado-body');
   if (cajaPendiente) {
-    // Se puede seguir cobrando con esta misma caja aunque sea de un día
-    // anterior (un bar que trabaja hasta la madrugada no la cierra justo a
-    // medianoche) — se ofrece cerrarla, pero no es obligatorio para operar.
+    // Ya pasó la hora de inicio del siguiente turno con esta caja del día
+    // anterior todavía abierta: no se puede seguir vendiendo hasta cerrarla.
     body.innerHTML = `
-      <p style="color:var(--amber-d);font-weight:600">⚠️ Seguís con la caja del ${esc(String(cajaPendiente.fecha).slice(0,10))} sin cerrar.</p>
-      <p style="color:var(--text2);font-size:13px;margin:4px 0 8px">Podés seguir cobrando con ella — cerrala cuando termines el turno.</p>
+      <p style="color:var(--red-d);font-weight:600">⚠️ Caja atrasada del ${esc(String(cajaPendiente.fecha).slice(0,10))} sin cerrar.</p>
+      <p style="color:var(--text2);font-size:13px;margin:4px 0 8px">Ya empezó el siguiente turno — cerrala para poder seguir vendiendo.</p>
       <button class="btn btn-danger btn-sm" onclick="abrirModalCerrarCajaAtrasada()">Cerrar caja atrasada</button>`;
   } else if (cajaLista()) {
     body.innerHTML = `
@@ -5494,13 +5502,15 @@ async function cargarConfigFactura(){
     $('cf-tel').value = _cfActual.telefono||''; $('cf-prefijo').value = _cfActual.prefijo||'FAC-';
     $('cf-iva').value = _cfActual.iva ?? 0;
     $('cf-descuento-cliente').value = _cfActual.descuentoCliente ?? 0;
+    $('cf-hora-turno').value = _cfActual.horaInicioTurno || '14:00';
   }catch(e){}
 }
 async function guardarConfigFactura(){
   const body = { ..._cfActual,
     nombre:$('cf-nombre').value, nit:$('cf-nit').value, direccion:$('cf-dir').value, ciudad:$('cf-ciudad').value,
     telefono:$('cf-tel').value, prefijo:$('cf-prefijo').value, iva:+$('cf-iva').value||0,
-    descuentoCliente:+$('cf-descuento-cliente').value||0 };
+    descuentoCliente:+$('cf-descuento-cliente').value||0,
+    horaInicioTurno: $('cf-hora-turno').value || '14:00' };
   try{ await api('/admin/config/factura', { method:'PUT', body: JSON.stringify(body) }); _cfActual = body; DESCUENTO_CLIENTE = body.descuentoCliente||0; showToast('Guardado ✓'); }
   catch(e){ showToast('Error: '+e.message); }
 }

@@ -70,6 +70,29 @@ async function ventanaDelDia(negocioId, fecha, zonaHoraria) {
   return { inicio, fin };
 }
 
+// Si una caja quedó abierta de un día anterior y ya pasó la hora en que
+// arranca el siguiente turno (configurable en Config. factura →
+// horaInicioTurno, "HH:MM"; por defecto 14:00), se considera "atrasada":
+// hay que cerrarla antes de poder seguir vendiendo/cobrando con ella. Antes
+// de esa hora no bloquea nada — una caja de anoche sigue sirviendo con
+// normalidad durante la madrugada.
+async function cajaAtrasada(negocioId, cajaFechaRaw, zonaHoraria) {
+  const tz = zonaHoraria || 'America/Bogota';
+  const fCaja = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(cajaFechaRaw));
+  const hoy = localDate(tz);
+  if (fCaja >= hoy) return false;
+  let horaInicio = '14:00';
+  try {
+    const { rows } = await pool.query(`SELECT datos FROM config_factura WHERE negocio_id=${ph(1)}`, [negocioId]);
+    if (rows[0]) {
+      const d = typeof rows[0].datos === 'string' ? JSON.parse(rows[0].datos) : rows[0].datos;
+      if (d.horaInicioTurno) horaInicio = d.horaInicioTurno;
+    }
+  } catch (_) {}
+  const horaActual = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false }).format(new Date());
+  return horaActual >= horaInicio;
+}
+
 // Todos los endpoints de admin requieren negocio_id en el token
 router.use((req, res, next) => {
   if (!req.user.negocio_id) {
@@ -396,8 +419,11 @@ router.get('/caja', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Caja abierta de un día anterior que el usuario dejó sin cerrar — bloquea
-// la facturación en el POS hasta que se cierre manualmente (ver /caja/cerrar).
+// Caja abierta de un día anterior que el usuario dejó sin cerrar — una vez
+// que pasa la hora de inicio del siguiente turno (cajaAtrasada), bloquea la
+// facturación en el POS hasta que se cierre manualmente (ver /caja/cerrar).
+// Antes de esa hora no se reporta como pendiente (sigue siendo una caja de
+// turno válida, por ejemplo durante la madrugada).
 router.get('/caja/pendiente', async (req, res) => {
   try {
     const hoy = localDate(req.user.zona_horaria);
@@ -407,7 +433,9 @@ router.get('/caja/pendiente', async (req, res) => {
        ORDER BY fecha ASC LIMIT 1`,
       [nid(req), req.user.id, hoy]
     );
-    res.json(rows[0] || null);
+    if (!rows[0]) return res.json(null);
+    const atrasada = await cajaAtrasada(nid(req), rows[0].fecha, req.user.zona_horaria);
+    res.json(atrasada ? rows[0] : null);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
