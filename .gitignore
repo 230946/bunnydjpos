@@ -12,3 +12,6 @@ tarjeta-cumpleanos-excel/~$*
 
 # Respaldos de la base de datos (datos reales de clientes/ventas — no versionar)
 backups/
+
+# Respaldos traidos de otros equipos (datos reales)
+bd_Bar/
