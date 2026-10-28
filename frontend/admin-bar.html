@@ -22,6 +22,7 @@
   --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
   --red:#E24B4A;--red-l:#FCEBEB;--red-d:#A32D2D;
   --amber:#C6F135;--amber-l:#f5ffd6;--amber-d:#8aad00;
+  --yellow:#F5B800;--yellow-l:#FFF6D6;--yellow-d:#A87B00;
   --blue-l:#dbeafe;--blue-d:#1d4ed8;
   --purple:#534AB7;--purple-l:#EEEDFE;--purple-d:#26215C;
   --r:8px;--rl:12px;
@@ -32,7 +33,7 @@
     --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
     --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
     --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
-    --green-l:#04342c;--red-l:#3a1010;--amber-l:#2a1a00;--purple-l:#1a1840;--blue-l:#102a4a;--blue-d:#60a5fa;
+    --green-l:#04342c;--red-l:#3a1010;--amber-l:#2a1a00;--yellow-l:#3a2e00;--yellow-d:#F5C842;--purple-l:#1a1840;--blue-l:#102a4a;--blue-d:#60a5fa;
     color-scheme: dark;
   }
 }
@@ -156,6 +157,7 @@ table tr:hover td{background:var(--bg2)}
 .b-green{background:var(--green-l);color:var(--green-d)}
 .b-red{background:var(--red-l);color:var(--red-d)}
 .b-amber{background:var(--amber-l);color:var(--amber-d)}
+.b-yellow{background:var(--yellow-l);color:var(--yellow-d)}
 .b-blue{background:var(--blue-l);color:var(--blue-d)}
 .b-gray{background:var(--bg2);color:var(--text2)}
 .b-purple{background:var(--purple-l);color:var(--purple-d)}
@@ -523,7 +525,7 @@ table tr:hover td{background:var(--bg2)}
             <div class="card-body">
               <div class="stats-row" style="grid-template-columns:repeat(3,1fr);gap:8px" id="dash-inv-stats">
                 <div class="stat-card" style="padding:10px 8px;text-align:center"><div class="stat-label" style="font-size:10px">Total artículos</div><div class="stat-val" id="dinv-total" style="font-size:20px">—</div></div>
-                <div class="stat-card" style="padding:10px 8px;text-align:center;border-color:var(--amber-d)"><div class="stat-label" style="font-size:10px;color:var(--amber-d)">⚠ Bajo stock</div><div class="stat-val" id="dinv-bajo" style="font-size:20px;color:var(--amber-d)">—</div></div>
+                <div class="stat-card" style="padding:10px 8px;text-align:center;border-color:var(--yellow-d)"><div class="stat-label" style="font-size:10px;color:var(--yellow-d)">⚠ Bajo stock</div><div class="stat-val" id="dinv-bajo" style="font-size:20px;color:var(--yellow-d)">—</div></div>
                 <div class="stat-card" style="padding:10px 8px;text-align:center;border-color:var(--red-d)"><div class="stat-label" style="font-size:10px;color:var(--red-d)">✕ Agotados</div><div class="stat-val" id="dinv-ago" style="font-size:20px;color:var(--red-d)">—</div></div>
               </div>
             </div>
@@ -1050,7 +1052,7 @@ table tr:hover td{background:var(--bg2)}
             </div>
             <div style="padding:10px 14px;border-right:0.5px solid var(--border);text-align:center">
               <div style="font-size:11px;color:var(--text2);margin-bottom:2px">⚠️ Bajo stock</div>
-              <div id="ri-bajo" style="font-size:20px;font-weight:700;color:var(--amber-d)">—</div>
+              <div id="ri-bajo" style="font-size:20px;font-weight:700;color:var(--yellow-d)">—</div>
             </div>
             <div style="padding:10px 14px;text-align:center">
               <div style="font-size:11px;color:var(--text2);margin-bottom:2px">🔴 Agotado</div>
@@ -2436,7 +2438,7 @@ async function loadDashboard(){
 
   if (inv && inv.length) {
     const agotados = inv.filter(i=>+i.stock<=0 && i.stock!=null);
-    const bajoStock = inv.filter(i=>+i.stock>0 && +i.stock_min>0 && +i.stock<+i.stock_min);
+    const bajoStock = inv.filter(i=>+i.stock>0 && +i.stock_min>0 && +i.stock<=+i.stock_min);
     $('dinv-total').textContent = inv.length;
     $('dinv-bajo').textContent = bajoStock.length;
     $('dinv-ago').textContent = agotados.length;
@@ -2445,8 +2447,8 @@ async function loadDashboard(){
       ? alertas.map(i=>{
           const ago = +i.stock<=0;
           const stk = +i.stock||0, smn = +i.stock_min||0;
-          const color = ago?'var(--red-d)':'var(--amber-d)';
-          const bg = ago?'var(--red-l)':'var(--amber-l)';
+          const color = ago?'var(--red-d)':'var(--yellow-d)';
+          const bg = ago?'var(--red-l)':'var(--yellow-l)';
           return `<div style="border:1px solid ${color};border-radius:var(--rl);padding:14px 14px 12px;background:${bg}">
             <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px" title="${esc(i.nombre)}">${esc(i.nombre)}</div>
             <span style="font-size:10px;font-weight:700;background:${color};color:#fff;border-radius:20px;padding:2px 9px">${ago?'Agotado':'Bajo stock'}</span>
@@ -3045,7 +3047,7 @@ function stockMinEfectivo(it){ return it.inventario_id ? it.inv_stock_min : it.s
 function itemAgotado(it){ const s = stockEfectivo(it); return s !== null && s !== undefined && +s <= 0; }
 function itemBajoStock(it){
   const s = stockEfectivo(it), min = stockMinEfectivo(it);
-  return s !== null && s !== undefined && +s > 0 && +min > 0 && +s < +min;
+  return s !== null && s !== undefined && +s > 0 && +min > 0 && +s <= +min;
 }
 // Sin tildes y en minúscula, para que buscar "cigarrillo" también encuentre
 // "Cigarrillo" o "añejo" con "anejo" — sin esto una tilde de más/de menos ya
@@ -3081,7 +3083,7 @@ function renderBarraItems(){
           : fmt(it.precio)}</div>
       ${(!agotado && !bajo && stockEfectivo(it)!=null)?`<div style="font-size:10px;color:var(--text2);margin-top:2px">Stock: ${fmtQty(stockEfectivo(it))}</div>`:''}
       ${agotado?'<div class="badge b-red" style="margin-top:4px;font-size:9px;text-align:center">Agotado</div>':''}
-      ${bajo?`<div class="badge b-amber" style="margin-top:4px;font-size:9px;text-align:center">⚠ Bajo stock${stockEfectivo(it)!=null?' ('+fmtQty(stockEfectivo(it))+')':''}</div>`:''}
+      ${bajo?`<div class="badge b-yellow" style="margin-top:4px;font-size:9px;text-align:center">⚠ Bajo stock${stockEfectivo(it)!=null?' ('+fmtQty(stockEfectivo(it))+')':''}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -3602,15 +3604,15 @@ async function cargarInventario(){
   // ya cargado (que sí viene scoped a modulo=bar). Agotados (stock<=0)
   // siempre se muestran, tengan o no un mínimo configurado.
   const agotados = inventario.filter(i => +i.stock <= 0);
-  const bajos = inventario.filter(i => +i.stock > 0 && +i.stock_min > 0 && +i.stock < +i.stock_min);
+  const bajos = inventario.filter(i => +i.stock > 0 && +i.stock_min > 0 && +i.stock <= +i.stock_min);
   const alertas = [...agotados, ...bajos];
   if (alertas.length) {
     $('inv-alertas-wrap').style.display = 'block';
     $('inv-alertas-titulo').textContent = `⚠️ ${alertas.length} artículo${alertas.length===1?'':'s'} para reponer`;
     $('inv-alertas').innerHTML = alertas.map(i => {
       const ago = +i.stock <= 0;
-      const color = ago ? 'var(--red-d)' : 'var(--amber-d)';
-      const bg = ago ? 'var(--red-l)' : 'var(--amber-l)';
+      const color = ago ? 'var(--red-d)' : 'var(--yellow-d)';
+      const bg = ago ? 'var(--red-l)' : 'var(--yellow-l)';
       return `<div style="border:1px solid ${color};border-radius:var(--rl);padding:12px 12px 10px;background:${bg};cursor:pointer" onclick="editarInv('${i.id}')">
         <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(i.nombre)}">${esc(i.nombre)}</div>
         <span style="font-size:10px;font-weight:700;background:${color};color:#fff;border-radius:20px;padding:2px 9px">${ago?'Agotado':'Bajo stock'}</span>
@@ -3634,7 +3636,7 @@ function renderInvTabla(lista){
     return `
     <tr>
       <td>${esc(i.codigo||'—')}</td><td>${esc(i.nombre)}</td><td>${esc(i.categoria||'—')}</td>
-      <td style="${+i.stock_min>0 && +i.stock<+i.stock_min ? 'color:var(--red-d);font-weight:700' : ''}">${fmtQty(i.stock)}</td>
+      <td style="font-weight:700;color:${+i.stock<=0 ? 'var(--red-d)' : +i.stock_min>0 && +i.stock<=+i.stock_min ? 'var(--yellow-d)' : 'var(--green-d)'}">${fmtQty(i.stock)}</td>
       <td>${fmtQty(i.stock_min)}</td><td>${fmt(i.costo)}</td><td>${fmt(i.precio_venta)}</td>
       <td>${gananciaCell}</td>
       <td><button class="icon-btn" title="Agregar / quitar stock" onclick="abrirMovStock('${i.id}')">📥</button><button class="icon-btn" onclick="editarInv('${i.id}')">✏️</button><button class="icon-btn" onclick="borrarInv('${i.id}')">🗑️</button></td>
@@ -5502,20 +5504,20 @@ async function loadReportes(){
 
     if (inv && inv.length) {
       const agotados = inv.filter(i=>+i.stock<=0).length;
-      const bajoStock = inv.filter(i=>+i.stock>0 && +i.stock_min>0 && +i.stock<+i.stock_min).length;
+      const bajoStock = inv.filter(i=>+i.stock>0 && +i.stock_min>0 && +i.stock<=+i.stock_min).length;
       const ok = inv.length - agotados - bajoStock;
       $('ri-total').textContent = inv.length;
       $('ri-ok').textContent = ok;
       $('ri-bajo').textContent = bajoStock;
       $('ri-ago').textContent = agotados;
       const invOrdenado = [...inv].sort((a,b)=>{
-        const pa = +a.stock<=0?0:+a.stock<+a.stock_min?1:2;
-        const pb = +b.stock<=0?0:+b.stock<+b.stock_min?1:2;
+        const pa = +a.stock<=0?0:+a.stock<=+a.stock_min?1:2;
+        const pb = +b.stock<=0?0:+b.stock<=+b.stock_min?1:2;
         return pa-pb || a.nombre.localeCompare(b.nombre);
       });
       $('r-inv-tbody').innerHTML = invOrdenado.map(i=>{
         const ago = +i.stock<=0;
-        const bajo = !ago && +i.stock_min>0 && +i.stock<+i.stock_min;
+        const bajo = !ago && +i.stock_min>0 && +i.stock<=+i.stock_min;
         const uc = i.unidad_compra && i.cantidad_paquete && i.cantidad_paquete>1;
         const _rf = uc?+i.cantidad_paquete:1, _rs = +i.stock||0;
         const stockMost = uc?(_rs<_rf?`${fmtQty(_rs)} ${i.unidad}`:`${Math.floor(_rs/_rf)} ${i.unidad_compra}`):`${fmtQty(_rs)} ${i.unidad||''}`;
@@ -5523,7 +5525,7 @@ async function loadReportes(){
         const costoUnit = (i.cantidad_paquete&&i.cantidad_paquete>1)?(i.costo||0)/i.cantidad_paquete:(i.costo||0);
         const valorTotal = fmt((i.stock||0)*costoUnit);
         const badge = ago ? '<span class="badge b-red">Agotado</span>'
-                    : bajo ? '<span class="badge b-amber">Bajo stock</span>'
+                    : bajo ? '<span class="badge b-yellow">Bajo stock</span>'
                            : '<span class="badge b-green">OK</span>';
         const rowStyle = ago?'background:rgba(239,68,68,.04)':bajo?'background:rgba(245,158,11,.04)':'';
         return `<tr style="${rowStyle}">
@@ -5580,7 +5582,7 @@ function exportarExcelReportes(){
     rows.push([q('INVENTARIO')]);
     rows.push([q('Artículo'),q('Categoría'),q('Stock'),q('Mínimo'),q('Unidad'),q('Costo unit.'),q('Estado')].join(','));
     inv.forEach(i=>{
-      const ago=+i.stock<=0, bajo=!ago&&+i.stock_min>0&&+i.stock<+i.stock_min;
+      const ago=+i.stock<=0, bajo=!ago&&+i.stock_min>0&&+i.stock<=+i.stock_min;
       const est = ago?'Agotado':bajo?'Bajo stock':'OK';
       const cu = (i.cantidad_paquete&&i.cantidad_paquete>1)?(i.costo||0)/i.cantidad_paquete:(i.costo||0);
       rows.push([q(i.nombre),q(i.categoria),q(i.stock),q(i.stock_min),q(i.unidad),q(Math.round(cu)),q(est)].join(','));

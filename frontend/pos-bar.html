@@ -21,6 +21,7 @@
   --green:#0B8457;--green-l:#e0f7ec;--green-d:#086644;
   --red:#E24B4A;--red-l:#FCEBEB;--red-d:#A32D2D;
   --amber:#C6F135;--amber-l:#f5ffd6;--amber-d:#8aad00;
+  --yellow:#F5B800;--yellow-l:#FFF6D6;--yellow-d:#A87B00;
   --purple:#534AB7;--purple-l:#EEEDFE;--purple-d:#26215C;
   --r:8px;--rl:12px;
   color-scheme: light;
@@ -30,7 +31,7 @@
     --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;
     --text:#f0efe8;--text2:#a0a09a;--text3:#6b6b67;
     --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
-    --green-l:#04342c;--red-l:#3a1010;--amber-l:#2a1a00;--purple-l:#1a1840;
+    --green-l:#04342c;--red-l:#3a1010;--amber-l:#2a1a00;--yellow-l:#3a2e00;--yellow-d:#F5C842;--purple-l:#1a1840;
     color-scheme: dark;
   }
 }
@@ -101,6 +102,7 @@ table tr:hover td{background:var(--bg2)}
 .b-green{background:var(--green-l);color:var(--green-d)}
 .b-red{background:var(--red-l);color:var(--red-d)}
 .b-amber{background:var(--amber-l);color:var(--amber-d)}
+.b-yellow{background:var(--yellow-l);color:var(--yellow-d)}
 .b-purple{background:var(--purple-l);color:var(--purple-d)}
 .icon-btn{background:none;border:none;color:var(--text2);padding:4px 6px;border-radius:6px}
 .icon-btn:hover{background:var(--bg2);color:var(--text)}
@@ -1110,7 +1112,7 @@ function stockMinEfectivo(it){ return it.inventario_id ? it.inv_stock_min : it.s
 function itemAgotado(it){ const s = stockEfectivo(it); return s !== null && s !== undefined && +s <= 0; }
 function itemBajoStock(it){
   const s = stockEfectivo(it), min = stockMinEfectivo(it);
-  return s !== null && s !== undefined && +s > 0 && +min > 0 && +s < +min;
+  return s !== null && s !== undefined && +s > 0 && +min > 0 && +s <= +min;
 }
 // Sin tildes y en minúscula, para que buscar "cigarrillo" también encuentre
 // "Cigarrillo" o "añejo" con "anejo" — sin esto una tilde de más/de menos ya
@@ -1146,7 +1148,7 @@ function renderBarraItems(){
           : fmt(it.precio)}</div>
       ${(!agotado && !bajo && stockEfectivo(it)!=null)?`<div style="font-size:10px;color:var(--text2);margin-top:2px">Stock: ${fmtQty(stockEfectivo(it))}</div>`:''}
       ${agotado?'<div class="badge b-red" style="margin-top:4px;font-size:9px;text-align:center">Agotado</div>':''}
-      ${bajo?`<div class="badge b-amber" style="margin-top:4px;font-size:9px;text-align:center">⚠ Bajo stock${stockEfectivo(it)!=null?' ('+fmtQty(stockEfectivo(it))+')':''}</div>`:''}
+      ${bajo?`<div class="badge b-yellow" style="margin-top:4px;font-size:9px;text-align:center">⚠ Bajo stock${stockEfectivo(it)!=null?' ('+fmtQty(stockEfectivo(it))+')':''}</div>`:''}
     </div>`;
   }).join('');
 }
