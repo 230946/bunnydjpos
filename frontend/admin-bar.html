@@ -630,7 +630,7 @@ table tr:hover td{background:var(--bg2)}
           </div>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr></thead>
+          <thead id="items-thead"><tr><th></th><th data-orden="nombre">Nombre</th><th data-orden="categoria">Categoría</th><th data-orden="precio">Precio</th><th data-orden="stock">Stock</th><th data-orden="disponible">Estado</th><th></th></tr></thead>
           <tbody id="items-tbody"></tbody>
         </table></div>
       </section>
@@ -2631,9 +2631,46 @@ function llenarSelectCategorias(){
   $('item-categoria').innerHTML = '<option value="">Sin categoría</option>' + categorias.map(c => `<option value="${c.id}">${c.icono||''} ${esc(c.nombre)}</option>`).join('');
 }
 
+// Orden de tablas: clic en un encabezado (th[data-orden]) ordena por esa
+// columna; otro clic invierte el sentido. valor(fila, col) devuelve texto
+// (alfabético, sin importar tildes ni mayúsculas) o número; los vacíos
+// (texto '' o null) van siempre al final.
+function ordenarFilas(lista, orden, valor){
+  const { col, dir } = orden;
+  return [...lista].sort((a, b) => {
+    const va = valor(a, col), vb = valor(b, col);
+    const vacA = va === '' || va == null, vacB = vb === '' || vb == null;
+    if (vacA || vacB) return vacA === vacB ? 0 : (vacA ? 1 : -1);
+    return dir * (typeof va === 'string' ? va.localeCompare(vb, 'es', { numeric: true, sensitivity: 'base' }) : va - vb);
+  });
+}
+function siguienteOrden(orden, col){ return { col, dir: orden.col === col ? -orden.dir : 1 }; }
+function marcarOrden(theadId, orden, alClic){
+  document.querySelectorAll(`#${theadId} th[data-orden]`).forEach(th => {
+    if (!th.dataset.titulo) {
+      th.dataset.titulo = th.textContent;
+      th.style.cursor = 'pointer';
+      th.style.userSelect = 'none';
+      th.title = 'Ordenar';
+      th.onclick = () => alClic(th.dataset.orden);
+    }
+    th.textContent = th.dataset.titulo + (th.dataset.orden === orden.col ? (orden.dir > 0 ? ' ▲' : ' ▼') : '');
+  });
+}
+
+let itemsOrden = { col: 'nombre', dir: 1 };
+function ordenarItemsMenu(col){ itemsOrden = siguienteOrden(itemsOrden, col); filtrarItemsMenu(); }
+function valorOrdenItem(it, col){
+  if (col === 'nombre') return String(it.nombre ?? '').trim();
+  if (col === 'categoria') return String(it.categoria_nombre ?? '').trim();
+  if (col === 'precio') return +(it.promo_vigente ? it.precio_efectivo : it.precio) || 0;
+  if (col === 'stock') return it.inventario_id ? (+it.inv_stock || 0) : (it.stock == null ? null : +it.stock);
+  return it.disponible ? 1 : 0;
+}
 function renderItemsTabla(lista){
   llenarSelectCategorias();
-  lista = lista || items;
+  lista = ordenarFilas(lista || items, itemsOrden, valorOrdenItem);
+  marcarOrden('items-thead', itemsOrden, ordenarItemsMenu);
   $('items-count').textContent = items.length;
   if (!lista.length) { $('items-tbody').innerHTML = `<tr><td colspan="7" class="empty-msg">${items.length?'Sin resultados':'Sin artículos todavía'}</td></tr>`; return; }
   $('items-tbody').innerHTML = lista.map(it => `
@@ -3688,40 +3725,16 @@ async function cargarInventario(){
     }).join('');
   } else $('inv-alertas-wrap').style.display = 'none';
 }
-// Orden de la tabla de inventario: clic en un encabezado ordena por esa
-// columna; otro clic invierte el sentido
+// Orden de la tabla de inventario (ver ordenarFilas)
 let invOrden = { col: 'nombre', dir: 1 };
-const INV_TEXTO = ['codigo', 'nombre', 'categoria'];
-function ordenarInv(col){
-  invOrden = { col, dir: invOrden.col === col ? -invOrden.dir : 1 };
-  filtrarInventario();
-}
+function ordenarInv(col){ invOrden = siguienteOrden(invOrden, col); filtrarInventario(); }
 function valorOrdenInv(i, col){
   if (col === 'ganancia') return (+i.precio_venta || 0) - (+i.costo || 0);
-  return INV_TEXTO.includes(col) ? String(i[col] ?? '').trim() : (+i[col] || 0);
+  return ['codigo', 'nombre', 'categoria'].includes(col) ? String(i[col] ?? '').trim() : (+i[col] || 0);
 }
 function renderInvTabla(lista){
-  lista = [...(lista || inventario)];
-  const { col, dir } = invOrden;
-  lista.sort((a, b) => {
-    const va = valorOrdenInv(a, col), vb = valorOrdenInv(b, col);
-    if (INV_TEXTO.includes(col)) {
-      // Vacíos siempre al final
-      if (!va !== !vb) return va ? -1 : 1;
-      return dir * va.localeCompare(vb, 'es', { numeric: true, sensitivity: 'base' });
-    }
-    return dir * (va - vb);
-  });
-  document.querySelectorAll('#inv-thead th[data-orden]').forEach(th => {
-    if (!th.dataset.titulo) {
-      th.dataset.titulo = th.textContent;
-      th.style.cursor = 'pointer';
-      th.style.userSelect = 'none';
-      th.title = 'Ordenar';
-      th.onclick = () => ordenarInv(th.dataset.orden);
-    }
-    th.textContent = th.dataset.titulo + (th.dataset.orden === col ? (dir > 0 ? ' ▲' : ' ▼') : '');
-  });
+  lista = ordenarFilas(lista || inventario, invOrden, valorOrdenInv);
+  marcarOrden('inv-thead', invOrden, ordenarInv);
   if (!lista.length) { $('inv-tbody').innerHTML = `<tr><td colspan="9" class="empty-msg">${inventario.length?'Sin resultados':'Sin artículos de inventario'}</td></tr>`; return; }
   $('inv-tbody').innerHTML = lista.map(i => {
     const costo = +i.costo || 0, precio = +i.precio_venta || 0;
