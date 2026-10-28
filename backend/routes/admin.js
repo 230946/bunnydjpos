@@ -473,8 +473,9 @@ router.get('/caja/historial', requirePermiso('pos_cobro'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// En el bar la caja la maneja solo el administrador (permiso 'personal');
-// en los demás tipos de negocio cualquier cajero puede abrirla/cerrarla.
+// En el bar los meseros pueden abrir y cerrar la caja compartida, pero
+// reabrirla después del cierre es solo del administrador (permiso 'personal');
+// en los demás tipos de negocio cualquier cajero puede reabrir la suya.
 async function cajaSoloAdminEnBar(req, res, next) {
   if (req.user.es_superadmin || req.user.permisos?.personal) return next();
   try {
@@ -485,7 +486,7 @@ async function cajaSoloAdminEnBar(req, res, next) {
 }
 
 // Abrir caja
-router.post('/caja/abrir', cajaSoloAdminEnBar, async (req, res) => {
+router.post('/caja/abrir', async (req, res) => {
   try {
     const { monto_apertura } = req.body;
     const fecha = localDate(req.user.zona_horaria);
@@ -558,7 +559,7 @@ router.post('/caja/reabrir', cajaSoloAdminEnBar, async (req, res) => {
 
 // Cerrar caja — cierra la caja abierta más antigua de este usuario (hoy o
 // atrasada de un día anterior), no asume que siempre es la de hoy.
-router.post('/caja/cerrar', cajaSoloAdminEnBar, async (req, res) => {
+router.post('/caja/cerrar', async (req, res) => {
   try {
     const { monto_cierre, notas } = req.body;
     const { rows: abiertas } = await pool.query(

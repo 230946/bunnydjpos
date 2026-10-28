@@ -273,7 +273,7 @@ table tr:hover td{background:var(--bg2)}
         <h2 id="hdr-title">🪑 Mesas</h2>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <span class="caja-pill cerrada" id="caja-pill">Caja cerrada</span>
+        <span class="caja-pill cerrada" id="caja-pill" onclick="clicCajaPill()" style="cursor:pointer" title="Abrir / cerrar caja">Caja cerrada</span>
         <button class="icon-btn" title="Pantalla completa" onclick="toggleFullscreenBar()">⛶</button>
         <button onclick="window.open('/manual-pos-bar.html','_blank')" title="Ayuda" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text2)">?</button>
         <span id="hdr-user" style="font-size:12.5px;color:var(--text2)"></span>
@@ -779,7 +779,6 @@ async function showApp(){
   $('hdr-user').textContent = me.nombre || me.email || '';
   const adminBar = esAdminBar();
   document.querySelector('.nav-icon[data-nav="caja"]').style.display = adminBar ? '' : 'none';
-  $('caja-pill').style.display = adminBar ? '' : 'none';
   if (me?.negocio_id) checkContrato(me.negocio_id);
   api('/admin/config/factura').then(c => { CONFIG_FACTURA = c; DESCUENTO_CLIENTE = c.descuentoCliente||0; }).catch(()=>{});
   await Promise.all([cargarCategorias(), cargarItems(), cargarCajaEstado(), cargarTickets(), cargarMesas()]);
@@ -788,7 +787,7 @@ async function showApp(){
   renderMesasGrid();
   conectarWS();
   nav('mesas');
-  if (!cajaLista() && esAdminBar()) abrirModalAbrirCaja();
+  if (!cajaLista() && (esAdminBar() || cajaPendiente || !cajaActual)) abrirModalAbrirCaja();
 }
 
 // Auto-login si ya había sesión
@@ -1297,7 +1296,7 @@ function updateQuickSendBar(){
   bar.classList.add('visible');
 }
 async function enviarComanda(){
-  if (!cajaLista()) return showToast(mensajeCajaNoLista());
+  if (!cajaLista()) return avisarCajaNoLista();
   if (!carrito.length) return showToast('El pedido está vacío');
   const mesa_nombre = selMesaId ? `Mesa ${selMesaNum}` : ($('ticket-nombre').value.trim() || 'Barra');
   try{
@@ -1330,7 +1329,7 @@ async function agregarUnidadTicket(mesaId, mesaNum, mesaNombre, itemId, nombre, 
 }
 let abonoTicketId = null, abonoSaldo = 0, abonoItemsRef = [], abonoDescuentos = [];
 function abrirAbonoModal(ticketId, saldo){
-  if (!cajaLista()) { showToast(mensajeCajaNoLista()); return; }
+  if (!cajaLista()) { avisarCajaNoLista(); return; }
   const t = ticketsAbiertos.find(x => x.id === ticketId); if (!t) return;
   abonoTicketId = ticketId; abonoSaldo = saldo;
   abonoItemsRef = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
@@ -1516,7 +1515,7 @@ function renderCobroItems(){
   </div>`).join('');
 }
 function abrirCobro(){
-  if (!cajaLista()) { showToast(mensajeCajaNoLista()); return; }
+  if (!cajaLista()) { avisarCajaNoLista(); return; }
   $('cobro-es-cliente').checked = cobroEsClienteDefault;
   renderCobroItems();
   $('cobro-metodo').value = 'efectivo';
@@ -1611,7 +1610,7 @@ function imprimirRecibo(){
   setTimeout(()=>{ w.print(); }, 300);
 }
 async function confirmarFiado(){
-  if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
+  if (!cajaLista()) { avisarCajaNoLista(); closeModal('cobro-modal'); return; }
   const cliente_nombre = $('cobro-fiado-nombre').value.trim();
   const cliente_telefono = $('cobro-fiado-telefono').value.trim();
   if (!cliente_nombre || !cliente_telefono) return showToast('Nombre y teléfono del cliente son obligatorios');
@@ -1652,7 +1651,7 @@ async function confirmarFiado(){
   }catch(e){ showToast('Error: '+e.message); }
 }
 async function confirmarCobroSaldo(){
-  if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
+  if (!cajaLista()) { avisarCajaNoLista(); closeModal('cobro-modal'); return; }
   const descuento = descuentoCobro();
   const monto = totalCobro();
   if (monto <= 0) return showToast('No hay saldo pendiente');
@@ -1674,7 +1673,7 @@ async function confirmarCobroSaldo(){
 async function confirmarCobro(){
   if (!cobroItems.length) return;
   if ($('cobro-metodo').value === 'fiado') return confirmarFiado();
-  if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
+  if (!cajaLista()) { avisarCajaNoLista(); closeModal('cobro-modal'); return; }
   if (cobroEsSaldo) return confirmarCobroSaldo();
   const subtotal = subtotalCobro();
   const descuento = descuentoCobro();
@@ -1727,9 +1726,9 @@ let cajaPendiente = null;
 // seguir vendiendo. Antes de esa hora (p.ej. de madrugada) sigue sirviendo
 // con normalidad aunque sea de un día anterior.
 function cajaLista(){ return !cajaPendiente && !!cajaActual && cajaActual.estado === 'abierta'; }
-// En el bar la caja es del administrador: los meseros (rol sin permiso de
-// Personal) no ven el módulo Caja ni el aviso para abrirla, pero cobran con
-// la caja que abrió el administrador.
+// En el bar la caja es una sola del negocio: los meseros (rol sin permiso de
+// Personal) no ven el módulo Caja, pero la abren y la cierran desde el
+// indicador de caja y cobran con ella; reabrirla es solo del administrador.
 function esAdminBar(){
   if (!me) return false;
   if (me.es_superadmin) return true;
@@ -1737,7 +1736,21 @@ function esAdminBar(){
   if (typeof p === 'string') { try { p = JSON.parse(p); } catch { p = {}; } }
   return !!p?.personal;
 }
-function mensajeCajaNoLista(){ if (!esAdminBar()) return cajaPendiente ? 'El administrador debe cerrar la caja del turno anterior' : 'La caja está cerrada: pídele al administrador que la abra'; return cajaPendiente ? 'Cerrá la caja atrasada antes de seguir vendiendo' : 'Abrí la caja antes de cobrar'; }
+function mensajeCajaNoLista(){ if (!esAdminBar() && !cajaPendiente && cajaActual) return 'La caja está cerrada: pídele al administrador que la reabra'; return cajaPendiente ? 'Cerrá la caja atrasada antes de seguir vendiendo' : 'Abrí la caja antes de cobrar'; }
+// Si se puede, además del aviso abre el modal para abrir la caja (o cerrar
+// la atrasada)
+function avisarCajaNoLista(){
+  showToast(mensajeCajaNoLista());
+  if (cajaPendiente || !cajaActual) abrirModalAbrirCaja();
+}
+// Indicador de caja del encabezado: abre o cierra la caja según su estado
+function clicCajaPill(){
+  if (cajaPendiente) abrirModalCerrarCajaAtrasada();
+  else if (cajaLista()) abrirModalCerrarCaja();
+  else if (!cajaActual) abrirModalAbrirCaja();
+  else if (esAdminBar()) abrirModalReabrirCaja();
+  else showToast(mensajeCajaNoLista());
+}
 async function cargarCajaEstado(){
   const [caja, pendiente] = await Promise.all([
     api('/admin/caja').catch(()=>null),
@@ -1828,6 +1841,7 @@ async function confirmarAbrirCaja(){
 }
 async function confirmarCerrarCaja(){
   const eraPendiente = !!cajaPendiente;
+  if (!esAdminBar() && !eraPendiente && !confirm('Al cerrar la caja ningún mesero podrá volver a entrar hasta el siguiente turno. ¿Cerrar la caja?')) return;
   try{
     await api('/admin/caja/cerrar', { method:'POST', body: JSON.stringify({ monto_cierre:+$('caja-monto-cierre').value||0, notas:$('caja-notas').value }) });
     closeModal('caja-modal'); await cargarCajaEstado(); showToast('Caja cerrada ✓');
