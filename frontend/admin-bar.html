@@ -649,7 +649,7 @@ table tr:hover td{background:var(--bg2)}
           <div id="inv-alertas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px"></div>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Precio de compra</th><th>Precio</th><th>Ganancia</th><th></th></tr></thead>
+          <thead id="inv-thead"><tr><th data-orden="codigo">Código</th><th data-orden="nombre">Nombre</th><th data-orden="categoria">Categoría</th><th data-orden="stock">Stock</th><th data-orden="stock_min">Mín.</th><th data-orden="costo">Precio de compra</th><th data-orden="precio_venta">Precio</th><th data-orden="ganancia">Ganancia</th><th></th></tr></thead>
           <tbody id="inv-tbody"></tbody>
         </table></div>
       </section>
@@ -3631,8 +3631,40 @@ async function cargarInventario(){
     }).join('');
   } else $('inv-alertas-wrap').style.display = 'none';
 }
+// Orden de la tabla de inventario: clic en un encabezado ordena por esa
+// columna; otro clic invierte el sentido
+let invOrden = { col: 'nombre', dir: 1 };
+const INV_TEXTO = ['codigo', 'nombre', 'categoria'];
+function ordenarInv(col){
+  invOrden = { col, dir: invOrden.col === col ? -invOrden.dir : 1 };
+  filtrarInventario();
+}
+function valorOrdenInv(i, col){
+  if (col === 'ganancia') return (+i.precio_venta || 0) - (+i.costo || 0);
+  return INV_TEXTO.includes(col) ? String(i[col] ?? '').trim() : (+i[col] || 0);
+}
 function renderInvTabla(lista){
-  lista = lista || inventario;
+  lista = [...(lista || inventario)];
+  const { col, dir } = invOrden;
+  lista.sort((a, b) => {
+    const va = valorOrdenInv(a, col), vb = valorOrdenInv(b, col);
+    if (INV_TEXTO.includes(col)) {
+      // Vacíos siempre al final
+      if (!va !== !vb) return va ? -1 : 1;
+      return dir * va.localeCompare(vb, 'es', { numeric: true, sensitivity: 'base' });
+    }
+    return dir * (va - vb);
+  });
+  document.querySelectorAll('#inv-thead th[data-orden]').forEach(th => {
+    if (!th.dataset.titulo) {
+      th.dataset.titulo = th.textContent;
+      th.style.cursor = 'pointer';
+      th.style.userSelect = 'none';
+      th.title = 'Ordenar';
+      th.onclick = () => ordenarInv(th.dataset.orden);
+    }
+    th.textContent = th.dataset.titulo + (th.dataset.orden === col ? (dir > 0 ? ' ▲' : ' ▼') : '');
+  });
   if (!lista.length) { $('inv-tbody').innerHTML = `<tr><td colspan="9" class="empty-msg">${inventario.length?'Sin resultados':'Sin artículos de inventario'}</td></tr>`; return; }
   $('inv-tbody').innerHTML = lista.map(i => {
     const costo = +i.costo || 0, precio = +i.precio_venta || 0;
