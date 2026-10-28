@@ -1098,6 +1098,17 @@ table tr:hover td{background:var(--bg2)}
           <div class="field"><label>Hora de inicio del siguiente turno</label><input id="cf-hora-turno" type="time" value="14:00">
             <p style="font-size:11px;color:var(--text2);margin-top:3px">Si a esta hora sigue abierta la caja de un día anterior, se bloquea vender hasta cerrarla.</p>
           </div>
+          <div class="field">
+            <label>QR de Nequi (se muestra al cobrar cuando se elige Nequi/transferencia)</label>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:4px">
+              <div class="logo-box" id="qr-nequi-box" onclick="document.getElementById('qr-nequi-file').click()">
+                <img id="qr-nequi-preview" alt="QR Nequi" class="hide">
+                <span id="qr-nequi-placeholder">📷 Subir</span>
+              </div>
+              <input type="file" id="qr-nequi-file" accept="image/*" class="hide" onchange="previewQrNequi(this)">
+              <button class="btn btn-outline btn-sm" id="qr-nequi-quitar" onclick="quitarQrNequi()" style="display:none">Quitar QR</button>
+            </div>
+          </div>
           <button class="btn btn-primary" onclick="guardarConfigFactura()">Guardar</button>
         </div>
       </section>
@@ -1413,6 +1424,10 @@ table tr:hover td{background:var(--bg2)}
         <div class="field"><label>Tarjeta</label><input id="cobro-mix-tarjeta" type="number" value="0"></div>
         <div class="field"><label>Nequi</label><input id="cobro-mix-nequi" type="number" value="0"></div>
       </div>
+    </div>
+    <div id="cobro-campos-nequi" class="hide" style="text-align:center;margin-bottom:12px">
+      <img id="cobro-qr-nequi" class="hide" style="max-width:220px;width:100%;border-radius:var(--r);background:#fff;padding:8px" alt="QR Nequi">
+      <p id="cobro-qr-nequi-vacio" style="font-size:12px;color:var(--text2)">No se ha configurado el QR de Nequi (Configuración → Datos de facturación)</p>
     </div>
     <div id="cobro-campos-fiado" class="hide">
       <p style="font-size:12px;color:var(--text2);margin-bottom:8px">No se cobra ahora. Se registra como deuda del cliente y la mesa se libera igual.</p>
@@ -3574,8 +3589,15 @@ function renderCobroCampos(){
   $('cobro-campos-efectivo').classList.toggle('hide', m !== 'efectivo');
   $('cobro-campos-mixto').classList.toggle('hide', m !== 'mixto');
   $('cobro-campos-fiado').classList.toggle('hide', m !== 'fiado');
+  $('cobro-campos-nequi').classList.toggle('hide', m !== 'nequi');
+  if (m === 'nequi') renderQrNequiCobro(_factCfg?.qrNequi);
   $('cobro-cliente-wrap').classList.toggle('hide', m === 'fiado');
   $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : 'Confirmar cobro';
+}
+function renderQrNequiCobro(qr){
+  const img = $('cobro-qr-nequi'), vacio = $('cobro-qr-nequi-vacio');
+  if (qr){ img.src = qr; img.classList.remove('hide'); vacio.classList.add('hide'); }
+  else { img.classList.add('hide'); vacio.classList.remove('hide'); }
 }
 function calcCambio(){
   const total = totalCobro();
@@ -5739,7 +5761,25 @@ async function cargarConfigFactura(){
     $('cf-iva').value = _cfActual.iva ?? 0;
     $('cf-descuento-cliente').value = _cfActual.descuentoCliente ?? 0;
     $('cf-hora-turno').value = _cfActual.horaInicioTurno || '14:00';
+    renderQrNequiPreview(_cfActual.qrNequi);
   }catch(e){}
+}
+function renderQrNequiPreview(qr){
+  const img = $('qr-nequi-preview'), ph = $('qr-nequi-placeholder'), btn = $('qr-nequi-quitar');
+  if (qr){ img.src = qr; img.classList.remove('hide'); ph.classList.add('hide'); btn.style.display = ''; }
+  else { img.classList.add('hide'); ph.classList.remove('hide'); btn.style.display = 'none'; }
+}
+function previewQrNequi(input){
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { _cfActual = { ..._cfActual, qrNequi: reader.result }; renderQrNequiPreview(reader.result); };
+  reader.readAsDataURL(file);
+}
+function quitarQrNequi(){
+  _cfActual = { ..._cfActual, qrNequi: null };
+  $('qr-nequi-file').value = '';
+  renderQrNequiPreview(null);
 }
 async function guardarConfigFactura(){
   const body = { ..._cfActual,
@@ -5747,7 +5787,7 @@ async function guardarConfigFactura(){
     telefono:$('cf-tel').value, prefijo:$('cf-prefijo').value, iva:+$('cf-iva').value||0,
     descuentoCliente:+$('cf-descuento-cliente').value||0,
     horaInicioTurno: $('cf-hora-turno').value || '14:00' };
-  try{ await api('/admin/config/factura', { method:'PUT', body: JSON.stringify(body) }); _cfActual = body; DESCUENTO_CLIENTE = body.descuentoCliente||0; showToast('Guardado ✓'); }
+  try{ await api('/admin/config/factura', { method:'PUT', body: JSON.stringify(body) }); _cfActual = body; _factCfg = body; DESCUENTO_CLIENTE = body.descuentoCliente||0; showToast('Guardado ✓'); }
   catch(e){ showToast('Error: '+e.message); }
 }
 

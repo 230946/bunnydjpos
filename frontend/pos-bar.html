@@ -552,6 +552,10 @@ table tr:hover td{background:var(--bg2)}
         <div class="field"><label>Nequi</label><input id="cobro-mix-nequi" type="number" value="0"></div>
       </div>
     </div>
+    <div id="cobro-campos-nequi" class="hide" style="text-align:center;margin-bottom:12px">
+      <img id="cobro-qr-nequi" class="hide" style="max-width:220px;width:100%;border-radius:var(--r);background:#fff;padding:8px" alt="QR Nequi">
+      <p id="cobro-qr-nequi-vacio" style="font-size:12px;color:var(--text2)">No se ha configurado el QR de Nequi (Admin → Configuración)</p>
+    </div>
     <div id="cobro-campos-fiado" class="hide">
       <p style="font-size:12px;color:var(--text2);margin-bottom:8px">No se cobra ahora. Se registra como deuda del cliente y la mesa se libera igual.</p>
       <div class="row2">
@@ -1545,8 +1549,15 @@ function renderCobroCampos(){
   $('cobro-campos-efectivo').classList.toggle('hide', m !== 'efectivo');
   $('cobro-campos-mixto').classList.toggle('hide', m !== 'mixto');
   $('cobro-campos-fiado').classList.toggle('hide', m !== 'fiado');
+  $('cobro-campos-nequi').classList.toggle('hide', m !== 'nequi');
+  if (m === 'nequi') renderQrNequiCobro(CONFIG_FACTURA?.qrNequi);
   $('cobro-cliente-wrap').classList.toggle('hide', m === 'fiado');
   $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : 'Confirmar cobro';
+}
+function renderQrNequiCobro(qr){
+  const img = $('cobro-qr-nequi'), vacio = $('cobro-qr-nequi-vacio');
+  if (qr){ img.src = qr; img.classList.remove('hide'); vacio.classList.add('hide'); }
+  else { img.classList.add('hide'); vacio.classList.remove('hide'); }
 }
 function calcCambio(){
   const total = totalCobro();
