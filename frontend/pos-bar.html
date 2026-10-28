@@ -777,6 +777,9 @@ async function showApp(){
   $('login-screen').style.display = 'none';
   $('app').style.display = 'flex';
   $('hdr-user').textContent = me.nombre || me.email || '';
+  const adminBar = esAdminBar();
+  document.querySelector('.nav-icon[data-nav="caja"]').style.display = adminBar ? '' : 'none';
+  $('caja-pill').style.display = adminBar ? '' : 'none';
   if (me?.negocio_id) checkContrato(me.negocio_id);
   api('/admin/config/factura').then(c => { CONFIG_FACTURA = c; DESCUENTO_CLIENTE = c.descuentoCliente||0; }).catch(()=>{});
   await Promise.all([cargarCategorias(), cargarItems(), cargarCajaEstado(), cargarTickets(), cargarMesas()]);
@@ -785,7 +788,7 @@ async function showApp(){
   renderMesasGrid();
   conectarWS();
   nav('mesas');
-  if (!cajaLista()) abrirModalAbrirCaja();
+  if (!cajaLista() && esAdminBar()) abrirModalAbrirCaja();
 }
 
 // Auto-login si ya había sesión
@@ -796,6 +799,7 @@ const PANELES = ['mesas','barra','pedidos','fiados','caja'];
 const TITULOS = { mesas:'🪑 Mesas', barra:'🍹 Barra', pedidos:'📋 Pedidos', fiados:'📝 Clientes con deuda', caja:'💵 Caja' };
 let currentPage = 'mesas';
 function nav(p){
+  if (p === 'caja' && !esAdminBar()) p = 'mesas';
   currentPage = p;
   PANELES.forEach(x => $(`panel-${x}`).hidden = x !== p);
   document.querySelectorAll('.nav-icon[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === p));
@@ -1723,7 +1727,16 @@ let cajaPendiente = null;
 // seguir vendiendo. Antes de esa hora (p.ej. de madrugada) sigue sirviendo
 // con normalidad aunque sea de un día anterior.
 function cajaLista(){ return !cajaPendiente && !!cajaActual && cajaActual.estado === 'abierta'; }
-function mensajeCajaNoLista(){ return cajaPendiente ? 'Cerrá la caja atrasada antes de seguir vendiendo' : 'Abrí la caja antes de cobrar'; }
+// En el bar la caja es del administrador: los meseros (rol sin permiso de
+// Personal) no ven el módulo Caja ni el aviso para abrirla, y no cobran.
+function esAdminBar(){
+  if (!me) return false;
+  if (me.es_superadmin) return true;
+  let p = me.permisos;
+  if (typeof p === 'string') { try { p = JSON.parse(p); } catch { p = {}; } }
+  return !!p?.personal;
+}
+function mensajeCajaNoLista(){ if (!esAdminBar()) return 'El cobro lo hace el administrador desde la caja'; return cajaPendiente ? 'Cerrá la caja atrasada antes de seguir vendiendo' : 'Abrí la caja antes de cobrar'; }
 async function cargarCajaEstado(){
   const [caja, pendiente] = await Promise.all([
     api('/admin/caja').catch(()=>null),
