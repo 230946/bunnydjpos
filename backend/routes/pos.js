@@ -197,12 +197,17 @@ const PROMO_VIGENTE_SQL = `
 `;
 const PRECIO_EFECTIVO_SQL = `CASE WHEN ${PROMO_VIGENTE_SQL} THEN mi.promo_precio ELSE mi.precio END`;
 
-// Multer para fotos de menú
-const storage = multer.diskStorage({
-  destination: process.env.UPLOADS_DIR || './uploads',
-  filename: (_, file, cb) => cb(null, uuid() + path.extname(file.originalname))
+// Multer para fotos de menú (solo imágenes: lo subido se sirve tal cual
+// desde /uploads)
+const FOTO_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: process.env.UPLOADS_DIR || './uploads',
+    filename: (_, file, cb) => cb(null, uuid() + FOTO_EXT[file.mimetype])
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => cb(null, !!FOTO_EXT[file.mimetype])
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // ════════════════════════════════════════════════════════════════
 // MESAS
@@ -508,13 +513,23 @@ router.post('/menu/items/:id/ajustar-stock', requirePermiso(['pos_menu','persona
 });
 
 // Subir foto de artículo de menú
-router.post('/menu/items/:id/foto', upload.single('foto'), async (req, res) => {
+router.post('/menu/items/:id/foto', requirePermiso(['pos_menu','personal']), upload.single('foto'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+    if (!req.file) return res.status(400).json({ error: 'Subí una imagen JPG, PNG, WEBP o GIF' });
     const url = `/uploads/${req.file.filename}`;
     await pool.query(`UPDATE menu_items SET foto_url=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
       [url, req.params.id, nid(req)]);
+    req.app.locals.broadcast?.(nid(req), 'inventario_actualizado', { id: req.params.id });
     res.json({ url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/menu/items/:id/foto', requirePermiso(['pos_menu','personal']), async (req, res) => {
+  try {
+    await pool.query(`UPDATE menu_items SET foto_url=NULL WHERE id=${ph(1)} AND negocio_id=${ph(2)}`,
+      [req.params.id, nid(req)]);
+    req.app.locals.broadcast?.(nid(req), 'inventario_actualizado', { id: req.params.id });
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -1330,6 +1330,18 @@ table tr:hover td{background:var(--bg2)}
       </div>
       <div class="field"><label>Emoji</label><input id="item-emoji" placeholder="🍹"></div>
     </div>
+    <div class="field"><label>Foto del producto</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="item-foto-preview" onclick="$('item-foto-file').click()" title="Clic para subir foto"
+          style="width:72px;height:72px;flex-shrink:0;border:1.5px dashed var(--border2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;overflow:hidden;background:var(--bg)">📷</div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+          <button type="button" class="btn btn-outline btn-sm" onclick="$('item-foto-file').click()">Subir foto</button>
+          <button type="button" class="btn btn-outline btn-sm hide" id="item-foto-quitar" onclick="quitarFotoItem()">Quitar foto</button>
+          <span style="font-size:11px;color:var(--text2)">Opcional. Si no hay foto se muestra el emoji.</span>
+        </div>
+      </div>
+      <input type="file" id="item-foto-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" onchange="elegirFotoItem(this)">
+    </div>
     <div class="row2">
       <div class="field"><label>Precio</label><input id="item-precio" type="number" step="100"></div>
       <div class="field"><label>Categoría</label><select id="item-categoria"></select></div>
@@ -2626,7 +2638,7 @@ function renderItemsTabla(lista){
   if (!lista.length) { $('items-tbody').innerHTML = `<tr><td colspan="7" class="empty-msg">${items.length?'Sin resultados':'Sin artículos todavía'}</td></tr>`; return; }
   $('items-tbody').innerHTML = lista.map(it => `
     <tr>
-      <td style="font-size:20px">${it.emoji||'🍹'}</td>
+      <td style="font-size:20px">${it.foto_url ? `<img src="${esc(it.foto_url)}" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:6px;display:block">` : (it.emoji||'🍹')}</td>
       <td>${esc(it.nombre)} ${it.destacado?'<span class="badge b-amber">⭐</span>':''}</td>
       <td>${esc(it.categoria_nombre||'—')}</td>
       <td>${it.promo_vigente
@@ -2646,6 +2658,47 @@ function filtrarItemsMenu(){
 }
 let itemEditId = null;
 let _itemNombreInvMatch = null;
+// Foto del artículo: archivo nuevo a subir al guardar, o quitar la actual
+let _itemFotoFile = null, _itemFotoQuitar = false;
+function mostrarFotoItem(src){
+  const p = $('item-foto-preview');
+  p.innerHTML = src ? `<img src="${esc(src)}" alt="" style="width:100%;height:100%;object-fit:cover">` : '📷';
+  $('item-foto-quitar').classList.toggle('hide', !src);
+}
+// Reduce la foto (máx. 800 px, JPEG) para que pese poco y cargue rápido en el POS
+function reducirImagen(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 800 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      c.toBlob(b => b ? resolve(b) : reject(new Error('No se pudo procesar la imagen')), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => reject(new Error('El archivo no es una imagen válida'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function elegirFotoItem(input){
+  const f = input.files?.[0]; input.value = '';
+  if (!f) return;
+  try {
+    _itemFotoFile = await reducirImagen(f); _itemFotoQuitar = false;
+    mostrarFotoItem(URL.createObjectURL(_itemFotoFile));
+  } catch (e) { showToast(e.message); }
+}
+function quitarFotoItem(){ _itemFotoFile = null; _itemFotoQuitar = true; mostrarFotoItem(null); }
+async function guardarFotoItem(id){
+  if (_itemFotoFile) {
+    const fd = new FormData(); fd.append('foto', _itemFotoFile, 'foto.jpg');
+    const r = await fetch(`${API}/pos/menu/items/${id}/foto`, { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No se pudo subir la foto');
+  } else if (_itemFotoQuitar) await api(`/pos/menu/items/${id}/foto`, { method:'DELETE' });
+}
 async function llenarDatalistInventario(){
   if (!inventario.length) await cargarInventario();
   $('inv-nombres-list').innerHTML = inventario.map(i => `<option value="${esc(i.nombre)}">`).join('');
@@ -2675,6 +2728,7 @@ async function abrirItemModal(){
   $('item-promo-activo').checked = false; $('item-promo-fields').classList.add('hide');
   $('item-promo-precio').value=''; $('item-promo-desde').value=''; $('item-promo-hasta').value='';
   $('item-destacado').checked = false; $('item-destacado-fields').classList.add('hide'); $('item-destacado-texto').value='';
+  _itemFotoFile = null; _itemFotoQuitar = false; mostrarFotoItem(null);
   openModal('item-modal');
 }
 async function editarItem(id){
@@ -2696,6 +2750,7 @@ async function editarItem(id){
   $('item-destacado').checked = !!it.destacado;
   $('item-destacado-fields').classList.toggle('hide', !it.destacado);
   $('item-destacado-texto').value = it.destacado_texto||'';
+  _itemFotoFile = null; _itemFotoQuitar = false; mostrarFotoItem(it.foto_url);
   openModal('item-modal');
 }
 async function guardarItem(){
@@ -2724,8 +2779,10 @@ async function guardarItem(){
     destacado_texto: $('item-destacado-texto').value.trim() || null,
   };
   try{
+    let id = itemEditId;
     if (itemEditId) await api(`/pos/menu/items/${itemEditId}`, { method:'PUT', body: JSON.stringify(body) });
-    else await api('/pos/menu/items', { method:'POST', body: JSON.stringify(body) });
+    else id = (await api('/pos/menu/items', { method:'POST', body: JSON.stringify(body) })).id;
+    await guardarFotoItem(id);
     closeModal('item-modal');
     await cargarItems(); renderItemsTabla(); renderBarraItems();
     showToast('Artículo guardado ✓');
