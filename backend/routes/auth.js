@@ -13,7 +13,7 @@ const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { pool, ph } = require('../db');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, bloqueoFueraDeTurno } = require('../middleware/auth');
 const { enviarPasswordTemporal } = require('../mailer');
 
 // ── POST /api/auth/login ─────────────────────────────────────────
@@ -51,6 +51,9 @@ router.post('/login', async (req, res) => {
     // Parsear permisos
     let permisos = {};
     try { permisos = typeof user.permisos === 'string' ? JSON.parse(user.permisos) : (user.permisos || {}); } catch {}
+
+    const bloqueo = await bloqueoFueraDeTurno({ negocio_id: user.negocio_id, es_superadmin: user.es_superadmin, permisos });
+    if (bloqueo) return res.status(403).json({ error: bloqueo });
 
     const payload = {
       id:            user.id,

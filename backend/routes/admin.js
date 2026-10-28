@@ -11,7 +11,7 @@
 const router = require('express').Router();
 const { v4: uuid } = require('uuid');
 const { pool, ph } = require('../db');
-const { authMiddleware, requirePermiso } = require('../middleware/auth');
+const { authMiddleware, requirePermiso, limpiarCacheTurno } = require('../middleware/auth');
 const { enviarFactura } = require('../mailer');
 const multer = require('multer');
 const path = require('path');
@@ -511,6 +511,7 @@ router.post('/caja/abrir', async (req, res) => {
        VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)})`,
       [id, nid(req), req.user.id, fecha, monto_apertura || 0]
     );
+    limpiarCacheTurno(nid(req));
     req.app.locals.broadcast?.(nid(req), 'caja_actualizada', { id });
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -532,6 +533,7 @@ router.post('/caja/reabrir', async (req, res) => {
        WHERE negocio_id=${ph(2)} AND fecha=${ph(3)} AND usuario_id=${ph(4)} AND estado='cerrada'`,
       [monto_apertura || 0, nid(req), fecha, req.user.id]
     );
+    limpiarCacheTurno(nid(req));
     req.app.locals.broadcast?.(nid(req), 'caja_actualizada', {});
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -574,6 +576,7 @@ router.post('/caja/cerrar', async (req, res) => {
       WHERE id=${ph(8)}
     `, [monto_cierre||0, notas||'', v.total_ventas, gastos[0].total,
         v.efectivo, v.tarjeta, v.nequi, caja.id]);
+    limpiarCacheTurno(nid(req));
     req.app.locals.broadcast?.(nid(req), 'caja_actualizada', { id: caja.id });
     res.json({ ok: true, resumen: { ...v, total_gastos: gastos[0].total } });
   } catch (e) { res.status(500).json({ error: e.message }); }

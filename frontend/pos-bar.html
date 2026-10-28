@@ -628,8 +628,13 @@ async function api(path, opts={}) {
     headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`, ...(opts.headers||{})}
   });
   if (r.status === 401) {
-    if (!_loggingOut) { _loggingOut = true; doLogout(); }
-    throw new Error('Sesión expirada');
+    const d = await r.json().catch(() => ({}));
+    if (!_loggingOut) {
+      _loggingOut = true; doLogout();
+      // Cierre de caja: el mesero sale y ve hasta cuándo no puede entrar
+      if (d.fuera_de_turno) { $('login-error').textContent = d.error; $('login-error').style.display = 'block'; }
+    }
+    throw new Error(d.error || 'Sesión expirada');
   }
   const d = await r.json();
   if (!r.ok) throw new Error(d.error || 'Error');
@@ -655,6 +660,7 @@ async function doLogin(){
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Credenciales incorrectas');
     token = d.token;
+    _loggingOut = false;
     sessionStorage.setItem('bdj_pos_bar_token', token);
     me = d.user;
     await showApp();

@@ -33,6 +33,8 @@ async function authMiddleware(req, res, next) {
         }
       } catch { /* negocio sin fila / columnas aún no migradas: se mantienen los defaults */ }
     }
+    const bloqueo = await bloqueoFueraDeTurno(req.user).catch(() => null);
+    if (bloqueo) return res.status(401).json({ error: bloqueo, fuera_de_turno: true });
     next();
   } catch (e) {
     // Solo un JWT realmente inválido/expirado debe dar 401. Cualquier otro
@@ -76,4 +78,56 @@ function requireAdmin(req, res, next) {
   return res.status(403).json({ error: 'Solo administradores pueden realizar esta acción' });
 }
 
-module.exports = { authMiddleware, superadminOnly, requirePermiso, requireAdmin };
+// ── Meseros fuera de turno (solo negocios tipo bar) ──────────────────
+// Una vez cerrada la caja del día, los usuarios sin permiso 'personal' no
+// pueden entrar hasta la siguiente hora de inicio de turno
+// (config_factura.horaInicioTurno, 14:00 por defecto). Si se reabre la caja
+// el bloqueo se levanta. El cálculo se cachea 30 s por negocio; las rutas de
+// caja limpian el caché al abrir/reabrir/cerrar.
+const _cacheTurno = new Map(); // negocio_id → { hasta, reabre, tz }
+function limpiarCacheTurno(negocioId) { _cacheTurno.delete(negocioId); }
+
+async function _calcularReapertura(negocioId) {
+  const { rows } = await pool.query(
+    `SELECT n.tipo, n.zona_horaria, c.estado, c.cierre_en,
+       (SELECT datos FROM config_factura WHERE negocio_id=n.id LIMIT 1) AS datos
+     FROM negocios n
+     LEFT JOIN cajas c ON c.id = (SELECT id FROM cajas WHERE negocio_id=n.id ORDER BY apertura_en DESC LIMIT 1)
+     WHERE n.id=?`, [negocioId]);
+  const r = rows[0];
+  const tz = r?.zona_horaria || 'America/Bogota';
+  if (!r || r.tipo !== 'bar' || r.estado !== 'cerrada' || !r.cierre_en) return { reabre: null, tz };
+  let hora = '14:00';
+  try {
+    const d = typeof r.datos === 'string' ? JSON.parse(r.datos) : r.datos;
+    if (d?.horaInicioTurno) hora = d.horaInicioTurno;
+  } catch {}
+  const cierre = new Date(r.cierre_en);
+  const fCierre = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(cierre);
+  const hCierre = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false }).format(cierre);
+  // Siguiente inicio de turno posterior al cierre (cierre de madrugada → ese
+  // mismo día; cierre después de la hora de turno → al día siguiente)
+  const fReabre = hCierre < hora ? fCierre
+    : new Date(Date.parse(fCierre + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10);
+  return { reabre: `${fReabre} ${hora}`, tz };
+}
+
+// Devuelve null si el usuario puede entrar, o el mensaje de bloqueo.
+async function bloqueoFueraDeTurno(user) {
+  if (!user?.negocio_id || user.es_superadmin || user.permisos?.personal) return null;
+  let c = _cacheTurno.get(user.negocio_id);
+  if (!c || c.hasta < Date.now()) {
+    c = { hasta: Date.now() + 30000, ...(await _calcularReapertura(user.negocio_id)) };
+    _cacheTurno.set(user.negocio_id, c);
+  }
+  if (!c.reabre) return null;
+  const ahora = new Intl.DateTimeFormat('sv-SE', { timeZone: c.tz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false }).format(new Date());
+  if (ahora >= c.reabre) return null;
+  const [f, h] = c.reabre.split(' ');
+  const [, m, d] = f.split('-');
+  const [hh, mm] = h.split(':').map(Number);
+  const hora12 = `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'a. m.' : 'p. m.'}`;
+  return `La caja ya se cerró. Podrás ingresar desde el ${d}/${m} a las ${hora12}`;
+}
+
+module.exports = { authMiddleware, superadminOnly, requirePermiso, requireAdmin, bloqueoFueraDeTurno, limpiarCacheTurno };
