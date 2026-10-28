@@ -165,10 +165,81 @@ router.post('/negocios/:id/logo', uploadLogo.single('logo'), async (req, res) =>
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Tablas sin negocio_id cuyas filas cuelgan de otra tabla del negocio:
+// [tabla hija, columna que apunta al padre, tabla padre (con negocio_id)]
+const HIJAS_SIN_NEGOCIO = [
+  ['mesa_estado',               'mesa_id',            'mesas'],
+  ['sesiones',                  'usuario_id',         'usuarios'],
+  ['pel_cita_detalle',          'cita_id',            'pel_citas'],
+  ['pel_cliente_paquete_saldo', 'cliente_paquete_id', 'pel_cliente_paquetes'],
+  ['pel_paquete_servicios',     'paquete_id',         'pel_paquetes'],
+  ['pel_venta_detalle',         'venta_id',           'pel_ventas'],
+  ['pel_venta_pagos',           'venta_id',           'pel_ventas'],
+  ['comprobante_pago',          'nomina_detalle_id',  'nomina_detalle'],
+];
+
+async function tablasConNegocioId(q) {
+  const rows = await q(`
+    SELECT c.TABLE_NAME AS t FROM INFORMATION_SCHEMA.COLUMNS c
+    JOIN INFORMATION_SCHEMA.TABLES tb ON tb.TABLE_SCHEMA=c.TABLE_SCHEMA AND tb.TABLE_NAME=c.TABLE_NAME
+    WHERE c.TABLE_SCHEMA=DATABASE() AND c.COLUMN_NAME='negocio_id' AND tb.TABLE_TYPE='BASE TABLE'`);
+  return rows.map(r => r.t);
+}
+
+// Cuántos registros tiene el negocio en cada tabla (para decidir si se puede borrar)
+router.get('/negocios/:id/uso', async (req, res) => {
+  try {
+    const q = async (sql, params) => (await pool.query(sql, params)).rows;
+    const tablas = [];
+    for (const t of await tablasConNegocioId(q)) {
+      const [{ n }] = await q(`SELECT COUNT(*) AS n FROM \`${t}\` WHERE negocio_id=?`, [req.params.id]);
+      if (Number(n)) tablas.push({ tabla: t, filas: Number(n) });
+    }
+    tablas.sort((a, b) => b.filas - a.filas);
+    res.json({ total: tablas.reduce((s, x) => s + x.filas, 0), tablas });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Sin ?permanente=1 solo desactiva. Con ?permanente=1 borra el negocio y TODOS
+// sus datos; exige body.confirmar === nombre del negocio.
 router.delete('/negocios/:id', async (req, res) => {
   try {
-    await pool.query(`UPDATE negocios SET activo=0 WHERE id=?`, [req.params.id]);
-    res.json({ ok: true });
+    const id = req.params.id;
+    if (req.query.permanente !== '1') {
+      await pool.query(`UPDATE negocios SET activo=0 WHERE id=?`, [id]);
+      return res.json({ ok: true });
+    }
+    const { rows: neg } = await pool.query(`SELECT nombre FROM negocios WHERE id=?`, [id]);
+    if (!neg.length) return res.status(404).json({ error: 'Negocio no encontrado' });
+    const nombre = neg[0].nombre;
+    if ((req.body?.confirmar || '').trim() !== nombre.trim())
+      return res.status(400).json({ error: 'El nombre escrito no coincide con el del negocio' });
+
+    const borrados = await pool.transaction(async q => {
+      await q('SET FOREIGN_KEY_CHECKS=0');
+      try {
+        // Un superadmin nunca se borra junto con el negocio
+        await q(`UPDATE usuarios SET negocio_id=NULL WHERE negocio_id=? AND es_superadmin=1`, [id]);
+        const existentes = new Set((await q(
+          `SELECT TABLE_NAME AS t FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE()`)).map(r => r.t));
+        let total = 0;
+        for (const [hija, col, padre] of HIJAS_SIN_NEGOCIO) {
+          if (!existentes.has(hija) || !existentes.has(padre)) continue;
+          const r = await q(`DELETE FROM \`${hija}\` WHERE \`${col}\` IN (SELECT id FROM \`${padre}\` WHERE negocio_id=?)`, [id]);
+          total += r.affectedRows;
+        }
+        for (const t of await tablasConNegocioId(q)) {
+          const r = await q(`DELETE FROM \`${t}\` WHERE negocio_id=?`, [id]);
+          total += r.affectedRows;
+        }
+        await q(`DELETE FROM negocios WHERE id=?`, [id]);
+        return total;
+      } finally {
+        await q('SET FOREIGN_KEY_CHECKS=1');
+      }
+    });
+    logAct(null, nombre, req.user?.id, req.user?.nombre, 'negocio_eliminado', `${nombre} (${id}) — ${borrados} registros borrados`, req.ip);
+    res.json({ ok: true, borrados });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

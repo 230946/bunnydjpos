@@ -1105,10 +1105,44 @@ async function loadNegocios(){
             <button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 9px" onclick="openCrearAdminModal('${n.id}','${n.nombre}')">+ Admin</button>
             <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 9px" onclick="showQR('${n.id}','${n.nombre}','${n.tipo}')">🔲 QR</button>
             ${_urlBtns(n)}
+            <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 9px;margin-left:auto" onclick="eliminarNegocio('${n.id}')">🗑 Eliminar</button>
           </div>
         </div>
       </div>`).join('');
   } catch(e){ showToast('Error cargando negocios'); }
+}
+
+const _NOMBRE_TABLA = {
+  ventas:'ventas', pel_ventas:'ventas', menu_items:'productos', pel_productos:'productos',
+  pel_servicios:'servicios', usuarios:'usuarios', clientes:'clientes', pel_clientes:'clientes',
+  pel_citas:'citas', mesas:'mesas', cajas:'cajas', fiados:'fiados', inventario:'artículos de inventario',
+};
+async function eliminarNegocio(id){
+  const n = negociosCache.find(x => x.id === id);
+  if(!n) return;
+  let uso;
+  try { uso = await api('/superadmin/negocios/'+id+'/uso'); }
+  catch(e){ return showToast('Error: '+e.message); }
+
+  const resumen = {};
+  uso.tablas.forEach(t => { const k = _NOMBRE_TABLA[t.tabla]; if(k) resumen[k] = (resumen[k]||0) + t.filas; });
+  const lineas = Object.entries(resumen).map(([k,v]) => `  • ${v} ${k}`).join('\n');
+  const detalle = uso.total
+    ? `Se borrarán ${uso.total} registros en total:\n${lineas || '  • (solo configuración)'}`
+    : 'El negocio no tiene datos.';
+
+  const escrito = prompt(
+    `⚠️ ELIMINAR DEFINITIVAMENTE «${n.nombre}»\n\n${detalle}\n\n` +
+    `Esto NO se puede deshacer. Si solo quieres ocultarlo, usa ✏️ Editar → Inactivo.\n\n` +
+    `Para confirmar, escribe el nombre exacto del negocio:`
+  );
+  if(escrito === null) return;
+  if(escrito.trim() !== n.nombre.trim()) return showToast('El nombre no coincide. No se eliminó nada.');
+  try {
+    const r = await api('/superadmin/negocios/'+id+'?permanente=1', { method:'DELETE', body: JSON.stringify({ confirmar: escrito }) });
+    showToast(`«${n.nombre}» eliminado (${r.borrados} registros)`);
+    loadNegocios();
+  } catch(e){ showToast('Error: '+e.message); }
 }
 
 function toggleNegAcc(btn){

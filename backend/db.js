@@ -70,6 +70,23 @@ if (DB_TYPE === 'mysql' || DB_TYPE === 'mariadb') {
         if (!silent) console.error('DB Error:', e.message, '\nSQL:', sql.slice(0,120));
         throw e;
       }
+    },
+    // Ejecuta fn(q) en una sola conexión dentro de BEGIN/COMMIT; si fn lanza,
+    // hace ROLLBACK. q(sql, params) devuelve las filas (o el ResultSetHeader).
+    transaction: async (fn) => {
+      const conn = await _pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        const q = async (sql, params) => (await conn.query(sql, params || []))[0];
+        const out = await fn(q);
+        await conn.commit();
+        return out;
+      } catch (e) {
+        await conn.rollback().catch(() => {});
+        throw e;
+      } finally {
+        conn.release();
+      }
     }
   };
 
