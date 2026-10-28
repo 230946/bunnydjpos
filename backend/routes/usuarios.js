@@ -409,6 +409,10 @@ router.delete('/usuarios/:id', requirePermiso('personal'), async (req, res) => {
   try { await pool.query(`ALTER TABLE horarios ADD COLUMN es_libre TINYINT(1) NOT NULL DEFAULT 0`); } catch {}
   try { await pool.query(`ALTER TABLE horarios MODIFY COLUMN hora_entrada TIME NULL`); } catch {}
   try { await pool.query(`ALTER TABLE horarios MODIFY COLUMN hora_salida TIME NULL`); } catch {}
+  // especial=1 → turno programado por el admin para una fecha puntual (festivo,
+  // evento): reemplaza al turno semanal ese día. No es fichaje, así que no
+  // cuenta en asistencia ni en nómina.
+  try { await pool.query(`ALTER TABLE horarios ADD COLUMN especial TINYINT(1) NOT NULL DEFAULT 0`, [], { silent: true }); } catch {}
 })();
 
 // DATE se serializa como Date JS; forzar YYYY-MM-DD local para evitar el
@@ -473,12 +477,18 @@ router.post('/horarios', requirePermiso('horarios'), async (req, res) => {
          fecha || null, es_libre ? 1 : 0]
       );
     } else {
+      if (fecha) {
+        await pool.query(
+          `UPDATE horarios SET activo=0 WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND fecha=${ph(3)} AND especial=1`,
+          [usuario_id, req.user.negocio_id, fecha]
+        );
+      }
       await pool.query(
-        `INSERT INTO horarios (id,usuario_id,negocio_id,dia_semana,hora_entrada,hora_salida,fecha,es_libre)
-         VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)})`,
-        [id, usuario_id, req.user.negocio_id, dia_semana,
+        `INSERT INTO horarios (id,usuario_id,negocio_id,dia_semana,hora_entrada,hora_salida,fecha,es_libre,especial)
+         VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)})`,
+        [id, usuario_id, req.user.negocio_id, fecha ? new Date(fecha + 'T12:00:00Z').getUTCDay() : dia_semana,
          es_libre ? null : hora_entrada, es_libre ? null : hora_salida,
-         fecha || null, es_libre ? 1 : 0]
+         fecha || null, es_libre ? 1 : 0, fecha ? 1 : 0]
       );
     }
     res.status(201).json({ id });
@@ -511,7 +521,7 @@ router.get('/asistencia', requirePermiso('personal'), async (req, res) => {
              u.nombre AS usuario_nombre
       FROM horarios h
       JOIN usuarios u ON u.id = h.usuario_id
-      WHERE h.negocio_id=${ph(1)} AND h.activo=1 AND h.fecha IS NOT NULL AND h.hora_entrada IS NOT NULL
+      WHERE h.negocio_id=${ph(1)} AND h.activo=1 AND h.especial=0 AND h.fecha IS NOT NULL AND h.hora_entrada IS NOT NULL
     `;
     const params = [req.user.negocio_id];
     if (desde) { params.push(desde); sql += ` AND h.fecha >= ${ph(params.length)}`; }
@@ -531,7 +541,7 @@ router.delete('/asistencia', requirePermiso('personal'), async (req, res) => {
     const { desde, hasta } = req.query;
     if (!desde || !hasta) return res.status(400).json({ error: 'Indica un rango de fechas (desde y hasta) para borrar' });
     await pool.query(
-      `UPDATE horarios SET activo=0 WHERE negocio_id=${ph(1)} AND fecha IS NOT NULL AND hora_entrada IS NOT NULL AND fecha BETWEEN ${ph(2)} AND ${ph(3)}`,
+      `UPDATE horarios SET activo=0 WHERE negocio_id=${ph(1)} AND especial=0 AND fecha IS NOT NULL AND hora_entrada IS NOT NULL AND fecha BETWEEN ${ph(2)} AND ${ph(3)}`,
       [req.user.negocio_id, desde, hasta]
     );
     res.json({ ok: true });
@@ -564,7 +574,7 @@ async function _calcularNominaViva(negocioId, periodo) {
   const { rows: fichajeRows } = await pool.query(
     `SELECT usuario_id, TIMESTAMPDIFF(MINUTE, CONCAT(fecha,' ',hora_entrada), CONCAT(fecha,' ',hora_salida)) AS minutos
      FROM horarios
-     WHERE negocio_id=${ph(1)} AND fecha BETWEEN ${ph(2)} AND ${ph(3)}
+     WHERE negocio_id=${ph(1)} AND fecha BETWEEN ${ph(2)} AND ${ph(3)} AND especial=0
        AND hora_entrada IS NOT NULL AND hora_salida IS NOT NULL AND activo=1`,
     [negocioId, desde, hasta]
   );

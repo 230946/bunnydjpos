@@ -60,7 +60,7 @@ router.get('/:negocioId', async (req, res) => {
     const [fechaHoy] = localDateTime().split(' ');
     const { rows: turnoR } = await pool.query(
       `SELECT hora_entrada, hora_salida FROM horarios
-       WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND fecha=${ph(3)} AND activo=1 LIMIT 1`,
+       WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND fecha=${ph(3)} AND especial=0 AND activo=1 LIMIT 1`,
       [user.id, user.negocio_id, fechaHoy]
     );
     res.json({ nombre: user.nombre, turnoHoy: turnoR[0] || null });
@@ -106,7 +106,7 @@ router.post('/:negocioId', async (req, res) => {
 
     const { rows: ex } = await pool.query(
       `SELECT id, hora_entrada, hora_salida FROM horarios
-       WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND fecha=${ph(3)} AND activo=1 LIMIT 1`,
+       WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND fecha=${ph(3)} AND especial=0 AND activo=1 LIMIT 1`,
       [usuarioId, negocioId, fechaHoy]
     );
 
@@ -115,10 +115,13 @@ router.post('/:negocioId', async (req, res) => {
         return res.status(400).json({ error: 'Ya tienes un turno en curso hoy' });
 
       // Si el admin programó un horario para este día, no dejar iniciar antes de esa hora.
+      // Un turno especial para hoy (festivo, evento) manda sobre el semanal.
       const { rows: plantillaR } = await pool.query(
         `SELECT hora_entrada, es_libre FROM horarios
-         WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND dia_semana=${ph(3)} AND fecha IS NULL AND activo=1 LIMIT 1`,
-        [usuarioId, negocioId, diaSemana]
+         WHERE usuario_id=${ph(1)} AND negocio_id=${ph(2)} AND activo=1
+           AND ((especial=1 AND fecha=${ph(3)}) OR (fecha IS NULL AND dia_semana=${ph(4)}))
+         ORDER BY especial DESC LIMIT 1`,
+        [usuarioId, negocioId, fechaHoy, diaSemana]
       );
       const plantilla = plantillaR[0];
       if (plantilla && !plantilla.es_libre && plantilla.hora_entrada && horaHoy < plantilla.hora_entrada) {

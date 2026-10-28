@@ -870,10 +870,17 @@ table tr:hover td{background:var(--bg2)}
 
         <div id="hsub-horarios">
           <div class="card" style="margin-bottom:16px">
-            <h3 style="margin-bottom:10px">Agregar turno semanal</h3>
+            <h3 style="margin-bottom:10px">Agregar turno</h3>
+            <div class="field"><label>Tipo de turno</label>
+              <select id="hor-tipo" onchange="cambiarTipoHorario()">
+                <option value="semanal">Semanal (se repite cada semana)</option>
+                <option value="fecha">Fecha específica (festivo, evento) — reemplaza el semanal ese día</option>
+              </select>
+            </div>
             <div class="row2">
               <div class="field"><label>Empleado</label><select id="hor-usuario"></select></div>
-              <div class="field"><label>Día</label>
+              <div class="field" id="hor-fecha-wrap" style="display:none"><label>Fecha</label><input id="hor-fecha" type="date"></div>
+              <div class="field" id="hor-dia-wrap"><label>Día</label>
                 <select id="hor-dia">
                   <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
                   <option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option><option value="0">Domingo</option>
@@ -888,6 +895,8 @@ table tr:hover td{background:var(--bg2)}
             <button class="btn btn-primary btn-sm" onclick="guardarHorario()">+ Agregar turno</button>
           </div>
           <div id="hor-grid" class="hor-dia-grid"></div>
+          <h3 style="margin:18px 0 8px">Turnos especiales por fecha</h3>
+          <div id="hor-especiales"></div>
         </div>
 
         <div id="hsub-asistencia" class="hide">
@@ -5252,8 +5261,24 @@ function horSubtab(sub){
 
 let horarios = [];
 async function cargarHorarios(){ horarios = await api('/admin/horarios').catch(() => []); renderHorarios(); }
+function cambiarTipoHorario(){
+  const porFecha = $('hor-tipo').value === 'fecha';
+  $('hor-fecha-wrap').style.display = porFecha ? '' : 'none';
+  $('hor-dia-wrap').style.display = porFecha ? 'none' : '';
+  if (porFecha && !$('hor-fecha').value) $('hor-fecha').value = today();
+}
 function renderHorarios(){
   const recurrentes = horarios.filter(h => !h.fecha);
+  // Turnos especiales de hoy en adelante (los fichajes reales también traen
+  // fecha, pero tienen especial=0)
+  const especiales = horarios.filter(h => +h.especial && h.fecha >= today())
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.usuario_nombre||'').localeCompare(b.usuario_nombre||''));
+  $('hor-especiales').innerHTML = especiales.length
+    ? '<div class="hor-dia-grid">' + especiales.map(h => {
+        const etiqueta = new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'short' });
+        return `<div class="hor-dia-card"><h5>${esc(etiqueta)}</h5><div class="hor-slot"><span>${esc(h.usuario_nombre||'—')} ${h.es_libre?'<em>(libre)</em>':`${(h.hora_entrada||'').slice(0,5)}–${(h.hora_salida||'').slice(0,5)}`}</span><button class="icon-btn" onclick="borrarHorario('${h.id}')">✕</button></div></div>`;
+      }).join('') + '</div>'
+    : '<div style="color:var(--text2);font-size:12px">Sin turnos especiales próximos. Úsalos para festivos o días con horario distinto.</div>';
   $('hor-grid').innerHTML = DIAS_SEM.map((nombreDia, idx) => {
     const turnos = recurrentes.filter(h => +h.dia_semana === idx);
     const filas = turnos.length
@@ -5265,8 +5290,11 @@ function renderHorarios(){
 async function guardarHorario(){
   const usuario_id = $('hor-usuario').value;
   if (!usuario_id) return showToast('Elegí un empleado');
+  const porFecha = $('hor-tipo').value === 'fecha';
+  const fecha = porFecha ? $('hor-fecha').value : null;
+  if (porFecha && !fecha) return showToast('Elegí la fecha del turno especial');
   const body = {
-    usuario_id, dia_semana: +$('hor-dia').value,
+    usuario_id, dia_semana: porFecha ? new Date(fecha + 'T12:00:00').getDay() : +$('hor-dia').value, fecha,
     hora_entrada: $('hor-libre').checked ? null : $('hor-entrada').value,
     hora_salida:  $('hor-libre').checked ? null : $('hor-salida').value,
     es_libre: $('hor-libre').checked,
