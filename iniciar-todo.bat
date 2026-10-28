@@ -10,20 +10,35 @@ echo.
 
 set "ROOT=%~dp0"
 
-:: 1) MariaDB (servicio de Windows, ya no XAMPP)
-echo [1/3] Verificando MariaDB...
-sc query MariaDB | findstr /I "RUNNING" >nul
+:: 1) MySQL/MariaDB - soporta tanto servicio de Windows como XAMPP
+echo [1/3] Verificando MySQL/MariaDB...
+netstat -ano | findstr ":3306" | findstr "LISTENING" >nul
 if %errorlevel%==0 (
-    echo       MariaDB ya esta corriendo.
+    echo       Ya esta corriendo ^(puerto 3306^).
 ) else (
-    echo       MariaDB no esta corriendo. Intentando iniciar el servicio...
-    net start MariaDB >nul 2>&1
+    sc query MariaDB | findstr /I "RUNNING" >nul
     if !errorlevel!==0 (
-        echo       MariaDB iniciado.
+        echo       MariaDB ya esta corriendo.
     ) else (
-        echo       [AVISO] No se pudo iniciar MariaDB automaticamente ^(hace falta
-        echo       ejecutar este .bat como Administrador^). Si el panel de abajo
-        echo       no carga datos, abri services.msc e inicia "MariaDB" a mano.
+        sc query MariaDB >nul 2>&1
+        if !errorlevel!==0 (
+            echo       MariaDB no esta corriendo. Intentando iniciar el servicio...
+            net start MariaDB >nul 2>&1
+            if !errorlevel!==0 (
+                echo       MariaDB iniciado.
+            ) else (
+                echo       [AVISO] No se pudo iniciar el servicio MariaDB ^(hace falta
+                echo       ejecutar este .bat como Administrador^). Abri services.msc
+                echo       e inicia "MariaDB" a mano.
+            )
+        ) else if exist "C:\xampp\mysql_start.bat" (
+            echo       No hay servicio MariaDB instalado. Iniciando MySQL de XAMPP...
+            start "XAMPP - MySQL" cmd /k "C:\xampp\mysql_start.bat"
+            echo       Lanzado en una ventana nueva.
+        ) else (
+            echo       [AVISO] No se encontro servicio MariaDB ni XAMPP en C:\xampp.
+            echo       Inicia manualmente tu MySQL/MariaDB antes de continuar.
+        )
     )
 )
 echo.

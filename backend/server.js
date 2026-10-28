@@ -34,6 +34,7 @@ const turnoRouter       = require('./routes/turno');
 const hotelRouter       = require('./routes/hotel');
 const cumpleanosRouter  = require('./routes/cumpleanos');
 const soporteRouter     = require('./routes/soporte');
+const motoratonRouter   = require('./routes/motoraton');
 
 const app    = express();
 const server = http.createServer(app);
@@ -158,6 +159,7 @@ app.use('/api/publico',   publicoRouter);
 app.use('/api/turno',     turnoRouter);
 app.use('/api/hotel',     hotelRouter);
 app.use('/api/soporte',   soporteRouter);
+app.use('/api/motoraton', motoratonRouter);
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {
@@ -579,6 +581,77 @@ async function runMigrations() {
         creado          TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE,
         INDEX idx_negocio_estado (negocio_id, estado)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
+
+    // ── Moto Ratón (routes/motoraton.js) — plataforma propia, sin negocio_id
+    {
+      table: 'mr_pasajeros', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS mr_pasajeros (
+        id       VARCHAR(36)  PRIMARY KEY,
+        nombre   VARCHAR(100) NOT NULL,
+        celular  VARCHAR(30)  NOT NULL UNIQUE,
+        pin_hash VARCHAR(100) NOT NULL,
+        token    VARCHAR(80)  NOT NULL UNIQUE,
+        activo   TINYINT(1)   NOT NULL DEFAULT 1,
+        creado   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
+    {
+      table: 'mr_conductores', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS mr_conductores (
+        id         VARCHAR(36)  PRIMARY KEY,
+        nombre     VARCHAR(100) NOT NULL,
+        documento  VARCHAR(30)  NOT NULL UNIQUE,
+        celular    VARCHAR(30)  NOT NULL UNIQUE,
+        pin_hash   VARCHAR(100) NOT NULL,
+        token      VARCHAR(80)  NOT NULL UNIQUE,
+        placa      VARCHAR(20)  NOT NULL,
+        moto       VARCHAR(60)  NULL,
+        color_moto VARCHAR(40)  NULL,
+        soat_vence DATE         NULL,
+        verificado TINYINT(1)   NOT NULL DEFAULT 0,
+        en_linea   TINYINT(1)   NOT NULL DEFAULT 0,
+        lat        DECIMAL(10,7) NULL,
+        lng        DECIMAL(10,7) NULL,
+        gps_at     TIMESTAMP    NULL,
+        calificacion_prom DECIMAL(3,2) NULL,
+        activo     TINYINT(1)   NOT NULL DEFAULT 1,
+        creado     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_en_linea (en_linea, verificado)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
+    {
+      table: 'mr_viajes', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS mr_viajes (
+        id           VARCHAR(36)   PRIMARY KEY,
+        pasajero_id  VARCHAR(36)   NOT NULL,
+        conductor_id VARCHAR(36)   NULL,
+        servicio     VARCHAR(20)   NOT NULL DEFAULT 'estandar',
+        estado       VARCHAR(20)   NOT NULL DEFAULT 'buscando',
+        metodo_pago  VARCHAR(20)   NOT NULL DEFAULT 'efectivo',
+        origen_lat   DECIMAL(10,7) NOT NULL,
+        origen_lng   DECIMAL(10,7) NOT NULL,
+        origen_dir   VARCHAR(255)  NULL,
+        destino_lat  DECIMAL(10,7) NOT NULL,
+        destino_lng  DECIMAL(10,7) NOT NULL,
+        destino_dir  VARCHAR(255)  NULL,
+        distancia_km DECIMAL(6,1)  NOT NULL DEFAULT 0,
+        minutos_est  INT           NOT NULL DEFAULT 0,
+        tarifa       DECIMAL(10,2) NOT NULL DEFAULT 0,
+        comision     DECIMAL(10,2) NOT NULL DEFAULT 0,
+        calificacion TINYINT       NULL,
+        calificacion_nota VARCHAR(255) NULL,
+        cancelado_por VARCHAR(20)  NULL,
+        creado        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        aceptado_en   TIMESTAMP    NULL,
+        llego_en      TIMESTAMP    NULL,
+        iniciado_en   TIMESTAMP    NULL,
+        finalizado_en TIMESTAMP    NULL,
+        cancelado_en  TIMESTAMP    NULL,
+        INDEX idx_estado (estado),
+        INDEX idx_pasajero (pasajero_id),
+        INDEX idx_conductor (conductor_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     },
   ];

@@ -1043,7 +1043,7 @@ tr:hover td{background:var(--bg2)}
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Código / Nombre</th><th>Stock</th><th>Uds/paquete</th><th>Mín.</th><th>Costo compra</th><th>Costo unit.</th><th>Precio venta</th><th>Estado</th><th></th></tr></thead>
+                <thead><tr><th>Código / Nombre</th><th>Stock</th><th>Uds/paquete</th><th>Mín.</th><th>Costo compra</th><th>Costo unit.</th><th>Precio venta</th><th>En POS</th><th>Estado</th><th></th></tr></thead>
                 <tbody id="inv-tbody"></tbody>
               </table>
             </div>
@@ -3690,6 +3690,10 @@ async function loadInventario(){
       const _udsPaqDisp=_uc?`${i.cantidad_paquete} ${badgeUnidad(i.unidad)}`:'—';
       const _smDisp=`${Math.round(_smin)} ${i.unidad}`;
       const costoUnit=_uc?i.costo/i.cantidad_paquete:i.costo;
+      const _enPos=!!i.es_producto;
+      const posSemaforo=`<span onclick="toggleEnPos('${i.id}')" title="${_enPos?'A la venta en el POS. Clic para quitarlo del POS.':'No aparece en el POS. Clic para ponerlo a la venta.'}" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:600;color:${_enPos?'var(--green-d)':'var(--red-d)'}">
+          <span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:${_enPos?'var(--green)':'var(--red)'};box-shadow:0 0 0 3px ${_enPos?'var(--green-l)':'var(--red-l)'}"></span>${_enPos?'En venta':'No en POS'}
+        </span>`;
       return `<tr onmouseenter="_showInvTip('${i.id}',event)" onmousemove="_posInvTip(event)" onmouseleave="_hideInvTip()" style="cursor:default">
         <td><span style="font-size:11px;color:var(--acc);font-weight:600;font-family:monospace">${i.codigo||'—'}</span>${i.codigo_barras?` <span style="font-size:10px;color:var(--text3)">🏷️ ${i.codigo_barras}</span>`:''}<br><b>${i.nombre}</b></td>
         <td style="${st}">${_stDisp}</td>
@@ -3698,13 +3702,14 @@ async function loadInventario(){
         <td>${fmt(i.costo)}</td>
         <td>${fmt(costoUnit)}</td>
         <td>${fmt(i.precio_venta)}</td>
+        <td>${posSemaforo}</td>
         <td>${estadoHtml}</td>
         <td style="display:flex;gap:4px;white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="openAdjModal('${i.id}','${i.nombre.replace(/'/g,"\\'")}',${i.stock},'${i.unidad}','${i.unidad_compra||''}',${i.cantidad_paquete||1})">Ajustar</button>
           <button class="btn btn-outline btn-sm" onclick="openInvModal('${i.id}')">✏️</button>
           ${canDeleteInv?`<button class="btn btn-danger btn-sm" onclick="deleteInv('${i.id}','${i.nombre.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">🗑</button>`:''}
         </td></tr>`;
-    }).join('')||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text2)">Sin resultados</td></tr>';
+    }).join('')||'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text2)">Sin resultados</td></tr>';
     try {
       const cats=await api('/inventario/categorias');
       const sel=$('inv-cat-filter'); const val=sel.value;
@@ -3907,6 +3912,24 @@ async function deleteInv(id, nombre){
   try {
     await api(`/inventario/${id}`,{method:'DELETE'});
     toast('Artículo eliminado'); loadInventario(); refreshInvStats();
+  } catch(e){ toast('Error: '+e.message); }
+}
+// Semáforo "En POS": alterna es_producto sin abrir el modal completo.
+async function toggleEnPos(id){
+  const i=_invMap[id]; if(!i) return;
+  const nuevoValor=!i.es_producto;
+  try {
+    await api(`/inventario/${id}`,{method:'PUT',body:JSON.stringify({
+      codigo:i.codigo, codigo_barras:i.codigo_barras||null, nombre:i.nombre,
+      categoria:i.categoria||'General', descripcion:i.descripcion||null,
+      stock:+i.stock||0, stock_min:+i.stock_min||0, stock_max:i.stock_max||null,
+      unidad:i.unidad||'unidades', unidad_compra:i.unidad_compra||null,
+      costo:+i.costo||0, precio_venta:+i.precio_venta||0, margen:i.margen??null,
+      es_producto:nuevoValor, es_paquete:!!i.es_paquete, cantidad_paquete:i.cantidad_paquete||null,
+      proveedor_id:i.proveedor_id||null, modulo:'minimercado'
+    })});
+    toast(nuevoValor?'Artículo puesto a la venta en el POS ✓':'Artículo ocultado del POS ✓');
+    loadInventario();
   } catch(e){ toast('Error: '+e.message); }
 }
 let adjUnidadCompra='', adjCantPaquete=1, adjUnidad='unidades';

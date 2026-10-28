@@ -9,22 +9,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="DJPOS es el sistema de punto de venta para peluquerías, restaurantes y minimercados en Colombia. Agenda, caja, inventario y reportes en un solo lugar — cada negocio 100% independiente.">
+  <meta name="description" content="DJPOS es el sistema de punto de venta para peluquerías, restaurantes, bares y minimercados en Colombia. Agenda, caja, inventario y reportes en un solo lugar — cada negocio 100% independiente.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://djmpos.com/">
-  <title>DJPOS — un sistema, tres negocios, cero descuadres</title>
+  <title>DJPOS — un sistema, cuatro negocios, cero descuadres</title>
   <link rel="icon" href="/img/logo.png">
 
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_CO">
   <meta property="og:url" content="https://djmpos.com/">
   <meta property="og:site_name" content="DJPOS">
-  <meta property="og:title" content="DJPOS — un sistema, tres negocios, cero descuadres">
-  <meta property="og:description" content="El punto de venta para peluquerías, restaurantes y minimercados en Colombia. Agenda, caja, inventario y reportes — cada negocio 100% independiente.">
+  <meta property="og:title" content="DJPOS — un sistema, cuatro negocios, cero descuadres">
+  <meta property="og:description" content="El punto de venta para peluquerías, restaurantes, bares y minimercados en Colombia. Agenda, caja, inventario y reportes — cada negocio 100% independiente.">
   <meta property="og:image" content="https://djmpos.com/img/logo.png">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="DJPOS — un sistema, tres negocios, cero descuadres">
-  <meta name="twitter:description" content="El punto de venta para peluquerías, restaurantes y minimercados en Colombia. Cada negocio 100% independiente.">
+  <meta name="twitter:title" content="DJPOS — un sistema, cuatro negocios, cero descuadres">
+  <meta name="twitter:description" content="El punto de venta para peluquerías, restaurantes, bares y minimercados en Colombia. Cada negocio 100% independiente.">
   <meta name="twitter:image" content="https://djmpos.com/img/logo.png">
   <style>
 @font-face{font-family:'Fraunces Disp';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/fraunces-disp-600.woff2') format('woff2');}
@@ -55,6 +55,8 @@
   --paprika-tint:#F7ECDD;
   --indigo:#3C5A96;
   --indigo-tint:#E7EBF4;
+  --bar:#7A4FB0;
+  --bar-tint:#EFE7F7;
   --shadow:0 1px 2px rgba(16,42,36,.06);
   --shadow-lg:0 18px 40px -14px rgba(16,42,36,.28);
   --r-s:10px;
@@ -83,6 +85,8 @@
     --paprika-tint:rgba(226,161,92,.14);
     --indigo:#8AA1D6;
     --indigo-tint:rgba(138,161,214,.14);
+    --bar:#B394E0;
+    --bar-tint:rgba(179,148,224,.14);
     --shadow:0 1px 2px rgba(0,0,0,.3);
     --shadow-lg:0 18px 40px -14px rgba(0,0,0,.55);
   }
@@ -95,6 +99,7 @@
   --berry:#E07AA8; --berry-tint:rgba(224,122,168,.14);
   --paprika:#E2A15C; --paprika-tint:rgba(226,161,92,.14);
   --indigo:#8AA1D6; --indigo-tint:rgba(138,161,214,.14);
+  --bar:#B394E0; --bar-tint:rgba(179,148,224,.14);
   --shadow:0 1px 2px rgba(0,0,0,.3); --shadow-lg:0 18px 40px -14px rgba(0,0,0,.55);
 }
 :root[data-theme="light"]{
@@ -105,6 +110,7 @@
   --berry:#A83E6C; --berry-tint:#F6E8EF;
   --paprika:#B6702A; --paprika-tint:#F7ECDD;
   --indigo:#3C5A96; --indigo-tint:#E7EBF4;
+  --bar:#7A4FB0; --bar-tint:#EFE7F7;
   --shadow:0 1px 2px rgba(16,42,36,.06); --shadow-lg:0 18px 40px -14px rgba(16,42,36,.28);
 }
 
@@ -342,7 +348,7 @@ p{margin:0}
 .video-el{display:block;width:100%;height:100%;object-fit:contain;background:#0A1B16}
 
 /* ── VERTICAL SHOWCASE (peluqueria/restaurante/minimercado) ── */
-.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-bottom:56px}
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;margin-bottom:56px}
 .quick-card{
   text-align:left;text-decoration:none;display:block;
 }
@@ -350,16 +356,21 @@ p{margin:0}
 .quick-ic svg{width:26px;height:26px}
 .quick-pel .quick-ic{color:var(--berry)}
 .quick-res .quick-ic{color:var(--paprika)}
+.quick-bar .quick-ic{color:var(--bar)}
 .quick-min .quick-ic{color:var(--indigo)}
 .quick-tit{font-family:'Work Sans Body';font-weight:700;font-size:1rem;color:var(--ink)}
 .quick-desc{font-size:.86rem;color:var(--ink-soft);margin-top:6px;line-height:1.5;max-width:32ch}
 .quick-pel:hover .quick-tit{color:var(--berry)}
 .quick-res:hover .quick-tit{color:var(--paprika)}
+.quick-bar:hover .quick-tit{color:var(--bar)}
 .quick-min:hover .quick-tit{color:var(--indigo)}
 /* Esta regla debe ir DESPUÉS de las reglas base de arriba: al tener la
    misma especificidad (.quick-card, .quick-ic, .quick-desc), si el media
    query queda antes en el archivo, la regla base la pisa aunque la pantalla
    sea angosta — el orden en el CSS importa tanto como el ancho de pantalla. */
+@media (max-width:860px){
+  .quick-grid{grid-template-columns:repeat(2,1fr)}
+}
 @media (max-width:640px){
   .quick-grid{grid-template-columns:1fr;gap:30px}
   .quick-card{text-align:center}
@@ -380,6 +391,7 @@ p{margin:0}
 .vtag{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 13px;border-radius:100px;margin-bottom:18px}
 .vtag-pel{background:var(--berry-tint);color:var(--berry)}
 .vtag-res{background:var(--paprika-tint);color:var(--paprika)}
+.vtag-bar{background:var(--bar-tint);color:var(--bar)}
 .vtag-min{background:var(--indigo-tint);color:var(--indigo)}
 .vcard h3{font-size:clamp(1.5rem,2.6vw,1.95rem);margin-bottom:14px}
 .vcard .prose{color:var(--ink-soft);font-size:.99rem}
@@ -399,6 +411,7 @@ p{margin:0}
 }
 .vcard-pel .vfeat-check{background:var(--berry-tint);color:var(--berry)}
 .vcard-res .vfeat-check{background:var(--paprika-tint);color:var(--paprika)}
+.vcard-bar .vfeat-check{background:var(--bar-tint);color:var(--bar)}
 .vcard-min .vfeat-check{background:var(--indigo-tint);color:var(--indigo)}
 
 .vcard-visual{background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--r-l);padding:26px;box-shadow:var(--shadow)}
@@ -416,6 +429,10 @@ p{margin:0}
 .pel-badge{font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:100px;white-space:nowrap}
 .pel-badge.wait{background:var(--line-soft);color:var(--ink-soft)}
 .pel-badge.done{background:var(--berry);color:#fff}
+
+/* bar mock: cuentas abiertas + fiados, reusa estructura .pel-card */
+.pel-card.bar-fiado{border-color:var(--bar);background:var(--bar-tint)}
+.pel-badge.bar-fiado{background:var(--bar);color:#fff}
 
 /* restaurante mock: mesas grid */
 .res-tables{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
@@ -522,6 +539,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <nav class="nav-links">
       <a href="#peluqueria">Peluquería</a>
       <a href="#restaurante">Restaurante</a>
+      <a href="#bar">Bar</a>
       <a href="#minimercado">Minimercado</a>
       <a href="#plataforma">Plataforma</a>
       <a href="#precios">Precios</a>
@@ -546,7 +564,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <div>
       <div class="eyebrow">¿Te suena familiar?</div>
       <h1>Cierras la caja y el número nunca cuadra. Otra vez.</h1>
-      <p class="hero-sub">Si manejas una peluquería, un restaurante o un minimercado, sabes lo que es no confiar del todo en tus números al final del día. DJPOS existe para que dejes de adivinar — cada negocio con su propia caja, controlada, sin sorpresas.</p>
+      <p class="hero-sub">Si manejas una peluquería, un restaurante, un bar o un minimercado, sabes lo que es no confiar del todo en tus números al final del día. DJPOS existe para que dejes de adivinar — cada negocio con su propia caja, controlada, sin sorpresas.</p>
       <div class="hero-pills">
         <span class="hero-pill hero-pill-forest">🎯 Software a la medida</span>
         <span class="hero-pill hero-pill-lime">💳 Pago por uso</span>
@@ -596,6 +614,11 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <div class="quick-ic"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.8" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="10" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg></div>
       <div class="quick-tit">Restaurante</div>
       <div class="quick-desc">Mesas, cocina y domicilios sin papelitos perdidos.</div>
+    </a>
+    <a class="quick-card quick-bar" href="#bar">
+      <div class="quick-ic"><svg viewBox="0 0 20 20" fill="none"><path d="M4 3h12l-5 7.5v5.5h2.5M10.5 16h-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="quick-tit">Bar</div>
+      <div class="quick-desc">Comandas a la barra, fiados y cuentas sin confusión.</div>
     </a>
     <a class="quick-card quick-min" href="#minimercado">
       <div class="quick-ic"><svg viewBox="0 0 20 20" fill="none"><path d="M3 4h2l1.6 9.2h9.2L17.5 7H6.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8.2" cy="16.3" r="1.35" stroke="currentColor" stroke-width="1.6"/><circle cx="14" cy="16.3" r="1.35" stroke="currentColor" stroke-width="1.6"/></svg></div>
@@ -650,6 +673,26 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
           <div class="res-table free"><span class="n">7</span>Libre</div>
           <div class="res-table busy"><span class="n">8</span>$40k</div>
         </div>
+      </div>
+    </article>
+
+    <article class="vcard vcard-bar" id="bar">
+      <div>
+        <span class="vtag vtag-bar">Bar</span>
+        <h3>Comandas a la barra, fiados bajo control, cero cuentas cruzadas</h3>
+        <div class="prose"><p>El mesero manda el pedido directo a la barra sin gritar ni caminar entre mesas. Las cuentas abiertas de barra, mesa o para llevar quedan claras hasta que se cobran, y los clientes de confianza que quedan fiando tienen su propio saldo controlado, sin fiarse de la memoria.</p></div>
+        <ul class="vfeat-list">
+          <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Comandas enviadas directo a la barra, sin ida y vuelta</li>
+          <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Cuentas abiertas por barra, mesa o para llevar</li>
+          <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Control de fiados — saldo pendiente por cliente, sin libretas</li>
+          <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Carta propia por categorías: cócteles, cervezas, vinos, shots</li>
+        </ul>
+      </div>
+      <div class="vcard-visual">
+        <div class="vv-head"><span class="vv-tit">Cuentas abiertas</span><span class="vv-sub">La Terraza Bar</span></div>
+        <div class="pel-card"><div class="pel-info"><span class="pel-name">Barra 3</span><span class="pel-svc">2 mojitos + 1 cerveza</span></div><span class="pel-badge wait">$58.000</span></div>
+        <div class="pel-card"><div class="pel-info"><span class="pel-name">Mesa 7</span><span class="pel-svc">Whisky doble</span></div><span class="pel-badge wait">$32.000</span></div>
+        <div class="pel-card bar-fiado"><div class="pel-info"><span class="pel-name">Camilo R. — fiado</span><span class="pel-svc">Saldo pendiente</span></div><span class="pel-badge bar-fiado">$45.000</span></div>
       </div>
     </article>
 
@@ -732,6 +775,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   <div class="strip-track">
     <span class="strip-item"><b>Citas y comisiones</b> para peluquerías</span>
     <span class="strip-item"><b>Mesas y cocina</b> para restaurantes</span>
+    <span class="strip-item"><b>Comandas y fiados</b> para bares</span>
     <span class="strip-item"><b>Código de barras</b> para minimercados</span>
     <span class="strip-item"><b>Caja bloqueada</b> hasta cuadrar el día anterior</span>
     <span class="strip-item"><b>Reservas online</b> sin llamadas</span>
@@ -741,6 +785,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <span class="strip-item"><b>Pago por uso</b>, sin letra chiquita</span>
     <span class="strip-item"><b>Citas y comisiones</b> para peluquerías</span>
     <span class="strip-item"><b>Mesas y cocina</b> para restaurantes</span>
+    <span class="strip-item"><b>Comandas y fiados</b> para bares</span>
     <span class="strip-item"><b>Código de barras</b> para minimercados</span>
     <span class="strip-item"><b>Caja bloqueada</b> hasta cuadrar el día anterior</span>
     <span class="strip-item"><b>Reservas online</b> sin llamadas</span>
@@ -756,7 +801,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <div class="indep-head">
       <div class="eyebrow" style="color:var(--forest);font-weight:700">Un solo software, cero mezcla de datos</div>
       <h2>Cada negocio es 100% independiente.</h2>
-      <p>Peluquería, restaurante y minimercado no son "modos" de la misma pantalla — son negocios separados dentro de DJPOS, cada uno con su propia caja, su propio inventario y su propio equipo. Nada de uno se cruza con el otro.</p>
+      <p>Peluquería, restaurante, bar y minimercado no son "modos" de la misma pantalla — son negocios separados dentro de DJPOS, cada uno con su propia caja, su propio inventario y su propio equipo. Nada de uno se cruza con el otro.</p>
     </div>
   </div>
 </section>
@@ -788,7 +833,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
 
 <section class="section shell">
   <div class="trust">
-    <div class="trust-item"><div class="trust-num">3</div><div class="trust-lbl">negocios independientes en un solo sistema — cada uno con su propia caja y su equipo</div></div>
+    <div class="trust-item"><div class="trust-num">4</div><div class="trust-lbl">negocios independientes en un solo sistema — cada uno con su propia caja y su equipo</div></div>
     <div class="trust-item"><div class="trust-num">100%</div><div class="trust-lbl">en español, pensado para cómo se factura y se cobra en Colombia</div></div>
     <div class="trust-item"><div class="trust-num">0</div><div class="trust-lbl">instalaciones — funciona desde el navegador, en cualquier equipo</div></div>
   </div>
@@ -801,8 +846,8 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   </div>
   <div class="prose prose-2col">
     <p>Todo empezó en 2025, en <strong>Bunny Burger DJ</strong>, un restaurante de verdad — el nuestro. Necesitábamos algo que llevara mesas, cocina y domicilios sin pagarle de más a un software genérico por funciones que nunca íbamos a usar, y no lo encontramos. Así que lo construimos nosotros mismos.</p>
-    <p>Con el tiempo, otros negocios empezaron a pedir lo mismo — una peluquería, un minimercado — cada uno con sus propias necesidades. Así nació DJPOS: el mismo sistema que hoy sigue llevando nuestro restaurante, ahora hecho a la medida de cualquier negocio colombiano que lo necesite.</p>
-    <p><b>Misión:</b> darle a cada negocio colombiano — sin importar si es una peluquería, un restaurante o un minimercado — un sistema de punto de venta hecho a su medida, con precios justos y sin depender de instalaciones ni contratos complicados.</p>
+    <p>Con el tiempo, otros negocios empezaron a pedir lo mismo — una peluquería, un bar, un minimercado — cada uno con sus propias necesidades. Así nació DJPOS: el mismo sistema que hoy sigue llevando nuestro restaurante, ahora hecho a la medida de cualquier negocio colombiano que lo necesite.</p>
+    <p><b>Misión:</b> darle a cada negocio colombiano — sin importar si es una peluquería, un restaurante, un bar o un minimercado — un sistema de punto de venta hecho a su medida, con precios justos y sin depender de instalaciones ni contratos complicados.</p>
     <p><b>Visión:</b> ser el sistema de punto de venta de referencia para los negocios independientes de Colombia, donde cada dueño pueda manejar su operación completa — ventas, caja, equipo y clientes — desde un solo lugar confiable.</p>
   </div>
 </section>
@@ -829,6 +874,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <div class="foot-links">
       <a href="#peluqueria">Peluquería</a>
       <a href="#restaurante">Restaurante</a>
+      <a href="#bar">Bar</a>
       <a href="#minimercado">Minimercado</a>
     </div>
   </div>
