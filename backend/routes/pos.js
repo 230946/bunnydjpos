@@ -54,6 +54,12 @@ async function ventanaDelDia(negocioId, fecha, zonaHoraria) {
 // hay que cerrarla antes de poder seguir vendiendo/cobrando con ella. Antes
 // de esa hora no bloquea nada — así una caja de anoche sigue sirviendo con
 // normalidad durante la madrugada (eso no cambia).
+// En el bar la caja es una sola del negocio: la abre/cierra el administrador
+// y todos (meseros incluidos) cobran con ella. En los demás tipos de negocio
+// cada usuario opera su propia caja.
+const miCaja = (p, t = 'cajas') =>
+  `(${t}.usuario_id=${p} OR (SELECT tipo FROM negocios WHERE id=${t}.negocio_id)='bar')`;
+
 async function cajaAtrasada(negocioId, cajaFechaRaw, zonaHoraria) {
   const tz = zonaHoraria || 'America/Bogota';
   const fCaja = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(cajaFechaRaw));
@@ -768,7 +774,7 @@ router.put('/comandas/:id/pago-parcial', async (req, res) => {
     // — salvo que ya esté "atrasada" (ver cajaAtrasada), en cuyo caso hay
     // que cerrarla antes de seguir.
     const { rows: cajaAbierta } = await pool.query(
-      `SELECT id, fecha FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta'`,
+      `SELECT id, fecha FROM cajas WHERE negocio_id=${ph(1)} AND ${miCaja(ph(2))} AND estado='abierta'`,
       [nid(req), req.user.id]
     );
     if (!cajaAbierta.length) return res.status(400).json({ error: 'Abrí tu caja antes de registrar el pago' });
@@ -809,7 +815,7 @@ router.put('/comandas/:id/pago-parcial', async (req, res) => {
         total_efectivo=total_efectivo+${ph(2)},
         total_tarjeta=total_tarjeta+${ph(3)},
         total_nequi=total_nequi+${ph(4)}
-      WHERE negocio_id=${ph(5)} AND usuario_id=${ph(6)} AND estado='abierta'
+      WHERE negocio_id=${ph(5)} AND ${miCaja(ph(6))} AND estado='abierta'
     `, [montoAbono, _montoEf, _montoTa, _montoNe, nid(req), req.user.id]);
 
     if (completado && c.mesa_id) {
@@ -989,7 +995,7 @@ router.post('/ventas', async (req, res) => {
     // absoluto (eso lo controla el front) ni mientras siga dentro de la
     // misma madrugada de su turno.
     const { rows: _cajaVenta } = await pool.query(
-      `SELECT fecha FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta'`,
+      `SELECT fecha FROM cajas WHERE negocio_id=${ph(1)} AND ${miCaja(ph(2))} AND estado='abierta'`,
       [nid(req), req.user.id]
     );
     if (_cajaVenta.length && await cajaAtrasada(nid(req), _cajaVenta[0].fecha, req.user.zona_horaria))
@@ -1102,7 +1108,7 @@ router.post('/ventas', async (req, res) => {
         total_efectivo=total_efectivo+${ph(2)},
         total_tarjeta=total_tarjeta+${ph(3)},
         total_nequi=total_nequi+${ph(4)}
-      WHERE negocio_id=${ph(5)} AND usuario_id=${ph(6)} AND estado='abierta'
+      WHERE negocio_id=${ph(5)} AND ${miCaja(ph(6))} AND estado='abierta'
     `, [total, _montoEf, _montoTa, _montoNe, nid(req), req.user.id]);
 
     // Enlazar el pedido de domicilio con esta venta (cerrojo atómico:
@@ -1318,7 +1324,7 @@ router.put('/fiados/:id/pagar', async (req, res) => {
     // un día anterior sin cerrar, sigue siendo válida para operar con ella
     // — salvo que ya esté "atrasada" (ver cajaAtrasada).
     const { rows: cajaAbierta } = await pool.query(
-      `SELECT id, fecha FROM cajas WHERE negocio_id=${ph(1)} AND usuario_id=${ph(2)} AND estado='abierta'`,
+      `SELECT id, fecha FROM cajas WHERE negocio_id=${ph(1)} AND ${miCaja(ph(2))} AND estado='abierta'`,
       [nid(req), req.user.id]
     );
     if (!cajaAbierta.length) return res.status(400).json({ error: 'Abrí tu caja antes de registrar el pago' });

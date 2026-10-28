@@ -1728,7 +1728,8 @@ let cajaPendiente = null;
 // con normalidad aunque sea de un día anterior.
 function cajaLista(){ return !cajaPendiente && !!cajaActual && cajaActual.estado === 'abierta'; }
 // En el bar la caja es del administrador: los meseros (rol sin permiso de
-// Personal) no ven el módulo Caja ni el aviso para abrirla, y no cobran.
+// Personal) no ven el módulo Caja ni el aviso para abrirla, pero cobran con
+// la caja que abrió el administrador.
 function esAdminBar(){
   if (!me) return false;
   if (me.es_superadmin) return true;
@@ -1736,7 +1737,7 @@ function esAdminBar(){
   if (typeof p === 'string') { try { p = JSON.parse(p); } catch { p = {}; } }
   return !!p?.personal;
 }
-function mensajeCajaNoLista(){ if (!esAdminBar()) return 'El cobro lo hace el administrador desde la caja'; return cajaPendiente ? 'Cerrá la caja atrasada antes de seguir vendiendo' : 'Abrí la caja antes de cobrar'; }
+function mensajeCajaNoLista(){ if (!esAdminBar()) return cajaPendiente ? 'El administrador debe cerrar la caja del turno anterior' : 'La caja está cerrada: pídele al administrador que la abra'; return cajaPendiente ? 'Cerrá la caja atrasada antes de seguir vendiendo' : 'Abrí la caja antes de cobrar'; }
 async function cargarCajaEstado(){
   const [caja, pendiente] = await Promise.all([
     api('/admin/caja').catch(()=>null),
