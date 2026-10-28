@@ -284,6 +284,7 @@ table tr:hover td{background:var(--bg2)}
       <section id="panel-mesas" hidden>
         <div class="panel-head">
           <h3>Mesas</h3>
+          <span style="font-size:13px;color:var(--text2)">🍺 Cervezas vendidas hoy: <b id="mesas-cervezas" style="color:var(--text)">—</b></span>
         </div>
         <div class="mesas-grid" id="mesas-grid"><div class="empty-msg">Sin mesas todavía — agrégalas desde el panel de administración.</div></div>
       </section>
@@ -792,7 +793,7 @@ function nav(p){
   document.querySelectorAll('.nav-icon[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === p));
   $('hdr-title').textContent = TITULOS[p];
   closeMobileSidebar();
-  if (p === 'mesas') { Promise.all([cargarMesas(), cargarTickets()]).then(renderMesasGrid); }
+  if (p === 'mesas') { Promise.all([cargarMesas(), cargarTickets()]).then(renderMesasGrid); cargarCervezasHoy(); }
   if (p === 'pedidos') cargarTickets();
   if (p === 'fiados') cargarFiados();
   if (p === 'caja') { cargarCajaEstado(); cargarCajaHistorial(); }
@@ -859,19 +860,29 @@ let mesas = [];
 let selMesaId = null, selMesaNum = null;
 
 async function cargarMesas(){ mesas = await api('/pos/mesas'); return mesas; }
+async function cargarCervezasHoy(){
+  try{
+    const f = today();
+    const r = await api(`/admin/reportes/categoria-vendida?categoria=${encodeURIComponent('Cerveza')}&desde=${f}&hasta=${f}`);
+    $('mesas-cervezas').textContent = fmtQty(r.cantidad);
+  }catch(e){ $('mesas-cervezas').textContent = '—'; }
+}
 
 // La ocupación/monto de cada mesa se calcula a partir de los pedidos abiertos
 // (ticketsAbiertos, ya sincronizados por cargarTickets) en vez de mesa_estado,
 // porque es ahí donde vive el total real de la cuenta mientras no se cobra.
 function _mesaInfo(mesaId){
   const its = ticketsAbiertos.filter(t => t.mesa_id === mesaId);
-  if (!its.length) return { ocupada:false, monto:0 };
-  let monto = 0;
+  if (!its.length) return { ocupada:false, monto:0, saldo:0 };
+  let monto = 0, saldo = 0;
   its.forEach(t => {
     const items = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
-    monto += items.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+    const montoBruto = items.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+    const montoTicket = Math.max(0, montoBruto - (+t.descuento||0));
+    monto += montoBruto;
+    saldo += Math.max(0, montoTicket - (+t.pagado||0));
   });
-  return { ocupada:true, monto };
+  return { ocupada:true, monto, saldo };
 }
 
 function renderMesasGrid(){
@@ -892,7 +903,7 @@ function renderMesasGrid(){
       <div class="mesa-num">${m.numero}${m.nombre?' · '+esc(m.nombre):''}</div>
       <div class="mesa-zona">${esc(m.zona||'')}</div>
       <div class="mesa-status">${info.ocupada?'Ocupada':'Libre'}</div>
-      ${info.ocupada?`<div class="mesa-monto">${fmt(info.monto)}</div>`:''}
+      ${info.ocupada?`<div class="mesa-monto">${fmt(info.saldo)}${info.saldo<info.monto?` <span style="font-size:10px;font-weight:400;opacity:.8">de ${fmt(info.monto)}</span>`:''}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -952,27 +963,83 @@ function actualizarMesaBadgeBarra(){
 // Si la mesa seleccionada ya tiene un pedido enviado, se muestra acá mismo
 // (con +/- en vivo) para que quede clarísimo qué hay antes de agregar algo
 // más — en vez de tener que ir a la pestaña "Pedidos" a revisarlo.
+let mpeTicketId = null, mpeEsCliente = false, mpeModoDescuento = 'articulo', mpeDescuentoPorArticulo = 0, mpeDescuentoGeneral = 0, mpeItemsExcluidos = new Set();
+function _mpeKey(i){ return i.item_id || i.nombre; }
 function renderMesaPedidoExistente(){
   const box = $('mesa-pedido-existente'); if (!box) return;
   const t = selMesaId ? ticketsAbiertos.find(x => x.mesa_id === selMesaId) : null;
-  if (!t){ box.classList.add('hide'); box.innerHTML = ''; return; }
+  if (!t){ box.classList.add('hide'); box.innerHTML = ''; mpeTicketId = null; return; }
+  // Al entrar a una mesa distinta se reinicia el estado del descuento; en la
+  // misma mesa se conserva entre renders (ej. al llegar un WS de otro
+  // cambio) para no perder lo que el mesero ya estaba escribiendo. Si la
+  // mesa ya traía un descuento guardado de antes (ej. se recargó la
+  // página), no se pierde: se precarga en modo "General" con el monto que
+  // ya tenía, en vez de mostrar el campo vacío como si no hubiera nada.
+  if (mpeTicketId !== t.id) {
+    mpeTicketId = t.id;
+    const descuentoPrevio = +t.descuento || 0;
+    mpeEsCliente = descuentoPrevio > 0;
+    mpeModoDescuento = descuentoPrevio > 0 ? 'general' : 'articulo';
+    mpeDescuentoPorArticulo = 0;
+    mpeDescuentoGeneral = descuentoPrevio;
+    mpeItemsExcluidos = new Set();
+  }
   const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
   const montoBruto = its.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
+  // Modo "por artículo": con una tarifa fija puesta, se recalcula sola cada
+  // vez que cambian los artículos (se agregó uno nuevo, se quitó uno) — así
+  // "de ahí en adelante" todo lo de la mesa sigue tomando el mismo
+  // descuento por unidad, salvo en los artículos que se destilden con el
+  // check de cada línea. Modo "general": un monto fijo único para toda la
+  // mesa, no depende de la cantidad de artículos ni se recalcula sola.
+  if (mpeEsCliente && mpeModoDescuento === 'articulo' && mpeDescuentoPorArticulo > 0) {
+    const calculado = its.reduce((a,i) => mpeItemsExcluidos.has(_mpeKey(i)) ? a : a + Math.min(+i.precio||0, mpeDescuentoPorArticulo)*(i.qty||1), 0);
+    if (Math.abs(calculado - (+t.descuento||0)) > 0.01) { guardarDescuentoMesa(t.id, calculado); return; }
+  }
   const descuento = +t.descuento || 0;
   const montoTicket = Math.max(0, montoBruto - descuento);
   const pagado = +t.pagado || 0;
   const saldo = Math.max(0, montoTicket - pagado);
-  const lineas = its.map(i => `<div class="it" style="display:flex;align-items:center;gap:10px">
+  const porArticulo = mpeEsCliente && mpeModoDescuento === 'articulo' && mpeDescuentoPorArticulo > 0;
+  const lineas = its.map(i => {
+    const precio = +i.precio||0, qty = i.qty||1;
+    const incluido = !mpeItemsExcluidos.has(_mpeKey(i));
+    // Si se está escribiendo una tarifa por artículo ahora mismo, se usa esa
+    // (y el check de incluir/excluir). Si no, pero la mesa ya tiene un
+    // descuento guardado de antes (ej. se recargó la página y se perdió el
+    // estado de la tarifa), se reparte proporcional entre los artículos
+    // para que el descuento siga viéndose junto a cada producto.
+    const descLinea = porArticulo
+      ? (incluido ? Math.min(precio, mpeDescuentoPorArticulo)*qty : 0)
+      : (descuento > 0 && montoBruto > 0 ? Math.min(precio*qty, (precio*qty/montoBruto)*descuento) : 0);
+    return `<div class="it" style="display:flex;align-items:center;gap:10px">
     <button class="btn-qty btn-qty-minus" title="Quitar 1" onclick="quitarUnidadTicket('${t.mesa_id}','${esc(i.nombre).replace(/'/g,"\\'")}')">−</button>
+    ${porArticulo ? `<input type="checkbox" title="Aplicar descuento a este artículo" style="width:auto" ${incluido?'checked':''} onchange="toggleItemDescuento('${t.id}', '${esc(_mpeKey(i)).replace(/'/g,"\\'")}', this.checked)">` : ''}
     <span style="flex:1;display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0">
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.qty||1}× ${esc(i.nombre)}</span>
-      <span style="font-weight:600;flex:none">${fmt((+i.precio||0)*(i.qty||1))}</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${qty}× ${esc(i.nombre)}</span>
+      <span style="font-weight:600;flex:none">${descLinea>0?`<span style="text-decoration:line-through;color:var(--text2);font-weight:400;font-size:11px;margin-right:4px">${fmt(precio*qty)}</span>`:''}${fmt(precio*qty-descLinea)}</span>
     </span>
     <button class="btn-qty btn-qty-plus" title="Agregar 1" onclick="agregarUnidadTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}','${i.item_id||''}','${esc(i.nombre).replace(/'/g,"\\'")}','${i.emoji||''}',${+i.precio||0})">+</button>
-  </div>`).join('');
+  </div>`;
+  }).join('');
   box.classList.remove('hide');
   box.innerHTML = `<div class="ticket-card">
     <h4>Ya pedido en esta mesa <span class="badge ${t.estado==='nuevo'?'b-amber':t.estado==='listo'?'b-green':'b-purple'}">${t.estado}</span></h4>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:6px">
+      <input type="checkbox" id="mpe-es-cliente" style="width:auto" ${mpeEsCliente?'checked':''} onchange="toggleMpeDescuento('${t.id}')"> 🎖️ Es cliente
+    </label>
+    ${mpeEsCliente ? `
+    <div style="display:flex;gap:14px;font-size:12.5px;margin-bottom:8px">
+      <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="mpe-modo" style="width:auto" ${mpeModoDescuento==='articulo'?'checked':''} onchange="cambiarModoDescuento('${t.id}','articulo')"> Por artículo</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="mpe-modo" style="width:auto" ${mpeModoDescuento==='general'?'checked':''} onchange="cambiarModoDescuento('${t.id}','general')"> General (monto fijo)</label>
+    </div>
+    ${mpeModoDescuento==='articulo' ? `<div class="field" style="margin-bottom:8px">
+      <input id="mpe-descuento-rate" type="number" min="0" step="100" value="${mpeDescuentoPorArticulo||''}" placeholder="Descuento por artículo $" style="width:200px;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px" onchange="cambiarDescuentoPorArticulo('${t.id}', this.value)">
+      <p style="font-size:11px;color:var(--text2);margin-top:3px">Se resta de cada artículo (actual y los que se agreguen después) hasta que se desmarque.</p>
+    </div>` : `<div class="field" style="margin-bottom:8px">
+      <input id="mpe-descuento-general" type="number" min="0" step="100" value="${mpeDescuentoGeneral||descuento||''}" placeholder="Descuento total $" style="width:200px;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px" onchange="cambiarDescuentoGeneral('${t.id}', this.value)">
+      <p style="font-size:11px;color:var(--text2);margin-top:3px">Un monto único que se resta del total de la mesa, sin importar cuántos artículos tenga.</p>
+    </div>`}` : ''}
     ${lineas}
     ${descuento>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--amber-d)"><span>Descuento</span><span>-${fmt(descuento)}</span></div>` : ''}
     <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)"><span>Total</span><span>${fmt(montoTicket)}</span></div>
@@ -985,6 +1052,45 @@ function renderMesaPedidoExistente(){
         : `<button class="btn btn-primary" onclick="cobrarTicket('${t.id}')">💳 Cobrar</button>`}
     </div>
   </div>`;
+}
+function toggleMpeDescuento(ticketId){
+  mpeEsCliente = $('mpe-es-cliente').checked;
+  if (!mpeEsCliente) { mpeDescuentoPorArticulo = 0; mpeDescuentoGeneral = 0; guardarDescuentoMesa(ticketId, 0); }
+  renderMesaPedidoExistente();
+}
+function cambiarModoDescuento(ticketId, modo){
+  mpeModoDescuento = modo;
+  if (modo === 'articulo') mpeDescuentoGeneral = 0;
+  else mpeDescuentoPorArticulo = 0;
+  renderMesaPedidoExistente();
+}
+function cambiarDescuentoPorArticulo(ticketId, valor){
+  mpeDescuentoPorArticulo = Math.max(0, +valor||0);
+  const t = ticketsAbiertos.find(x => x.id === ticketId); if (!t) return;
+  const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
+  const total = its.reduce((a,i) => mpeItemsExcluidos.has(_mpeKey(i)) ? a : a + Math.min(+i.precio||0, mpeDescuentoPorArticulo)*(i.qty||1), 0);
+  guardarDescuentoMesa(ticketId, total);
+}
+function toggleItemDescuento(ticketId, key, incluido){
+  if (incluido) mpeItemsExcluidos.delete(key); else mpeItemsExcluidos.add(key);
+  const t = ticketsAbiertos.find(x => x.id === ticketId); if (!t) return;
+  const its = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
+  const total = its.reduce((a,i) => mpeItemsExcluidos.has(_mpeKey(i)) ? a : a + Math.min(+i.precio||0, mpeDescuentoPorArticulo)*(i.qty||1), 0);
+  guardarDescuentoMesa(ticketId, total);
+}
+function cambiarDescuentoGeneral(ticketId, valor){
+  mpeDescuentoGeneral = Math.max(0, +valor||0);
+  guardarDescuentoMesa(ticketId, mpeDescuentoGeneral);
+}
+// El descuento que se fija acá queda guardado en la mesa — al llegar a
+// Abonar o Cobrar, el saldo que se muestra ya sale calculado con este
+// descuento aplicado, sin tener que volver a escribirlo.
+async function guardarDescuentoMesa(ticketId, valor){
+  const descuento = Math.max(0, +valor||0);
+  try{
+    await api(`/pos/comandas/${ticketId}/descuento`, { method:'PUT', body: JSON.stringify({ descuento }) });
+    await cargarTickets();
+  }catch(e){ showToast('Error: '+e.message); }
 }
 
 // ================= BARRA (tomar pedidos + cobrar) =================

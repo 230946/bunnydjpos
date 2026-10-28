@@ -947,6 +947,27 @@ router.get('/reportes/ventas-por-hora', requirePermiso('reportes'), async (req, 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Cantidad vendida de una categoría de inventario puntual (ej. "Cerveza")
+// en un período — para la tarjeta del Dashboard.
+router.get('/reportes/categoria-vendida', requirePermiso(['reportes','pos_cobro']), async (req, res) => {
+  try {
+    const { categoria, desde, hasta } = req.query;
+    if (!categoria) return res.status(400).json({ error: 'Falta la categoría' });
+    const d = desde || localDate(req.user.zona_horaria);
+    const h = hasta || d;
+    const unDia = d === h;
+    const ventana = unDia ? await ventanaDelDia(nid(req), d, req.user.zona_horaria) : null;
+    const condVi = unDia ? `vi.creado >= ${ph(3)} AND vi.creado <= ${ph(4)}` : `DATE(vi.creado) BETWEEN ${ph(3)} AND ${ph(4)}`;
+    const { rows } = await pool.query(`
+      SELECT COALESCE(SUM(vi.cantidad),0) AS cantidad
+      FROM venta_items vi
+      JOIN inventario inv ON inv.id = vi.inventario_id
+      WHERE vi.negocio_id=${ph(1)} AND inv.categoria=${ph(2)} AND ${condVi}
+    `, [nid(req), categoria, unDia ? ventana.inicio : d, unDia ? ventana.fin : h]);
+    res.json({ categoria, cantidad: +rows[0].cantidad || 0 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Ventas por día (gráfica de tendencia últimos N días)
 router.get('/reportes/ventas-por-dia', requirePermiso('reportes'), async (req, res) => {
   try {

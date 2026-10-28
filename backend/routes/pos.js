@@ -710,6 +710,27 @@ router.put('/comandas/:id/estado', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Fija el descuento "Es cliente" de una mesa desde que se arma el pedido,
+// sin necesidad de llegar a Abonar/Cobrar para poder aplicarlo — útil para
+// dejarlo configurado desde un principio con el cliente. No es acumulable
+// (reemplaza el valor, a diferencia del abono que sí suma): tope, el
+// monto bruto de la mesa menos lo que ya se haya pagado.
+router.put('/comandas/:id/descuento', async (req, res) => {
+  try {
+    const { descuento } = req.body;
+    const { rows } = await pool.query(`SELECT * FROM comandas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`, [req.params.id, nid(req)]);
+    const c = rows[0];
+    if (!c) return res.status(404).json({ error: 'Pedido no encontrado' });
+    const items = typeof c.items === 'string' ? JSON.parse(c.items || '[]') : (c.items || []);
+    const montoBruto = items.reduce((a, i) => a + (+i.precio || 0) * (+i.qty || 1), 0);
+    const tope = Math.max(0, montoBruto - (+c.pagado || 0));
+    const nuevoDescuento = Math.max(0, Math.min(+descuento || 0, tope));
+    await pool.query(`UPDATE comandas SET descuento=${ph(1)}, actualizado=NOW() WHERE id=${ph(2)}`, [nuevoDescuento, c.id]);
+    req.app.locals.broadcast?.(nid(req), 'comanda_actualizada', { id: c.id, mesa_id: c.mesa_id });
+    res.json({ ok: true, descuento: nuevoDescuento });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Pago parcial (abono) de un pedido de mesa/barra: permite cobrar solo una
 // parte del total ahora (ej. un cliente que se va antes que el resto del
 // grupo) y dejar el saldo pendiente en el mismo pedido. El stock de los
