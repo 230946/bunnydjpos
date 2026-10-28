@@ -348,6 +348,12 @@ router.put('/usuarios/:id', async (req, res) => {
        contacto_emergencia_nombre||null, contacto_emergencia_telefono||null, multiplicador_hora_extra||1.5,
        req.params.id, req.user.negocio_id]
     );
+    // El formulario de edición manda password solo si se escribió una nueva
+    if (req.body.password) {
+      const hash = await bcrypt.hash(req.body.password, 12);
+      await pool.query(`UPDATE usuarios SET password_hash=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+        [hash, req.params.id, req.user.negocio_id]);
+    }
     await _historizarContrato(req.user.negocio_id, req.params.id, sueldo_base, tarifa_hora, multiplicador_hora_extra);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
