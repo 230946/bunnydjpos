@@ -4945,9 +4945,10 @@ let fiadoVerId = null;
 function renderFiadoDetalleBody(f){
   const items = typeof f.items === 'string' ? JSON.parse(f.items||'[]') : (f.items||[]);
   const sumItems = items.reduce((a,i) => a + (+i.precio||0)*(i.qty||1), 0);
-  // Si lo consumido suma más que el total del fiado, es porque ya se había
-  // pagado una parte en efectivo antes de dejar el resto fiado.
-  const yaPagadoAntes = Math.max(0, sumItems - (+f.total||0));
+  const descuentoFiado = +f.descuento || 0;
+  // Si lo consumido (menos el descuento) suma más que el total del fiado,
+  // es porque ya se había pagado una parte en efectivo antes de dejar el resto fiado.
+  const yaPagadoAntes = Math.max(0, sumItems - descuentoFiado - (+f.total||0));
   const pagadoFiado = +f.pagado_monto || 0;
   const saldoFiado = Math.max(0, (+f.total||0) - pagadoFiado);
   $('fiado-ver-title').textContent = `${f.cliente_nombre}${f.mesa_num ? ' — Mesa '+f.mesa_num : ''}`;
@@ -4955,8 +4956,9 @@ function renderFiadoDetalleBody(f){
     <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);${i.pagado?'opacity:0.55':''}">
       <span>${i.qty||1}× ${esc(i.nombre)}${i.pagado?' <span style="color:var(--green-d);font-size:11px">✓ pagado</span>':''}</span><span>${fmt((+i.precio||0)*(i.qty||1))}</span>
     </div>`).join('') : '<p style="color:var(--text2)">Sin detalle de artículos.</p>')
-    + (yaPagadoAntes>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d);margin-top:8px"><span>Consumo total</span><span>${fmt(sumItems)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d)"><span>Ya pagado</span><span>-${fmt(yaPagadoAntes)}</span></div>` : '')
+    + (descuentoFiado>0 || yaPagadoAntes>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-top:8px"><span>Consumo total</span><span>${fmt(sumItems)}</span></div>` : '')
+    + (descuentoFiado>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--red-d)"><span>Descuento</span><span>-${fmt(descuentoFiado)}</span></div>` : '')
+    + (yaPagadoAntes>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d)"><span>Ya pagado</span><span>-${fmt(yaPagadoAntes)}</span></div>` : '')
     + `<div style="display:flex;justify-content:space-between;font-weight:700;margin-top:4px;padding-top:6px"><span>${yaPagadoAntes>0?'Saldo en fiado':'Total'}</span><span>${fmt(f.total)}</span></div>`
     + (pagadoFiado>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--green-d);margin-top:4px"><span>Abonado</span><span>-${fmt(pagadoFiado)}</span></div>
     <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--red-d)"><span>Saldo pendiente</span><span>${fmt(saldoFiado)}</span></div>` : '');
