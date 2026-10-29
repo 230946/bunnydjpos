@@ -3605,7 +3605,8 @@ function renderQrPago(id, mostrar){
   const qr = Object.fromEntries(Object.keys(QR_PAGO_CORTOS).map(t => [t, qrPagoDe(_factCfg, t)]));
   const lista = Object.keys(QR_PAGO_CORTOS).filter(t => qr[t].url);
   const el = $(id);
-  el.classList.toggle('hide', !mostrar || !lista.length);
+  el.classList.toggle('hide', !mostrar);
+  if (!lista.length) { el.innerHTML = '<p style="font-size:12px;color:var(--text2);text-align:center">No hay QR de pago configurado. El administrador lo sube en Config. factura → QR de pago.</p>'; return; }
   el.innerHTML = lista.map(t => `
     <div class="qr" onclick="verQrGrande('${t}')" title="Tocá para agrandar">
       <img src="${esc(qr[t].url)}" alt="QR ${QR_PAGO_CORTOS[t]}">
