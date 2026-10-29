@@ -552,6 +552,7 @@ table tr:hover td{background:var(--bg2)}
       </select>
     </div>
     <div id="cobro-qr" class="qr-pago hide"></div>
+    <input type="file" id="cobro-evidencia-file" accept="image/*" capture="environment" class="hide" onchange="onEvidenciaPagoCapturada(event)">
     <div id="cobro-campos-efectivo">
       <div class="field"><label>Recibido</label><input id="cobro-recibido" type="number" oninput="calcCambio()"></div>
       <div class="field"><label>Cambio</label><input id="cobro-cambio" type="number" readonly></div>
@@ -1527,6 +1528,7 @@ function renderCobroItems(){
 }
 function abrirCobro(){
   if (!cajaLista()) { avisarCajaNoLista(); return; }
+  _cobroEvidenciaFile = null;
   $('cobro-es-cliente').checked = cobroEsClienteDefault;
   renderCobroItems();
   $('cobro-metodo').value = 'efectivo';
@@ -1706,16 +1708,41 @@ async function confirmarCobroSaldo(){
   }
   try{
     const r = await api(`/pos/comandas/${cobroOrigenTicketId}/pago-parcial`, { method:'PUT', body: JSON.stringify(body) });
+    if (_cobroEvidenciaFile) subirEvidenciaPago(r.venta_id);
     closeModal('cobro-modal');
     await Promise.all([cargarTickets(), cargarCajaEstado(), cargarMesas()]);
     renderMesasGrid();
     showToast(r.completado ? 'Pedido cobrado ✓' : `Abono registrado — saldo: ${fmt(r.saldo)}`);
   }catch(e){ showToast('Error: '+e.message); }
 }
+// Evidencia fotográfica del pago (Nequi/transferencia): control interno
+// para verificar que el QR mostrado sí se cobró. Se toma con la cámara del
+// celular (capture="environment") antes de registrar la venta.
+let _cobroEvidenciaFile = null;
+function requiereEvidenciaPago(metodo){
+  if (metodo === 'nequi') return true;
+  if (metodo === 'mixto') return (+$('cobro-mix-nequi').value||0) > 0;
+  return false;
+}
+function onEvidenciaPagoCapturada(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  _cobroEvidenciaFile = file;
+  confirmarCobro();
+}
+async function subirEvidenciaPago(ventaId){
+  if (!_cobroEvidenciaFile || !ventaId) return;
+  const file = _cobroEvidenciaFile; _cobroEvidenciaFile = null;
+  const form = new FormData(); form.append('foto', file);
+  try{ await fetch(`${API}/pos/ventas/${ventaId}/evidencia`, { method:'POST', headers:{ 'Authorization':`Bearer ${token}` }, body: form }); }
+  catch(e){ /* no bloquear el cobro si falla subir la evidencia */ }
+}
 async function confirmarCobro(){
   if (!cobroItems.length) return;
-  if ($('cobro-metodo').value === 'fiado') return confirmarFiado();
+  const metodo0 = $('cobro-metodo').value;
+  if (metodo0 === 'fiado') return confirmarFiado();
   if (!cajaLista()) { avisarCajaNoLista(); closeModal('cobro-modal'); return; }
+  if (requiereEvidenciaPago(metodo0) && !_cobroEvidenciaFile) { $('cobro-evidencia-file').value = ''; $('cobro-evidencia-file').click(); return; }
   if (cobroEsSaldo) return confirmarCobroSaldo();
   const subtotal = subtotalCobro();
   const descuento = descuentoCobro();
@@ -1737,6 +1764,7 @@ async function confirmarCobro(){
   };
   try{
     const venta = await api('/pos/ventas', { method:'POST', body: JSON.stringify(body) });
+    if (_cobroEvidenciaFile) subirEvidenciaPago(venta.id);
     if (cobroOrigenTicketId) await api(`/pos/comandas/${cobroOrigenTicketId}/estado`, { method:'PUT', body: JSON.stringify({ estado:'entregado' }) });
     else { carrito = []; if (!selMesaId) pedidoMesaDecidida = false; renderCarrito(); }
     if (cobroOrigenMesaId){

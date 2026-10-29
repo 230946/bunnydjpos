@@ -378,6 +378,7 @@ async function runMigrations() {
     { table: 'ventas', column: 'anulado_en',        sql: `ALTER TABLE ventas ADD COLUMN anulado_en TIMESTAMP NULL` },
     { table: 'ventas', column: 'anulado_por',       sql: `ALTER TABLE ventas ADD COLUMN anulado_por VARCHAR(36) NULL` },
     { table: 'ventas', column: 'motivo_anulacion',  sql: `ALTER TABLE ventas ADD COLUMN motivo_anulacion VARCHAR(255) NULL` },
+    { table: 'ventas', column: 'evidencia_pago_url', sql: `ALTER TABLE ventas ADD COLUMN evidencia_pago_url VARCHAR(300) NULL` },
     { table: 'menu_items', column: 'foto_url', sql: `ALTER TABLE menu_items ADD COLUMN foto_url VARCHAR(255) NULL` },
     { table: 'domicilios_pedidos', column: 'calificacion',      sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion TINYINT NULL` },
     { table: 'domicilios_pedidos', column: 'calificacion_nota', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion_nota VARCHAR(255) NULL` },

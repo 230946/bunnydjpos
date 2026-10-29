@@ -1431,6 +1431,7 @@ table tr:hover td{background:var(--bg2)}
       </div>
     </div>
     <div id="cobro-qr" class="qr-pago hide"></div>
+    <input type="file" id="cobro-evidencia-file" accept="image/*" capture="environment" class="hide" onchange="onEvidenciaPagoCapturada(event)">
     <div id="cobro-campos-fiado" class="hide">
       <p style="font-size:12px;color:var(--text2);margin-bottom:8px">No se cobra ahora. Se registra como deuda del cliente y la mesa se libera igual.</p>
       <div class="row2">
@@ -1859,6 +1860,10 @@ table tr:hover td{background:var(--bg2)}
       <button onclick="closeModal('fact-modal')" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--text2)">×</button>
     </div>
     <div id="fact-recibo-wrap" style="max-height:60vh;overflow-y:auto;font-family:monospace;font-size:12px"></div>
+    <div id="fact-evidencia-wrap" class="hide" style="margin-top:10px;text-align:center">
+      <p style="font-size:11px;color:var(--text2);margin-bottom:4px">📸 Evidencia del pago</p>
+      <img id="fact-evidencia-img" style="max-width:160px;border-radius:var(--r);cursor:pointer" onclick="verQrGrandeImg(this.src,'Evidencia del pago')">
+    </div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-primary" style="flex:1" onclick="imprimirFactura()">🖨️ Imprimir</button>
       <button class="btn btn-outline" style="flex:1" onclick="toggleFactEmail()">📧 Email</button>
@@ -3562,6 +3567,7 @@ function renderCobroItems(){
 }
 function abrirCobro(){
   if (!cajaLista()) { showToast(mensajeCajaNoLista()); return; }
+  _cobroEvidenciaFile = null;
   $('cobro-es-cliente').checked = cobroEsClienteDefault;
   renderCobroItems();
   $('cobro-metodo').value = 'efectivo';
@@ -3617,9 +3623,13 @@ function renderQrPago(id, mostrar){
 // Pantalla completa para que el cliente escanee; se cierra tocando
 function verQrGrande(t){
   const q = qrPagoDe(_factCfg, t); if (!q.url) return;
+  verQrGrandeImg(q.url, QR_PAGO_CORTOS[t] + (q.texto ? ' — ' + q.texto : ''));
+}
+function verQrGrandeImg(src, label){
+  if (!src) return;
   const d = document.createElement('div');
   d.id = 'qr-grande';
-  d.innerHTML = `<img src="${esc(q.url)}" alt="QR"><div>${QR_PAGO_CORTOS[t]}${q.texto ? ' — ' + esc(q.texto) : ''}</div>`;
+  d.innerHTML = `<img src="${esc(src)}" alt="Imagen"><div>${esc(label||'')}</div>`;
   d.onclick = () => d.remove();
   document.body.appendChild(d);
 }
@@ -3683,16 +3693,41 @@ async function confirmarCobroSaldo(){
   }
   try{
     const r = await api(`/pos/comandas/${cobroOrigenTicketId}/pago-parcial`, { method:'PUT', body: JSON.stringify(body) });
+    if (_cobroEvidenciaFile) subirEvidenciaPago(r.venta_id);
     closeModal('cobro-modal');
     await Promise.all([cargarTickets(), cargarCajaEstado(), cargarMesas()]);
     renderMesasGrid();
     showToast(r.completado ? 'Pedido cobrado ✓' : `Abono registrado — saldo: ${fmt(r.saldo)}`);
   }catch(e){ showToast('Error: '+e.message); }
 }
+// Evidencia fotográfica del pago (Nequi/transferencia): control interno
+// para verificar que el QR mostrado sí se cobró. Se toma con la cámara del
+// celular (capture="environment") antes de registrar la venta.
+let _cobroEvidenciaFile = null;
+function requiereEvidenciaPago(metodo){
+  if (metodo === 'nequi') return true;
+  if (metodo === 'mixto') return (+$('cobro-mix-nequi').value||0) > 0;
+  return false;
+}
+function onEvidenciaPagoCapturada(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  _cobroEvidenciaFile = file;
+  confirmarCobro();
+}
+async function subirEvidenciaPago(ventaId){
+  if (!_cobroEvidenciaFile || !ventaId) return;
+  const file = _cobroEvidenciaFile; _cobroEvidenciaFile = null;
+  const form = new FormData(); form.append('foto', file);
+  try{ await fetch(`${API}/pos/ventas/${ventaId}/evidencia`, { method:'POST', headers:{ 'Authorization':`Bearer ${token}` }, body: form }); }
+  catch(e){ /* no bloquear el cobro si falla subir la evidencia */ }
+}
 async function confirmarCobro(){
   if (!cobroItems.length) return;
-  if ($('cobro-metodo').value === 'fiado') return confirmarFiado();
+  const metodo0 = $('cobro-metodo').value;
+  if (metodo0 === 'fiado') return confirmarFiado();
   if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
+  if (requiereEvidenciaPago(metodo0) && !_cobroEvidenciaFile) { $('cobro-evidencia-file').value = ''; $('cobro-evidencia-file').click(); return; }
   if (cobroEsSaldo) return confirmarCobroSaldo();
   const subtotal = subtotalCobro();
   const descuento = descuentoCobro();
@@ -3714,6 +3749,7 @@ async function confirmarCobro(){
   };
   try{
     const venta = await api('/pos/ventas', { method:'POST', body: JSON.stringify(body) });
+    if (_cobroEvidenciaFile) subirEvidenciaPago(venta.id);
     if (cobroOrigenTicketId) await api(`/pos/comandas/${cobroOrigenTicketId}/estado`, { method:'PUT', body: JSON.stringify({ estado:'entregado' }) });
     else { carrito = []; if (!selMesaId) pedidoMesaDecidida = false; renderCarrito(); }
     if (cobroOrigenMesaId){
@@ -5276,6 +5312,8 @@ async function abrirFactura(id){
     $('fact-recibo-wrap').innerHTML = buildReciboHTML(v, cfg||{});
     $('fact-anular-btn').style.display = v.estado === 'anulada' ? 'none' : 'block';
     $('fact-email-sect').classList.add('hide');
+    $('fact-evidencia-wrap').classList.toggle('hide', !v.evidencia_pago_url);
+    if (v.evidencia_pago_url) $('fact-evidencia-img').src = v.evidencia_pago_url;
     openModal('fact-modal');
   }catch(e){ showToast('Error cargando factura: '+e.message); }
 }

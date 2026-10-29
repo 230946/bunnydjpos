@@ -1158,6 +1158,21 @@ router.post('/ventas', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Evidencia fotográfica de un pago por Nequi/transferencia (control interno):
+// se sube después de registrar la venta/abono, asociada por su id.
+router.post('/ventas/:id/evidencia', upload.single('foto'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+    const url = `/uploads/${req.file.filename}`;
+    const { rows } = await pool.query(
+      `UPDATE ventas SET evidencia_pago_url=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+      [url, req.params.id, nid(req)]
+    );
+    if (!rows.affectedRows) return res.status(404).json({ error: 'Venta no encontrada' });
+    res.json({ ok: true, url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ════════════════════════════════════════════════════════════════
 // FIADOS — clientes con deuda (venta sin cobro, mesa se libera igual)
 // ════════════════════════════════════════════════════════════════
