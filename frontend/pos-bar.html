@@ -113,6 +113,14 @@ table tr:hover td{background:var(--bg2)}
 .btn-qty-minus:hover{background:var(--red);color:#fff}
 .btn-manual{background:var(--yellow);color:#3a2e00;border:1px solid var(--yellow-d);font-weight:700}
 .btn-manual:hover{filter:brightness(.95)}
+.qr-pago{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:4px 0 12px}
+.qr-pago .qr{flex:1 1 150px;max-width:220px;text-align:center;cursor:zoom-in}
+.qr-pago .qr img{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border:1px solid var(--border2);border-radius:var(--r);padding:6px}
+.qr-pago .qr .t{font-size:12px;font-weight:700;margin-top:4px}
+.qr-pago .qr .s{font-size:11px;color:var(--text2)}
+#qr-grande{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;cursor:zoom-out}
+#qr-grande img{width:min(88vw,80vh);height:min(88vw,80vh);object-fit:contain;background:#fff;border-radius:12px;padding:12px}
+#qr-grande div{color:#fff;font-size:18px;font-weight:700;text-align:center}
 .mesa-chip{width:34px;height:34px;border-radius:50%;background:var(--green-l);color:var(--green-d);border:1.5px solid var(--green);font-weight:700;font-size:13px;cursor:pointer}
 .mesa-chip:hover{background:var(--green);color:#fff}
 
@@ -431,12 +439,13 @@ table tr:hover td{background:var(--bg2)}
     <div id="abono-items" style="margin:6px 0 10px;max-height:200px;overflow-y:auto"></div>
     <div class="field"><label>Monto a pagar ahora *</label><input id="abono-monto" type="number" min="0" step="100"></div>
     <div class="field"><label>Método de pago</label>
-      <select id="abono-metodo">
+      <select id="abono-metodo" onchange="renderQrPago('abono-qr', this.value === 'nequi')">
         <option value="efectivo">Efectivo</option>
         <option value="tarjeta">Tarjeta</option>
         <option value="nequi">Nequi</option>
       </select>
     </div>
+    <div id="abono-qr" class="qr-pago hide"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('abono-modal')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarAbono()">Pagar</button>
@@ -477,12 +486,13 @@ table tr:hover td{background:var(--bg2)}
     <div class="field hide" id="fp-descuento-field"><label>Descuento (monto fijo $)</label><input id="fp-descuento" type="number" min="0" step="100" value="0" oninput="fpActualizarInfo()"></div>
     <div class="field"><label>Monto a pagar ahora *</label><input id="fp-monto" type="number" min="0" step="100"></div>
     <div class="field"><label>Método de pago</label>
-      <select id="fp-metodo">
+      <select id="fp-metodo" onchange="renderQrPago('fp-qr', this.value === 'nequi')">
         <option value="efectivo">Efectivo</option>
         <option value="tarjeta">Tarjeta</option>
         <option value="nequi">Nequi</option>
       </select>
     </div>
+    <div id="fp-qr" class="qr-pago hide"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('fiado-pago-modal')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarFiadoPago()">Pagar</button>
@@ -541,6 +551,7 @@ table tr:hover td{background:var(--bg2)}
         <option value="fiado">📝 Fiado (dejar deuda)</option>
       </select>
     </div>
+    <div id="cobro-qr" class="qr-pago hide"></div>
     <div id="cobro-campos-efectivo">
       <div class="field"><label>Recibido</label><input id="cobro-recibido" type="number" oninput="calcCambio()"></div>
       <div class="field"><label>Cambio</label><input id="cobro-cambio" type="number" readonly></div>
@@ -551,10 +562,6 @@ table tr:hover td{background:var(--bg2)}
         <div class="field"><label>Tarjeta</label><input id="cobro-mix-tarjeta" type="number" value="0"></div>
         <div class="field"><label>Nequi</label><input id="cobro-mix-nequi" type="number" value="0"></div>
       </div>
-    </div>
-    <div id="cobro-campos-nequi" class="hide" style="text-align:center;margin-bottom:12px">
-      <img id="cobro-qr-nequi" class="hide" style="max-width:220px;width:100%;border-radius:var(--r);background:#fff;padding:8px" alt="QR Nequi">
-      <p id="cobro-qr-nequi-vacio" style="font-size:12px;color:var(--text2)">No se ha configurado el QR de Nequi (Admin → Configuración)</p>
     </div>
     <div id="cobro-campos-fiado" class="hide">
       <p style="font-size:12px;color:var(--text2);margin-bottom:8px">No se cobra ahora. Se registra como deuda del cliente y la mesa se libera igual.</p>
@@ -1339,7 +1346,7 @@ function abrirAbonoModal(ticketId, saldo){
   abonoItemsRef = typeof t.items === 'string' ? JSON.parse(t.items||'[]') : (t.items||[]);
   abonoDescuentos = abonoItemsRef.map(()=>0);
   $('abono-es-cliente').checked = false;
-  $('abono-metodo').value = 'efectivo';
+  $('abono-metodo').value = 'efectivo'; $('abono-qr').classList.add('hide');
   renderAbonoItems();
   openModal('abono-modal');
 }
@@ -1531,6 +1538,8 @@ function abrirCobro(){
   renderCobroCampos();
   actualizarCobroTotal();
   openModal('cobro-modal');
+  // Por si el admin cambió el QR de pago con el POS abierto
+  api('/admin/config/factura').then(c => { CONFIG_FACTURA = c; renderCobroCampos(); }).catch(()=>{});
 }
 function actualizarCobroTotal(){
   const sub = subtotalCobro(), desc = descuentoCobro();
@@ -1549,15 +1558,36 @@ function renderCobroCampos(){
   $('cobro-campos-efectivo').classList.toggle('hide', m !== 'efectivo');
   $('cobro-campos-mixto').classList.toggle('hide', m !== 'mixto');
   $('cobro-campos-fiado').classList.toggle('hide', m !== 'fiado');
-  $('cobro-campos-nequi').classList.toggle('hide', m !== 'nequi');
-  if (m === 'nequi') renderQrNequiCobro(CONFIG_FACTURA?.qrNequi);
+  renderQrPago('cobro-qr', m === 'nequi' || m === 'mixto');
   $('cobro-cliente-wrap').classList.toggle('hide', m === 'fiado');
   $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : 'Confirmar cobro';
 }
-function renderQrNequiCobro(qr){
-  const img = $('cobro-qr-nequi'), vacio = $('cobro-qr-nequi-vacio');
-  if (qr){ img.src = qr; img.classList.remove('hide'); vacio.classList.add('hide'); }
-  else { img.classList.add('hide'); vacio.classList.remove('hide'); }
+// QR de pago configurado en el admin (Datos de facturación → QR de pago)
+const QR_PAGO_TITULOS = { nequi: 'Nequi', transferencia: 'Transferencia' };
+function qrPagoDe(cfg, t){
+  const q = cfg?.qrPago?.[t] || {};
+  return { url: q.url || (t === 'nequi' ? cfg?.qrNequi : null) || null, texto: q.texto || '' };
+}
+function renderQrPago(id, mostrar){
+  const qr = Object.fromEntries(Object.keys(QR_PAGO_TITULOS).map(t => [t, qrPagoDe(CONFIG_FACTURA, t)]));
+  const lista = Object.keys(QR_PAGO_TITULOS).filter(t => qr[t].url);
+  const el = $(id);
+  el.classList.toggle('hide', !mostrar || !lista.length);
+  el.innerHTML = lista.map(t => `
+    <div class="qr" onclick="verQrGrande('${t}')" title="Tocá para agrandar">
+      <img src="${esc(qr[t].url)}" alt="QR ${QR_PAGO_TITULOS[t]}">
+      <div class="t">${QR_PAGO_TITULOS[t]}</div>
+      ${qr[t].texto ? `<div class="s">${esc(qr[t].texto)}</div>` : ''}
+    </div>`).join('');
+}
+// Pantalla completa para que el cliente escanee; se cierra tocando
+function verQrGrande(t){
+  const q = qrPagoDe(CONFIG_FACTURA, t); if (!q.url) return;
+  const d = document.createElement('div');
+  d.id = 'qr-grande';
+  d.innerHTML = `<img src="${esc(q.url)}" alt="QR"><div>${QR_PAGO_TITULOS[t]}${q.texto ? ' — ' + esc(q.texto) : ''}</div>`;
+  d.onclick = () => d.remove();
+  document.body.appendChild(d);
 }
 function calcCambio(){
   const total = totalCobro();
@@ -2025,7 +2055,7 @@ function abrirFiadoPagoModal(id, saldo, pagarTodo){
   const f = fiadosCache.find(x => x.id === id);
   _fiadoPagoItems = f ? (typeof f.items === 'string' ? JSON.parse(f.items||'[]') : (f.items||[])) : [];
   $('fp-monto').disabled = false;
-  $('fp-metodo').value = 'efectivo';
+  $('fp-metodo').value = 'efectivo'; $('fp-qr').classList.add('hide');
   $('fp-es-cliente').checked = false;
   $('fp-descuento').value = 0;
   $('fp-descuento-field').classList.add('hide');

@@ -32,6 +32,17 @@ const uploadProvCatalogo = multer({
   fileFilter: (_, file, cb) => cb(null, file.mimetype === 'application/pdf'),
 });
 
+// QR de pago (Nequi / transferencia): solo imágenes
+const QR_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+const uploadQrPago = multer({
+  storage: multer.diskStorage({
+    destination: process.env.UPLOADS_DIR || './uploads',
+    filename: (_, file, cb) => cb(null, 'qr-pago-' + uuid() + QR_EXT[file.mimetype])
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => cb(null, !!QR_EXT[file.mimetype]),
+});
+
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
 const localDate = (tz = 'America/Bogota') => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
@@ -613,6 +624,37 @@ router.get('/config/factura', async (req, res) => {
       `SELECT datos FROM config_factura WHERE negocio_id=${ph(1)}`, [nid(req)]
     );
     res.json(rows[0] ? (typeof rows[0].datos === 'string' ? JSON.parse(rows[0].datos) : rows[0].datos) : {});
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// QR de pago que el POS muestra al cobrar por Nequi / transferencia. Se
+// guarda dentro de config_factura.datos.qrPago[tipo] = { url, texto }; el
+// texto se edita con el resto de la configuración (PUT /config/factura).
+const QR_TIPOS = ['nequi', 'transferencia'];
+async function guardarQrPago(negocioId, tipo, url) {
+  const { rows } = await pool.query(`SELECT datos FROM config_factura WHERE negocio_id=${ph(1)}`, [negocioId]);
+  let datos = {};
+  if (rows[0]) datos = (typeof rows[0].datos === 'string' ? JSON.parse(rows[0].datos) : rows[0].datos) || {};
+  datos.qrPago = { ...(datos.qrPago || {}) };
+  datos.qrPago[tipo] = { ...(datos.qrPago[tipo] || {}), url };
+  if (tipo === 'nequi') delete datos.qrNequi; // formato anterior (data URL)
+  await pool.query(`
+    INSERT INTO config_factura (negocio_id, datos) VALUES (${ph(1)},${ph(2)})
+    ON DUPLICATE KEY UPDATE datos=VALUES(datos), actualizado=NOW()
+  `, [negocioId, JSON.stringify(datos)]);
+  return datos;
+}
+router.post('/config/qr-pago/:tipo', requirePermiso('personal'), uploadQrPago.single('qr'), async (req, res) => {
+  try {
+    if (!QR_TIPOS.includes(req.params.tipo)) return res.status(400).json({ error: 'Tipo de QR inválido' });
+    if (!req.file) return res.status(400).json({ error: 'Subí una imagen JPG, PNG o WEBP' });
+    res.json(await guardarQrPago(nid(req), req.params.tipo, `/uploads/${req.file.filename}`));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.delete('/config/qr-pago/:tipo', requirePermiso('personal'), async (req, res) => {
+  try {
+    if (!QR_TIPOS.includes(req.params.tipo)) return res.status(400).json({ error: 'Tipo de QR inválido' });
+    res.json(await guardarQrPago(nid(req), req.params.tipo, null));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

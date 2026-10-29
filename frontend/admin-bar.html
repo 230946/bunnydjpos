@@ -151,6 +151,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 table th{text-align:left;color:var(--text2);font-size:11px;text-transform:uppercase;padding:8px 10px;border-bottom:2px solid var(--border)}
 table td{padding:9px 10px;border-bottom:1px solid var(--border)}
 table tr:hover td{background:var(--bg2)}
+.qr-pago{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:4px 0 12px}
+.qr-pago .qr{flex:1 1 150px;max-width:220px;text-align:center;cursor:zoom-in}
+.qr-pago .qr img{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border:1px solid var(--border2);border-radius:var(--r);padding:6px}
+.qr-pago .qr .t{font-size:12px;font-weight:700;margin-top:4px}
+.qr-pago .qr .s{font-size:11px;color:var(--text2)}
+#qr-grande{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;cursor:zoom-out}
+#qr-grande img{width:min(88vw,80vh);height:min(88vw,80vh);object-fit:contain;background:#fff;border-radius:12px;padding:12px}
+#qr-grande div{color:#fff;font-size:18px;font-weight:700;text-align:center}
 .table-wrap{overflow-x:auto;background:var(--bg);border:1px solid var(--border);border-radius:var(--rl)}
 .empty-msg{color:var(--text2);font-size:13px;padding:24px;text-align:center}
 .badge{display:inline-block;padding:3px 9px;border-radius:14px;font-size:11px;font-weight:700}
@@ -1098,15 +1106,12 @@ table tr:hover td{background:var(--bg2)}
           <div class="field"><label>Hora de inicio del siguiente turno</label><input id="cf-hora-turno" type="time" value="14:00">
             <p style="font-size:11px;color:var(--text2);margin-top:3px">Si a esta hora sigue abierta la caja de un día anterior, se bloquea vender hasta cerrarla.</p>
           </div>
-          <div class="field">
-            <label>QR de Nequi (se muestra al cobrar cuando se elige Nequi/transferencia)</label>
-            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:4px">
-              <div class="logo-box" id="qr-nequi-box" onclick="document.getElementById('qr-nequi-file').click()">
-                <img id="qr-nequi-preview" alt="QR Nequi" class="hide">
-                <span id="qr-nequi-placeholder">📷 Subir</span>
-              </div>
-              <input type="file" id="qr-nequi-file" accept="image/*" class="hide" onchange="previewQrNequi(this)">
-              <button class="btn btn-outline btn-sm" id="qr-nequi-quitar" onclick="quitarQrNequi()" style="display:none">Quitar QR</button>
+          <div style="border-top:1px solid var(--border2);margin:14px 0 12px;padding-top:12px">
+            <h3 style="margin-bottom:4px">📱 QR de pago</h3>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Se muestra en el POS al cobrar por Nequi / transferencia para que el cliente lo escanee.</p>
+            <div class="row2">
+              <div id="qr-slot-nequi"></div>
+              <div id="qr-slot-transferencia"></div>
             </div>
           </div>
           <button class="btn btn-primary" onclick="guardarConfigFactura()">Guardar</button>
@@ -1425,10 +1430,7 @@ table tr:hover td{background:var(--bg2)}
         <div class="field"><label>Nequi</label><input id="cobro-mix-nequi" type="number" value="0"></div>
       </div>
     </div>
-    <div id="cobro-campos-nequi" class="hide" style="text-align:center;margin-bottom:12px">
-      <img id="cobro-qr-nequi" class="hide" style="max-width:220px;width:100%;border-radius:var(--r);background:#fff;padding:8px" alt="QR Nequi">
-      <p id="cobro-qr-nequi-vacio" style="font-size:12px;color:var(--text2)">No se ha configurado el QR de Nequi (Configuración → Datos de facturación)</p>
-    </div>
+    <div id="cobro-qr" class="qr-pago hide"></div>
     <div id="cobro-campos-fiado" class="hide">
       <p style="font-size:12px;color:var(--text2);margin-bottom:8px">No se cobra ahora. Se registra como deuda del cliente y la mesa se libera igual.</p>
       <div class="row2">
@@ -3589,15 +3591,36 @@ function renderCobroCampos(){
   $('cobro-campos-efectivo').classList.toggle('hide', m !== 'efectivo');
   $('cobro-campos-mixto').classList.toggle('hide', m !== 'mixto');
   $('cobro-campos-fiado').classList.toggle('hide', m !== 'fiado');
-  $('cobro-campos-nequi').classList.toggle('hide', m !== 'nequi');
-  if (m === 'nequi') renderQrNequiCobro(_factCfg?.qrNequi);
+  renderQrPago('cobro-qr', m === 'nequi' || m === 'mixto');
   $('cobro-cliente-wrap').classList.toggle('hide', m === 'fiado');
   $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : 'Confirmar cobro';
 }
-function renderQrNequiCobro(qr){
-  const img = $('cobro-qr-nequi'), vacio = $('cobro-qr-nequi-vacio');
-  if (qr){ img.src = qr; img.classList.remove('hide'); vacio.classList.add('hide'); }
-  else { img.classList.add('hide'); vacio.classList.remove('hide'); }
+// QR de pago configurado en el admin (Datos de facturación → QR de pago)
+const QR_PAGO_CORTOS = { nequi: 'Nequi', transferencia: 'Transferencia' };
+function qrPagoDe(cfg, t){
+  const q = cfg?.qrPago?.[t] || {};
+  return { url: q.url || (t === 'nequi' ? cfg?.qrNequi : null) || null, texto: q.texto || '' };
+}
+function renderQrPago(id, mostrar){
+  const qr = Object.fromEntries(Object.keys(QR_PAGO_CORTOS).map(t => [t, qrPagoDe(_factCfg, t)]));
+  const lista = Object.keys(QR_PAGO_CORTOS).filter(t => qr[t].url);
+  const el = $(id);
+  el.classList.toggle('hide', !mostrar || !lista.length);
+  el.innerHTML = lista.map(t => `
+    <div class="qr" onclick="verQrGrande('${t}')" title="Tocá para agrandar">
+      <img src="${esc(qr[t].url)}" alt="QR ${QR_PAGO_CORTOS[t]}">
+      <div class="t">${QR_PAGO_CORTOS[t]}</div>
+      ${qr[t].texto ? `<div class="s">${esc(qr[t].texto)}</div>` : ''}
+    </div>`).join('');
+}
+// Pantalla completa para que el cliente escanee; se cierra tocando
+function verQrGrande(t){
+  const q = qrPagoDe(_factCfg, t); if (!q.url) return;
+  const d = document.createElement('div');
+  d.id = 'qr-grande';
+  d.innerHTML = `<img src="${esc(q.url)}" alt="QR"><div>${QR_PAGO_CORTOS[t]}${q.texto ? ' — ' + esc(q.texto) : ''}</div>`;
+  d.onclick = () => d.remove();
+  document.body.appendChild(d);
 }
 function calcCambio(){
   const total = totalCobro();
@@ -5761,32 +5784,60 @@ async function cargarConfigFactura(){
     $('cf-iva').value = _cfActual.iva ?? 0;
     $('cf-descuento-cliente').value = _cfActual.descuentoCliente ?? 0;
     $('cf-hora-turno').value = _cfActual.horaInicioTurno || '14:00';
-    renderQrNequiPreview(_cfActual.qrNequi);
+    if (_cfActual.qrNequi && !_cfActual.qrPago?.nequi?.url)
+      _cfActual.qrPago = { ...(_cfActual.qrPago || {}), nequi: { ...(_cfActual.qrPago?.nequi || {}), url: _cfActual.qrNequi } };
+    delete _cfActual.qrNequi;
+    renderQrPagoConfig();
   }catch(e){}
 }
-function renderQrNequiPreview(qr){
-  const img = $('qr-nequi-preview'), ph = $('qr-nequi-placeholder'), btn = $('qr-nequi-quitar');
-  if (qr){ img.src = qr; img.classList.remove('hide'); ph.classList.add('hide'); btn.style.display = ''; }
-  else { img.classList.add('hide'); ph.classList.remove('hide'); btn.style.display = 'none'; }
+const QR_PAGO_TITULOS = { nequi: 'Nequi', transferencia: 'Transferencia (Bancolombia, Daviplata…)' };
+function renderQrPagoConfig(){
+  for (const tipo of Object.keys(QR_PAGO_TITULOS)) {
+    const q = _cfActual?.qrPago?.[tipo] || {};
+    $(`qr-slot-${tipo}`).innerHTML = `
+      <div class="field"><label>${QR_PAGO_TITULOS[tipo]}</label>
+        <div onclick="$('qr-file-${tipo}').click()" title="Clic para subir el QR"
+          style="width:140px;height:140px;border:1.5px dashed var(--border2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:#fff;margin-bottom:6px">
+          ${q.url ? `<img src="${esc(q.url)}" alt="QR ${tipo}" style="width:100%;height:100%;object-fit:contain">` : '<span style="font-size:12px;color:#888;text-align:center;padding:8px">📷 Subir imagen del QR</span>'}
+        </div>
+        <input type="file" id="qr-file-${tipo}" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirQrPago('${tipo}', this)">
+        ${q.url ? `<button type="button" class="btn btn-outline btn-sm" style="margin-bottom:6px" onclick="quitarQrPago('${tipo}')">Quitar QR</button>` : ''}
+        <input id="qr-texto-${tipo}" placeholder="${tipo === 'nequi' ? 'Ej: Nequi 300 123 4567 — Juan' : 'Ej: Bancolombia ahorros 123-456789-00'}" value="${esc(q.texto || '')}">
+      </div>`;
+  }
 }
-function previewQrNequi(input){
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => { _cfActual = { ..._cfActual, qrNequi: reader.result }; renderQrNequiPreview(reader.result); };
-  reader.readAsDataURL(file);
+async function subirQrPago(tipo, input){
+  const f = input.files?.[0]; input.value = '';
+  if (!f) return;
+  const fd = new FormData(); fd.append('qr', f);
+  try {
+    const r = await fetch(`${API}/admin/config/qr-pago/${tipo}`, { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'No se pudo subir el QR');
+    actualizarQrPagoLocal(d);
+    showToast('QR guardado ✓');
+  } catch (e) { showToast('Error: ' + e.message); }
 }
-function quitarQrNequi(){
-  _cfActual = { ..._cfActual, qrNequi: null };
-  $('qr-nequi-file').value = '';
-  renderQrNequiPreview(null);
+async function quitarQrPago(tipo){
+  if (!confirm('¿Quitar este QR de pago?')) return;
+  try { actualizarQrPagoLocal(await api(`/admin/config/qr-pago/${tipo}`, { method:'DELETE' })); showToast('QR quitado'); }
+  catch (e) { showToast('Error: ' + e.message); }
+}
+// Toma solo las imágenes del servidor: los textos que se estén escribiendo
+// se conservan y se guardan con el botón Guardar
+function actualizarQrPagoLocal(datos){
+  const textos = Object.fromEntries(Object.keys(QR_PAGO_TITULOS).map(t => [t, $(`qr-texto-${t}`)?.value]));
+  _cfActual = { ..._cfActual, qrPago: datos.qrPago }; _factCfg = { ..._factCfg, ...datos };
+  renderQrPagoConfig();
+  for (const t in textos) if (textos[t] != null) $(`qr-texto-${t}`).value = textos[t];
 }
 async function guardarConfigFactura(){
   const body = { ..._cfActual,
     nombre:$('cf-nombre').value, nit:$('cf-nit').value, direccion:$('cf-dir').value, ciudad:$('cf-ciudad').value,
     telefono:$('cf-tel').value, prefijo:$('cf-prefijo').value, iva:+$('cf-iva').value||0,
     descuentoCliente:+$('cf-descuento-cliente').value||0,
-    horaInicioTurno: $('cf-hora-turno').value || '14:00' };
+    horaInicioTurno: $('cf-hora-turno').value || '14:00',
+    qrPago: Object.fromEntries(Object.keys(QR_PAGO_TITULOS).map(t => [t, { ...(_cfActual?.qrPago?.[t] || {}), texto: $(`qr-texto-${t}`).value.trim() }])) };
   try{ await api('/admin/config/factura', { method:'PUT', body: JSON.stringify(body) }); _cfActual = body; _factCfg = body; DESCUENTO_CLIENTE = body.descuentoCliente||0; showToast('Guardado ✓'); }
   catch(e){ showToast('Error: '+e.message); }
 }
