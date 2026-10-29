@@ -138,6 +138,7 @@ header.topbar h2{font-size:17px}
 .metodo-badge-tarjeta{background:#e3f2fd;color:#1565c0}
 .metodo-badge-nequi{background:#f3e5f5;color:#6a1b9a}
 .ventas-table td{padding:8px 12px;font-size:13px}
+.fila-con-evidencia:hover{background:var(--bg2)}
 .ventas-table th{padding:8px 12px}
 .gasto-bar-item{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .gasto-bar-label{font-size:12px;min-width:120px;color:var(--text2)}
@@ -2515,11 +2516,11 @@ function renderDashVentas(){
     ? ventas.map(v=>{
         const its = typeof v.items==='string' ? JSON.parse(v.items||'[]') : (v.items||[]);
         const tieneDesc = its.some(i=>i.precio_original!=null && parseFloat(i.precio_original)>parseFloat(i.precio));
-        return `<tr>
+        return `<tr${v.evidencia_pago_url?` class="fila-con-evidencia" style="cursor:pointer" title="Click para ver el comprobante de pago" onclick="verQrGrandeImg('${esc(v.evidencia_pago_url)}','Comprobante de pago — ${esc(v.lugar||'')} ${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA})}')"`:''}>
         <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:NEG_ZONA})}</td>
         <td style="text-align:center">${canalBadge(v.tipo)}</td>
         <td>${v.lugar||(v.mesa_num?'Mesa '+v.mesa_num:'—')}</td>
-        <td>${metodoBadge(v.metodo_pago)}</td>
+        <td>${metodoBadge(v.metodo_pago)}${v.evidencia_pago_url?' 📸':''}</td>
         <td><b>${fmt(v.total)}</b>${tieneDesc?' <span style="font-size:10px;background:var(--amber-l);color:var(--amber-d);padding:1px 5px;border-radius:8px">🏷️</span>':''}</td>
         <td style="color:var(--text2)">${esc(v.usuario_nombre||'—')}</td>
       </tr>`;

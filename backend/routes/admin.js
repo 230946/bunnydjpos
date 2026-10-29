@@ -1085,7 +1085,7 @@ router.get('/ventas/recientes', async (req, res) => {
              COALESCE(m.nombre, CASE WHEN v.tipo='domicilio' THEN '🛵 Domicilio'
                WHEN v.mesa_num IS NOT NULL THEN CONCAT('Mesa ',v.mesa_num)
                ELSE 'Mostrador' END) AS lugar,
-             v.total, v.metodo_pago, v.numero_factura, v.items, v.creado,
+             v.total, v.metodo_pago, v.numero_factura, v.items, v.creado, v.evidencia_pago_url,
              u.nombre AS usuario_nombre
       FROM ventas v
       LEFT JOIN usuarios u ON u.id = v.cajero_id
