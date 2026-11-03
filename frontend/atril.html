@@ -83,6 +83,16 @@ button{cursor:pointer}
 .empty h2{font-family:var(--f-display);color:var(--ink);font-size:24px;margin:0}
 .empty p{margin:0;max-width:44ch}
 .mem-banner{background:var(--accent-soft);border-radius:10px;padding:10px 14px;font-size:14px}
+.who{font-size:13px;color:var(--muted)}
+.who b{color:var(--ink);font-weight:600}
+#login{flex:1;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding-block:32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.login-card .brand{align-self:flex-start;font-size:48px}
+.login-card .lib-sub{margin:0 0 4px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.field input{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg);font-size:15px;font-weight:400;color:var(--ink)}
+.login-card .btn{justify-content:center;padding:.75em;font-size:15px;margin-top:4px}
+.login-err{margin:0;background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);border-radius:8px;padding:8px 12px;font-size:14px}
 
 /* ---------- reader ---------- */
 #reader{flex:1;min-height:0;display:flex;flex-direction:column}
@@ -205,14 +215,31 @@ kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);bord
 <body>
 
 <div id="app">
-  <section id="library">
+  <section id="login" hidden>
+    <form class="login-card" id="loginForm" novalidate>
+      <h1 class="brand"><span>Atril</span></h1>
+      <p class="lib-sub">Entra con tu usuario de DJMPOS. Tus PDFs y notas te esperan en el PC y en el celular.</p>
+      <p class="login-err" id="loginErr" role="alert" hidden></p>
+      <label class="field" for="loginUser">Email o usuario
+        <input id="loginUser" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="usuario o correo">
+      </label>
+      <label class="field" for="loginPass">Contraseña
+        <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••">
+      </label>
+      <button class="btn primary" id="loginBtn" type="submit">Entrar</button>
+    </form>
+  </section>
+
+  <section id="library" hidden>
     <div class="lib-inner gutter">
       <div class="lib-head">
         <div>
           <h1 class="brand"><span>Atril</span></h1>
-          <p class="lib-sub" id="libSub">Tu mesa de estudio para PDFs. Resalta, toma notas y retoma cada libro en la página donde lo dejaste. Todo se guarda en este navegador.</p>
+          <p class="lib-sub" id="libSub">Tu mesa de estudio para PDFs. Resalta, toma notas y retoma cada libro donde lo dejaste, en el PC o en el celular.</p>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="who">Sesión: <b id="whoName"></b></span>
+          <button class="btn ghost" id="logoutBtn" type="button">Cerrar sesión</button>
           <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
           <button class="btn primary" id="addBtn" type="button">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -325,9 +352,10 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const COLORS = {amarillo:'Amarillo', verde:'Verde', rosa:'Rosa', azul:'Azul'};
+const lsMem = {};
 const ls = {
-  get(k, d){ try { const v = localStorage.getItem('atril:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v){ try { localStorage.setItem('atril:' + k, JSON.stringify(v)); } catch {} }
+  get(k, d){ try { const v = localStorage.getItem('atril:' + k); return v == null ? d : JSON.parse(v); } catch { return k in lsMem ? lsMem[k] : d; } },
+  set(k, v){ lsMem[k] = v; try { localStorage.setItem('atril:' + k, JSON.stringify(v)); } catch {} }
 };
 
 if (pdfjs) pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -335,21 +363,22 @@ const loadPdf = buf => pdfjs.getDocument({data: new Uint8Array(buf.slice(0)), is
 
 /* ---------- storage ---------- */
 const mem = {docs: new Map(), files: new Map()};
-let useMem = false, dbp = null;
-function openDB(){
-  if (!dbp) dbp = new Promise((res, rej) => {
+let useMem = false, dbName = 'atril-estudio';
+const dbps = {};
+function openDB(name = dbName){
+  if (!dbps[name]) dbps[name] = new Promise((res, rej) => {
     const timer = setTimeout(() => rej(new Error('timeout')), 4000);
     try {
-      const r = indexedDB.open('atril-estudio', 1);
+      const r = indexedDB.open(name, 1);
       r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('docs', {keyPath: 'id'}); d.createObjectStore('files'); };
       r.onsuccess = () => { clearTimeout(timer); res(r.result); };
       r.onerror = () => { clearTimeout(timer); rej(r.error); };
     } catch (e) { clearTimeout(timer); rej(e); }
   });
-  return dbp;
+  return dbps[name];
 }
-function req(store, mode, fn){
-  return openDB().then(d => new Promise((res, rej) => {
+function req(store, mode, fn, name){
+  return openDB(name).then(d => new Promise((res, rej) => {
     const t = d.transaction(store, mode); const r = fn(t.objectStore(store));
     t.oncomplete = () => res(r && r.result); t.onerror = t.onabort = () => rej(t.error);
   }));
@@ -394,6 +423,13 @@ async function copyText(text){
 }
 /* ---------- server sync (djmpos.com/atril/api) ---------- */
 const API = '/atril/api';
+// Sesión con el usuario de DJMPOS: el token va en cada llamada; si el servidor
+// responde 401 (sesión vencida) se vuelve a la pantalla de ingreso.
+function fetch(url, opts){
+  opts = Object.assign({}, opts);
+  opts.headers = Object.assign({}, opts.headers, {Authorization: 'Bearer ' + (ls.get('token', '') || '')});
+  return window.fetch(url, opts).then(r => { if (r.status === 401 && url.startsWith(API)) sessionLost(); return r; });
+}
 const Srv = {
   on: false,
   async list(){ const r = await fetch(API + '/docs', {cache: 'no-store'}); if (!r.ok) throw new Error('HTTP ' + r.status); const j = await r.json(); if (!Array.isArray(j)) throw new Error('respuesta inválida'); return j; },
@@ -1191,24 +1227,80 @@ new ResizeObserver(() => {
   clearTimeout(rT); rT = setTimeout(() => setZoom('fit'), 120);
 }).observe(desk);
 
-/* ---------- boot ---------- */
-async function boot(){
-  setDim(ls.get('dim', false)); pomoDraw(); ttsDraw();
-  if (!pdfjs){ $('#shelf').innerHTML = '<div class="empty" style="grid-column:1/-1"><h2>No se pudo cargar el lector</h2><p>Revisa tu conexión a internet y recarga la página.</p></div>'; return; }
+/* ---------- session (usuario de DJMPOS) ---------- */
+let lostShown = false;
+function showLogin(msg){
+  $('#library').hidden = true; $('#reader').hidden = true; $('#login').hidden = false;
+  const err = $('#loginErr'); err.textContent = msg || ''; err.hidden = !msg;
+  setTimeout(() => $('#loginUser').focus(), 50);
+}
+function sessionLost(){
+  if (lostShown) return; lostShown = true;
+  if (S.meta) closeDoc();
+  ls.set('token', ''); Srv.on = false;
+  showLogin('Tu sesión venció. Vuelve a entrar con tu usuario de DJMPOS.');
+}
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const login = $('#loginUser').value.trim(), password = $('#loginPass').value, btn = $('#loginBtn');
+  if (!login || !password){ showLogin('Escribe tu usuario y tu contraseña.'); return; }
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  try {
+    const r = await window.fetch('/api/auth/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({login, password})});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.token) throw new Error(d.error || 'Usuario o contraseña incorrectos.');
+    ls.set('token', d.token); ls.set('user', {id: d.user.id, nombre: d.user.nombre || login});
+    $('#loginPass').value = ''; lostShown = false;
+    $('#login').hidden = true; await startSession();
+  } catch (err) {
+    showLogin(err.message === 'Failed to fetch' ? 'No hay conexión con djmpos.com. Revisa tu internet.' : err.message);
+  } finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+});
+$('#logoutBtn').onclick = () => {
+  ls.set('token', ''); ls.set('user', null); Srv.on = false; S.docs = [];
+  upState.clear(); $('#loginUser').value = ''; showLogin();
+};
+async function migrateLegacy(){
+  // PDFs añadidos antes de que Atril tuviera login: pasan a la biblioteca de este usuario
+  if (useMem || dbName === 'atril-estudio') return;
+  try {
+    const old = (await req('docs', 'readonly', s => s.getAll(), 'atril-estudio')) || [];
+    for (const m of old){
+      const buf = await req('files', 'readonly', s => s.get(m.id), 'atril-estudio');
+      if (buf && !m.sample){ m.synced = false; await DB.putFile(m.id, buf); await DB.put(m); }
+      await req('docs', 'readwrite', s => s.delete(m.id), 'atril-estudio');
+      await req('files', 'readwrite', s => s.delete(m.id), 'atril-estudio');
+    }
+  } catch (e) { console.warn('Migración local', e); }
+}
+async function startSession(){
+  const user = ls.get('user', null);
+  if (!user || !user.id){ showLogin(); return; }
+  $('#login').hidden = true; $('#library').hidden = false;
+  $('#whoName').textContent = user.nombre;
+  dbName = 'atril-' + user.id; useMem = false; $('#memBanner').hidden = true; $('#syncBanner').hidden = true;
   try { await openDB(); } catch { useMem = true; $('#memBanner').hidden = false; }
+  await migrateLegacy();
   try { S.docs = (await DB.all()) || []; } catch { S.docs = []; }
   S.docs.forEach(d => { d.highlights = d.highlights || []; d.bookmarks = d.bookmarks || []; });
   try {
     const remote = await Srv.list(); Srv.on = true;
     S.docs = await mergeDocs(S.docs, remote);
-    $('#libSub').textContent = 'Tu mesa de estudio para PDFs. Resalta, toma notas y retoma cada libro donde lo dejaste, en el PC o en el celular.';
   } catch {
-    if (location.protocol.startsWith('http')) $('#syncBanner').hidden = false;
+    if (!$('#login').hidden) return;          // 401: ya se mostró el ingreso
+    $('#syncBanner').hidden = false;
   }
-  if (!Srv.on && !S.docs.length && !ls.get('sampleRemoved', false)){
+  if (!S.docs.length && !ls.get('sampleRemoved', false)){
     try { await addBuffer(buildSamplePdf(), 'Guía de ejemplo: cómo estudiar con Atril', {sample: true}); } catch (e) { console.warn(e); }
   }
   renderLibrary();
+}
+
+/* ---------- boot ---------- */
+async function boot(){
+  setDim(ls.get('dim', false)); pomoDraw(); ttsDraw();
+  if (!pdfjs){ $('#library').hidden = false; $('#shelf').innerHTML = '<div class="empty" style="grid-column:1/-1"><h2>No se pudo cargar el lector</h2><p>Revisa tu conexión a internet y recarga la página.</p></div>'; return; }
+  if (!ls.get('token', '')) showLogin(); else startSession();
 }
 boot();
 })();

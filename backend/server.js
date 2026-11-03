@@ -54,27 +54,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Logins propios (separados del login de DJMPOS) ──
-// Usan HTTP Basic Auth: el navegador muestra su propio cuadro de usuario/clave.
-// Las credenciales salen del .env — si no están configuradas, se bloquea el
-// acceso (nunca se deja abierto por defecto).
-function loginBasico(envUsuario, envClave, realm) {
-  return (req, res, next) => {
-    const usuarioValido = process.env[envUsuario];
-    const claveValida = process.env[envClave];
-    const auth = req.headers.authorization || '';
-    const [tipo, credenciales] = auth.split(' ');
-    if (usuarioValido && claveValida && tipo === 'Basic' && credenciales) {
-      const [usuario, clave] = Buffer.from(credenciales, 'base64').toString().split(':');
-      if (usuario === usuarioValido && clave === claveValida) return next();
-    }
-    res.set('WWW-Authenticate', `Basic realm="${realm}"`);
-    return res.status(401).send('Acceso restringido.');
-  };
-}
-// Lector de PDF Atril: ATRIL_USER / ATRIL_PASS. La API guarda PDFs y notas
-// para verlos desde el PC y el celular.
-app.use(['/atril', '/atril.html'], loginBasico('ATRIL_USER', 'ATRIL_PASS', 'Atril'));
+// Lector de PDF Atril: se entra con el usuario de DJMPOS y cada usuario tiene
+// su propia biblioteca de PDFs y notas (la ven el PC y el celular).
 app.use('/atril/api', atrilRouter);
 
 // ── Servir frontend desde el servidor (evita problema file://) ────

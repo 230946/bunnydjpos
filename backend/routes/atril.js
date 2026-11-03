@@ -1,36 +1,45 @@
 /**
  * BUNNYDJPOS — routes/atril.js
  * Almacén de PDFs y notas del lector Atril, para verlos en todos los dispositivos.
- * Montado bajo /atril/api, así queda cubierto por el Basic Auth de Atril
- * (ATRIL_USER / ATRIL_PASS). Guarda en disco (ATRIL_DIR), fuera de /uploads
- * para que los PDFs no queden públicos: <id>.pdf + <id>.json con las notas.
+ * Se entra con el login de DJMPOS (JWT) y cada usuario tiene su propia carpeta
+ * en disco (ATRIL_DIR/<usuario_id>), fuera de /uploads para que los PDFs no
+ * queden públicos: <id>.pdf + <id>.json con las notas.
  */
 const express = require('express');
 const fs      = require('fs');
 const fsp     = fs.promises;
 const path    = require('path');
+const { authMiddleware } = require('../middleware/auth');
 const router  = express.Router();
 
 const DIR = process.env.ATRIL_DIR || path.join(__dirname, '..', 'atril-data');
 const MAX_BYTES = 300 * 1024 * 1024;
-fs.mkdirSync(DIR, { recursive: true });
 
-const rutaPdf  = id => path.join(DIR, id + '.pdf');
-const rutaMeta = id => path.join(DIR, id + '.json');
+router.use(authMiddleware);
+router.use(async (req, res, next) => {
+  const carpeta = String(req.user?.id || '').replace(/[^a-zA-Z0-9-]/g, '');
+  if (!carpeta) return res.status(401).json({ error: 'Usuario inválido' });
+  req.dirAtril = path.join(DIR, carpeta);
+  try { await fsp.mkdir(req.dirAtril, { recursive: true }); next(); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+const rutaPdf  = (req, id) => path.join(req.dirAtril, id + '.pdf');
+const rutaMeta = (req, id) => path.join(req.dirAtril, id + '.json');
 
 router.param('id', (req, res, next, id) =>
   /^[a-z0-9]{6,40}$/.test(id) ? next() : res.status(400).json({ error: 'id inválido' }));
 
 // GET /atril/api/docs  ->  [meta, ...] de los PDFs que ya terminaron de subir
-router.get('/docs', async (_req, res) => {
+router.get('/docs', async (req, res) => {
   try {
     const out = [];
-    for (const n of await fsp.readdir(DIR)) {
+    for (const n of await fsp.readdir(req.dirAtril)) {
       if (!n.endsWith('.json')) continue;
       const id = n.slice(0, -5);
       try {
-        await fsp.access(rutaPdf(id));
-        out.push(JSON.parse(await fsp.readFile(rutaMeta(id), 'utf8')));
+        await fsp.access(rutaPdf(req, id));
+        out.push(JSON.parse(await fsp.readFile(rutaMeta(req, id), 'utf8')));
       } catch { /* sin PDF o JSON dañado: se omite */ }
     }
     res.json(out);
@@ -41,7 +50,7 @@ router.get('/docs', async (_req, res) => {
 });
 
 router.get('/docs/:id/meta', async (req, res) => {
-  try { res.json(JSON.parse(await fsp.readFile(rutaMeta(req.params.id), 'utf8'))); }
+  try { res.json(JSON.parse(await fsp.readFile(rutaMeta(req, req.params.id), 'utf8'))); }
   catch { res.status(404).json({ error: 'no existe' }); }
 });
 
@@ -51,14 +60,14 @@ router.put('/docs/:id/meta', async (req, res) => {
   const m = req.body;
   if (!m || typeof m !== 'object' || m.id !== id) return res.status(400).json({ error: 'meta inválido' });
   try {
-    await fsp.access(rutaPdf(id));
+    await fsp.access(rutaPdf(req, id));
   } catch {
     return res.status(409).json({ error: 'primero se debe subir el PDF' });
   }
   try {
-    const tmp = rutaMeta(id) + '.tmp';
+    const tmp = rutaMeta(req, id) + '.tmp';
     await fsp.writeFile(tmp, JSON.stringify(m));
-    await fsp.rename(tmp, rutaMeta(id));
+    await fsp.rename(tmp, rutaMeta(req, id));
     res.json({ ok: true });
   } catch (e) {
     console.error('[atril] PUT meta', e.message);
@@ -75,7 +84,7 @@ router.put('/docs/:id/file', async (req, res) => {
   if (![parte, total, desde].every(Number.isInteger) || parte < 0 || parte >= total || total > 1000 || desde < 0) {
     return res.status(400).json({ error: 'parte inválida' });
   }
-  const tmp = rutaPdf(id) + '.parcial';
+  const tmp = rutaPdf(req, id) + '.parcial';
   try {
     if (parte > 0) {
       const st = await fsp.stat(tmp);
@@ -100,7 +109,7 @@ router.put('/docs/:id/file', async (req, res) => {
         await fsp.unlink(tmp).catch(() => {});
         return res.status(400).json({ error: 'el archivo no es un PDF' });
       }
-      await fsp.rename(tmp, rutaPdf(id));
+      await fsp.rename(tmp, rutaPdf(req, id));
     }
     res.json({ ok: true });
   } catch (e) {
@@ -110,14 +119,14 @@ router.put('/docs/:id/file', async (req, res) => {
 });
 
 router.get('/docs/:id/file', (req, res) => {
-  res.sendFile(rutaPdf(req.params.id), { headers: { 'Content-Type': 'application/pdf' } }, err => {
+  res.sendFile(rutaPdf(req, req.params.id), { headers: { 'Content-Type': 'application/pdf' } }, err => {
     if (err && !res.headersSent) res.status(404).json({ error: 'no existe' });
   });
 });
 
 router.delete('/docs/:id', async (req, res) => {
   const { id } = req.params;
-  for (const f of [rutaPdf(id), rutaMeta(id), rutaPdf(id) + '.parcial']) {
+  for (const f of [rutaPdf(req, id), rutaMeta(req, id), rutaPdf(req, id) + '.parcial']) {
     await fsp.unlink(f).catch(() => {});
   }
   res.json({ ok: true });
