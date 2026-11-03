@@ -165,6 +165,22 @@ button{cursor:pointer}
 .results button:hover{background:var(--accent-soft)}
 .results .pg{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:block}
 mark{background:var(--marker);color:#1a1a1a;border-radius:2px;padding:0 1px}
+.concl-box{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);margin-bottom:10px}
+.concl-range{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.concl-range input{width:4.2em;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--surface);font-family:var(--f-mono);font-size:13px;text-align:right}
+.concl-box .btn{justify-content:center}
+.concl-box .btn:disabled{opacity:.6;cursor:progress}
+.concl{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:8px;overflow:hidden}
+.concl.open{border-color:var(--accent)}
+.concl-head{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;border:0;background:transparent;padding:10px 12px;font-weight:600;font-size:14px;text-align:left}
+.concl-head:hover{background:var(--accent-soft)}
+.concl-body{padding:0 12px 4px;font-size:14px;line-height:1.5}
+.concl-body h4{font-family:var(--f-display);font-size:16px;margin:12px 0 4px}
+.concl-body p{margin:0 0 6px}
+.concl-body ul{margin:0 0 6px;padding-left:18px}
+.concl-body li{margin-bottom:3px}
+.concl .note-tools{padding:6px 12px 12px;flex-wrap:wrap}
+.concl .note-tools .btn{margin-left:0;padding:.35em .7em;font-size:13px}
 .keys{margin-top:22px;font-size:13px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
 kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface);color:var(--ink);white-space:nowrap}
 
@@ -192,6 +208,9 @@ kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);bord
 .textLayer.selecting .endOfContent{top:0}
 .textLayer ::selection{background:rgba(42,70,196,.28)}
 .textLayer span.hit{background:rgba(255,200,0,.55);border-radius:2px}
+.textLayer span.tts-line{background:rgba(42,70,196,.12);border-bottom:2px solid var(--accent)}
+.textLayer span.tts-word{background:rgba(255,200,0,.5)}
+#desk.dim .textLayer span.tts-line{background:rgba(143,164,255,.22)}
 
 /* selection bar */
 #selBar{position:fixed;z-index:30;display:flex;align-items:center;gap:4px;background:var(--ink);color:var(--bg);border-radius:10px;padding:5px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
@@ -740,7 +759,7 @@ async function openDoc(id){
   if (!buf){ toast(Srv.on ? 'No se pudo descargar este PDF. Revisa tu conexión.' : 'No se encontró el archivo de este PDF en el navegador.'); return; }
   if (S.pdf){ S.pdf.destroy(); S.pdf = null; }
   try { S.pdf = await loadPdf(buf); } catch { toast('No se pudo abrir este PDF.'); return; }
-  S.meta = meta; S.texts = {}; S.query = ''; S.filter = 'todos'; S.cur = meta.lastPage || 0;
+  S.meta = meta; S.texts = {}; S.read = {}; S.readFrom = meta.lastPage || 0; S.cRange = null; S.conclOpen = null; S.query = ''; S.filter = 'todos'; S.cur = meta.lastPage || 0;
   meta.opened = Date.now(); meta.pages = S.pdf.numPages; saveMeta(true);
   $('#library').hidden = true; $('#reader').hidden = false;
   $('#docTitle').textContent = meta.name; $('#pageCount').textContent = meta.pages;
@@ -808,8 +827,11 @@ async function renderPage(i){
     const hl = document.createElement('div'); hl.className = 'hl-layer';
     const tl = document.createElement('div'); tl.className = 'textLayer'; tl.style.setProperty('--scale-factor', scale);
     p.el.replaceChildren(cv, hl, tl);
-    await pdfjs.renderTextLayer({textContentSource: tc, container: tl, viewport: vp, textDivs: []}).promise;
+    const divs = [];
+    await pdfjs.renderTextLayer({textContentSource: tc, container: tl, viewport: vp, textDivs: divs}).promise;
+    p.divs = divs.length === tc.items.length ? divs : null;   // span[k] ↔ item[k], para subrayar al leer
     p.rs = scale; drawHL(i); markHits(i); trim();
+    if (T.cur && !T.single && T.state !== 'idle' && T.page === i) ttsMark(false);
   } catch (e) {
     if (tok === S.token) console.warn('Página', i + 1, e);
   } finally {
@@ -864,6 +886,7 @@ function onPageChange(silent){
   $('#readProg').style.width = ((S.cur + 1) / m.pages * 100) + '%';
   $('#markBtn').setAttribute('aria-pressed', m.bookmarks.includes(S.cur));
   updateFoot(); autoReset(); if (!silent) saveMeta();
+  if (!S.cRange){ const ch = document.getElementById('cHasta'); if (ch && document.activeElement !== ch) ch.value = S.cur + 1; }
 }
 function updateFoot(){
   const m = S.meta; if (!m) return;
@@ -994,12 +1017,90 @@ desk.addEventListener('click', e => {
 });
 
 /* notes panel */
+/* conclusión de la lectura (Claude, vía /atril/api/docs/:id/conclusion) */
+function conclRender(t){
+  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*([^*\s][^*]*?)\*/g, '<i>$1</i>');
+  let out = '', ul = false;
+  for (const raw of t.split('\n')){
+    const l = raw.trim();
+    if (/^[-*•]\s+/.test(l)){ if (!ul){ out += '<ul>'; ul = true; } out += `<li>${inline(l.replace(/^[-*•]\s+/, ''))}</li>`; continue; }
+    if (ul){ out += '</ul>'; ul = false; }
+    if (!l) continue;
+    if (/^#{1,4}\s+/.test(l)) out += `<h4>${inline(l.replace(/^#{1,4}\s+/, ''))}</h4>`;
+    else out += `<p>${inline(l)}</p>`;
+  }
+  return out + (ul ? '</ul>' : '');
+}
+const conclPlain = t => t.replace(/^#{1,4}\s+/gm, '').replace(/^[-*•]\s+/gm, '').replace(/\*/g, '');
+function conclRange(){
+  const last = S.pages.length - 1;
+  const r = S.cRange || {desde: Math.min(S.readFrom || 0, S.cur), hasta: S.cur};
+  return {desde: clamp(r.desde, 0, last), hasta: clamp(r.hasta, 0, last)};
+}
+function conclusionsHTML(m){
+  const r = conclRange(), cs = m.conclusions || [];
+  let h = `<p class="sec-label">Conclusión de la lectura</p><div class="concl-box">
+    <div class="concl-range"><label for="cDesde">De p.</label><input id="cDesde" inputmode="numeric" value="${r.desde + 1}"><label for="cHasta">a p.</label><input id="cHasta" inputmode="numeric" value="${r.hasta + 1}"></div>
+    <button class="btn primary" type="button" id="conclBtn"${S.conclBusy ? ' disabled' : ''}>${S.conclBusy ? 'Preparando…' : 'Sacar conclusión'}</button>
+    ${S.conclMsg ? `<p class="empty-note">${esc(S.conclMsg)}</p>` : `<p class="empty-note">Al terminar de escuchar o de leer el documento, la conclusión se saca sola.</p>`}
+  </div>`;
+  h += cs.map(c => {
+    const open = S.conclOpen === c.id;
+    return `<article class="concl${open ? ' open' : ''}" data-cid="${c.id}">
+      <button class="concl-head" type="button" data-ctoggle="${c.id}" aria-expanded="${open}"><span>Páginas ${c.desde + 1}–${c.hasta + 1}</span><span class="note-pg">${new Date(c.at).toLocaleDateString('es-CO', {day: 'numeric', month: 'short'})}</span></button>
+      ${open ? `<div class="concl-body">${conclRender(c.texto)}</div>
+      <div class="note-tools"><button class="btn" type="button" data-cspeak="${c.id}">Escuchar</button><button class="btn" type="button" data-ccopy="${c.id}">Copiar</button><button class="btn ghost" type="button" data-cdel="${c.id}">Eliminar</button></div>` : ''}
+    </article>`;
+  }).join('');
+  return h + '<div style="height:14px"></div>';
+}
+async function makeConclusion(desde, hasta, auto){
+  const m = S.meta; if (!m || S.conclBusy) return;
+  if (!Srv.on){ toast('Para sacar la conclusión necesitas conexión con djmpos.com.'); return; }
+  const last = S.pages.length - 1;
+  desde = clamp(desde, 0, last); hasta = clamp(hasta, desde, last);
+  S.conclBusy = true; S.conclMsg = 'Leyendo las páginas…'; renderNotes();
+  if (auto) openTab('notas');
+  try {
+    let texto = '';
+    for (let i = desde; i <= hasta; i++){
+      const t = (await getReadModel(i)).text.trim();
+      if (S.meta !== m) return;
+      if (t) texto += `\n[Página ${i + 1}]\n${t}\n`;
+    }
+    if (!texto.trim()) throw new Error('Esas páginas no tienen texto para analizar. El PDF parece escaneado.');
+    if (texto.length > 600000) throw new Error(`Son demasiadas páginas para una sola conclusión. Prueba con menos, por ejemplo de la ${desde + 1} a la ${desde + Math.floor((hasta - desde) / 2) + 1}.`);
+    S.conclMsg = 'Preparando la conclusión… puede tardar hasta un minuto.'; renderNotes();
+    const resaltados = m.highlights.filter(h => h.page >= desde && h.page <= hasta).map(h => ({page: h.page, text: h.text, note: h.note || ''}));
+    const json = JSON.stringify({nombre: m.name, desde, hasta, texto, resaltados});
+    const opts = {method: 'POST', headers: {'Content-Type': 'application/json'}, body: json};
+    if (window.CompressionStream && json.length > 200000){   // para no chocar con el límite de Nginx
+      try { opts.body = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).blob(); opts.headers['Content-Encoding'] = 'gzip'; } catch {}
+    }
+    const r = await fetch(`${API}/docs/${m.id}/conclusion`, opts), d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'No se pudo generar la conclusión.');
+    const c = {id: uid(), desde, hasta, texto: d.conclusion, at: Date.now()};
+    m.conclusions = [c, ...(m.conclusions || [])];
+    if (S.meta === m){ S.conclOpen = c.id; saveMeta(); toast('Conclusión lista.', {label: 'Escuchar', fn: () => ttsSpeakText(conclPlain(c.texto))}); }
+    else { m.updated = Date.now(); DB.put(m).catch(() => {}); if (m.synced) Srv.putMeta(m).catch(() => {}); }
+  } catch (e) {
+    toast(e.message === 'Failed to fetch' ? 'Sin conexión con djmpos.com. Intenta de nuevo.' : e.message);
+  } finally {
+    S.conclBusy = false; S.conclMsg = ''; if (S.meta === m) renderNotes();
+  }
+}
+function autoConclusion(desde){
+  if (!Srv.on || !S.meta) return;
+  makeConclusion(desde, S.pages.length - 1, true);
+}
+
 function renderNotes(){
   const m = S.meta, box = $('#p-notas'); if (!m) return;
   const list = [...m.highlights].sort((a, b) => a.page - b.page || a.rects[0][1] - b.rects[0][1] || a.rects[0][0] - b.rects[0][0]);
   const shown = S.filter === 'todos' ? list : list.filter(h => h.color === S.filter);
   const counts = {}; list.forEach(h => counts[h.color] = (counts[h.color] || 0) + 1);
   let html = `<div class="notes-top"><span><b>${list.length}</b> ${list.length === 1 ? 'resaltado' : 'resaltados'}</span>${list.length || m.bookmarks.length ? '<button class="btn" type="button" id="copyNotes">Copiar como texto</button>' : ''}</div>`;
+  html += conclusionsHTML(m);
   html += `<p class="sec-label">Marcadores</p>`;
   html += m.bookmarks.length
     ? `<div class="bm-list">${m.bookmarks.map(b => `<span class="bm"><button type="button" data-goto="${b}" title="Ir a la página ${b + 1}">p. ${b + 1}</button><button type="button" data-unmark="${b}" aria-label="Quitar marcador de la página ${b + 1}">×</button></span>`).join('')}</div>`
@@ -1019,7 +1120,20 @@ function renderNotes(){
 }
 $('#p-notas').addEventListener('click', async e => {
   const t = e.target.closest('button'); if (!t || !S.meta) return; const m = S.meta;
-  if (t.id === 'copyNotes'){ const ok = await copyText(notesAsText()); toast(ok ? 'Notas copiadas. Pégalas en tus apuntes.' : 'No se pudo copiar.'); }
+  const conc = id => (m.conclusions || []).find(c => c.id === id);
+  if (t.id === 'conclBtn'){
+    const r = {desde: (parseInt($('#cDesde').value, 10) || 1) - 1, hasta: (parseInt($('#cHasta').value, 10) || 1) - 1};
+    S.cRange = r; makeConclusion(Math.min(r.desde, r.hasta), Math.max(r.desde, r.hasta), false);
+  }
+  else if (t.dataset.ctoggle){ S.conclOpen = S.conclOpen === t.dataset.ctoggle ? null : t.dataset.ctoggle; renderNotes(); }
+  else if (t.dataset.cspeak){ const c = conc(t.dataset.cspeak); if (c) ttsSpeakText(conclPlain(c.texto)); }
+  else if (t.dataset.ccopy){ const c = conc(t.dataset.ccopy); if (c){ const ok = await copyText(`${m.name} · páginas ${c.desde + 1}–${c.hasta + 1}\n\n${conclPlain(c.texto)}`); toast(ok ? 'Conclusión copiada.' : 'No se pudo copiar.'); } }
+  else if (t.dataset.cdel){
+    const k = (m.conclusions || []).findIndex(c => c.id === t.dataset.cdel); if (k < 0) return;
+    const [c] = m.conclusions.splice(k, 1); saveMeta(); renderNotes();
+    toast('Conclusión eliminada.', {label: 'Deshacer', fn: () => { if (S.meta !== m) return; m.conclusions.splice(k, 0, c); saveMeta(); renderNotes(); }});
+  }
+  else if (t.id === 'copyNotes'){ const ok = await copyText(notesAsText()); toast(ok ? 'Notas copiadas. Pégalas en tus apuntes.' : 'No se pudo copiar.'); }
   else if (t.dataset.goto != null){ goToPage(+t.dataset.goto); flashPage(+t.dataset.goto); if (narrow()) setSide(false); }
   else if (t.dataset.unmark != null) toggleBookmark(+t.dataset.unmark);
   else if (t.dataset.filter){ S.filter = t.dataset.filter; renderNotes(); }
@@ -1037,6 +1151,10 @@ $('#p-notas').addEventListener('click', async e => {
   }
 });
 $('#p-notas').addEventListener('input', e => {
+  if (e.target.id === 'cDesde' || e.target.id === 'cHasta'){
+    S.cRange = {desde: (parseInt($('#cDesde').value, 10) || 1) - 1, hasta: (parseInt($('#cHasta').value, 10) || 1) - 1};
+    return;
+  }
   const id = e.target.dataset.note; if (!id) return;
   const h = S.meta.highlights.find(x => x.id === id); if (h){ h.note = e.target.value; saveMeta(); }
 });
@@ -1205,16 +1323,80 @@ function fillVoices(){
   $('#voiceHint').hidden = lat.length > 0;
 }
 if (hasTTS) speechSynthesis.onvoiceschanged = () => { if (!$('#readPanel').hidden) fillVoices(); };
-function splitChunks(t){
-  const parts = t.replace(/\s+/g, ' ').trim().match(/[^.!?;:]+[.!?;:]*\s*/g) || [];
-  const out = []; let buf = '';
-  for (const p of parts){
-    if ((buf + p).length > 220 && buf){ out.push(buf.trim()); buf = ''; }
-    if (p.length > 220){ p.match(/.{1,200}(\s|$)/g).forEach(x => out.push(x.trim())); continue; }
-    buf += p;
+// Texto que se lee en voz alta: solo el cuerpo de la página. Se saltan
+// encabezados y pies (franja superior/inferior), números de página y notas al
+// pie (letra más pequeña en la parte baja). `map` une cada trozo del texto con
+// su span de la capa de texto, para subrayar lo que se va leyendo.
+const PAGE_NUM = /^\s*(p[áa]g(\.|ina)?\s*)?[-–]?\s*\d{1,4}\s*[-–]?(\s*(de|\/|of)\s*\d{1,4})?\s*$/i;
+async function getReadModel(i){
+  S.read = S.read || {};
+  if (S.read[i]) return S.read[i];
+  const page = await S.pdf.getPage(i + 1), tc = await page.getTextContent();
+  const [, y0, , y1] = page.view, H = (y1 - y0) || 1, items = tc.items;
+  const sizes = items.filter(t => t.str && t.str.trim()).map(t => Math.hypot(t.transform[2], t.transform[3])).sort((a, b) => a - b);
+  const med = sizes.length ? sizes[sizes.length >> 1] : 0;
+  let text = ''; const map = [];
+  for (let k = 0; k < items.length; k++){
+    const it = items[k], s = it.str || '';
+    if (!s.trim()){ if ((s || it.hasEOL) && text && !/\s$/.test(text)) text += ' '; continue; }
+    const y = (it.transform[5] - y0) / H, size = Math.hypot(it.transform[2], it.transform[3]);
+    if (y > .925 || y < .075) continue;                                  // encabezado / pie de página
+    if (med && size < med * .82 && y < .3) continue;                     // notas al pie
+    if ((y < .15 || y > .85) && PAGE_NUM.test(s)) continue;              // número de página
+    const start = text.length; text += s; map.push({idx: k, start, end: text.length});
+    if (it.hasEOL){ if (/\p{L}-$/u.test(text)) text = text.slice(0, -1); else text += ' '; }   // une palabras cortadas con guion
   }
-  if (buf.trim()) out.push(buf.trim());
-  return out.filter(x => /[\p{L}\p{N}]/u.test(x));
+  return S.read[i] = {text, map};
+}
+function splitChunks(t){
+  const out = [], re = /[^.!?;:]+[.!?;:]*\s*/g; let m, bs = -1, be = 0;
+  const push = (s, e) => {
+    const seg = t.slice(s, e); if (!/[\p{L}\p{N}]/u.test(seg)) return;
+    out.push({text: seg.replace(/\s+/g, ' ').trim(), start: s, end: e, lead: seg.length - seg.trimStart().length});
+  };
+  while ((m = re.exec(t))){
+    const s = m.index, e = s + m[0].length;
+    if (bs >= 0 && e - bs > 220){ push(bs, be); bs = -1; }
+    if (e - s > 220){
+      if (bs >= 0){ push(bs, be); bs = -1; }
+      let p = s;
+      while (p < e){ let q = Math.min(e, p + 200); if (q < e){ const sp = t.lastIndexOf(' ', q); if (sp > p + 50) q = sp + 1; } push(p, q); p = q; }
+      continue;
+    }
+    if (bs < 0) bs = s; be = e;
+  }
+  if (bs >= 0) push(bs, be);
+  return out;
+}
+let ttsMarked = [], ttsWordEl = null;
+function ttsClearHL(){ ttsMarked.forEach(d => d.classList.remove('tts-line', 'tts-word')); ttsMarked = []; ttsWordEl = null; }
+function ttsSpans(i, s, e){
+  const p = S.pages[i], m = S.read && S.read[i];
+  if (!p || !p.divs || !m) return [];
+  return m.map.filter(r => r.end > s && r.start < e).map(r => p.divs[r.idx]).filter(d => d && d.isConnected);
+}
+function ttsMark(scroll){
+  ttsClearHL();
+  if (T.single || T.state === 'idle' || !T.cur) return;
+  const spans = ttsSpans(T.page, T.cur.start, T.cur.end);
+  spans.forEach(d => d.classList.add('tts-line')); ttsMarked = spans;
+  if (!scroll) return;
+  if (spans.length){
+    const r = spans[0].getBoundingClientRect(), d = desk.getBoundingClientRect();
+    if (r.top < d.top + 60 || r.bottom > d.bottom - 100) desk.scrollBy({top: r.top - d.top - desk.clientHeight * .3, behavior: 'smooth'});
+  } else if (S.pages[T.page]){
+    const el = S.pages[T.page].el, len = (S.read[T.page] && S.read[T.page].text.length) || 1;
+    desk.scrollTo({top: el.offsetTop + (T.cur.start / len) * el.offsetHeight - desk.clientHeight * .3, behavior: 'smooth'});
+  }
+}
+function ttsWord(pos){
+  const m = S.read && S.read[T.page], p = S.pages[T.page];
+  if (!m || !p || !p.divs) return;
+  const r = m.map.find(x => pos >= x.start && pos < x.end); const d = r && p.divs[r.idx];
+  if (!d || d === ttsWordEl) return;
+  if (ttsWordEl) ttsWordEl.classList.remove('tts-word');
+  d.classList.add('tts-word'); ttsWordEl = d;
+  if (!ttsMarked.includes(d)) ttsMarked.push(d);
 }
 function ttsDraw(){
   const b = $('#ttsBtn'); b.classList.toggle('on', T.state === 'playing');
@@ -1223,32 +1405,35 @@ function ttsDraw(){
   S.pages.forEach(p => p.el.classList.toggle('reading', T.state !== 'idle' && !T.single && p.i === T.page));
   autoDraw();
 }
-async function ttsLoad(i){ T.page = i; T.chunks = splitChunks(await getText(i)); T.k = 0; ttsDraw(); }
+async function ttsLoad(i){ T.page = i; T.chunks = splitChunks((await getReadModel(i)).text); T.k = 0; ttsDraw(); }
 function ttsNext(){
   if (T.state !== 'playing') return;
   if (T.k >= T.chunks.length){
-    if (T.single || !S.pdf || T.page >= S.pdf.numPages - 1){ ttsStop(); if (!T.single) toast('Lectura terminada.'); return; }
+    if (T.single || !S.pdf || T.page >= S.pdf.numPages - 1){
+      const done = !T.single && S.pdf && T.page >= S.pdf.numPages - 1, from = T.from || 0;
+      ttsStop();
+      if (done){ toast('Lectura terminada. Sacando la conclusión…'); autoConclusion(from); }
+      return;
+    }
     if (!T.chunks.length && ++T.empty >= 5){ ttsStop(); toast('Estas páginas no tienen texto que leer. El PDF parece un escaneo.'); return; }
     if (T.chunks.length) T.empty = 0;
     const g = T.gen;
     ttsLoad(T.page + 1).then(() => { if (g !== T.gen) return; goToPage(T.page); ttsNext(); });
     return;
   }
-  if (!T.single && S.pages[T.page] && T.chunks.length > 1){
-    // la pantalla baja al ritmo de la voz
-    const el = S.pages[T.page].el, frac = T.k / T.chunks.length;
-    desk.scrollTo({top: el.offsetTop + frac * el.offsetHeight - desk.clientHeight * .3, behavior: 'smooth'});
-  }
-  const g = T.gen, u = new SpeechSynthesisUtterance(T.chunks[T.k++]);
+  const chunk = T.chunks[T.k++]; T.cur = chunk;
+  ttsMark(true);                                   // subraya la frase y la pantalla la sigue
+  const g = T.gen, u = new SpeechSynthesisUtterance(chunk.text);
   const v = pickVoice(); if (v){ u.voice = v; u.lang = v.lang; } else u.lang = 'es-US';
   u.rate = T.rate;
+  u.onboundary = e => { if (g === T.gen && !T.single && (!e.name || e.name === 'word')) ttsWord(chunk.start + chunk.lead + e.charIndex); };
   u.onend = () => { if (g === T.gen) ttsNext(); };
   u.onerror = e => { if (g === T.gen && e.error !== 'interrupted' && e.error !== 'canceled') ttsNext(); };
   speechSynthesis.speak(u);
 }
 async function ttsPlay(fromPage){
   if (!hasTTS){ toast('Este navegador no puede leer en voz alta. Prueba con Chrome o Edge.'); return; }
-  speechSynthesis.cancel(); T.gen++; T.single = false; T.empty = 0; T.state = 'playing';
+  speechSynthesis.cancel(); T.gen++; T.single = false; T.empty = 0; T.state = 'playing'; T.from = fromPage;
   await ttsLoad(fromPage); ttsNext();
 }
 function ttsSpeakText(text){
@@ -1260,7 +1445,7 @@ function ttsResume(){
   if (!T.single && T.page !== S.cur) return ttsPlay(S.cur);
   T.gen++; T.state = 'playing'; ttsDraw(); ttsNext();
 }
-function ttsStop(){ T.gen++; if (hasTTS) speechSynthesis.cancel(); T.state = 'idle'; T.single = false; ttsDraw(); }
+function ttsStop(){ T.gen++; if (hasTTS) speechSynthesis.cancel(); T.state = 'idle'; T.single = false; T.cur = null; ttsClearHL(); ttsDraw(); }
 function ttsToggle(){ T.state === 'playing' ? ttsPause() : T.state === 'paused' ? ttsResume() : ttsPlay(S.cur); }
 $('#ttsBtn').onclick = ttsToggle;
 $('#ttsRate').onclick = () => {
@@ -1304,7 +1489,7 @@ setInterval(() => {
   const a = document.activeElement;
   if (a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT')) return;  // escribiendo una nota
   if (--Auto.left > 0){ autoDraw(); return; }
-  if (S.cur >= S.pages.length - 1){ Auto.sec = 0; ls.set('autoSec', 0); autoDraw(); toast('Llegaste a la última página. Pasar página sola se apagó.'); return; }
+  if (S.cur >= S.pages.length - 1){ Auto.sec = 0; ls.set('autoSec', 0); autoDraw(); toast('Llegaste a la última página. Sacando la conclusión…'); autoConclusion(S.readFrom || 0); return; }
   goToPage(S.cur + 1); autoReset();
 }, 1000);
 
