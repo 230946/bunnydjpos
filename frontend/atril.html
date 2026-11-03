@@ -113,6 +113,11 @@ button{cursor:pointer}
 .tts-btn:hover{background:var(--accent-soft)}
 .tts-btn.on{background:var(--accent);color:var(--accent-ink)}
 .page.reading{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
+.auto-lbl{font-family:var(--f-mono);font-size:12px;color:var(--accent);padding:0 6px 0 2px;font-variant-numeric:tabular-nums}
+.read-panel{position:absolute;top:8px;right:max(16px,env(safe-area-inset-right,0px));z-index:20;width:min(340px,calc(100% - 32px));background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px}
+.read-panel select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);font-size:14px;font-weight:400;color:var(--ink);max-width:100%}
+.rp-row{display:flex;gap:8px}
+.rp-hint{margin:0 0 4px;font-size:12.5px;color:var(--muted);line-height:1.45}
 .readbar{height:3px;background:var(--line)}
 .readbar span{display:block;height:100%;background:var(--accent);width:0}
 @media (prefers-reduced-motion:no-preference){.readbar span{transition:width .2s}}
@@ -286,6 +291,10 @@ kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);bord
           <span id="ttsLabel">Escuchar</span>
         </button>
         <button class="zoom-label" id="ttsRate" type="button" title="Velocidad de lectura">1×</button>
+        <button class="icon-btn" id="readOptsBtn" type="button" title="Voz y pasar páginas solo" aria-label="Opciones de lectura" aria-expanded="false" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        </button>
+        <span class="auto-lbl" id="autoLbl" hidden title="Tiempo para pasar a la siguiente página"></span>
       </div>
       <button class="pomo" id="pomoBtn" type="button" title="Temporizador de enfoque: 25 min de estudio, 5 de descanso">
         <span id="pomoLabel">Enfoque</span><span class="t" id="pomoTime">25:00</span>
@@ -297,6 +306,29 @@ kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);bord
     </header>
     <div class="readbar"><span id="readProg"></span></div>
     <div class="rbody">
+      <div id="readPanel" class="read-panel" hidden role="dialog" aria-label="Opciones de lectura">
+        <label class="field" for="voiceSel">Voz para escuchar
+          <select id="voiceSel"></select>
+        </label>
+        <div class="rp-row">
+          <button class="btn" id="voiceTest" type="button">Probar voz</button>
+        </div>
+        <p class="rp-hint">Las voces dependen de cada dispositivo, así que puedes elegir una distinta en el PC y en el celular. En Android puedes instalar más voces en Ajustes → Accesibilidad → Texto a voz.</p>
+        <label class="field" for="autoSel">Pasar página sola
+          <select id="autoSel">
+            <option value="0">Apagado</option>
+            <option value="20">Cada 20 segundos</option>
+            <option value="30">Cada 30 segundos</option>
+            <option value="45">Cada 45 segundos</option>
+            <option value="60">Cada 1 minuto</option>
+            <option value="90">Cada 1 min 30 s</option>
+            <option value="120">Cada 2 minutos</option>
+            <option value="180">Cada 3 minutos</option>
+            <option value="300">Cada 5 minutos</option>
+          </select>
+        </label>
+        <p class="rp-hint">Mientras escuchas, las páginas pasan solas al ritmo de la voz. Si cambias de página a mano, el tiempo vuelve a empezar.</p>
+      </div>
       <aside id="side">
         <div class="tabs" role="tablist">
           <button class="tab" role="tab" data-tab="notas" aria-selected="true" type="button">Notas</button>
@@ -718,7 +750,7 @@ async function openDoc(id){
   renderNotes(); loadOutline(); desk.focus({preventScroll: true});
 }
 function closeDoc(){
-  ttsStop(); saveMeta(true); obs && obs.disconnect(); S.token++;
+  ttsStop(); setReadPanel(false); saveMeta(true); obs && obs.disconnect(); S.token++;
   if (S.pdf){ S.pdf.destroy(); S.pdf = null; }
   S.meta = null; pagesEl.innerHTML = ''; S.pages = []; selBar.hidden = true;
   $('#reader').hidden = true; $('#library').hidden = false; renderLibrary(); refreshFromServer();
@@ -830,7 +862,7 @@ function onPageChange(silent){
   m.lastPage = S.cur; m.maxPage = Math.max(m.maxPage || 0, S.cur);
   $('#readProg').style.width = ((S.cur + 1) / m.pages * 100) + '%';
   $('#markBtn').setAttribute('aria-pressed', m.bookmarks.includes(S.cur));
-  updateFoot(); if (!silent) saveMeta();
+  updateFoot(); autoReset(); if (!silent) saveMeta();
 }
 function updateFoot(){
   const m = S.meta; if (!m) return;
@@ -1129,9 +1161,19 @@ const T = {state: 'idle', page: 0, chunks: [], k: 0, gen: 0, single: false, empt
 const hasTTS = 'speechSynthesis' in window;
 function pickVoice(){
   const vs = hasTTS ? speechSynthesis.getVoices() : [];
-  return vs.find(v => /^es[-_](MX|CO|US|419|AR)/i.test(v.lang)) || vs.find(v => /^es/i.test(v.lang)) || null;
+  const saved = ls.get('voice', '');
+  return (saved && vs.find(v => v.voiceURI === saved))
+    || vs.find(v => /^es[-_](MX|CO|US|419|AR)/i.test(v.lang)) || vs.find(v => /^es/i.test(v.lang)) || null;
 }
-if (hasTTS) speechSynthesis.onvoiceschanged = () => {};
+function fillVoices(){
+  const sel = $('#voiceSel'); if (!hasTTS){ sel.innerHTML = '<option>Este navegador no tiene voces</option>'; sel.disabled = true; return; }
+  const vs = speechSynthesis.getVoices();
+  const es = vs.filter(v => /^es/i.test(v.lang)), list = es.length ? es : vs;
+  const saved = ls.get('voice', '');
+  sel.innerHTML = `<option value="">Automática${pickVoice() && !saved ? ' (' + esc(pickVoice().name) + ')' : ''}</option>` +
+    list.map(v => `<option value="${esc(v.voiceURI)}"${v.voiceURI === saved ? ' selected' : ''}>${esc(v.name.replace(/^(Microsoft|Google)\s+/, ''))} · ${esc(v.lang)}</option>`).join('');
+}
+if (hasTTS) speechSynthesis.onvoiceschanged = () => { if (!$('#readPanel').hidden) fillVoices(); };
 function splitChunks(t){
   const parts = t.replace(/\s+/g, ' ').trim().match(/[^.!?;:]+[.!?;:]*\s*/g) || [];
   const out = []; let buf = '';
@@ -1148,6 +1190,7 @@ function ttsDraw(){
   $('#ttsLabel').textContent = T.state === 'playing' ? 'Pausar' : T.state === 'paused' ? 'Continuar' : 'Escuchar';
   $('#ttsRate').textContent = String(T.rate).replace('.', ',') + '×';
   S.pages.forEach(p => p.el.classList.toggle('reading', T.state !== 'idle' && !T.single && p.i === T.page));
+  autoDraw();
 }
 async function ttsLoad(i){ T.page = i; T.chunks = splitChunks(await getText(i)); T.k = 0; ttsDraw(); }
 function ttsNext(){
@@ -1159,6 +1202,11 @@ function ttsNext(){
     const g = T.gen;
     ttsLoad(T.page + 1).then(() => { if (g !== T.gen) return; goToPage(T.page); ttsNext(); });
     return;
+  }
+  if (!T.single && S.pages[T.page] && T.chunks.length > 1){
+    // la pantalla baja al ritmo de la voz
+    const el = S.pages[T.page].el, frac = T.k / T.chunks.length;
+    desk.scrollTo({top: el.offsetTop + frac * el.offsetHeight - desk.clientHeight * .3, behavior: 'smooth'});
   }
   const g = T.gen, u = new SpeechSynthesisUtterance(T.chunks[T.k++]);
   const v = pickVoice(); if (v){ u.voice = v; u.lang = v.lang; } else u.lang = 'es-ES';
@@ -1189,6 +1237,46 @@ $('#ttsRate').onclick = () => {
   if (T.state === 'playing'){ T.gen++; speechSynthesis.cancel(); T.k = Math.max(0, T.k - 1); T.gen++; ttsNext(); }
 };
 
+/* ---------- reading options: voice + auto page turn ---------- */
+const Auto = {sec: ls.get('autoSec', 0), left: 0};
+function autoReset(){ Auto.left = Auto.sec; autoDraw(); }
+function autoDraw(){
+  const on = Auto.sec > 0, lbl = $('#autoLbl');
+  $('#readOptsBtn').setAttribute('aria-pressed', on);
+  lbl.hidden = !on;
+  if (on) lbl.textContent = T.state === 'playing' ? 'voz' : `${Math.floor(Auto.left / 60)}:${String(Auto.left % 60).padStart(2, '0')}`;
+}
+function setReadPanel(open){
+  $('#readPanel').hidden = !open; $('#readOptsBtn').setAttribute('aria-expanded', open);
+  if (open){ fillVoices(); $('#autoSel').value = String(Auto.sec); }
+}
+$('#readOptsBtn').onclick = e => { e.stopPropagation(); setReadPanel($('#readPanel').hidden); };
+document.addEventListener('pointerdown', e => {
+  if (!$('#readPanel').hidden && !e.target.closest('#readPanel, #readOptsBtn')) setReadPanel(false);
+});
+$('#voiceSel').onchange = e => { ls.set('voice', e.target.value); };
+$('#voiceTest').onclick = () => {
+  if (!hasTTS) return;
+  if (T.state === 'playing') ttsPause();
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance('Hola, así suena esta voz. La práctica de recuperación es la mejor forma de estudiar.');
+  const v = pickVoice(); if (v){ u.voice = v; u.lang = v.lang; } else u.lang = 'es-ES';
+  u.rate = T.rate; speechSynthesis.speak(u);
+};
+$('#autoSel').onchange = e => {
+  Auto.sec = +e.target.value; ls.set('autoSec', Auto.sec); autoReset();
+  toast(Auto.sec ? `La página pasará sola cada ${e.target.selectedOptions[0].textContent.replace('Cada ', '')}.` : 'Pasar página sola: apagado.');
+};
+setInterval(() => {
+  if (!Auto.sec || !S.pdf || $('#reader').hidden || document.visibilityState !== 'visible') return;
+  if (T.state === 'playing'){ autoDraw(); return; }            // la voz ya pasa las páginas
+  const a = document.activeElement;
+  if (a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT')) return;  // escribiendo una nota
+  if (--Auto.left > 0){ autoDraw(); return; }
+  if (S.cur >= S.pages.length - 1){ Auto.sec = 0; ls.set('autoSec', 0); autoDraw(); toast('Llegaste a la última página. Pasar página sola se apagó.'); return; }
+  goToPage(S.cur + 1); autoReset();
+}, 1000);
+
 /* ---------- study time ---------- */
 ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => window.addEventListener(ev, () => { S.lastAct = Date.now(); }, {passive: true}));
 setInterval(() => {
@@ -1206,7 +1294,7 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('keydown', e => {
   if ($('#reader').hidden || !S.pdf) return;
   const tag = e.target.tagName;
-  if (e.key === 'Escape'){ selBar.hidden = true; if (narrow() && !$('#side').hidden) setSide(false); if (tag === 'INPUT' || tag === 'TEXTAREA') e.target.blur(); return; }
+  if (e.key === 'Escape'){ selBar.hidden = true; setReadPanel(false); if (narrow() && !$('#side').hidden) setSide(false); if (tag === 'INPUT' || tag === 'TEXTAREA') e.target.blur(); return; }
   if (tag === 'INPUT' || tag === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
   if (k === 'j' || k === 'J' || k === 'ArrowRight'){ e.preventDefault(); goToPage(S.cur + 1); }
