@@ -554,9 +554,10 @@ async function refreshFromServer(){
 }
 
 let saveT, srvT;
+const DEV = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ? 'el celular' : 'el PC';
 function saveMeta(now){
   const m = S.meta; if (!m) return; clearTimeout(saveT); clearTimeout(srvT);
-  m.updated = Date.now();
+  m.updated = Date.now(); m.dev = DEV;
   const go = () => DB.put(m).catch(() => {});
   const push = () => { if (Srv.on && m.synced) Srv.putMeta(m, now).catch(() => {}); };
   if (now){ push(); return go(); }
@@ -1503,8 +1504,40 @@ setInterval(() => {
 }, 1000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') saveMeta(true);
-  else refreshFromServer();
+  else { refreshFromServer(); pullMeta(); }
 });
+
+/* ---------- seguir en otro dispositivo ---------- */
+// Con un PDF abierto se revisa cada 15 s (y al volver a la pestaña) si otro
+// dispositivo guardó algo más nuevo: página, notas, marcadores, conclusiones.
+// Si allá se avanzó, aquí se salta a esa página, con opción de volver.
+let pullBusy = false;
+async function pullMeta(){
+  const m = S.meta;
+  if (!m || !Srv.on || !m.synced || pullBusy || document.visibilityState !== 'visible') return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === 'TEXTAREA' || tag === 'INPUT') return;   // escribiendo una nota: no pisarla
+  pullBusy = true;
+  try {
+    const r = await Srv.meta(m.id);
+    if (!r || S.meta !== m || (r.updated || 0) <= (m.updated || 0)) return;
+    const prev = S.cur, pages = m.pages, sec = Math.max(m.seconds || 0, r.seconds || 0), max = Math.max(m.maxPage || 0, r.maxPage || 0);
+    const hlPages = new Set([...m.highlights, ...(r.highlights || [])].map(h => h.page));
+    Object.assign(m, r);
+    m.highlights = m.highlights || []; m.bookmarks = m.bookmarks || [];
+    m.pages = pages; m.seconds = sec; m.maxPage = max;
+    hlPages.forEach(drawHL);
+    renderNotes(); updateFoot();
+    $('#markBtn').setAttribute('aria-pressed', m.bookmarks.includes(S.cur));
+    const to = clamp(r.lastPage || 0, 0, S.pages.length - 1);
+    if (to !== prev && T.state !== 'playing'){
+      goToPage(to);
+      toast(`Seguiste leyendo en ${r.dev || 'otro dispositivo'}: p. ${to + 1}.`, {label: `Volver a p. ${prev + 1}`, fn: () => goToPage(prev)});
+    } else m.lastPage = prev;
+    DB.put(m).catch(() => {});
+  } catch {} finally { pullBusy = false; }
+}
+setInterval(pullMeta, 15000);
 
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown', e => {
