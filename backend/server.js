@@ -32,9 +32,9 @@ const domiciliosRouter  = require('./routes/domicilios');
 const publicoRouter     = require('./routes/publico');
 const turnoRouter       = require('./routes/turno');
 const hotelRouter       = require('./routes/hotel');
-const cumpleanosRouter  = require('./routes/cumpleanos');
 const soporteRouter     = require('./routes/soporte');
 const motoratonRouter   = require('./routes/motoraton');
+const atrilRouter       = require('./routes/atril');
 
 const app    = express();
 const server = http.createServer(app);
@@ -54,25 +54,28 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Login propio para la tarjeta de cumpleaños (separado del login de DJMPOS) ──
-// Usa HTTP Basic Auth: el navegador muestra su propio cuadro de usuario/clave.
-// Credenciales en CUMPLEANOS_USER / CUMPLEANOS_PASS (.env) — si no están
-// configuradas, se bloquea el acceso (nunca se deja abierto por defecto).
-function requiereLoginCumpleanos(req, res, next) {
-  const usuarioValido = process.env.CUMPLEANOS_USER;
-  const claveValida = process.env.CUMPLEANOS_PASS;
-  const auth = req.headers.authorization || '';
-  const [tipo, credenciales] = auth.split(' ');
-  if (usuarioValido && claveValida && tipo === 'Basic' && credenciales) {
-    const [usuario, clave] = Buffer.from(credenciales, 'base64').toString().split(':');
-    if (usuario === usuarioValido && clave === claveValida) return next();
-  }
-  res.set('WWW-Authenticate', 'Basic realm="Tarjeta de Cumpleanos"');
-  return res.status(401).send('Acceso restringido.');
+// ── Logins propios (separados del login de DJMPOS) ──
+// Usan HTTP Basic Auth: el navegador muestra su propio cuadro de usuario/clave.
+// Las credenciales salen del .env — si no están configuradas, se bloquea el
+// acceso (nunca se deja abierto por defecto).
+function loginBasico(envUsuario, envClave, realm) {
+  return (req, res, next) => {
+    const usuarioValido = process.env[envUsuario];
+    const claveValida = process.env[envClave];
+    const auth = req.headers.authorization || '';
+    const [tipo, credenciales] = auth.split(' ');
+    if (usuarioValido && claveValida && tipo === 'Basic' && credenciales) {
+      const [usuario, clave] = Buffer.from(credenciales, 'base64').toString().split(':');
+      if (usuario === usuarioValido && clave === claveValida) return next();
+    }
+    res.set('WWW-Authenticate', `Basic realm="${realm}"`);
+    return res.status(401).send('Acceso restringido.');
+  };
 }
-app.use(['/cumpleanos', '/tarjeta-cumpleanos.html'], requiereLoginCumpleanos);
-// API clave-valor de la tarjeta/lista de cumpleaños (queda detrás del Basic Auth de arriba).
-app.use('/cumpleanos/api', cumpleanosRouter);
+// Lector de PDF Atril: ATRIL_USER / ATRIL_PASS. La API guarda PDFs y notas
+// para verlos desde el PC y el celular.
+app.use(['/atril', '/atril.html'], loginBasico('ATRIL_USER', 'ATRIL_PASS', 'Atril'));
+app.use('/atril/api', atrilRouter);
 
 // ── Servir frontend desde el servidor (evita problema file://) ────
 const frontendPath = path.join(__dirname, '..', 'frontend');
@@ -109,7 +112,6 @@ app.get('/portal-empleado',  (_, res) => res.sendFile(path.join(frontendPath, 'p
 app.get('/turno',            (_, res) => res.sendFile(path.join(frontendPath, 'portal-turno.html')));
 app.get('/reservas',         (_, res) => res.sendFile(path.join(frontendPath, 'reservas-peluqueria.html')));
 app.get('/reservas-hotel',   (_, res) => res.sendFile(path.join(frontendPath, 'reservas-hotel.html')));
-app.get('/cumpleanos',       (_, res) => res.sendFile(path.join(frontendPath, 'tarjeta-cumpleanos.html')));
 
 // ── Multer para logos ─────────────────────────────────────────────
 const storage = multer.diskStorage({
@@ -507,14 +509,6 @@ async function runMigrations() {
     },
     { table: 'pedidos_cliente', column: 'cliente_nombre', sql: `ALTER TABLE pedidos_cliente ADD COLUMN cliente_nombre VARCHAR(100) NULL` },
     { table: 'pedidos_cliente', column: 'cliente_celular', sql: `ALTER TABLE pedidos_cliente ADD COLUMN cliente_celular VARCHAR(30) NULL` },
-    {
-      table: 'cumple_kv', column: '__create__',
-      createSql: `CREATE TABLE IF NOT EXISTS cumple_kv (
-        clave       VARCHAR(64) PRIMARY KEY,
-        valor       LONGTEXT NOT NULL,
-        actualizado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
-    },
 
     // ── Columnas que routes/pos.js y routes/inventario.js ya esperaban pero
     // nunca quedaron como migración — instalaciones corridas desde un

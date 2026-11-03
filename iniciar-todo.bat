@@ -85,7 +85,6 @@ echo =======================================
 echo   Accesos directos:
 echo   Portal / Login    -^> http://localhost:3001/portal
 echo   Superadmin        -^> http://localhost:3001/superadmin
-echo   Tarjeta cumpleanos-^> http://localhost:3001/cumpleanos
 echo   Control Personal  -^> http://localhost:3002
 echo =======================================
 echo.

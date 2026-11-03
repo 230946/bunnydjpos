@@ -210,7 +210,7 @@ kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);bord
       <div class="lib-head">
         <div>
           <h1 class="brand"><span>Atril</span></h1>
-          <p class="lib-sub">Tu mesa de estudio para PDFs. Resalta, toma notas y retoma cada libro en la página donde lo dejaste. Todo se guarda en este navegador.</p>
+          <p class="lib-sub" id="libSub">Tu mesa de estudio para PDFs. Resalta, toma notas y retoma cada libro en la página donde lo dejaste. Todo se guarda en este navegador.</p>
         </div>
         <div style="display:flex;gap:8px">
           <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
@@ -220,6 +220,7 @@ kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);bord
           </button>
         </div>
       </div>
+      <div id="syncBanner" class="mem-banner" hidden>Sin conexión con el servidor: los PDFs que añadas ahora solo quedan en este dispositivo. Recarga la página cuando tengas internet para sincronizarlos.</div>
       <div id="memBanner" class="mem-banner" hidden>Este navegador no permite guardar archivos aquí. Puedes leer y resaltar, pero los PDFs se perderán al cerrar la pestaña.</div>
       <div class="lib-stats" id="libStats"></div>
       <div class="shelf" id="shelf"></div>
@@ -391,11 +392,87 @@ async function copyText(text){
     ta.remove(); return ok;
   }
 }
-let saveT;
+/* ---------- server sync (djmpos.com/atril/api) ---------- */
+const API = '/atril/api';
+const Srv = {
+  on: false,
+  async list(){ const r = await fetch(API + '/docs', {cache: 'no-store'}); if (!r.ok) throw new Error('HTTP ' + r.status); const j = await r.json(); if (!Array.isArray(j)) throw new Error('respuesta inválida'); return j; },
+  async meta(id){ const r = await fetch(`${API}/docs/${id}/meta`, {cache: 'no-store'}); return r.ok ? r.json() : null; },
+  async putMeta(m, keepalive){
+    const body = JSON.stringify(m);
+    const r = await fetch(`${API}/docs/${m.id}/meta`, {method: 'PUT', headers: {'Content-Type': 'application/json'}, body, keepalive: !!keepalive && body.length < 60000});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+  },
+  async putFile(id, buf, onProg){
+    const CH = 768 * 1024, total = Math.max(1, Math.ceil(buf.byteLength / CH));
+    for (let p = 0; p < total; p++){
+      const desde = p * CH, body = buf.slice(desde, desde + CH);
+      for (let t = 0; ; t++){
+        try {
+          const r = await fetch(`${API}/docs/${id}/file?parte=${p}&total=${total}&desde=${desde}`, {method: 'PUT', headers: {'Content-Type': 'application/octet-stream'}, body});
+          if (r.ok) break;
+          if (r.status < 500 || t >= 2) throw new Error('HTTP ' + r.status);
+        } catch (e) { if (t >= 2) throw e; }
+        await new Promise(ok => setTimeout(ok, 1000 * (t + 1)));
+      }
+      onProg && onProg((p + 1) / total);
+    }
+  },
+  async getFile(id){ const r = await fetch(`${API}/docs/${id}/file`, {cache: 'no-store'}); if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); },
+  async del(id){ await fetch(`${API}/docs/${id}`, {method: 'DELETE'}); }
+};
+const upState = new Map();   // id -> 0..1 progreso de subida, o 'error'
+let upChain = Promise.resolve();
+function drawUp(id){
+  const el = document.querySelector(`[data-up="${id}"]`); if (!el) return;
+  const v = upState.get(id);
+  el.innerHTML = v == null ? '' : v === 'error'
+    ? `No se pudo subir a la nube. <button class="btn ghost" type="button" data-retry="${id}" style="padding:0 .4em">Reintentar</button>`
+    : `Subiendo a la nube… ${Math.round(v * 100)} %`;
+}
+function queueUpload(meta){
+  if (!Srv.on || meta.synced || meta.sample || upState.has(meta.id) && upState.get(meta.id) !== 'error') return;
+  upState.set(meta.id, 0); drawUp(meta.id);
+  upChain = upChain.then(async () => {
+    try {
+      const buf = await DB.file(meta.id); if (!buf) throw new Error('sin archivo local');
+      await Srv.putFile(meta.id, buf, v => { upState.set(meta.id, v); drawUp(meta.id); });
+      meta.synced = true; await Srv.putMeta(meta); DB.put(meta).catch(() => {});
+      upState.delete(meta.id); drawUp(meta.id);
+    } catch (e) {
+      console.warn('Subida', meta.name, e); upState.set(meta.id, 'error'); drawUp(meta.id);
+    }
+  });
+}
+async function mergeDocs(local, remote){
+  const remoteIds = new Set(remote.map(r => r.id)), out = [];
+  for (const r of remote){
+    const l = local.find(x => x.id === r.id);
+    r.highlights = r.highlights || []; r.bookmarks = r.bookmarks || [];
+    if (l && (l.updated || 0) > (r.updated || 0)){ out.push(l); Srv.putMeta(l).catch(() => {}); }
+    else if (l && (l.updated || 0) === (r.updated || 0)) out.push(l);
+    else { if (l) Object.assign(l, r); const m = l || r; out.push(m); DB.put(m).catch(() => {}); }
+  }
+  for (const l of local){
+    if (remoteIds.has(l.id)) continue;
+    if (l.synced){ DB.del(l.id).catch(() => {}); continue; }   // borrado desde otro dispositivo
+    out.push(l); queueUpload(l);
+  }
+  return out;
+}
+async function refreshFromServer(){
+  if (!Srv.on || S.meta) return;
+  try { S.docs = await mergeDocs(S.docs, await Srv.list()); renderLibrary(); } catch {}
+}
+
+let saveT, srvT;
 function saveMeta(now){
-  const m = S.meta; if (!m) return; clearTimeout(saveT);
+  const m = S.meta; if (!m) return; clearTimeout(saveT); clearTimeout(srvT);
+  m.updated = Date.now();
   const go = () => DB.put(m).catch(() => {});
-  if (now) return go(); saveT = setTimeout(go, 600);
+  const push = () => { if (Srv.on && m.synced) Srv.putMeta(m, now).catch(() => {}); };
+  if (now){ push(); return go(); }
+  saveT = setTimeout(go, 600); srvT = setTimeout(push, 1500);
 }
 function normText(s){
   let o = '';
@@ -507,10 +584,10 @@ async function addBuffer(buf, name, extra){
     thumb = c.toDataURL('image/jpeg', .72);
   } catch {}
   const meta = Object.assign({id: uid(), name, size: buf.byteLength, pages: pdf.numPages, added: Date.now(), opened: 0,
-    lastPage: 0, maxPage: 0, seconds: 0, highlights: [], bookmarks: [], thumb}, extra || {});
+    lastPage: 0, maxPage: 0, seconds: 0, highlights: [], bookmarks: [], thumb, updated: Date.now(), synced: false}, extra || {});
   pdf.destroy();
   await DB.putFile(meta.id, buf); await DB.put(meta);
-  S.docs.push(meta); return meta;
+  S.docs.push(meta); queueUpload(meta); return meta;
 }
 async function addFiles(files){
   let added = 0, last = null;
@@ -544,22 +621,27 @@ function renderLibrary(){
         <p class="doc-meta"><span>${d.pages} ${d.pages === 1 ? 'página' : 'páginas'} · ${fmtSize(d.size)}</span>${d.sample ? '<span class="tag">Ejemplo</span>' : ''}</p>
         <div class="progress" title="${p}% leído"><span style="width:${p}%"></span></div>
         <p class="doc-stats"><span>${p}% leído</span><span>${fmtTime(d.seconds)}</span><span>${d.highlights.length} resaltados</span>${d.bookmarks.length ? `<span>${d.bookmarks.length} marcadores</span>` : ''}</p>
+        <p class="doc-meta" data-up="${d.id}"></p>
         <div class="doc-actions">
           <button class="btn primary" type="button" data-open="${d.id}">${started ? `Seguir en p. ${d.lastPage + 1}` : 'Empezar a leer'}</button>
           <button class="btn ghost" type="button" data-del="${d.id}">Eliminar</button>
         </div>
       </div></article>`;
   }).join('');
+  upState.forEach((_, id) => drawUp(id));
 }
 $('#shelf').addEventListener('click', async e => {
   const o = e.target.closest('[data-open]'), d = e.target.closest('[data-del]'), y = e.target.closest('[data-del-yes]'), n = e.target.closest('[data-del-no]');
+  const rt = e.target.closest('[data-retry]');
   if (e.target.closest('[data-add]')) $('#fileInput').click();
+  else if (rt){ const m = S.docs.find(x => x.id === rt.dataset.retry); if (m) queueUpload(m); }
   else if (o) openDoc(o.dataset.open);
   else if (d){
     const box = d.closest('.doc-actions');
     box.innerHTML = `<p>¿Eliminar este PDF con sus notas y resaltados?</p><button class="btn danger" type="button" data-del-yes="${d.dataset.del}">Eliminar</button><button class="btn" type="button" data-del-no>Cancelar</button>`;
   } else if (y){
     const id = y.dataset.delYes; await DB.del(id).catch(() => {});
+    if (Srv.on) Srv.del(id).catch(() => {});
     const gone = S.docs.find(x => x.id === id); if (gone && gone.sample) ls.set('sampleRemoved', true);
     S.docs = S.docs.filter(x => x.id !== id); renderLibrary();
   } else if (n) renderLibrary();
@@ -578,8 +660,15 @@ window.addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefaul
 /* ---------- reader ---------- */
 async function openDoc(id){
   const meta = S.docs.find(d => d.id === id); if (!meta) return;
+  if (Srv.on && meta.synced){
+    try { const r = await Srv.meta(id); if (r && (r.updated || 0) > (meta.updated || 0)){ Object.assign(meta, r); DB.put(meta).catch(() => {}); } } catch {}
+  }
   let buf; try { buf = await DB.file(id); } catch {}
-  if (!buf){ toast('No se encontró el archivo de este PDF en el navegador.'); return; }
+  if (!buf && Srv.on && meta.synced){
+    toast(`Descargando «${meta.name}»…`);
+    try { buf = await Srv.getFile(id); DB.putFile(id, buf).catch(() => {}); } catch {}
+  }
+  if (!buf){ toast(Srv.on ? 'No se pudo descargar este PDF. Revisa tu conexión.' : 'No se encontró el archivo de este PDF en el navegador.'); return; }
   if (S.pdf){ S.pdf.destroy(); S.pdf = null; }
   try { S.pdf = await loadPdf(buf); } catch { toast('No se pudo abrir este PDF.'); return; }
   S.meta = meta; S.texts = {}; S.query = ''; S.filter = 'todos'; S.cur = meta.lastPage || 0;
@@ -596,7 +685,7 @@ function closeDoc(){
   ttsStop(); saveMeta(true); obs && obs.disconnect(); S.token++;
   if (S.pdf){ S.pdf.destroy(); S.pdf = null; }
   S.meta = null; pagesEl.innerHTML = ''; S.pages = []; selBar.hidden = true;
-  $('#reader').hidden = true; $('#library').hidden = false; renderLibrary();
+  $('#reader').hidden = true; $('#library').hidden = false; renderLibrary(); refreshFromServer();
 }
 const narrow = () => window.innerWidth <= 900;
 function padX(){ const cs = getComputedStyle(desk); return parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight); }
@@ -1072,7 +1161,10 @@ setInterval(() => {
   m.seconds = (m.seconds || 0) + 1;
   if (m.seconds % 15 === 0){ saveMeta(); updateFoot(); }
 }, 1000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveMeta(true); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveMeta(true);
+  else refreshFromServer();
+});
 
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown', e => {
@@ -1106,7 +1198,14 @@ async function boot(){
   try { await openDB(); } catch { useMem = true; $('#memBanner').hidden = false; }
   try { S.docs = (await DB.all()) || []; } catch { S.docs = []; }
   S.docs.forEach(d => { d.highlights = d.highlights || []; d.bookmarks = d.bookmarks || []; });
-  if (!S.docs.length && !ls.get('sampleRemoved', false)){
+  try {
+    const remote = await Srv.list(); Srv.on = true;
+    S.docs = await mergeDocs(S.docs, remote);
+    $('#libSub').textContent = 'Tu mesa de estudio para PDFs. Resalta, toma notas y retoma cada libro donde lo dejaste, en el PC o en el celular.';
+  } catch {
+    if (location.protocol.startsWith('http')) $('#syncBanner').hidden = false;
+  }
+  if (!Srv.on && !S.docs.length && !ls.get('sampleRemoved', false)){
     try { await addBuffer(buildSamplePdf(), 'Guía de ejemplo: cómo estudiar con Atril', {sample: true}); } catch (e) { console.warn(e); }
   }
   renderLibrary();
