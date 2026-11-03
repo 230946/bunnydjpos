@@ -89,6 +89,8 @@ app.get('/hotel',            (_, res) => res.sendFile(path.join(frontendPath, 'p
 app.get('/cocina',           (_, res) => res.sendFile(path.join(frontendPath, 'cocina.html')));
 app.get('/menu',             (_, res) => res.sendFile(path.join(frontendPath, 'menu-cliente.html')));
 app.get('/cuenta',           (_, res) => res.sendFile(path.join(frontendPath, 'cuenta-cliente.html')));
+// Lector de PDF de estudio (Atril) — todo vive en el navegador, sin API
+app.get('/atril',            (_, res) => res.sendFile(path.join(frontendPath, 'atril.html')));
 // Domicilios
 app.get('/domicilios',       (_, res) => res.sendFile(path.join(frontendPath, 'domicilios.html')));
 app.get('/domiciliario',     (_, res) => res.sendFile(path.join(frontendPath, 'domiciliario.html')));
