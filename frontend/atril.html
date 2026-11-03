@@ -310,6 +310,7 @@ kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);bord
         <label class="field" for="voiceSel">Voz para escuchar
           <select id="voiceSel"></select>
         </label>
+        <p class="rp-hint" id="voiceHint" hidden style="color:var(--danger)">Este dispositivo no tiene voces en español latino. Instala una (en Android: Ajustes → Accesibilidad → Texto a voz → Voz de Google → Español de Estados Unidos o México; en Windows: Configuración → Hora e idioma → Voz → Agregar voces → Español (México)) y recarga la página.</p>
         <div class="rp-row">
           <button class="btn" id="voiceTest" type="button">Probar voz</button>
         </div>
@@ -1159,19 +1160,49 @@ $('#pomoReset').onclick = () => { clearInterval(P.timer); P.running = false; P.m
 const RATES = [.8, 1, 1.25, 1.5, 1.75, 2];
 const T = {state: 'idle', page: 0, chunks: [], k: 0, gen: 0, single: false, empty: 0, rate: ls.get('rate', 1)};
 const hasTTS = 'speechSynthesis' in window;
+// Voz latina por defecto: español de Latinoamérica antes que el de España,
+// y dentro de ella las voces naturales (Edge/Windows) y la de Google.
+const LATAM = /^es[-_](MX|US|CO|419|AR|CL|PE|VE|EC|GT|CR|PA|DO|UY|PY|BO|SV|HN|NI|PR|CU)\b/i;
+const isLatam = v => LATAM.test(v.lang) || /latin|m[eé]xic|colombia|estados unidos|united states|argentin|chile|per[uú]/i.test(v.name);
+function voiceScore(v){
+  let s = 0;
+  if (isLatam(v)) s += 100; else if (/^es/i.test(v.lang)) s += 10;
+  if (/natural|online|neural/i.test(v.name)) s += 20;
+  if (/google/i.test(v.name)) s += 8;
+  if (/^es[-_](MX|CO)/i.test(v.lang)) s += 4;
+  if (v.localService === false) s += 1;
+  return s;
+}
+function sortedVoices(){
+  const vs = hasTTS ? speechSynthesis.getVoices() : [];
+  const es = vs.filter(v => /^es/i.test(v.lang));
+  return (es.length ? es : vs).slice().sort((a, b) => voiceScore(b) - voiceScore(a));
+}
 function pickVoice(){
   const vs = hasTTS ? speechSynthesis.getVoices() : [];
   const saved = ls.get('voice', '');
-  return (saved && vs.find(v => v.voiceURI === saved))
-    || vs.find(v => /^es[-_](MX|CO|US|419|AR)/i.test(v.lang)) || vs.find(v => /^es/i.test(v.lang)) || null;
+  return (saved && vs.find(v => v.voiceURI === saved)) || sortedVoices()[0] || null;
+}
+// Una sola vez: si antes quedó elegida una voz de España, se vuelve a la latina automática
+if (hasTTS && !ls.get('voiceLatam', false)){
+  const fix = () => {
+    const vs = speechSynthesis.getVoices(); if (!vs.length) return;
+    const saved = ls.get('voice', ''), v = vs.find(x => x.voiceURI === saved);
+    if (v && !isLatam(v)) ls.set('voice', '');
+    ls.set('voiceLatam', true);
+  };
+  fix(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', fix, {once: true});
 }
 function fillVoices(){
   const sel = $('#voiceSel'); if (!hasTTS){ sel.innerHTML = '<option>Este navegador no tiene voces</option>'; sel.disabled = true; return; }
-  const vs = speechSynthesis.getVoices();
-  const es = vs.filter(v => /^es/i.test(v.lang)), list = es.length ? es : vs;
-  const saved = ls.get('voice', '');
-  sel.innerHTML = `<option value="">Automática${pickVoice() && !saved ? ' (' + esc(pickVoice().name) + ')' : ''}</option>` +
-    list.map(v => `<option value="${esc(v.voiceURI)}"${v.voiceURI === saved ? ' selected' : ''}>${esc(v.name.replace(/^(Microsoft|Google)\s+/, ''))} · ${esc(v.lang)}</option>`).join('');
+  const list = sortedVoices(), saved = ls.get('voice', ''), auto = pickVoice();
+  const label = v => esc(v.name.replace(/^(Microsoft|Google)\s+/, '').replace(/\s*-\s*Spanish.*$/i, '')) + ' · ' + esc(v.lang) + (isLatam(v) ? ' · latina' : '');
+  const lat = list.filter(isLatam), rest = list.filter(v => !isLatam(v));
+  const opts = vs => vs.map(v => `<option value="${esc(v.voiceURI)}"${v.voiceURI === saved ? ' selected' : ''}>${label(v)}</option>`).join('');
+  sel.innerHTML = `<option value="">Automática${auto && !saved ? ' (' + esc(auto.name.replace(/^(Microsoft|Google)\s+/, '').replace(/\s*-\s*Spanish.*$/i, '')) + ')' : ''}</option>`
+    + (lat.length ? `<optgroup label="Español latino">${opts(lat)}</optgroup>` : '')
+    + (rest.length ? `<optgroup label="${lat.length ? 'Otras voces' : 'Voces disponibles'}">${opts(rest)}</optgroup>` : '');
+  $('#voiceHint').hidden = lat.length > 0;
 }
 if (hasTTS) speechSynthesis.onvoiceschanged = () => { if (!$('#readPanel').hidden) fillVoices(); };
 function splitChunks(t){
@@ -1209,7 +1240,7 @@ function ttsNext(){
     desk.scrollTo({top: el.offsetTop + frac * el.offsetHeight - desk.clientHeight * .3, behavior: 'smooth'});
   }
   const g = T.gen, u = new SpeechSynthesisUtterance(T.chunks[T.k++]);
-  const v = pickVoice(); if (v){ u.voice = v; u.lang = v.lang; } else u.lang = 'es-ES';
+  const v = pickVoice(); if (v){ u.voice = v; u.lang = v.lang; } else u.lang = 'es-US';
   u.rate = T.rate;
   u.onend = () => { if (g === T.gen) ttsNext(); };
   u.onerror = e => { if (g === T.gen && e.error !== 'interrupted' && e.error !== 'canceled') ttsNext(); };
@@ -1260,7 +1291,7 @@ $('#voiceTest').onclick = () => {
   if (T.state === 'playing') ttsPause();
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance('Hola, así suena esta voz. La práctica de recuperación es la mejor forma de estudiar.');
-  const v = pickVoice(); if (v){ u.voice = v; u.lang = v.lang; } else u.lang = 'es-ES';
+  const v = pickVoice(); if (v){ u.voice = v; u.lang = v.lang; } else u.lang = 'es-US';
   u.rate = T.rate; speechSynthesis.speak(u);
 };
 $('#autoSel').onchange = e => {
