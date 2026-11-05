@@ -1024,10 +1024,14 @@ router.get('/reportes/categoria-vendida', requirePermiso(['reportes','pos_cobro'
     const unDia = d === h;
     const ventana = unDia ? await ventanaDelDia(nid(req), d, req.user.zona_horaria) : null;
     const condVi = unDia ? `vi.creado >= ${ph(3)} AND vi.creado <= ${ph(4)}` : `DATE(vi.creado) BETWEEN ${ph(3)} AND ${ph(4)}`;
+    // venta_items.inventario_id casi nunca queda guardado (el carrito del bar
+    // no lo trae al cobrar), así que emparejar por nombre del artículo contra
+    // el inventario del mismo negocio en vez de depender de ese id.
     const { rows } = await pool.query(`
       SELECT COALESCE(SUM(vi.cantidad),0) AS cantidad
       FROM venta_items vi
-      JOIN inventario inv ON inv.id = vi.inventario_id
+      JOIN inventario inv ON inv.negocio_id = vi.negocio_id
+        AND (inv.id = vi.inventario_id OR inv.nombre = vi.nombre)
       WHERE vi.negocio_id=${ph(1)} AND inv.categoria=${ph(2)} AND ${condVi}
     `, [nid(req), categoria, unDia ? ventana.inicio : d, unDia ? ventana.fin : h]);
     res.json({ categoria, cantidad: +rows[0].cantidad || 0 });
