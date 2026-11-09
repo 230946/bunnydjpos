@@ -725,6 +725,16 @@ async function runMigrations() {
       console.error(`Error migración ${m.table}:`, e.message);
     }
   }
+
+  // El módulo Hotel se retiró: se borran sus tablas (hijas antes que padres
+  // por las llaves foráneas). IF EXISTS hace que solo actúe una vez.
+  for (const t of ['htl_reserva_cargos', 'htl_pagos', 'htl_reservas', 'htl_servicios', 'htl_habitaciones']) {
+    try {
+      await pool.query(`DROP TABLE IF EXISTS ${t}`);
+    } catch (e) {
+      console.error(`Error borrando ${t}:`, e.message);
+    }
+  }
 }
 
 // ── Arrancar ──────────────────────────────────────────────────────
