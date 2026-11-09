@@ -214,6 +214,10 @@ table tr:hover td{background:var(--bg2)}
 .modal{background:var(--bg);border-radius:var(--rl);padding:22px;width:100%;max-width:440px;max-height:90vh;overflow:auto}
 .modal.wide{max-width:640px}
 .modal h3{margin-bottom:14px}
+.qty-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.qty-num{height:clamp(52px,10vh,84px);border:2px solid var(--border2);border-radius:var(--r);background:var(--bg2,transparent);color:var(--text);font-size:clamp(26px,5vh,38px);font-weight:800;cursor:pointer;touch-action:manipulation}
+.qty-num:active{background:var(--green);border-color:var(--green);color:#fff}
+.qty-num:disabled{opacity:.25;cursor:not-allowed}
 .modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
 
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:1200}
@@ -407,6 +411,22 @@ table tr:hover td{background:var(--bg2)}
     <div id="mesa-prompt-grid" class="mesas-grid" style="margin-bottom:14px"></div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-full" onclick="elegirSinMesa()">🥤 Sin mesa / Para llevar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cantidad al agregar un producto -->
+<div class="modal-bg" id="cantidad-modal" onclick="if(event.target===this)cerrarCantidadModal()">
+  <div class="modal" style="max-width:420px">
+    <h3 id="qty-titulo" style="margin-bottom:2px"></h3>
+    <p id="qty-info" style="font-size:13px;color:var(--text2);margin-bottom:12px"></p>
+    <div id="qty-grid" class="qty-grid"></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;margin-top:12px">
+      <input id="qty-otra" type="number" min="1" step="1" inputmode="numeric" placeholder="Otra cantidad" aria-label="Otra cantidad" style="width:100%;box-sizing:border-box;font-size:18px;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)" onkeydown="if(event.key==='Enter')elegirCantidad(+this.value)">
+      <button class="btn btn-primary" style="width:100%" onclick="elegirCantidad(+$('qty-otra').value)">Agregar</button>
+    </div>
+    <div class="modal-actions" style="margin-top:12px">
+      <button class="btn btn-outline btn-full" onclick="cerrarCantidadModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1213,12 +1233,53 @@ function elegirSinMesa(){
   const pid = _pendingItemId; _pendingItemId = null;
   if (pid) _agregarAlCarritoCore(pid);
 }
+let _qtyItemId = null, _qtyAbiertoEn = 0;
+// Enteros que todavía se pueden pedir, descontando lo que ya está en el
+// carrito (el servidor rechaza el pedido entero si alguno supera el stock).
+function _qtyDisponible(it){
+  const s = stockEfectivo(it);
+  if (s === null || s === undefined) return Infinity;
+  const enCarrito = carrito.filter(c => c.item_id === it.id).reduce((a,c) => a + c.qty, 0);
+  return Math.floor(+s - enCarrito);
+}
 function _agregarAlCarritoCore(id){
+  const it = items.find(x => x.id === id); if (!it) return;
+  if (itemAgotado(it)) { showToast(`"${it.nombre}" está agotado`); return; }
+  const disp = _qtyDisponible(it);
+  if (disp < 1) { showToast(`No queda más stock de "${it.nombre}"`); return; }
+  _qtyItemId = id;
+  $('qty-titulo').textContent = `${it.emoji||''} ${it.nombre}`.trim();
+  $('qty-info').textContent = fmt(it.promo_vigente ? it.precio_efectivo : it.precio) + (disp === Infinity ? '' : ` · Disponibles: ${disp}`);
+  $('qty-grid').innerHTML = Array.from({length:12}, (_,i) => i+1)
+    .map(n => `<button type="button" class="qty-num" ${n>disp?'disabled':''} onclick="elegirCantidad(${n})">${n}</button>`).join('');
+  $('qty-otra').value = '';
+  openModal('cantidad-modal');
+  _qtyAbiertoEn = Date.now();
+}
+// Quien venía tocando el producto varias veces seguidas no debe elegir un
+// número o cerrar el popup sin querer con el segundo toque.
+function _qtyToqueAccidental(){ return Date.now() - _qtyAbiertoEn < 300; }
+function cerrarCantidadModal(){
+  if (_qtyToqueAccidental()) return;
+  closeModal('cantidad-modal');
+  _qtyItemId = null;
+}
+function elegirCantidad(n){
+  if (_qtyToqueAccidental()) return;
+  const it = items.find(x => x.id === _qtyItemId); if (!it) return;
+  if (!Number.isInteger(n) || n < 1) return showToast('Ingresá una cantidad válida');
+  const disp = _qtyDisponible(it);
+  if (n > disp) return showToast(`Solo hay ${disp} disponibles`);
+  _sumarAlCarrito(_qtyItemId, n);
+  closeModal('cantidad-modal');
+  _qtyItemId = null;
+}
+function _sumarAlCarrito(id, qty){
   const it = items.find(x => x.id === id); if (!it) return;
   if (itemAgotado(it)) { showToast(`"${it.nombre}" está agotado`); return; }
   const precioFinal = it.promo_vigente ? +it.precio_efectivo : +it.precio;
   const ex = carrito.find(c => c.item_id === id);
-  if (ex) ex.qty++; else carrito.push({ item_id: id, nombre: it.nombre, emoji: it.emoji, precio: precioFinal, qty: 1, _cid: ++_cartCid });
+  if (ex) ex.qty += qty; else carrito.push({ item_id: id, nombre: it.nombre, emoji: it.emoji, precio: precioFinal, qty, _cid: ++_cartCid });
   renderCarrito();
 }
 let manualTicketTarget = null;
