@@ -377,7 +377,8 @@ async function runMigrations() {
     { table: 'menu_items', column: 'promo_hasta',     sql: `ALTER TABLE menu_items ADD COLUMN promo_hasta DATE NULL` },
     { table: 'menu_items', column: 'destacado',       sql: `ALTER TABLE menu_items ADD COLUMN destacado TINYINT(1) NOT NULL DEFAULT 0` },
     { table: 'menu_items', column: 'destacado_texto', sql: `ALTER TABLE menu_items ADD COLUMN destacado_texto VARCHAR(100) NULL` },
-    { table: 'menu_items', column: 'favorito',        sql: `ALTER TABLE menu_items ADD COLUMN favorito TINYINT(1) NOT NULL DEFAULT 0` },
+    { table: 'venta_items', column: 'menu_item_id',   sql: `ALTER TABLE venta_items ADD COLUMN menu_item_id VARCHAR(36) NULL, ADD INDEX idx_vi_menu_item (menu_item_id)` },
+    { table: 'menu_items', column: 'favorito',       sql: `ALTER TABLE menu_items ADD COLUMN favorito TINYINT(1) NOT NULL DEFAULT 0` },
     { table: 'negocios', column: 'costo_domicilio', sql: `ALTER TABLE negocios ADD COLUMN costo_domicilio DECIMAL(10,2) NOT NULL DEFAULT 0` },
     { table: 'domicilios_pedidos', column: 'costo_domicilio', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN costo_domicilio DECIMAL(10,2) NOT NULL DEFAULT 0` },
     {

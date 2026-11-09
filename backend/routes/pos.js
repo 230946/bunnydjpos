@@ -1140,9 +1140,9 @@ router.post('/ventas', async (req, res) => {
     // Insertar items para estadísticas
     for (const item of (items||[])) {
       await pool.query(
-        `INSERT INTO venta_items (venta_id,negocio_id,inventario_id,nombre,cantidad,precio_unit,subtotal_item)
-         VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)})`,
-        [id, nid(req), item.inventario_id||null, item.nombre, item.qty||item.cantidad||1,
+        `INSERT INTO venta_items (venta_id,negocio_id,inventario_id,menu_item_id,nombre,cantidad,precio_unit,subtotal_item)
+         VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)})`,
+        [id, nid(req), item.inventario_id||null, item.item_id||null, item.nombre, item.qty||item.cantidad||1,
          item.precio||item.precio_unit||item.precio_unitario||0,
          (item.qty||item.cantidad||1)*(item.precio||item.precio_unit||item.precio_unitario||0)]
       );

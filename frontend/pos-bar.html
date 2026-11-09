@@ -155,6 +155,12 @@ table tr:hover td{background:var(--bg2)}
 .fav-btn{position:absolute;top:1px;left:1px;width:32px;height:32px;padding:0;border:none;background:transparent;font-size:21px;line-height:32px;color:#c4c4c4;cursor:pointer;z-index:1;transition:color .15s,transform .15s}
 .fav-btn:hover{transform:scale(1.15)}
 .fav-btn.on{color:#f5b301;text-shadow:0 0 1px #9a6b00}
+.barra-sec{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--text);margin:4px 0 -2px}
+.barra-sec::after{content:"";flex:1;height:1px;background:var(--border)}
+.barra-sec .n{font-size:11px;font-weight:600;color:var(--text2)}
+.barra-sec .estrella{color:#f5b301}
+.barra-sec + .menu-item-card{margin-top:0}
+.barra-sec.sep{margin-top:10px}
 .cart-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;position:sticky;top:12px}
 .quick-send-bar{
   position:fixed; left:16px; right:16px; bottom:16px; max-width:520px; margin:0 auto;
@@ -872,7 +878,9 @@ function conectarWS(){
       } else if (tipo === 'comanda_actualizada' || tipo === 'cocina_limpiada') {
         cargarTickets().then(renderMesasGrid);
         cargarItems().then(renderBarraItems);
+        if (currentPage === 'mesas') cargarCervezasHoy();
       } else if (tipo === 'mesa_actualizada' || tipo === 'mesa_liberada') {
+        if (currentPage === 'mesas') cargarCervezasHoy();
         cargarMesas().then(renderMesasGrid);
       } else if (tipo === 'inventario_actualizado') {
         cargarItems().then(renderBarraItems);
@@ -1167,11 +1175,9 @@ function renderBarraItems(){
     if (q) return normTxt(it.nombre).includes(q) || (catNom[it.categoria_id]||'').includes(q);
     return !barraCatActiva || it.categoria_id === barraCatActiva;
   });
-  // Los favoritos van primero; el resto conserva su orden.
-  lista.sort((a, b) => (+!!+b.favorito) - (+!!+a.favorito));
   $('barra-items-count').textContent = `${lista.length} artículo${lista.length===1?'':'s'}`;
   if (!lista.length) { $('barra-items').innerHTML = '<div class="empty-msg">No hay artículos. Agregalos en "Menú".</div>'; return; }
-  $('barra-items').innerHTML = lista.map(it => {
+  const tarjeta = it => {
     const agotado = itemAgotado(it);
     const bajo = !agotado && itemBajoStock(it);
     const clickable = it.disponible && !agotado;
@@ -1189,7 +1195,14 @@ function renderBarraItems(){
       ${agotado?'<div class="badge b-red" style="margin-top:4px;font-size:9px;text-align:center">Agotado</div>':''}
       ${bajo?`<div class="badge b-yellow" style="margin-top:4px;font-size:9px;text-align:center">⚠ Bajo stock${stockEfectivo(it)!=null?' ('+fmtQty(stockEfectivo(it))+')':''}</div>`:''}
     </div>`;
-  }).join('');
+  };
+  // Con favoritos, la lista se parte en dos secciones con título; sin ellos
+  // se ve como siempre.
+  const favs = lista.filter(it => +it.favorito), resto = lista.filter(it => !+it.favorito);
+  const titulo = (txt, n, sep) => `<div class="barra-sec${sep?' sep':''}">${txt} <span class="n">${n}</span></div>`;
+  $('barra-items').innerHTML = !favs.length ? resto.map(tarjeta).join('')
+    : titulo('<span class="estrella">★</span> Favoritos', favs.length) + favs.map(tarjeta).join('')
+      + (resto.length ? titulo('Demás productos', resto.length, true) + resto.map(tarjeta).join('') : '');
 }
 // Marca o quita la estrella. Se ve de inmediato y, si el servidor falla, vuelve atrás.
 async function toggleFavorito(id, ev){
