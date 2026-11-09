@@ -229,6 +229,7 @@ table tr:hover td{background:var(--bg2)}
 #contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
 #contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}
 </style>
+<script src="/js/bold-pago.js"></script>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">Tu contrato ha vencido o fue cancelado.<br>Contacta al administrador del sistema.</p></div>
@@ -1529,6 +1530,8 @@ function renderCobroItems(){
 function abrirCobro(){
   if (!cajaLista()) { avisarCajaNoLista(); return; }
   _cobroEvidenciaFile = null;
+  _cobroBoldPagoId = null;
+  BoldPago.prepararSelect($('cobro-metodo'), token);
   $('cobro-es-cliente').checked = cobroEsClienteDefault;
   renderCobroItems();
   $('cobro-metodo').value = 'efectivo';
@@ -1562,7 +1565,7 @@ function renderCobroCampos(){
   $('cobro-campos-fiado').classList.toggle('hide', m !== 'fiado');
   renderQrPago('cobro-qr', m === 'nequi' || m === 'mixto');
   $('cobro-cliente-wrap').classList.toggle('hide', m === 'fiado');
-  $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : 'Confirmar cobro';
+  $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : m === 'bold' ? 'Generar QR de Bold' : 'Confirmar cobro';
 }
 // QR de pago configurado en el admin (Datos de facturación → QR de pago)
 const QR_PAGO_TITULOS = { nequi: 'Nequi', transferencia: 'Transferencia' };
@@ -1597,7 +1600,7 @@ function calcCambio(){
   const recibido = +$('cobro-recibido').value || 0;
   $('cobro-cambio').value = Math.max(0, recibido - total);
 }
-const _mLabelsRecibo = { efectivo:'Efectivo', tarjeta:'Tarjeta', nequi:'Nequi/transferencia' };
+const _mLabelsRecibo = { efectivo:'Efectivo', tarjeta:'Tarjeta', nequi:'Nequi/transferencia', bold:'Bold' };
 function buildReciboHTML(v, cf){
   cf = cf || {};
   const items = v.items || [];
@@ -1706,6 +1709,7 @@ async function confirmarCobroSaldo(){
     body.monto_tarjeta = +$('cobro-mix-tarjeta').value||0;
     body.monto_nequi = +$('cobro-mix-nequi').value||0;
   }
+  if (metodo === 'bold') body.bold_pago_id = _cobroBoldPagoId;
   try{
     const r = await api(`/pos/comandas/${cobroOrigenTicketId}/pago-parcial`, { method:'PUT', body: JSON.stringify(body) });
     if (_cobroEvidenciaFile) subirEvidenciaPago(r.venta_id);
@@ -1719,6 +1723,7 @@ async function confirmarCobroSaldo(){
 // para verificar que el QR mostrado sí se cobró. Se toma con la cámara del
 // celular (capture="environment") antes de registrar la venta.
 let _cobroEvidenciaFile = null;
+let _cobroBoldPagoId = null; // pago Bold ya aprobado para este cobro
 function requiereEvidenciaPago(metodo){
   if (metodo === 'nequi') return true;
   if (metodo === 'mixto') return (+$('cobro-mix-nequi').value||0) > 0;
@@ -1743,6 +1748,11 @@ async function confirmarCobro(){
   if (metodo0 === 'fiado') return confirmarFiado();
   if (!cajaLista()) { avisarCajaNoLista(); closeModal('cobro-modal'); return; }
   if (requiereEvidenciaPago(metodo0) && !_cobroEvidenciaFile) { $('cobro-evidencia-file').value = ''; $('cobro-evidencia-file').click(); return; }
+  if (metodo0 === 'bold' && !_cobroBoldPagoId) {
+    const pago = await BoldPago.cobrar({ token, monto: Math.round(totalCobro()), descripcion: cobroOrigenMesaNum ? `Mesa ${cobroOrigenMesaNum}` : 'Venta en barra' });
+    if (!pago) return;
+    _cobroBoldPagoId = pago.id;
+  }
   if (cobroEsSaldo) return confirmarCobroSaldo();
   const subtotal = subtotalCobro();
   const descuento = descuentoCobro();
@@ -1752,6 +1762,7 @@ async function confirmarCobro(){
   if (metodo === 'efectivo') { monto_efectivo = total; recibido = +$('cobro-recibido').value || total; cambio = Math.max(0, recibido - total); }
   else if (metodo === 'tarjeta') monto_tarjeta = total;
   else if (metodo === 'nequi') monto_nequi = total;
+  else if (metodo === 'bold') monto_tarjeta = total;
   else { monto_efectivo = +$('cobro-mix-efectivo').value||0; monto_tarjeta = +$('cobro-mix-tarjeta').value||0; monto_nequi = +$('cobro-mix-nequi').value||0; }
   const cliente_nombre = $('cobro-cliente').value.trim() || null;
   const body = {
@@ -1759,6 +1770,7 @@ async function confirmarCobro(){
     metodo_pago: metodo, recibido, cambio,
     cliente_nombre,
     monto_efectivo, monto_tarjeta, monto_nequi,
+    bold_pago_id: metodo === 'bold' ? _cobroBoldPagoId : undefined,
     mesa_id: cobroOrigenMesaId || undefined, mesa_num: cobroOrigenMesaNum || undefined,
     comanda_id: cobroOrigenTicketId || undefined,
   };

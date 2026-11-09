@@ -137,6 +137,7 @@ header.topbar h2{font-size:17px}
 .metodo-badge-efectivo{background:#e8f5e9;color:#2e7d32}
 .metodo-badge-tarjeta{background:#e3f2fd;color:#1565c0}
 .metodo-badge-nequi{background:#f3e5f5;color:#6a1b9a}
+.metodo-badge-bold{background:#e0e7ff;color:#121e6c}
 .ventas-table td{padding:8px 12px;font-size:13px}
 .fila-con-evidencia:hover{background:var(--bg2)}
 .ventas-table th{padding:8px 12px}
@@ -285,6 +286,7 @@ table tr:hover td{background:var(--bg2)}
 #contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
 #contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}
 </style>
+<script src="/js/bold-pago.js"></script>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">Tu contrato ha vencido o fue cancelado.<br>Contacta al administrador del sistema.</p></div>
@@ -966,6 +968,7 @@ table tr:hover td{background:var(--bg2)}
             <option value="efectivo">Efectivo</option>
             <option value="tarjeta">Tarjeta</option>
             <option value="nequi">Nequi/QR</option>
+            <option value="bold">Bold</option>
           </select>
           <select id="rep-tipo" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:30px;padding:5px 14px;font-size:12px;color:var(--text);outline:none;cursor:pointer;flex-shrink:0">
             <option value="">Todos los canales</option>
@@ -1115,6 +1118,7 @@ table tr:hover td{background:var(--bg2)}
               <div id="qr-slot-transferencia"></div>
             </div>
           </div>
+          <div id="bold-config-slot" style="border-top:1px solid var(--border2);margin:14px 0 12px;padding-top:12px"></div>
           <button class="btn btn-primary" onclick="guardarConfigFactura()">Guardar</button>
         </div>
       </section>
@@ -3569,6 +3573,8 @@ function renderCobroItems(){
 function abrirCobro(){
   if (!cajaLista()) { showToast(mensajeCajaNoLista()); return; }
   _cobroEvidenciaFile = null;
+  _cobroBoldPagoId = null;
+  BoldPago.prepararSelect($('cobro-metodo'), token);
   $('cobro-es-cliente').checked = cobroEsClienteDefault;
   renderCobroItems();
   $('cobro-metodo').value = 'efectivo';
@@ -3600,7 +3606,7 @@ function renderCobroCampos(){
   $('cobro-campos-fiado').classList.toggle('hide', m !== 'fiado');
   renderQrPago('cobro-qr', m === 'nequi' || m === 'mixto');
   $('cobro-cliente-wrap').classList.toggle('hide', m === 'fiado');
-  $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : 'Confirmar cobro';
+  $('cobro-confirmar-btn').textContent = m === 'fiado' ? 'Registrar deuda' : m === 'bold' ? 'Generar QR de Bold' : 'Confirmar cobro';
 }
 // QR de pago configurado en el admin (Datos de facturación → QR de pago)
 const QR_PAGO_CORTOS = { nequi: 'Nequi', transferencia: 'Transferencia' };
@@ -3692,6 +3698,7 @@ async function confirmarCobroSaldo(){
     body.monto_tarjeta = +$('cobro-mix-tarjeta').value||0;
     body.monto_nequi = +$('cobro-mix-nequi').value||0;
   }
+  if (metodo === 'bold') body.bold_pago_id = _cobroBoldPagoId;
   try{
     const r = await api(`/pos/comandas/${cobroOrigenTicketId}/pago-parcial`, { method:'PUT', body: JSON.stringify(body) });
     if (_cobroEvidenciaFile) subirEvidenciaPago(r.venta_id);
@@ -3705,6 +3712,7 @@ async function confirmarCobroSaldo(){
 // para verificar que el QR mostrado sí se cobró. Se toma con la cámara del
 // celular (capture="environment") antes de registrar la venta.
 let _cobroEvidenciaFile = null;
+let _cobroBoldPagoId = null; // pago Bold ya aprobado para este cobro
 function requiereEvidenciaPago(metodo){
   if (metodo === 'nequi') return true;
   if (metodo === 'mixto') return (+$('cobro-mix-nequi').value||0) > 0;
@@ -3729,6 +3737,11 @@ async function confirmarCobro(){
   if (metodo0 === 'fiado') return confirmarFiado();
   if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
   if (requiereEvidenciaPago(metodo0) && !_cobroEvidenciaFile) { $('cobro-evidencia-file').value = ''; $('cobro-evidencia-file').click(); return; }
+  if (metodo0 === 'bold' && !_cobroBoldPagoId) {
+    const pago = await BoldPago.cobrar({ token, monto: Math.round(totalCobro()), descripcion: cobroOrigenMesaNum ? `Mesa ${cobroOrigenMesaNum}` : 'Venta en barra' });
+    if (!pago) return;
+    _cobroBoldPagoId = pago.id;
+  }
   if (cobroEsSaldo) return confirmarCobroSaldo();
   const subtotal = subtotalCobro();
   const descuento = descuentoCobro();
@@ -3738,6 +3751,7 @@ async function confirmarCobro(){
   if (metodo === 'efectivo') { monto_efectivo = total; recibido = +$('cobro-recibido').value || total; cambio = Math.max(0, recibido - total); }
   else if (metodo === 'tarjeta') monto_tarjeta = total;
   else if (metodo === 'nequi') monto_nequi = total;
+  else if (metodo === 'bold') monto_tarjeta = total;
   else { monto_efectivo = +$('cobro-mix-efectivo').value||0; monto_tarjeta = +$('cobro-mix-tarjeta').value||0; monto_nequi = +$('cobro-mix-nequi').value||0; }
   const cliente_nombre = $('cobro-cliente').value.trim() || null;
   const body = {
@@ -3745,6 +3759,7 @@ async function confirmarCobro(){
     metodo_pago: metodo, recibido, cambio,
     cliente_nombre,
     monto_efectivo, monto_tarjeta, monto_nequi,
+    bold_pago_id: metodo === 'bold' ? _cobroBoldPagoId : undefined,
     mesa_id: cobroOrigenMesaId || undefined, mesa_num: cobroOrigenMesaNum || undefined,
     comanda_id: cobroOrigenTicketId || undefined,
   };
@@ -3761,7 +3776,7 @@ async function confirmarCobro(){
     _factActual = { id: venta.id, numero_factura: venta.numero_factura, estado: 'activa' };
     const reciboData = {
       id: venta.id, numero_factura: venta.numero_factura, creado: new Date(), items: cobroItems,
-      subtotal, descuento, iva: 0, total, cliente_nombre,
+      subtotal, descuento, iva: 0, total, cliente_nombre, metodo_pago: metodo,
       mesa_num: cobroOrigenMesaNum, cajero_nombre: me?.nombre,
       monto_efectivo, monto_tarjeta, monto_nequi, recibido, cambio,
     };
@@ -5215,8 +5230,9 @@ async function borrarCliente(id, nombre){
 // ================= FACTURAS =================
 let _factActual = null;
 let _factCfg = null;
-const _mLabelsF = { efectivo:'Efectivo', tarjeta:'Tarjeta', nequi:'Nequi/transferencia' };
+const _mLabelsF = { efectivo:'Efectivo', tarjeta:'Tarjeta', nequi:'Nequi/transferencia', bold:'Bold' };
 function _metodoStrFact(v){
+  if (v.metodo_pago==='bold') return 'Bold';
   const ef=+v.monto_efectivo||0, ta=+v.monto_tarjeta||0, ne=+v.monto_nequi||0;
   const pagos={efectivo:ef,tarjeta:ta,nequi:ne};
   const activos=Object.entries(pagos).filter(([,val])=>val>0);
@@ -5818,6 +5834,7 @@ function exportarExcelReportes(){
 // ================= CONFIG FACTURA =================
 let _cfActual = {};
 async function cargarConfigFactura(){
+  BoldPago.montarConfig($('bold-config-slot'), token);
   try{
     _cfActual = await api('/admin/config/factura');
     $('cf-nombre').value = _cfActual.nombre||''; $('cf-nit').value = _cfActual.nit||'';

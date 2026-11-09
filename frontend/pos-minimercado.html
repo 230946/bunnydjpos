@@ -252,6 +252,8 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
 #contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
 #contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}
 </style>
+<script src="/js/bold-pago.js"></script>
+<script src="/js/pago-qr.js"></script>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">No tienes un contrato activo.<br>Contacta al administrador del sistema.</p></div>
@@ -390,7 +392,9 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
       <button class="m-btn" onclick="selMetodo('Tarjeta',this)">💳 Tarjeta</button>
       <button class="m-btn" onclick="selMetodo('Nequi',this)">📱 Nequi</button>
       <button class="m-btn" onclick="selMetodo('Transferencia',this)">🏦 Transf.</button>
+      <button class="m-btn" id="m-btn-bold" style="display:none" onclick="selMetodo('Bold',this)">📲 Bold</button>
     </div>
+    <div id="m-qr" style="display:none"></div>
     <div id="ef-section">
       <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Valor recibido</label>
       <input class="inp" id="m-rec" type="number" min="0" placeholder="0" oninput="calcCambio()">
@@ -729,6 +733,8 @@ function openCheckout(){
   metodo = 'Efectivo';
   document.querySelectorAll('.m-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
   $('ef-section').style.display='block';
+  PagoQr.mostrar($('m-qr'), token, []);
+  BoldPago.disponible(token).then(a => { $('m-btn-bold').style.display = a ? '' : 'none'; });
   $('m-rec').value='';
   $('m-cambio').style.display='none';
   $('btn-confirmar').disabled=false;
@@ -781,6 +787,7 @@ function selMetodo(m, btn){
   document.querySelectorAll('.m-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   $('ef-section').style.display = m==='Efectivo'?'block':'none';
+  PagoQr.mostrar($('m-qr'), token, m==='Nequi' ? ['nequi'] : m==='Transferencia' ? ['transferencia'] : []);
 }
 
 function calcCambio(){
@@ -910,6 +917,17 @@ function corregirFactura(){
 }
 
 async function confirmarPago(){
+  // Cobros por QR: primero el comprobante o el pago, para que cancelar deje la
+  // vista previa tal como estaba.
+  if(['Nequi','Transferencia'].includes(_pendingVenta.metodo) && !_pendingVenta.evidencia){
+    PagoQr.pedirEvidencia(f=>{ _pendingVenta.evidencia=f; confirmarPago(); });
+    return;
+  }
+  if(_pendingVenta.metodo==='Bold' && !_pendingVenta.boldPagoId){
+    const pago=await BoldPago.cobrar({ token, monto:Math.round(_pendingVenta.total), descripcion:`Venta ${_pendingVenta.clienteNombre||''}`.trim() });
+    if(!pago) return;
+    _pendingVenta.boldPagoId=pago.id;
+  }
   const btn=$('btn-confirmar-pago');
   btn.disabled=true; btn.textContent='Confirmando...';
   try{
@@ -919,7 +937,9 @@ async function confirmarPago(){
       items:items.map(i=>({item_id:i.id,nombre:i.nombre,cantidad:i.qty,precio_unitario:i.precio})),
       subtotal:sub, descuento:sub*(desc/100), iva:0, total,
       metodo_pago:metodo, recibido:rec, cliente_nombre:clienteNombre,
+      bold_pago_id:_pendingVenta.boldPagoId,
     })});
+    PagoQr.subirEvidencia(r.id, _pendingVenta.evidencia, token);
     items.forEach(item=>{ const p=allProds.find(x=>x.id===item.id); if(p&&p.stock!==null) p.stock=Math.max(0,p.stock-item.qty); });
     _lastVenta={..._pendingVenta, factura:r?.numero_factura||''};
     closeModal('preview-modal');
@@ -994,7 +1014,7 @@ function _irACerrarCajaAtrasada(){
 function renderCajaPanel(ventasRec=[]){
   const body = $('caja-body');
   const mBadge = m => {
-    const map={efectivo:'mp-efectivo',tarjeta:'mp-tarjeta',nequi:'mp-nequi'};
+    const map={efectivo:'mp-efectivo',tarjeta:'mp-tarjeta',nequi:'mp-nequi',bold:'mp-tarjeta'};
     return `<span class="mpago ${map[m]||'mp-efectivo'}">${m||'efectivo'}</span>`;
   };
   const ventasHtml = ventasRec.length
@@ -1166,7 +1186,7 @@ async function renderCaja(){
     // Gráficas
     renderCajaCharts(lista, lista7, fecha, hace6Str);
     if(!lista.length){ $('caja-tbody').innerHTML='<tr><td colspan="4" class="empty-state">No hay ventas para este día.</td></tr>'; return; }
-    const mpCls=m=>({Tarjeta:'mp-tarjeta',Nequi:'mp-nequi',Transferencia:'mp-transferencia'}[m]||'mp-efectivo');
+    const mpCls=m=>({Tarjeta:'mp-tarjeta',bold:'mp-tarjeta',Nequi:'mp-nequi',Transferencia:'mp-transferencia'}[m]||'mp-efectivo');
     $('caja-tbody').innerHTML=lista.map(v=>{
       const hora=v.creado?new Date(String(v.creado).replace(' ','T')).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—';
       const items=Array.isArray(v.items)?v.items:(()=>{try{return JSON.parse(v.items||'[]');}catch{return[];}})();

@@ -222,6 +222,7 @@ tr:hover td{background:var(--bg2)}
 .metodo-badge-efectivo{background:#e8f5e9;color:#2e7d32}
 .metodo-badge-tarjeta{background:#e3f2fd;color:#1565c0}
 .metodo-badge-nequi{background:#f3e5f5;color:#6a1b9a}
+.metodo-badge-bold{background:#e0e7ff;color:#121e6c}
 .ventas-table td{padding:8px 12px;font-size:13px}
 .ventas-table th{padding:8px 12px}
 
@@ -267,6 +268,8 @@ tr:hover td{background:var(--bg2)}
 #contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
 #contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
 #contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}</style>
+<script src="/js/bold-pago.js"></script>
+<script src="/js/pago-qr.js"></script>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">Tu contrato ha vencido o fue cancelado.<br>Contacta al administrador del sistema.</p></div>
@@ -576,6 +579,7 @@ tr:hover td{background:var(--bg2)}
             <option value="efectivo">Efectivo</option>
             <option value="tarjeta">Tarjeta</option>
             <option value="nequi">Nequi/QR</option>
+            <option value="bold">Bold</option>
           </select>
           <button onclick="loadReportes()" style="background:var(--accent,#0B8457);color:#fff;border:none;border-radius:30px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;box-shadow:0 2px 6px rgba(11,132,87,.3)">Consultar</button>
         </div>
@@ -917,6 +921,10 @@ tr:hover td{background:var(--bg2)}
             </div>
           </div>
         </div>
+      <div class="card" style="margin-top:14px"><div class="card-body">
+        <div id="pago-qr-config-slot"></div>
+        <div id="bold-config-slot" style="border-top:1px solid var(--border2);margin-top:14px;padding-top:14px"></div>
+      </div></div>
       </div>
 
       <!-- CONFIG IMPRESORA -->
@@ -2078,7 +2086,7 @@ async function loadDashboard(){
     ? ventas.map(v=>`<tr>
         <td>${new Date(v.creado).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</td>
         <td>${v.mesa_nombre||(v.mesa_num?'Mesa '+v.mesa_num:'—')}</td>
-        <td>${metodoBadge(v.metodo_pago)}</td>
+        <td>${metodoBadge(v.metodo_pago)}${v.evidencia_pago_url?` <span style="cursor:pointer" title="Ver comprobante de pago" onclick="PagoQr.verImagen('${v.evidencia_pago_url}','Comprobante de pago')">📸</span>`:''}</td>
         <td><b>${fmt(v.total)}</b></td>
         <td style="color:var(--text2)">${v.usuario_nombre||'—'}</td>
       </tr>`).join('')
@@ -2716,7 +2724,7 @@ function _factInitDates(){
   if(!$('fact-hasta').value) $('fact-hasta').value = hoy;
 }
 
-const _mLabelsF = {efectivo:'💵 Efectivo', tarjeta:'💳 Tarjeta', nequi:'📱 QR/Nequi'};
+const _mLabelsF = {efectivo:'💵 Efectivo', tarjeta:'💳 Tarjeta', nequi:'📱 QR/Nequi',bold:'Bold'};
 function _metodoStr(v){
   const ef=+v.monto_efectivo||0, ta=+v.monto_tarjeta||0, ne=+v.monto_nequi||0;
   const activos=[];
@@ -2768,7 +2776,7 @@ async function abrirFactura(id){
     const ef=+v.monto_efectivo||0, ta=+v.monto_tarjeta||0, ne=+v.monto_nequi||0;
     const pagos={efectivo:ef,tarjeta:ta,nequi:ne};
     const _mA=Object.entries(pagos).filter(([,val])=>val>0);
-    const metStr=_mA.length===1?_mLabelsF[_mA[0][0]]||v.metodo_pago:_mA.map(([k,val])=>`${_mLabelsF[k]}: ${fmt(val)}`).join(' / ');
+    const metStr=v.metodo_pago==='bold'?'Bold':_mA.length===1?_mLabelsF[_mA[0][0]]||v.metodo_pago:_mA.map(([k,val])=>`${_mLabelsF[k]}: ${fmt(val)}`).join(' / ');
     const dt=new Date(v.creado);
     const fecha=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
     const hora=dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
@@ -3546,6 +3554,8 @@ async function deleteNominaAjuste(id){
 
 // ─── CONFIG FACTURA ──────────────────────────────────────────
 async function loadCfgFactura(){
+  PagoQr.montarConfig($('pago-qr-config-slot'), token);
+  BoldPago.montarConfig($('bold-config-slot'), token);
   try {
     const d=await api('/admin/config/factura');
     $('f-nombre').value=d.nombre||''; $('f-nit').value=d.nit||''; $('f-dir').value=d.direccion||'';

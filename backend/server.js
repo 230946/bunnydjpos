@@ -35,6 +35,7 @@ const hotelRouter       = require('./routes/hotel');
 const soporteRouter     = require('./routes/soporte');
 const motoratonRouter   = require('./routes/motoraton');
 const atrilRouter       = require('./routes/atril');
+const boldRouter        = require('./routes/bold');
 
 const app    = express();
 const server = http.createServer(app);
@@ -42,6 +43,9 @@ const PORT   = process.env.PORT || 3001;
 
 // ── Middlewares ───────────────────────────────────────────────────
 app.use(cors({ origin: '*' }));
+// Webhook de Bold: va antes de express.json porque la firma se calcula sobre
+// los bytes exactos del cuerpo.
+app.post('/api/webhooks/bold/:negocioId', express.raw({ type: '*/*', limit: '1mb' }), boldRouter.webhook);
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(process.env.UPLOADS_DIR || './uploads'));
 // Respaldo: algunos navegadores piden /favicon.ico directo, sin importar el
@@ -145,6 +149,7 @@ app.use('/api/turno',     turnoRouter);
 app.use('/api/hotel',     hotelRouter);
 app.use('/api/soporte',   soporteRouter);
 app.use('/api/motoraton', motoratonRouter);
+app.use('/api/bold',      boldRouter);
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {
@@ -281,27 +286,6 @@ app.post('/api/peluqueria/empleados/:id/foto', upload.single('foto'), async (req
     const url = `/uploads/${req.file.filename}`;
     await pool.query(`UPDATE pel_empleados SET foto_url=${ph(1)} WHERE id=${ph(2)}`, [url, req.params.id]);
     res.json({ url });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ── Configuración de factura por negocio ──────────────────────────
-app.get('/api/config-factura', async (req, res) => {
-  try {
-    const nid = req.query.negocio_id;
-    const { rows } = await pool.query(`SELECT datos FROM config_factura WHERE negocio_id=${ph(1)}`, [nid]);
-    res.json(rows[0] ? JSON.parse(rows[0].datos) : {});
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.put('/api/config-factura', async (req, res) => {
-  try {
-    const { negocio_id, ...datos } = req.body;
-    await pool.query(`
-      INSERT INTO config_factura (negocio_id, datos)
-      VALUES (?,?)
-      ON DUPLICATE KEY UPDATE datos=VALUES(datos), actualizado=NOW()
-    `, [negocio_id, JSON.stringify(datos)]);
-    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -559,6 +543,43 @@ async function runMigrations() {
         creado          TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE,
         INDEX idx_negocio_estado (negocio_id, estado)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
+
+    // ── Pagos con Bold (routes/bold.js)
+    {
+      table: 'bold_config', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS bold_config (
+        negocio_id   VARCHAR(36)  PRIMARY KEY,
+        identity_key VARCHAR(200) NULL,
+        secret_key   VARCHAR(200) NULL,
+        activo       TINYINT(1)   NOT NULL DEFAULT 0,
+        modo_pruebas TINYINT(1)   NOT NULL DEFAULT 0,
+        actualizado  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
+    {
+      table: 'bold_pagos', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS bold_pagos (
+        id          VARCHAR(36)   PRIMARY KEY,
+        negocio_id  VARCHAR(36)   NOT NULL,
+        referencia  VARCHAR(60)   NOT NULL UNIQUE,
+        link        VARCHAR(60)   NOT NULL,
+        url         VARCHAR(300)  NOT NULL,
+        monto       DECIMAL(12,2) NOT NULL,
+        estado      VARCHAR(20)   NOT NULL DEFAULT 'PENDIENTE',
+        payment_id  VARCHAR(60)   NULL,
+        metodo      VARCHAR(30)   NULL,
+        venta_id    VARCHAR(36)   NULL,
+        creado_por  VARCHAR(36)   NULL,
+        creado      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        vence_en    DATETIME      NOT NULL,
+        pagado_en   DATETIME      NULL,
+        ultima_consulta DATETIME  NULL,
+        FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE,
+        INDEX idx_negocio_estado (negocio_id, estado),
+        INDEX idx_link (link)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     },
 

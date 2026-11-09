@@ -591,7 +591,7 @@ router.post('/caja/cerrar', async (req, res) => {
         COALESCE(SUM(total),0) AS total_ventas,
         COALESCE(SUM(CASE WHEN monto_efectivo>0 THEN monto_efectivo WHEN metodo_pago='efectivo' THEN total ELSE 0 END),0) AS efectivo,
         COALESCE(SUM(CASE WHEN monto_tarjeta>0  THEN monto_tarjeta  WHEN metodo_pago='tarjeta'  THEN total ELSE 0 END),0) AS tarjeta,
-        COALESCE(SUM(CASE WHEN monto_nequi>0    THEN monto_nequi    WHEN metodo_pago='nequi'    THEN total ELSE 0 END),0) AS nequi
+        COALESCE(SUM(CASE WHEN monto_nequi>0    THEN monto_nequi    WHEN metodo_pago IN ('nequi','transferencia') THEN total ELSE 0 END),0) AS nequi
       FROM ventas WHERE negocio_id=${ph(1)} AND creado>=${ph(2)} AND (cajero_id=${ph(3)} OR ${ph(4)}=1) AND estado!='anulada'
     `, [nid(req), caja.apertura_en, req.user.id, deTodos ? 1 : 0]);
     const { rows: gastos } = await pool.query(
@@ -658,13 +658,19 @@ router.delete('/config/qr-pago/:tipo', requirePermiso('personal'), async (req, r
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Combina con lo guardado: cada pantalla envía solo sus campos, y reemplazar
+// todo borraría los QR de pago, la hora de turno y el consecutivo.
 router.put('/config/factura', requirePermiso('personal'), async (req, res) => {
   try {
+    const { rows } = await pool.query(`SELECT datos FROM config_factura WHERE negocio_id=${ph(1)}`, [nid(req)]);
+    const previos = rows[0] ? (typeof rows[0].datos === 'string' ? JSON.parse(rows[0].datos) : rows[0].datos) || {} : {};
+    const datos = { ...previos, ...req.body };
+    if (datos.qrPago?.nequi?.url) delete datos.qrNequi; // formato anterior
     await pool.query(`
       INSERT INTO config_factura (negocio_id, datos)
       VALUES (${ph(1)},${ph(2)})
       ON DUPLICATE KEY UPDATE datos=VALUES(datos), actualizado=NOW()
-    `, [nid(req), JSON.stringify(req.body)]);
+    `, [nid(req), JSON.stringify(datos)]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -939,7 +945,7 @@ router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => 
                COALESCE(SUM(v.total),0) AS total_ventas,
                COALESCE(SUM(CASE WHEN v.monto_efectivo>0 THEN v.monto_efectivo WHEN v.metodo_pago='efectivo' THEN v.total ELSE 0 END),0) AS efectivo,
                COALESCE(SUM(CASE WHEN v.monto_tarjeta>0  THEN v.monto_tarjeta  WHEN v.metodo_pago='tarjeta'  THEN v.total ELSE 0 END),0) AS tarjeta,
-               COALESCE(SUM(CASE WHEN v.monto_nequi>0    THEN v.monto_nequi    WHEN v.metodo_pago='nequi'    THEN v.total ELSE 0 END),0) AS nequi,
+               COALESCE(SUM(CASE WHEN v.monto_nequi>0    THEN v.monto_nequi    WHEN v.metodo_pago IN ('nequi','transferencia') THEN v.total ELSE 0 END),0) AS nequi,
                COALESCE(SUM(vi_s.cant),0) AS total_items
         FROM (
           SELECT id, negocio_id, total, creado, tipo,
@@ -1006,7 +1012,8 @@ router.get('/reportes/ventas-por-hora', requirePermiso('reportes'), async (req, 
                WHERE v.negocio_id=${ph(1)} AND ${condV}`;
     const params = [nid(req), ...rango];
     if (tipo)        { params.push(tipo);        sql += ` AND v.tipo=${ph(params.length)}`; }
-    if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
+    if (metodo_pago === 'nequi') sql += ` AND v.metodo_pago IN ('nequi','transferencia')`;
+    else if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
     sql += ' GROUP BY hora ORDER BY hora';
     const { rows } = await pool.query(sql, params);
     res.json(rows);
@@ -1125,7 +1132,8 @@ router.get('/ventas', requirePermiso('reportes'), async (req, res) => {
       LEFT JOIN mesas m ON m.id = v.mesa_id
       WHERE v.negocio_id=${ph(1)} AND ${condV} AND v.estado!='anulada'`;
     const params = [nid(req), unDia ? ventana.inicio : d, unDia ? ventana.fin : h];
-    if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
+    if (metodo_pago === 'nequi') sql += ` AND v.metodo_pago IN ('nequi','transferencia')`;
+    else if (metodo_pago) { params.push(metodo_pago); sql += ` AND v.metodo_pago=${ph(params.length)}`; }
     if (tipo)        { params.push(tipo);         sql += ` AND v.tipo=${ph(params.length)}`; }
     sql += ' ORDER BY v.creado DESC';
     const { rows } = await pool.query(sql, params);

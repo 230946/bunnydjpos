@@ -15,6 +15,7 @@ const { authMiddleware, requirePermiso } = require('../middleware/auth');
 const multer  = require('multer');
 const path    = require('path');
 const QRCode  = require('qrcode');
+const { reclamarPago, liberarPago } = require('./bold');
 
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
@@ -759,8 +760,9 @@ router.put('/comandas/:id/descuento', async (req, res) => {
 // abono cubre lo que faltaba, el pedido se cierra y la mesa se libera igual
 // que un cobro completo.
 router.put('/comandas/:id/pago-parcial', async (req, res) => {
+  let boldReclamado = null;
   try {
-    const { monto, metodo_pago, descuento, monto_efectivo, monto_tarjeta, monto_nequi } = req.body;
+    const { monto, metodo_pago, descuento, monto_efectivo, monto_tarjeta, monto_nequi, bold_pago_id } = req.body;
     const montoAbono = +monto || 0;
     if (montoAbono <= 0) return res.status(400).json({ error: 'Monto inválido' });
 
@@ -796,13 +798,18 @@ router.put('/comandas/:id/pago-parcial', async (req, res) => {
     if (await cajaAtrasada(nid(req), cajaAbierta[0].fecha, req.user.zona_horaria))
       return res.status(400).json({ error: 'La caja quedó abierta del turno anterior y ya pasó la hora de cierre. Cerrala antes de seguir vendiendo.', tipo: 'caja_atrasada' });
 
-    const metodo = ['efectivo','tarjeta','nequi','mixto'].includes(metodo_pago) ? metodo_pago : 'efectivo';
+    const metodo = ['efectivo','tarjeta','nequi','mixto','bold'].includes(metodo_pago) ? metodo_pago : 'efectivo';
     // En 'mixto' los montos por método vienen del cliente (igual que en
     // POST /ventas); en cualquier otro método, todo el abono va a ese único método.
     const _montoEf = metodo === 'mixto' ? (+monto_efectivo || 0) : (metodo === 'efectivo' ? montoAbono : 0);
-    const _montoTa = metodo === 'mixto' ? (+monto_tarjeta || 0) : (metodo === 'tarjeta' ? montoAbono : 0);
+    const _montoTa = metodo === 'mixto' ? (+monto_tarjeta || 0) : (metodo === 'tarjeta' || metodo === 'bold' ? montoAbono : 0);
     const _montoNe = metodo === 'mixto' ? (+monto_nequi || 0) : (metodo === 'nequi' ? montoAbono : 0);
     const ventaId = uuid();
+    if (metodo === 'bold') {
+      if (!await reclamarPago(nid(req), bold_pago_id, ventaId, montoAbono))
+        return res.status(409).json({ error: 'El pago Bold no está aprobado, no coincide con el monto o ya se usó', tipo: 'bold_no_valido' });
+      boldReclamado = { pagoId: bold_pago_id, ventaId };
+    }
     const { rows: cnt } = await pool.query(`SELECT COUNT(*) AS n FROM ventas WHERE negocio_id=${ph(1)}`, [nid(req)]);
     const numero_factura = `ABN-${String((+cnt[0].n || 0) + 1).padStart(4, '0')}`;
     const nombreAbono = `Abono — ${c.mesa_nombre || (c.mesa_num ? `Mesa ${c.mesa_num}` : 'Barra')}`;
@@ -845,7 +852,10 @@ router.put('/comandas/:id/pago-parcial', async (req, res) => {
     req.app.locals.broadcast?.(nid(req), 'caja_actualizada', {});
 
     res.json({ ok: true, venta_id: ventaId, numero_factura, saldo: Math.max(0, total - nuevoPagado), completado });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    if (boldReclamado) await liberarPago(nid(req), boldReclamado.pagoId, boldReclamado.ventaId).catch(() => {});
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Borra un pedido que se envió por error — todavía no se cobró, pero el
@@ -999,10 +1009,21 @@ router.put('/pedidos-cliente/:id/rechazar', async (req, res) => {
 // ════════════════════════════════════════════════════════════════
 
 router.post('/ventas', async (req, res) => {
+  let boldReclamado = null; // { pagoId, ventaId } para soltarlo si la venta falla
   try {
     const { mesa_id, mesa_num, tipo='pos', items, subtotal, iva=0, total,
             metodo_pago, recibido, cambio, cliente_nombre, cliente_id, descuento,
-            monto_efectivo=0, monto_tarjeta=0, monto_nequi=0, dom_id, comanda_id } = req.body;
+            dom_id, comanda_id, bold_pago_id } = req.body;
+    // Los montos por método los fija el servidor. Solo en 'mixto' vienen del
+    // cliente. Las cajas envían el método con distinta escritura ('Efectivo',
+    // 'efectivo'), transferencia suma con Nequi y Bold suma como tarjeta: así
+    // los reportes y el cierre de caja cuadran sin tratarlos aparte.
+    const metodo = String(metodo_pago || '').toLowerCase();
+    const esBold = metodo === 'bold';
+    const esMixto = metodo === 'mixto';
+    const monto_efectivo = esMixto ? (req.body.monto_efectivo || 0) : (metodo === 'efectivo' ? total : 0);
+    const monto_tarjeta  = esMixto ? (req.body.monto_tarjeta  || 0) : (metodo === 'tarjeta' || esBold ? total : 0);
+    const monto_nequi    = esMixto ? (req.body.monto_nequi    || 0) : (metodo === 'nequi' || metodo === 'transferencia' ? total : 0);
 
     // Si la caja abierta de este cajero quedó "atrasada" (del turno
     // anterior, y ya pasó la hora de inicio del siguiente), bloquear la
@@ -1049,6 +1070,15 @@ router.post('/ventas', async (req, res) => {
       if (stockError) return res.status(400).json(stockError);
     }
 
+    const id = uuid();
+    // Un cobro por Bold solo vale si el pago está aprobado, es de este monto
+    // y no respalda ya otra venta.
+    if (esBold) {
+      if (!await reclamarPago(nid(req), bold_pago_id, id, total))
+        return res.status(409).json({ error: 'El pago Bold no está aprobado, no coincide con el total o ya se usó', tipo: 'bold_no_valido' });
+      boldReclamado = { pagoId: bold_pago_id, ventaId: id };
+    }
+
     // Incrementar consecutivo
     if (cfg[0]) {
       const d = typeof cfg[0].datos === 'string' ? JSON.parse(cfg[0].datos) : cfg[0].datos;
@@ -1076,7 +1106,6 @@ router.post('/ventas', async (req, res) => {
       }
     }
 
-    const id = uuid();
     await pool.query(
       `INSERT INTO ventas (id,negocio_id,tipo,mesa_id,mesa_num,cliente_nombre,cliente_id,items,
        subtotal,descuento,iva,total,metodo_pago,recibido,cambio,numero_factura,cajero_id,mesero_id,
@@ -1086,8 +1115,8 @@ router.post('/ventas', async (req, res) => {
        ${ph(19)},${ph(20)},${ph(21)},${ph(22)})`,
       [id, nid(req), tipo, mesa_id||null, mesa_num, cliente_nombre||null, resolvedClienteId,
        JSON.stringify(items||[]), subtotal, descuento||0, iva, total,
-       metodo_pago, recibido||0, cambio||0, numero_factura, req.user.id, req.user.id,
-       monto_efectivo||0, monto_tarjeta||0, monto_nequi||0, comanda_id||null]
+       esBold ? 'bold' : metodo_pago, recibido||0, cambio||0, numero_factura, req.user.id, req.user.id,
+       monto_efectivo, monto_tarjeta, monto_nequi, comanda_id||null]
     );
 
     // Insertar items para estadísticas
@@ -1112,19 +1141,13 @@ router.post('/ventas', async (req, res) => {
     if (!comanda_id) await moverStockItems(items, nid(req), -1);
 
     // Actualizar la caja del cajero que procesa el pago.
-    // Se usan los montos por método (ya calculados por el cliente, incluido
-    // el caso 'mixto') en vez de un CASE sobre metodo_pago, que dejaba el
-    // pago mixto sin sumar a ningún método aunque sí sumara a total_ventas.
-    const _montoEf = metodo_pago === 'mixto' ? (monto_efectivo || 0) : (metodo_pago === 'efectivo' ? total : 0);
-    const _montoTa = metodo_pago === 'mixto' ? (monto_tarjeta  || 0) : (metodo_pago === 'tarjeta'  ? total : 0);
-    const _montoNe = metodo_pago === 'mixto' ? (monto_nequi    || 0) : (metodo_pago === 'nequi'    ? total : 0);
     await pool.query(`
       UPDATE cajas SET total_ventas=total_ventas+${ph(1)},
         total_efectivo=total_efectivo+${ph(2)},
         total_tarjeta=total_tarjeta+${ph(3)},
         total_nequi=total_nequi+${ph(4)}
       WHERE negocio_id=${ph(5)} AND ${miCaja(ph(6))} AND estado='abierta'
-    `, [total, _montoEf, _montoTa, _montoNe, nid(req), req.user.id]);
+    `, [total, monto_efectivo, monto_tarjeta, monto_nequi, nid(req), req.user.id]);
 
     // Enlazar el pedido de domicilio con esta venta (cerrojo atómico:
     // solo si sigue pendiente, para que un cobro concurrente no duplique).
@@ -1155,7 +1178,10 @@ router.post('/ventas', async (req, res) => {
 
     req.app.locals.broadcast?.(nid(req), 'caja_actualizada', {});
     res.status(201).json({ id, numero_factura });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    if (boldReclamado) await liberarPago(nid(req), boldReclamado.pagoId, boldReclamado.ventaId).catch(() => {});
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Evidencia fotográfica de un pago por Nequi/transferencia (control interno):

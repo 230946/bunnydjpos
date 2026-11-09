@@ -337,6 +337,8 @@ table.inv tr:hover td{background:var(--bg2)}
 #contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
 #contrato-alert{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#f59e0b;color:#1a1a1a;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;align-items:center;justify-content:center;gap:12px}
 #contrato-alert button{background:rgba(0,0,0,.12);border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:700;font-size:13px}</style>
+<script src="/js/bold-pago.js"></script>
+<script src="/js/pago-qr.js"></script>
 </head>
 <body>
 <div id="contrato-block"><div style="font-size:3rem">🔒</div><h2>Acceso suspendido</h2><p id="contrato-block-msg">No tienes un contrato activo.<br>Contacta al administrador del sistema.</p></div>
@@ -568,6 +570,7 @@ table.inv tr:hover td{background:var(--bg2)}
                     <button class="pay-btn sel" id="pay-efectivo" onclick="selPay('efectivo')"><span class="icon">💵</span>Efectivo</button>
                     <button class="pay-btn" id="pay-tarjeta"  onclick="selPay('tarjeta')"><span class="icon">💳</span>Tarjeta</button>
                     <button class="pay-btn" id="pay-nequi"    onclick="selPay('nequi')"><span class="icon">📱</span>QR/Nequi</button>
+                    <button class="pay-btn" id="pay-bold" style="display:none" onclick="selPay('bold')"><span class="icon">📲</span>Bold</button>
                   </div>
                 </div>
                 <!-- Modo mixto -->
@@ -606,6 +609,7 @@ table.inv tr:hover td{background:var(--bg2)}
                   </div>
                 </div>
               </div>
+              <div id="pay-qr" style="display:none"></div>
               <div class="cobro-card" id="efectivo-sec">
                 <h3>Valor recibido</h3>
                 <input id="valor-recibido" type="number" min="0" placeholder="0" oninput="calcVueltas()"
@@ -1686,6 +1690,7 @@ async function renderMesasCobro(){
   if(mesasBadge){ mesasBadge.style.display = pendientesFacturar>0 ? 'inline' : 'none'; mesasBadge.textContent = pendientesFacturar; }
 }
 async function renderCobro(){
+  BoldPago.disponible(token).then(a=>{ $('pay-bold').style.display=a?'':'none'; });
   await renderMesasCobro();
   const r=$('cobro-recibo'); r.innerHTML='';
   if(!selCobroMesaId){ r.innerHTML='<div style="color:var(--text2);font-size:13px">Selecciona una mesa</div>'; return; }
@@ -1720,13 +1725,18 @@ async function renderCobro(){
 let pagoMixtoActivo = false;
 function selPay(m){
   selPayMethod=m;
-  ['efectivo','tarjeta','nequi'].forEach(p=>$('pay-'+p).classList.remove('sel'));
+  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('sel'));
   $('pay-'+m).classList.add('sel');
   $('efectivo-sec').style.display=m==='efectivo'?'block':'none';
   if(m==='efectivo') renderBilletes(getTotal());
+  mostrarQrPago();
+}
+function mostrarQrPago(){
+  PagoQr.mostrar($('pay-qr'), token, pagoMixtoActivo || selPayMethod==='nequi' ? ['nequi','transferencia'] : []);
 }
 function togglePagoMixto(){
   pagoMixtoActivo=!pagoMixtoActivo;
+  mostrarQrPago();
   const btn=$('btn-pago-mixto');
   $('pay-single').style.display=pagoMixtoActivo?'none':'block';
   $('pay-mixed').style.display=pagoMixtoActivo?'flex':'none';
@@ -1917,7 +1927,7 @@ async function procesarPago(){
     const fecha=now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
     const hora=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     const tipoDoc=(cf.tipoDoc||'Factura').charAt(0).toUpperCase()+(cf.tipoDoc||'Factura').slice(1);
-    const _mLabels={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi'};
+    const _mLabels={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi',bold:'📲 Bold'};
     const _mActivos=Object.entries(pagos).filter(([,v])=>v>0);
     const metStr=_mActivos.length===1?_mLabels[_mActivos[0][0]]:_mActivos.map(([k,v])=>`${_mLabels[k]}: ${fmt(v)}`).join(' / ');
 
@@ -2006,7 +2016,7 @@ async function procesarPago(){
   const fecha=now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
   const hora=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
   const tipoDoc=(cf.tipoDoc||'Factura').charAt(0).toUpperCase()+(cf.tipoDoc||'Factura').slice(1);
-  const _mLabels={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi'};
+  const _mLabels={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi',bold:'📲 Bold'};
   const _mActivos=Object.entries(pagos).filter(([,v])=>v>0);
   const metStr=_mActivos.length===1?_mLabels[_mActivos[0][0]]:_mActivos.map(([k,v])=>`${_mLabels[k]}: ${fmt(v)}`).join(' / ');
 
@@ -2062,6 +2072,18 @@ async function procesarPago(){
 async function confirmarPago(){
   if(!cajaAbierta){ toast('⚠️ La caja está cerrada — no se puede confirmar el pago'); return; }
   if(!pendPago){ toast('Error: no hay pago pendiente'); return; }
+  // Cobros por QR: primero el comprobante o el pago, para que cancelar deje la
+  // vista previa tal como estaba.
+  if(pendPago.pagos?.nequi>0 && !pendPago.evidencia){
+    PagoQr.pedirEvidencia(f=>{ if(pendPago){ pendPago.evidencia=f; confirmarPago(); } });
+    return;
+  }
+  if(pendPago.metodo==='bold' && !pendPago.boldPagoId){
+    const mesaPago=pendPago.mesa?.numero;
+    const pago=await BoldPago.cobrar({ token, monto:Math.round(pendPago.total), descripcion:mesaPago?`Mesa ${mesaPago}`:'Domicilio' });
+    if(!pago) return;
+    pendPago.boldPagoId=pago.id;
+  }
   $('pay-btns-preview').style.display='none';
   // ── Caso domicilio ──
   if(pendPago._esDomicilio){
@@ -2072,8 +2094,10 @@ async function confirmarPago(){
         items:items.map(i=>({item_id:i.id||null,nombre:i.nombre,qty:i.qty,precio:parseFloat(i.precio)||0,precio_original:i.precio_original!=null?parseFloat(i.precio_original):undefined,subtotal:parseFloat(i.subtotal)||i.precio*i.qty})),
         subtotal:sub, iva:0, total, metodo_pago:metodo, recibido, cambio,
         monto_efectivo:pagos?.efectivo||0, monto_tarjeta:pagos?.tarjeta||0, monto_nequi:pagos?.nequi||0,
-        cliente_id:clienteId||null, cliente_nombre:clienteNombre||dom.cliente_nombre
+        cliente_id:clienteId||null, cliente_nombre:clienteNombre||dom.cliente_nombre,
+        bold_pago_id:pendPago.boldPagoId
       })});
+      PagoQr.subirEvidencia(r.id, pendPago.evidencia, token);
       selCobroDomId=null; pendPago=null;
       loadCaja(); loadDomCobro();
       // Recibo final completo
@@ -2081,7 +2105,7 @@ async function confirmarPago(){
       const fecha=now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
       const hora=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
       const tipoDoc2=(cf.tipoDoc||'Factura').charAt(0).toUpperCase()+(cf.tipoDoc||'Factura').slice(1);
-      const _mLabels2={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi'};
+      const _mLabels2={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi',bold:'📲 Bold'};
       const _mActivos2=Object.entries(pagos).filter(([,v])=>v>0);
       const metStr=_mActivos2.length===1?_mLabels2[_mActivos2[0][0]]:_mActivos2.map(([k,v])=>`${_mLabels2[k]}: ${fmt(v)}`).join(' / ');
       let h=`<div class="recibo">`;
@@ -2128,8 +2152,10 @@ async function confirmarPago(){
       items:items.map(i=>({item_id:i.id,nombre:i.nombre,qty:i.qty,precio:i.precio,precio_original:i.precio_original,subtotal:i.precio*i.qty})),
       subtotal:sub, iva, total, metodo_pago:metodo, recibido, cambio,
       monto_efectivo:pagos?.efectivo||0, monto_tarjeta:pagos?.tarjeta||0, monto_nequi:pagos?.nequi||0,
-      cliente_id:clienteId||null, cliente_nombre:clienteNombre||null
+      cliente_id:clienteId||null, cliente_nombre:clienteNombre||null,
+      bold_pago_id:pendPago.boldPagoId
     })});
+    PagoQr.subirEvidencia(r.id, pendPago.evidencia, token);
     await api(`/pos/mesas/${mesaId}/liberar`,{method:'POST'});
     if(selMesaId===mesaId){ pedido=[]; selMesaId=null; }
     pendPago=null;
@@ -2140,7 +2166,7 @@ async function confirmarPago(){
     const fecha=now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
     const hora=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     const tipoDoc=(cf.tipoDoc||'Factura').charAt(0).toUpperCase()+(cf.tipoDoc||'Factura').slice(1);
-    const _mLabels2={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi'};
+    const _mLabels2={efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',nequi:'📱 QR/Nequi',bold:'📲 Bold'};
     const _mActivos2=pagos?Object.entries(pagos).filter(([,v])=>v>0):[[metodo,total]];
     const metStr=_mActivos2.length===1?_mLabels2[_mActivos2[0][0]]||metodo:_mActivos2.map(([k,v])=>`${_mLabels2[k]||k}: ${fmt(v)}`).join(' / ');
 
@@ -2236,7 +2262,8 @@ function closePayModal(){
   $('vueltas-err').style.display='none';
   // Restaurar modo simple
   if(pagoMixtoActivo){ pagoMixtoActivo=false; $('pay-single').style.display='block'; $('pay-mixed').style.display='none'; const b=$('btn-pago-mixto'); b.style.background='transparent'; b.style.color='var(--text2)'; b.style.borderColor='var(--border2)'; }
-  selPayMethod='efectivo'; ['efectivo','tarjeta','nequi'].forEach(p=>$('pay-'+p).classList.remove('sel')); $('pay-efectivo').classList.add('sel');
+  selPayMethod='efectivo'; document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('sel')); $('pay-efectivo').classList.add('sel');
+  mostrarQrPago();
   $('efectivo-sec').style.display='block';
   renderCobro();
 }
