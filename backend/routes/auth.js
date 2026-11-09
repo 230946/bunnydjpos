@@ -118,8 +118,8 @@ router.post('/login', async (req, res) => {
     // caja, y el resto del personal no entra a los paneles.
     const ambito = req.body.ambito;
     const esAdmin = !!user.es_superadmin || !!permisos.personal;
-    if (ambito === 'pos' && esAdmin) return res.status(403).json({ error: MSG_ADMIN_EN_POS });
-    if (ambito === 'admin' && !esAdmin) return res.status(403).json({ error: MSG_PERSONAL_EN_ADMIN });
+    if (ambito === 'pos' && esAdmin) return res.status(403).json({ error: MSG_ADMIN_EN_POS, otro_ambito: 'admin' });
+    if (ambito === 'admin' && !esAdmin) return res.status(403).json({ error: MSG_PERSONAL_EN_ADMIN, otro_ambito: 'pos' });
 
     // Administradores y superadmins: segundo paso con el código de la app.
     if (user.es_superadmin || permisos.personal) {
