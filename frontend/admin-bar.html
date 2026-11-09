@@ -209,6 +209,9 @@ table tr:hover td{background:var(--bg2)}
 .menu-item-card .nom{font-size:12.5px;font-weight:700;margin:4px 0 2px;line-height:1.2}
 .menu-item-card .precio{font-size:12px;color:var(--green-d);font-weight:700}
 .menu-item-card.nodisp{opacity:.4;cursor:not-allowed}
+.fav-btn{position:absolute;top:1px;left:1px;width:32px;height:32px;padding:0;border:none;background:transparent;font-size:21px;line-height:32px;color:#c4c4c4;cursor:pointer;z-index:1;transition:color .15s,transform .15s}
+.fav-btn:hover{transform:scale(1.15)}
+.fav-btn.on{color:#f5b301;text-shadow:0 0 1px #9a6b00}
 .cart-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;position:sticky;top:12px}
 .quick-send-bar{
   position:fixed; left:16px; right:16px; bottom:16px; max-width:520px; margin:0 auto;
@@ -3204,6 +3207,8 @@ function renderBarraItems(){
     if (q) return normTxt(it.nombre).includes(q) || (catNom[it.categoria_id]||'').includes(q);
     return !barraCatActiva || it.categoria_id === barraCatActiva;
   });
+  // Los favoritos van primero; el resto conserva su orden.
+  lista.sort((a, b) => (+!!+b.favorito) - (+!!+a.favorito));
   $('barra-items-count').textContent = `${lista.length} artículo${lista.length===1?'':'s'}`;
   if (!lista.length) { $('barra-items').innerHTML = '<div class="empty-msg">No hay artículos. Agregalos en "Menú".</div>'; return; }
   $('barra-items').innerHTML = lista.map(it => {
@@ -3212,10 +3217,11 @@ function renderBarraItems(){
     const clickable = it.disponible && !agotado;
     return `
     <div class="menu-item-card ${clickable?'':'nodisp'}" onclick="${clickable?`agregarAlCarrito('${it.id}')`:''}" style="position:relative">
-      ${it.destacado?'<span style="position:absolute;top:3px;left:3px;font-size:12px">⭐</span>':''}
+      <button type="button" class="fav-btn ${+it.favorito?'on':''}" title="${+it.favorito?'Quitar de favoritos':'Marcar como favorito'}" aria-label="Favorito" aria-pressed="${+it.favorito?'true':'false'}" onclick="toggleFavorito('${it.id}', event)">★</button>
       ${it.promo_vigente?'<span style="position:absolute;top:3px;right:3px;font-size:10px" title="Promo">🏷️</span>':''}
       <div class="emoji">${it.emoji||'🍹'}</div>
       <div class="nom">${esc(it.nombre)}</div>
+      ${it.destacado?'<div class="badge b-amber" style="font-size:9px;margin:0 0 2px">Sugerido</div>':''}
       <div class="precio">${it.promo_vigente
           ? `<span style="text-decoration:line-through;color:var(--text2);font-size:10px">${fmt(it.precio)}</span> ${fmt(it.precio_efectivo)}`
           : fmt(it.precio)}</div>
@@ -3224,6 +3230,21 @@ function renderBarraItems(){
       ${bajo?`<div class="badge b-yellow" style="margin-top:4px;font-size:9px;text-align:center">⚠ Bajo stock${stockEfectivo(it)!=null?' ('+fmtQty(stockEfectivo(it))+')':''}</div>`:''}
     </div>`;
   }).join('');
+}
+// Marca o quita la estrella. Se ve de inmediato y, si el servidor falla, vuelve atrás.
+async function toggleFavorito(id, ev){
+  ev?.stopPropagation();
+  const it = items.find(x => x.id === id); if (!it) return;
+  const nuevo = !+it.favorito;
+  it.favorito = nuevo ? 1 : 0;
+  renderBarraItems();
+  try {
+    await api(`/pos/menu/items/${id}/favorito`, { method:'PUT', body: JSON.stringify({ favorito: nuevo }) });
+  } catch (e) {
+    it.favorito = nuevo ? 0 : 1;
+    renderBarraItems();
+    showToast('No se pudo guardar el favorito: ' + e.message);
+  }
 }
 let pedidoMesaDecidida = false;
 let _pendingItemId = null;

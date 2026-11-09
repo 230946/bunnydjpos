@@ -489,6 +489,24 @@ router.put('/menu/items/:id', requirePermiso(['pos_menu','personal']), async (re
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Favorito (estrella en Barra): es del negocio, no de cada usuario, y lo puede
+// marcar cualquiera que use la caja. Los favoritos salen primero en la lista.
+router.put('/menu/items/:id/favorito', async (req, res) => {
+  try {
+    const favorito = req.body?.favorito === true;
+    const { rows: existe } = await pool.query(
+      `SELECT id FROM menu_items WHERE id=${ph(1)} AND negocio_id=${ph(2)}`, [req.params.id, nid(req)]
+    );
+    if (!existe.length) return res.status(404).json({ error: 'Producto no encontrado' });
+    await pool.query(
+      `UPDATE menu_items SET favorito=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+      [favorito, req.params.id, nid(req)]
+    );
+    req.app.locals.broadcast?.(nid(req), 'inventario_actualizado', { id: req.params.id });
+    res.json({ ok: true, favorito });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Ajuste manual de stock (entrada/salida)
 router.post('/menu/items/:id/ajustar-stock', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
