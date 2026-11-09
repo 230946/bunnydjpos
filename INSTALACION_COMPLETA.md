@@ -83,7 +83,7 @@ y edita estas líneas con tus datos:
   JWT_SECRET=pon_aqui_cualquier_texto_largo_y_secreto_2024
 
   SUPERADMIN_EMAIL=superadmin@bunnydjpos.com
-  SUPERADMIN_PASS=Admin123!
+  SUPERADMIN_PASS=CAMBIA_ESTO
 
 Guarda el archivo.
 

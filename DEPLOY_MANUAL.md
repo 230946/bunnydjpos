@@ -18,7 +18,7 @@
 | Dato | Valor |
 |------|-------|
 | Usuario DB | `bunnyapp` |
-| Contraseña DB | `Bunny2026!` |
+| Contraseña DB | `(la que pusiste en el .env del servidor; no la escribas aquí)` |
 | Base de datos | `bunnydjpos` |
 | Host | `localhost` |
 
@@ -120,7 +120,7 @@ Ubicación: `~/bunnydjpos/backend/.env`
 PORT=3001
 DB_HOST=localhost
 DB_USER=bunnyapp
-DB_PASS=Bunny2026!
+DB_PASS=CAMBIA_ESTO
 DB_NAME=bunnydjpos
 JWT_SECRET=bunnydjpos_secret_2026_xK9mP3qR
 UPLOADS_DIR=./uploads
