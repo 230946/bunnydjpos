@@ -12,6 +12,7 @@
  *   ws://host:3001?negocio_id=mr-viaje-<viajeId>   → el pasajero sigue su viaje
  *   ws://host:3001?negocio_id=mr-conductor-<id>    → el conductor recibe solicitudes
  */
+const { crearLimiteLogin } = require('../middleware/limites');
 const express = require('express');
 const bcrypt  = require('bcryptjs');
 const { v4: uuid } = require('uuid');
@@ -171,15 +172,20 @@ router.post('/conductor/registro', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+const limiteMotoLogin = crearLimiteLogin();
+
 // POST /api/motoraton/login  { rol: 'pasajero'|'conductor', celular, pin }
 router.post('/login', async (req, res) => {
   const { rol, celular, pin } = req.body;
   const tabla = rol === 'conductor' ? 'mr_conductores' : rol === 'pasajero' ? 'mr_pasajeros' : null;
   if (!tabla) return res.status(400).json({ error: 'Rol inválido' });
+  const cuentaLimite = limpiarCel(celular);
+  if (!limiteMotoLogin.registrar(req, cuentaLimite)) return res.status(429).json({ error: limiteMotoLogin.MSG });
   try {
     const { rows } = await pool.query(`SELECT * FROM ${tabla} WHERE celular=? AND activo=1 LIMIT 1`, [limpiarCel(celular)]);
     if (!rows[0] || !(await bcrypt.compare(String(pin || ''), rows[0].pin_hash)))
       return res.status(401).json({ error: 'Celular o PIN incorrectos' });
+    limiteMotoLogin.exito(req, cuentaLimite);
     res.json({ ok: true, token: rows[0].token, rol, perfil: perfilConductor(rows[0]) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

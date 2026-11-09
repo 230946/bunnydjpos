@@ -851,7 +851,7 @@ async function forgotPassword(){
     const r = await fetch(`${API}/auth/forgot-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login})});
     const d = await r.json();
     if(!r.ok) throw new Error(d.error||'Error');
-    msg.textContent = d.tempPassword ? `Contraseña temporal: ${d.tempPassword}` : (d.message || 'Si el usuario existe, se ha generado recuperación.');
+    msg.textContent = d.message || 'No se pudo procesar la solicitud.';
   } catch(e){ msg.textContent = e.message; }
 }
 

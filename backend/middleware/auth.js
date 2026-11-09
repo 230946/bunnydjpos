@@ -11,6 +11,22 @@
 const jwt = require('jsonwebtoken');
 const { pool } = require('../db');
 
+// Cada cambio de contraseña sube usuarios.token_version: los tokens emitidos
+// antes (o sin "tv", de antes de existir la columna, que valen como 0) dejan de
+// servir. Mientras la migración no haya corrido, se deja pasar: no debe tumbar
+// todas las sesiones durante el arranque.
+async function tokenRevocado(payload) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT token_version FROM usuarios WHERE id=? LIMIT 1`, [payload.id], { silent: true }
+    );
+    return !rows[0] || rows[0].token_version !== (payload.tv || 0);
+  } catch (e) {
+    if (e.code === 'ER_BAD_FIELD_ERROR') return false;
+    throw e;
+  }
+}
+
 async function authMiddleware(req, res, next) {
   const header = req.headers['authorization'] || '';
   const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -18,6 +34,9 @@ async function authMiddleware(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (await tokenRevocado(payload)) {
+      return res.status(401).json({ error: 'Tu sesión se cerró porque cambió la contraseña. Ingresa de nuevo.' });
+    }
     req.user = payload; // { id, email, negocio_id, rol_id, es_superadmin, permisos }
     req.user.moneda = 'COP';
     req.user.zona_horaria = 'America/Bogota';

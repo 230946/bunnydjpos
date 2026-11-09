@@ -69,6 +69,7 @@ app.use(express.static(frontendPath, { etag: false, lastModified: false }));
 // Rutas directas para cada panel
 app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'inicio.html')));
 app.get('/login',            (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
+app.get('/restablecer',      (_, res) => res.sendFile(path.join(frontendPath, 'restablecer.html')));
 // POS
 app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'pos-restaurante.html')));
 app.get('/minimercado',      (_, res) => res.sendFile(path.join(frontendPath, 'pos-minimercado.html')));
@@ -306,6 +307,29 @@ async function seedSuperadmin() {
     console.log('   ⚠️  Cambia la contraseña en producción');
   } catch (e) {
     console.error('Error creando superadmin:', e.message);
+  }
+}
+
+// ── Seed: crear el usuario maestro una sola vez, desde MAESTRO_EMAIL y MAESTRO_PASS.
+// Si ya existe no se toca: cambiar el .env después no le cambia la clave.
+async function seedMaestro() {
+  try {
+    const { rows } = await pool.query(`SELECT id FROM usuarios WHERE es_maestro=1 LIMIT 1`);
+    if (rows.length) return console.log('✅ Usuario maestro ya existe');
+    const email = (process.env.MAESTRO_EMAIL || '').trim();
+    const pass  = process.env.MAESTRO_PASS || '';
+    if (!email || !pass) {
+      return console.warn('⚠️  No hay usuario maestro: define MAESTRO_EMAIL y MAESTRO_PASS en .env. Sin él nadie puede restablecer claves de administradores.');
+    }
+    if (pass.length < 12) return console.error('⚠️  Usuario maestro NO creado: MAESTRO_PASS debe tener al menos 12 caracteres.');
+    const hash = await bcrypt.hash(pass, 12);
+    await pool.query(
+      `INSERT INTO usuarios (id,nombre,email,username,password_hash,es_superadmin,es_maestro) VALUES (?,?,?,?,?,1,1)`,
+      [uuid(), 'Usuario Maestro', email, (process.env.MAESTRO_USER || 'maestro').trim(), hash]
+    );
+    console.log(`✅ Usuario maestro creado: ${email}. Ya puedes quitar MAESTRO_PASS del .env.`);
+  } catch (e) {
+    console.error('Error creando usuario maestro:', e.message);
   }
 }
 
@@ -583,6 +607,25 @@ async function runMigrations() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     },
 
+    // Única cuenta que puede cambiar claves de administradores (middleware/cuentas.js)
+    { table: 'usuarios', column: 'es_maestro', sql: `ALTER TABLE usuarios ADD COLUMN es_maestro TINYINT(1) NOT NULL DEFAULT 0` },
+    // Sube con cada cambio de contraseña para invalidar sesiones abiertas (middleware/auth.js)
+    { table: 'usuarios', column: 'token_version', sql: `ALTER TABLE usuarios ADD COLUMN token_version INT NOT NULL DEFAULT 0` },
+
+    // ── Recuperación de contraseña por enlace (routes/auth.js)
+    {
+      table: 'password_resets', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS password_resets (
+        token_hash CHAR(64)    PRIMARY KEY,
+        usuario_id VARCHAR(36) NOT NULL,
+        creado     TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        expira     DATETIME    NOT NULL,
+        usado      DATETIME    NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+        INDEX idx_usuario_creado (usuario_id, creado)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
+
     // ── Moto Ratón (routes/motoraton.js) — plataforma propia, sin negocio_id
     {
       table: 'mr_pasajeros', column: '__create__',
@@ -684,4 +727,5 @@ server.listen(PORT, async () => {
   console.log(`   WebSocket   → ws://localhost:${PORT}?negocio_id=<id>`);
   await seedSuperadmin();
   await runMigrations();
+  await seedMaestro();
 });

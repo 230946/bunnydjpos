@@ -115,30 +115,59 @@ async function enviarFactura({ to, v, cf, moneda }) {
   });
 }
 
-async function enviarPasswordTemporal({ to, nombre, tempPassword }) {
-  const transporter = getTransporter();
-  if (!transporter) throw new Error('SMTP no configurado');
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to,
-    subject: 'Tu contraseña temporal — DJPOS',
-    html: `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#f5f5f5;font-family:Arial,sans-serif">
+function plantillaCuenta(cuerpo) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#f5f5f5;font-family:Arial,sans-serif">
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
         <table width="360" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)">
           <tr style="background:#0B8457"><td style="padding:18px;text-align:center;color:#fff;font-size:18px;font-weight:700">DJPOS</td></tr>
-          <tr><td style="padding:24px;font-size:14px;color:#333">
-            <p>Hola${nombre ? ' ' + nombre : ''},</p>
-            <p>Generaste una contraseña temporal para entrar a tu cuenta. Úsala para iniciar sesión y luego cámbiala desde tu perfil:</p>
-            <p style="text-align:center;margin:20px 0">
-              <span style="display:inline-block;padding:12px 20px;background:#F0FAF5;border:1px dashed #0B8457;border-radius:8px;font-size:18px;font-weight:700;letter-spacing:.03em;color:#0B8457">${tempPassword}</span>
-            </p>
-            <p style="color:#999;font-size:12px">Si no pediste esto, ignora este correo — tu contraseña anterior ya no funciona, así que igual conviene que entres y la cambies.</p>
-          </td></tr>
+          <tr><td style="padding:24px;font-size:14px;color:#333">${cuerpo}</td></tr>
         </table>
       </td></tr></table>
-    </body></html>`,
+    </body></html>`;
+}
+
+async function enviarCorreoCuenta({ to, subject, cuerpo }) {
+  const transporter = getTransporter();
+  if (!transporter) throw new Error('SMTP no configurado');
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to,
+    subject,
+    html: plantillaCuenta(cuerpo),
   });
 }
 
-module.exports = { enviarFactura, enviarPasswordTemporal };
+async function enviarEnlaceRecuperacion({ to, nombre, token, minutos }) {
+  // La URL sale de la configuración, nunca del encabezado Host de la petición:
+  // ese lo controla quien pide la recuperación y podría apuntar el enlace a su
+  // propio sitio. El token va tras "#" para que no quede en logs del servidor.
+  const base = (process.env.PUBLIC_URL || 'https://djmpos.com').replace(/\/+$/, '');
+  const enlace = `${base}/restablecer#token=${token}`;
+  await enviarCorreoCuenta({
+    to,
+    subject: 'Restablece tu contraseña — DJPOS',
+    cuerpo: `<p>Hola${nombre ? ' ' + escHtml(nombre) : ''},</p>
+            <p>Recibimos una solicitud para cambiar tu contraseña. Usa este botón para elegir una nueva:</p>
+            <p style="text-align:center;margin:24px 0">
+              <a href="${enlace}" style="display:inline-block;padding:12px 24px;background:#0B8457;border-radius:8px;color:#fff;font-weight:700;text-decoration:none">Elegir nueva contraseña</a>
+            </p>
+            <p style="color:#666;font-size:12px">El enlace vence en ${minutos} minutos y solo funciona una vez.</p>
+            <p style="color:#999;font-size:12px">Si no fuiste tú, ignora este correo: tu contraseña actual sigue funcionando.</p>`,
+  });
+}
+
+async function enviarAvisoClaveCambiada({ to, nombre }) {
+  await enviarCorreoCuenta({
+    to,
+    subject: 'Tu contraseña cambió — DJPOS',
+    cuerpo: `<p>Hola${nombre ? ' ' + escHtml(nombre) : ''},</p>
+            <p>La contraseña de tu cuenta se acaba de cambiar.</p>
+            <p style="color:#999;font-size:12px">Si no fuiste tú, avísale de inmediato a tu administrador.</p>`,
+  });
+}
+
+module.exports = { enviarFactura, enviarEnlaceRecuperacion, enviarAvisoClaveCambiada };

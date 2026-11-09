@@ -13,6 +13,9 @@ const { v4: uuid } = require('uuid');
 const Anthropic = require('@anthropic-ai/sdk');
 const { pool, ph } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
+const { crearLimiteLogin } = require('../middleware/limites');
+
+const limiteEmpleadoLogin = crearLimiteLogin();
 const verifyToken = authMiddleware;
 
 const router = express.Router();
@@ -647,6 +650,7 @@ router.get('/pedido/:id', async (req, res) => {
 router.post('/empleado-login', async (req, res) => {
   const { negocio_id, documento, celular } = req.body;
   if (!documento || !celular) return res.status(400).json({ error: 'Faltan datos' });
+  if (!limiteEmpleadoLogin.registrar(req, documento)) return res.status(429).json({ error: limiteEmpleadoLogin.MSG });
   try {
     const cel = String(celular).replace(/[\s\-()]/g, '');
     const doc = String(documento).trim();
@@ -664,6 +668,7 @@ router.post('/empleado-login', async (req, res) => {
           [doc, cel]
         );
     if (!rows[0]) return res.status(401).json({ error: 'Credenciales incorrectas o cuenta inactiva' });
+    limiteEmpleadoLogin.exito(req, documento);
     const { id, nombre, rol, token, foto_url, vehiculo, placa, color_vehiculo } = rows[0];
     res.json({ ok: true, token, id, nombre, rol, negocio_id: rows[0].negocio_id, foto_url, vehiculo, placa, color_vehiculo });
   } catch (e) { res.status(500).json({ error: e.message }); }

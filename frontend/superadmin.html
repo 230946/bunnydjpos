@@ -371,7 +371,7 @@ tr:hover td{background:var(--bg2)}
       <div class="panel" id="panel-usuarios">
         <div class="table-wrap">
           <div class="table-header"><h3>Todos los usuarios</h3></div>
-          <table><thead><tr><th>#</th><th>Nombre</th><th>Email</th><th>Negocio</th><th>Rol</th><th>SuperAdmin</th><th>Estado</th></tr></thead>
+          <table><thead><tr><th>#</th><th>Nombre</th><th>Email</th><th>Negocio</th><th>Rol</th><th>SuperAdmin</th><th>Estado</th><th id="th-clave" hidden>Clave</th></tr></thead>
           <tbody id="usuarios-tbody"></tbody></table>
         </div>
       </div>
@@ -659,6 +659,21 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL: EL MAESTRO RESTABLECE UNA CLAVE -->
+<div class="modal-bg" id="maestro-clave-modal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h3>Restablecer contraseña</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px" id="mc-usuario"></div>
+    <div class="field"><label>Contraseña nueva *</label><input id="mc-nueva" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
+    <div class="field"><label>Repetir contraseña nueva *</label><input id="mc-nueva2" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Se cerrarán todas sus sesiones abiertas y recibirá un aviso por correo.</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('maestro-clave-modal')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarClaveMaestro()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CAMBIAR CONTRASEÑA -->
 <div class="modal-bg" id="cambiar-pass-modal" style="display:none">
   <div class="modal" style="max-width:380px">
@@ -761,7 +776,7 @@ async function forgotPassword(){
     const r = await fetch(`${API}/auth/forgot-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login})});
     const d = await r.json();
     if(!r.ok) throw new Error(d.error||'Error');
-    msg.textContent = d.tempPassword ? `Contraseña temporal: ${d.tempPassword}` : (d.message || 'Si el usuario existe, se ha generado recuperación.');
+    msg.textContent = d.message || 'No se pudo procesar la solicitud.';
   } catch(e){ msg.textContent = e.message; }
 }
 
@@ -791,7 +806,7 @@ async function guardarCambiarPassword(){
   try{
     await api('/auth/cambiar-password',{method:'POST',body:JSON.stringify({password_actual:actual,password_nuevo:nueva})});
     closeModal('cambiar-pass-modal');
-    showToast('Contraseña actualizada ✓');
+    showToast('Contraseña actualizada. Entra de nuevo.'); setTimeout(doLogout, 1500);
   }catch(e){ errEl.textContent=e.message; errEl.style.display='block'; }
 }
 async function api(path,opts={}){
@@ -1264,7 +1279,9 @@ async function saveNegocio(){
 // ── Usuarios ──────────────────────────────────────────────────
 async function loadUsuarios(){
   try {
-    const data = await api('/superadmin/usuarios');
+    const [data, yo] = await Promise.all([api('/superadmin/usuarios'), api('/auth/me')]);
+    _usuariosSA = data;
+    document.getElementById('th-clave').hidden = !yo.es_maestro;
     document.getElementById('usuarios-tbody').innerHTML = data.map((u,i)=>`
       <tr>
         <td style="color:var(--text2);font-size:12px;font-weight:600">${String(i+1).padStart(3,'0')}</td>
@@ -1272,10 +1289,31 @@ async function loadUsuarios(){
         <td>${u.email||u.username||'—'}</td>
         <td>${u.negocio_nombre||'—'}</td>
         <td>${u.rol_nombre||'—'}</td>
-        <td>${u.es_superadmin?'<span class="badge badge-purple">Sí</span>':'No'}</td>
+        <td>${u.es_maestro?'<span class="badge badge-purple">Maestro</span>':u.es_superadmin?'<span class="badge badge-purple">Sí</span>':'No'}</td>
         <td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
+        ${yo.es_maestro ? `<td>${u.id===yo.id ? '' : `<button class="btn btn-outline btn-sm" onclick="abrirClaveMaestro('${u.id}')">🔑 Restablecer</button>`}</td>` : ''}
       </tr>`).join('');
   } catch(e){ showToast('Error cargando usuarios'); }
+}
+
+let _usuariosSA = [], _claveMaestroId = null;
+function abrirClaveMaestro(id){
+  const u = _usuariosSA.find(x => x.id === id); if (!u) return;
+  _claveMaestroId = id;
+  document.getElementById('mc-usuario').textContent = `${u.nombre} · ${u.email||u.username||''}`;
+  document.getElementById('mc-nueva').value = '';
+  document.getElementById('mc-nueva2').value = '';
+  document.getElementById('maestro-clave-modal').style.display = 'flex';
+}
+async function guardarClaveMaestro(){
+  const nueva = document.getElementById('mc-nueva').value;
+  if (nueva.length < 8) return showToast('La contraseña debe tener al menos 8 caracteres');
+  if (nueva !== document.getElementById('mc-nueva2').value) return showToast('Las contraseñas no coinciden');
+  try {
+    await api(`/superadmin/usuarios/${_claveMaestroId}/password`, { method:'PUT', body: JSON.stringify({ password: nueva }) });
+    closeModal('maestro-clave-modal');
+    showToast('Contraseña restablecida ✓');
+  } catch(e){ showToast(e.message); }
 }
 
 // ── Usuarios por establecimiento ──────────────────────────────

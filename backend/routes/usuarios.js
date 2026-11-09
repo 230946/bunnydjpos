@@ -13,6 +13,7 @@ const bcrypt  = require('bcryptjs');
 const { v4: uuid } = require('uuid');
 const { pool, ph, dbType } = require('../db');
 const { authMiddleware, requirePermiso } = require('../middleware/auth');
+const { MSG_SOLO_MAESTRO, permisoPersonal, esCuentaAdmin, cargarCuenta, esMaestro } = require('../middleware/cuentas');
 
 router.use(authMiddleware);
 
@@ -184,6 +185,11 @@ router.post('/roles', requirePermiso('personal'), async (req, res) => {
 router.put('/roles/:id', requirePermiso('personal'), async (req, res) => {
   try {
     const { nombre, descripcion, permisos } = req.body;
+    // Quitarle "personal" al rol dejaría a sus administradores sin protección.
+    const { rows: actual } = await pool.query(`SELECT permisos FROM roles WHERE id=? AND negocio_id=?`, [req.params.id, req.user.negocio_id]);
+    if (actual[0] && permisoPersonal(actual[0].permisos) && !permisoPersonal(permisos) && !(await esMaestro(req.user.id))) {
+      return res.status(403).json({ error: MSG_SOLO_MAESTRO });
+    }
     await pool.query(
       `UPDATE roles SET nombre=${ph(1)}, descripcion=${ph(2)}, permisos=${ph(3)} WHERE id=${ph(4)} AND negocio_id=${ph(5)}`,
       [nombre, descripcion, JSON.stringify(permisos||{}), req.params.id, req.user.negocio_id]
@@ -214,8 +220,20 @@ router.post('/roles/:id/usuarios', requirePermiso('personal'), async (req, res) 
     if (!Array.isArray(user_ids)) return res.status(400).json({ error: 'user_ids debe ser un array' });
 
     // Verificar que el rol pertenece al negocio
-    const roleCheck = await pool.query(`SELECT id FROM roles WHERE id=${ph(1)} AND negocio_id=${ph(2)} LIMIT 1`, [roleId, req.user.negocio_id]);
+    const roleCheck = await pool.query(`SELECT id, permisos FROM roles WHERE id=${ph(1)} AND negocio_id=${ph(2)} LIMIT 1`, [roleId, req.user.negocio_id]);
     if (!roleCheck.rows[0]) return res.status(404).json({ error: 'Rol no encontrado' });
+
+    // Ningún administrador puede quedar sin ese rango por esta vía, salvo por el maestro.
+    const rolDaAdmin = permisoPersonal(roleCheck.rows[0].permisos);
+    const lista = new Set(user_ids);
+    const { rows: conRol } = await pool.query(
+      `SELECT u.id, u.rol_id, r.permisos FROM usuarios u JOIN roles r ON r.id = u.rol_id WHERE u.negocio_id=?`,
+      [req.user.negocio_id]
+    );
+    const quitaAdmin = conRol.some(u => permisoPersonal(u.permisos) && (
+      (u.rol_id === roleId && !lista.has(u.id)) || (lista.has(u.id) && !rolDaAdmin)
+    ));
+    if (quitaAdmin && !(await esMaestro(req.user.id))) return res.status(403).json({ error: MSG_SOLO_MAESTRO });
 
     // 1. Quitar el rol a quienes lo tenían y ya no están en la lista
     if (user_ids.length > 0) {
@@ -329,8 +347,19 @@ router.post('/usuarios', requirePermiso('personal'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.put('/usuarios/:id', async (req, res) => {
+// Falsea si quien pide el cambio no puede tocar la clave o el rol de esta cuenta.
+async function puedeCambiarCuentaProtegida(req, cuenta) {
+  return !esCuentaAdmin(cuenta) || esMaestro(req.user.id);
+}
+
+router.put('/usuarios/:id', requirePermiso('personal'), async (req, res) => {
   try {
+    const cuenta = await cargarCuenta(req.params.id);
+    if (!cuenta || cuenta.negocio_id !== req.user.negocio_id) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const cambiaRol = String(req.body.rol_id || '') !== String(cuenta.rol_id || '');
+    if ((req.body.password || cambiaRol) && !(await puedeCambiarCuentaProtegida(req, cuenta))) {
+      return res.status(403).json({ error: MSG_SOLO_MAESTRO });
+    }
     const {
       nombre, email, username, rol_id, activo, sueldo_base, tarifa_hora, comision_pct, documento,
       fecha_nacimiento, direccion, telefono, cargo, fecha_inicio, tipo_contrato,
@@ -351,7 +380,7 @@ router.put('/usuarios/:id', async (req, res) => {
     // El formulario de edición manda password solo si se escribió una nueva
     if (req.body.password) {
       const hash = await bcrypt.hash(req.body.password, 12);
-      await pool.query(`UPDATE usuarios SET password_hash=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+      await pool.query(`UPDATE usuarios SET password_hash=${ph(1)}, token_version=token_version+1 WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
         [hash, req.params.id, req.user.negocio_id]);
     }
     await _historizarContrato(req.user.negocio_id, req.params.id, sueldo_base, tarifa_hora, multiplicador_hora_extra);
@@ -359,10 +388,13 @@ router.put('/usuarios/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.put('/usuarios/:id/password', async (req, res) => {
+router.put('/usuarios/:id/password', requirePermiso('personal'), async (req, res) => {
   try {
+    const cuenta = await cargarCuenta(req.params.id);
+    if (!cuenta || cuenta.negocio_id !== req.user.negocio_id) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!(await puedeCambiarCuentaProtegida(req, cuenta))) return res.status(403).json({ error: MSG_SOLO_MAESTRO });
     const hash = await bcrypt.hash(req.body.password, 12);
-    await pool.query(`UPDATE usuarios SET password_hash=${ph(1)} WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+    await pool.query(`UPDATE usuarios SET password_hash=${ph(1)}, token_version=token_version+1 WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
       [hash, req.params.id, req.user.negocio_id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

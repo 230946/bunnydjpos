@@ -378,7 +378,7 @@ async function forgotPasswordPortal(){
       body: JSON.stringify({ login })
     });
     const d = await r.json();
-    msgEl.textContent = d.message || 'Si el usuario existe, se generó una contraseña temporal.';
+    msgEl.textContent = d.message || 'No se pudo procesar la solicitud.';
   } catch(e){
     msgEl.textContent = 'Error: ' + e.message;
   }

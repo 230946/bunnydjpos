@@ -13,6 +13,8 @@ const bcrypt  = require('bcryptjs');
 const { v4: uuid } = require('uuid');
 const { pool, ph } = require('../db');
 const { authMiddleware, superadminOnly } = require('../middleware/auth');
+const { maestroOnly, cargarCuenta } = require('../middleware/cuentas');
+const { enviarAvisoClaveCambiada } = require('../mailer');
 const multer  = require('multer');
 const path    = require('path');
 
@@ -341,11 +343,37 @@ router.delete('/modulos/:id', async (req, res) => {
 // USUARIOS GLOBALES
 // ════════════════════════════════════════════════════════════════
 
+// Solo el usuario maestro. Su propia clave se cambia sabiendo la actual,
+// con POST /auth/cambiar-password o con el enlace por correo.
+router.put('/usuarios/:id/password', maestroOnly, async (req, res) => {
+  try {
+    const { password } = req.body || {};
+    if (typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+    if (Buffer.byteLength(password) > 72) return res.status(400).json({ error: 'La contraseña es demasiado larga' });
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ error: 'Cambia tu propia clave desde "Cambiar contraseña"' });
+    }
+    const cuenta = await cargarCuenta(req.params.id);
+    if (!cuenta) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const hash = await bcrypt.hash(password, 12);
+    await pool.query(
+      `UPDATE usuarios SET password_hash=?, token_version=token_version+1, actualizado=NOW() WHERE id=?`,
+      [hash, cuenta.id]
+    );
+    logAct(cuenta.negocio_id, null, req.user.id, req.user.nombre, 'clave_cambiada_por_maestro', `${cuenta.nombre} (${cuenta.email})`, req.ip);
+    res.json({ ok: true });
+    enviarAvisoClaveCambiada({ to: cuenta.email, nombre: cuenta.nombre })
+      .catch(e => console.error('No se pudo enviar el aviso de cambio de contraseña:', e.message));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/usuarios', async (_, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT u.id, u.nombre, u.email, u.username, u.negocio_id,
-             u.es_superadmin, u.activo, u.creado, u.numero_empleado,
+             u.es_superadmin, u.es_maestro, u.activo, u.creado, u.numero_empleado,
              n.nombre AS negocio_nombre, r.nombre AS rol_nombre
       FROM usuarios u
       LEFT JOIN negocios n ON n.id = u.negocio_id

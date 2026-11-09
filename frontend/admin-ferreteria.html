@@ -1666,11 +1666,7 @@ async function forgotPassword(){
     const r = await fetch(`${API}/auth/forgot-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login})});
     const d = await r.json();
     if(!r.ok) throw new Error(d.error||'Error');
-    if(d.tempPassword) {
-      msg.textContent = `Contraseña temporal: ${d.tempPassword}. Inicia sesión y cámbiala.`;
-    } else {
-      msg.textContent = d.message || 'Si el usuario existe, se ha enviado la información de recuperación.';
-    }
+    msg.textContent = d.message || 'No se pudo procesar la solicitud.';
   } catch(e){ msg.textContent = e.message; }
 }
 
@@ -1792,7 +1788,7 @@ async function guardarCambiarPassword(){
   try{
     await api('/auth/cambiar-password',{method:'POST',body:JSON.stringify({password_actual:actual,password_nuevo:nueva})});
     closeModal('cambiar-pass-modal');
-    showToast('Contraseña actualizada ✓');
+    showToast('Contraseña actualizada. Entra de nuevo.'); setTimeout(doLogout, 1500);
   }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
 }
 
