@@ -34,6 +34,7 @@ async function authMiddleware(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (payload.fin || !payload.id) return res.status(401).json({ error: 'Token inválido o expirado' });
     if (await tokenRevocado(payload)) {
       return res.status(401).json({ error: 'Tu sesión se cerró porque cambió la contraseña. Ingresa de nuevo.' });
     }

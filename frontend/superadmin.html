@@ -7,6 +7,7 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
 <head>
+<script src="/js/login-2fa.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/responsive.css">
@@ -1291,7 +1292,7 @@ async function loadUsuarios(){
         <td>${u.rol_nombre||'—'}</td>
         <td>${u.es_maestro?'<span class="badge badge-purple">Maestro</span>':u.es_superadmin?'<span class="badge badge-purple">Sí</span>':'No'}</td>
         <td><span class="badge ${u.activo?'badge-green':'badge-gray'}">${u.activo?'Activo':'Inactivo'}</span></td>
-        ${yo.es_maestro ? `<td>${u.id===yo.id ? '' : `<button class="btn btn-outline btn-sm" onclick="abrirClaveMaestro('${u.id}')">🔑 Restablecer</button>`}</td>` : ''}
+        ${yo.es_maestro ? `<td style="white-space:nowrap">${u.id===yo.id ? '' : `<button class="btn btn-outline btn-sm" onclick="abrirClaveMaestro('${u.id}')">🔑 Restablecer</button>`}${u.totp_activo ? ` <button class="btn btn-outline btn-sm" title="Celular perdido: configurará el código de nuevo al entrar" onclick="reiniciar2fa('${u.id}')">📱 Reiniciar código</button>` : ''}</td>` : ''}
       </tr>`).join('');
   } catch(e){ showToast('Error cargando usuarios'); }
 }
@@ -1304,6 +1305,12 @@ function abrirClaveMaestro(id){
   document.getElementById('mc-nueva').value = '';
   document.getElementById('mc-nueva2').value = '';
   document.getElementById('maestro-clave-modal').style.display = 'flex';
+}
+async function reiniciar2fa(id){
+  const u = _usuariosSA.find(x => x.id === id); if (!u) return;
+  if (!confirm(`¿Reiniciar el código de ${u.nombre}? Se cerrarán sus sesiones y la próxima vez que entre configurará la app de nuevo.`)) return;
+  try { await api(`/superadmin/usuarios/${id}/2fa`, { method:'PUT' }); showToast('Código reiniciado ✓'); loadUsuarios(); }
+  catch(e){ showToast(e.message); }
 }
 async function guardarClaveMaestro(){
   const nueva = document.getElementById('mc-nueva').value;

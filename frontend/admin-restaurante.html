@@ -7,6 +7,7 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
 <head>
+<script src="/js/login-2fa.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/responsive.css">
@@ -876,6 +877,7 @@ tr:hover td{background:var(--bg2)}
             <div class="field" style="grid-column:1/-1"><label>Nombre completo *</label><input id="dom-nombre" placeholder="Pedro López" maxlength="100"></div>
             <div class="field"><label>Nº de documento *</label><input id="dom-doc" type="text" inputmode="numeric" placeholder="1234567890" maxlength="30"></div>
             <div class="field"><label>Celular *</label><input id="dom-cel" type="tel" inputmode="numeric" placeholder="3001234567" maxlength="15"></div>
+            <div class="field"><label id="dom-pin-label">PIN de ingreso *</label><input id="dom-pin" type="password" inputmode="numeric" autocomplete="new-password" placeholder="4 a 6 números" maxlength="6"></div>
             <div class="field">
               <label>Rol</label>
               <select id="dom-rol" onchange="toggleDomRolFields()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px">
@@ -3790,7 +3792,7 @@ async function loadDomiciliarios(){
           <td style="font-family:monospace">${e.documento}</td>
           <td>${e.celular}</td>
           <td>${ROL_LABELS[e.rol]||e.rol}</td>
-          <td><span class="badge ${e.activo?'badge-green':'badge-gray'}">${e.activo?'Activo':'Inactivo'}</span></td>
+          <td><span class="badge ${e.activo?'badge-green':'badge-gray'}">${e.activo?'Activo':'Inactivo'}</span>${e.tiene_pin?'':' <span class="badge badge-gray" title="Asígnale un PIN para que no entre solo con documento y celular">⚠ Sin PIN</span>'}</td>
           <td style="display:flex;gap:6px">
             <button class="btn btn-sm btn-outline" onclick='openDomiciliarioModal(${JSON.stringify(e)})'>✏️</button>
             <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="deleteDomiciliario('${e.id}','${e.nombre}')">🗑</button>
@@ -3837,6 +3839,8 @@ function openDomiciliarioModal(emp){
   document.getElementById('dom-nombre').value = emp?.nombre||'';
   document.getElementById('dom-doc').value    = emp?.documento||'';
   document.getElementById('dom-cel').value    = emp?.celular||'';
+  document.getElementById('dom-pin').value    = '';
+  document.getElementById('dom-pin-label').textContent = emp ? (emp.tiene_pin ? 'Nuevo PIN (déjalo vacío para no cambiarlo)' : 'PIN de ingreso (aún no tiene) *') : 'PIN de ingreso *';
   document.getElementById('dom-rol').value    = emp?.rol||'domiciliario';
   document.getElementById('dom-activo').value = emp?.activo!=null ? String(emp.activo) : '1';
   document.getElementById('dom-vehiculo').value = emp?.vehiculo||'';
@@ -3873,8 +3877,11 @@ async function saveDomiciliario(){
   const placa    = vehiculo==='moto' ? document.getElementById('dom-placa').value.trim() || null : null;
   const color_vehiculo = vehiculo==='bicicleta' ? document.getElementById('dom-color').value.trim() || null : null;
   if(!nombre||!doc||!cel){ showToast('Nombre, documento y celular son requeridos'); return; }
+  const pin = document.getElementById('dom-pin').value.trim();
+  if(pin && !/^\d{4,6}$/.test(pin)){ showToast('El PIN debe tener de 4 a 6 números'); return; }
+  if(!id && !pin){ showToast('Asigna un PIN de ingreso'); return; }
   try {
-    const body = { nombre, documento:doc, celular:cel, rol, activo, vehiculo, placa, color_vehiculo };
+    const body = { nombre, documento:doc, celular:cel, rol, activo, vehiculo, placa, color_vehiculo, ...(pin ? { pin } : {}) };
     let empId = id;
     if(id) await api(`/admin/empleados/${id}`,{method:'PUT',body:JSON.stringify(body)});
     else { const res = await api('/admin/empleados',{method:'POST',body:JSON.stringify(body)}); empId = res.id; }

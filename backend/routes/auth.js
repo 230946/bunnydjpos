@@ -19,7 +19,54 @@ const { limitePorIp, crearLimiteLogin } = require('../middleware/limites');
 const { esCuentaAdmin, cargarCuenta } = require('../middleware/cuentas');
 const { enviarEnlaceRecuperacion, enviarAvisoClaveCambiada } = require('../mailer');
 
+const totp = require('../totp');
+const QRCode = require('qrcode');
+
 const limiteLogin = crearLimiteLogin();
+
+// ── Sesión y verificación en dos pasos ──────────────────────────
+async function emitirSesion(req, user, negocioPedido) {
+  let permisos = {};
+  try { permisos = typeof user.permisos === 'string' ? JSON.parse(user.permisos) : (user.permisos || {}); } catch {}
+  const payload = {
+    id:            user.id,
+    nombre:        user.nombre,
+    email:         user.email,
+    negocio_id:    user.negocio_id || (user.es_superadmin && negocioPedido ? negocioPedido : null),
+    rol_id:        user.rol_id,
+    rol_nombre:    user.rol_nombre,
+    es_superadmin: user.es_superadmin,
+    permisos,
+    tv:            user.token_version || 0,
+  };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES || '8h' });
+  await pool.query(
+    `INSERT INTO sesiones (id, usuario_id, token_hash, ip, expira)
+     VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)}, DATE_ADD(NOW(), INTERVAL 8 HOUR))`,
+    [uuid(), user.id, token.slice(-20), req.ip]
+  );
+  return { token, user: payload };
+}
+
+async function buscarUsuarioSesion(id) {
+  const { rows } = await pool.query(
+    `SELECT u.*, r.permisos, r.nombre AS rol_nombre FROM usuarios u
+     LEFT JOIN roles r ON r.id = u.rol_id WHERE u.id=? AND u.activo=1 LIMIT 1`, [id]);
+  return rows[0] || null;
+}
+
+const hashRespaldo = (c) => crypto.createHash('sha256').update(String(c).toUpperCase().replace(/[^A-Z0-9]/g, '')).digest('hex');
+function generarRespaldo() {
+  const alf = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 10 }, () => {
+    const b = crypto.randomBytes(8);
+    const s = Array.from(b, x => alf[x % alf.length]).join('');
+    return s.slice(0, 4) + '-' + s.slice(4);
+  });
+}
+
+const _intentosDesafio = new Map(); // jti → intentos fallidos
+const MAX_INTENTOS_DESAFIO = 5;
 
 // ── POST /api/auth/login ─────────────────────────────────────────
 router.post('/login', async (req, res) => {
@@ -57,35 +104,92 @@ router.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Credenciales incorrectas' });
     limiteLogin.exito(req, login);
 
-    // Parsear permisos
     let permisos = {};
     try { permisos = typeof user.permisos === 'string' ? JSON.parse(user.permisos) : (user.permisos || {}); } catch {}
 
     const bloqueo = await bloqueoFueraDeTurno({ negocio_id: user.negocio_id, es_superadmin: user.es_superadmin, permisos });
     if (bloqueo) return res.status(403).json({ error: bloqueo });
 
-    const payload = {
-      id:            user.id,
-      nombre:        user.nombre,
-      email:         user.email,
-      negocio_id:    user.negocio_id || (user.es_superadmin && negocio_id ? negocio_id : null),
-      rol_id:        user.rol_id,
-      rol_nombre:    user.rol_nombre,
-      es_superadmin: user.es_superadmin,
-      permisos,
-      tv:            user.token_version || 0,
-    };
+    // Administradores y superadmins: segundo paso con el código de la app.
+    if (user.es_superadmin || permisos.personal) {
+      let secreto = user.totp_secret;
+      if (!user.totp_activo && !secreto) {
+        secreto = totp.generarSecreto();
+        await pool.query(`UPDATE usuarios SET totp_secret=? WHERE id=? AND totp_activo=0`, [secreto, user.id]);
+      }
+      const desafio = jwt.sign(
+        { fin: '2fa', sub: user.id, nid: negocio_id || null, jti: crypto.randomUUID() },
+        process.env.JWT_SECRET, { expiresIn: '10m' }
+      );
+      const r = { requiere_2fa: true, configurar: !user.totp_activo, desafio };
+      if (!user.totp_activo) {
+        const url = totp.urlOtpauth(secreto, user.email || user.username || user.nombre);
+        r.qr = await QRCode.toDataURL(url, { margin: 1, width: 220 });
+        r.secreto = secreto;
+      }
+      return res.json(r);
+    }
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES || '8h' });
+    res.json(await emitirSesion(req, user, negocio_id));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
 
-    // Guardar sesión
-    await pool.query(
-      `INSERT INTO sesiones (id, usuario_id, token_hash, ip, expira)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)}, DATE_ADD(NOW(), INTERVAL 8 HOUR))`,
-      [uuid(), user.id, token.slice(-20), req.ip]
-    );
+// ── POST /api/auth/2fa ─ segundo paso del login de administradores
+router.post('/2fa', limitePorIp(30, 15 * 60 * 1000), async (req, res) => {
+  try {
+    const { desafio, codigo } = req.body || {};
+    if (typeof desafio !== 'string' || typeof codigo !== 'string') return res.status(400).json({ error: 'Falta el código' });
+    let d;
+    try { d = jwt.verify(desafio, process.env.JWT_SECRET); } catch { d = null; }
+    if (!d || d.fin !== '2fa' || !d.jti) {
+      return res.status(401).json({ error: 'El tiempo para escribir el código terminó. Ingresa de nuevo.', reiniciar: true });
+    }
+    if ((_intentosDesafio.get(d.jti) || 0) >= MAX_INTENTOS_DESAFIO) {
+      return res.status(401).json({ error: 'Demasiados códigos incorrectos. Ingresa de nuevo.', reiniciar: true });
+    }
+    const user = await buscarUsuarioSesion(d.sub);
+    if (!user || !user.totp_secret) return res.status(401).json({ error: 'Ingresa de nuevo.', reiniciar: true });
 
-    res.json({ token, user: payload });
+    const limpio = codigo.replace(/\s/g, '');
+    let ok = false;
+    const paso = totp.verificar(user.totp_secret, limpio, user.totp_ultimo_paso);
+    if (paso !== null) {
+      // Condición en el UPDATE: el mismo código no sirve dos veces, ni en paralelo.
+      const { rows } = await pool.query(
+        `UPDATE usuarios SET totp_ultimo_paso=? WHERE id=? AND (totp_ultimo_paso IS NULL OR totp_ultimo_paso < ?)`,
+        [paso, user.id, paso]
+      );
+      ok = rows.affectedRows === 1;
+    } else if (user.totp_activo && /^[A-Za-z0-9]{4}-?[A-Za-z0-9]{4}$/.test(limpio)) {
+      const { rows } = await pool.query(
+        `UPDATE totp_respaldo SET usado=NOW() WHERE usuario_id=? AND code_hash=? AND usado IS NULL`,
+        [user.id, hashRespaldo(limpio)]
+      );
+      ok = rows.affectedRows === 1;
+    }
+    if (!ok) {
+      _intentosDesafio.set(d.jti, (_intentosDesafio.get(d.jti) || 0) + 1);
+      if (_intentosDesafio.size > 10000) _intentosDesafio.clear();
+      return res.status(400).json({ error: 'Código incorrecto o vencido. Escribe el que muestra ahora la app.' });
+    }
+    _intentosDesafio.set(d.jti, MAX_INTENTOS_DESAFIO); // el desafío no vuelve a servir
+
+    let codigos_respaldo;
+    if (!user.totp_activo) {
+      codigos_respaldo = generarRespaldo();
+      await pool.transaction(async (q) => {
+        await q(`UPDATE usuarios SET totp_activo=1 WHERE id=?`, [user.id]);
+        await q(`DELETE FROM totp_respaldo WHERE usuario_id=?`, [user.id]);
+        for (const c of codigos_respaldo) {
+          await q(`INSERT INTO totp_respaldo (id, usuario_id, code_hash) VALUES (?,?,?)`, [uuid(), user.id, hashRespaldo(c)]);
+        }
+      });
+    }
+    const sesion = await emitirSesion(req, user, d.nid);
+    res.json(codigos_respaldo ? { ...sesion, codigos_respaldo } : sesion);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Error interno' });

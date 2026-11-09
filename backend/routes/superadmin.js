@@ -369,11 +369,25 @@ router.put('/usuarios/:id/password', maestroOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Celular perdido: el usuario vuelve a configurar el código al entrar.
+router.put('/usuarios/:id/2fa', maestroOnly, async (req, res) => {
+  try {
+    const cuenta = await cargarCuenta(req.params.id);
+    if (!cuenta) return res.status(404).json({ error: 'Usuario no encontrado' });
+    await pool.transaction(async (q) => {
+      await q(`UPDATE usuarios SET totp_secret=NULL, totp_activo=0, totp_ultimo_paso=NULL, token_version=token_version+1 WHERE id=?`, [cuenta.id]);
+      await q(`DELETE FROM totp_respaldo WHERE usuario_id=?`, [cuenta.id]);
+    });
+    logAct(cuenta.negocio_id, null, req.user.id, req.user.nombre, '2fa_reiniciado_por_maestro', `${cuenta.nombre} (${cuenta.email})`, req.ip);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/usuarios', async (_, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT u.id, u.nombre, u.email, u.username, u.negocio_id,
-             u.es_superadmin, u.es_maestro, u.activo, u.creado, u.numero_empleado,
+             u.es_superadmin, u.es_maestro, u.totp_activo, u.activo, u.creado, u.numero_empleado,
              n.nombre AS negocio_nombre, r.nombre AS rol_nombre
       FROM usuarios u
       LEFT JOIN negocios n ON n.id = u.negocio_id

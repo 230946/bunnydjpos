@@ -294,42 +294,36 @@ app.post('/api/peluqueria/empleados/:id/foto', upload.single('foto'), async (req
 async function seedSuperadmin() {
   try {
     const email = process.env.SUPERADMIN_EMAIL || 'superadmin@bunnydjpos.com';
-    const pass  = process.env.SUPERADMIN_PASS  || 'Admin123!';
+    const pass  = process.env.SUPERADMIN_PASS || '';
     const { rows } = await pool.query(`SELECT id FROM usuarios WHERE es_superadmin=1 LIMIT 1`);
     if (rows.length) return console.log('✅ Superadmin ya existe');
+    if (pass.length < 12) return console.error('⚠️  Superadmin NO creado: define SUPERADMIN_PASS (mínimo 12 caracteres) en .env.');
     const hash = await bcrypt.hash(pass, 12);
     await pool.query(
       `INSERT INTO usuarios (id,nombre,email,username,password_hash,es_superadmin)
        VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},1)`,
       [uuid(), 'Super Admin', email, 'superadmin', hash]
     );
-    console.log(`✅ Superadmin creado: ${email} / ${pass}`);
-    console.log('   ⚠️  Cambia la contraseña en producción');
+    console.log(`✅ Superadmin creado: ${email}. Ya puedes quitar SUPERADMIN_PASS del .env.`);
   } catch (e) {
     console.error('Error creando superadmin:', e.message);
   }
 }
 
-// ── Seed: crear el usuario maestro una sola vez, desde MAESTRO_EMAIL y MAESTRO_PASS.
-// Si ya existe no se toca: cambiar el .env después no le cambia la clave.
+// ── Seed: el superadmin original es el usuario maestro ───────────
+// Si todavía no hay maestro, se marca la cuenta superadmin más antigua.
 async function seedMaestro() {
   try {
     const { rows } = await pool.query(`SELECT id FROM usuarios WHERE es_maestro=1 LIMIT 1`);
     if (rows.length) return console.log('✅ Usuario maestro ya existe');
-    const email = (process.env.MAESTRO_EMAIL || '').trim();
-    const pass  = process.env.MAESTRO_PASS || '';
-    if (!email || !pass) {
-      return console.warn('⚠️  No hay usuario maestro: define MAESTRO_EMAIL y MAESTRO_PASS en .env. Sin él nadie puede restablecer claves de administradores.');
-    }
-    if (pass.length < 12) return console.error('⚠️  Usuario maestro NO creado: MAESTRO_PASS debe tener al menos 12 caracteres.');
-    const hash = await bcrypt.hash(pass, 12);
-    await pool.query(
-      `INSERT INTO usuarios (id,nombre,email,username,password_hash,es_superadmin,es_maestro) VALUES (?,?,?,?,?,1,1)`,
-      [uuid(), 'Usuario Maestro', email, (process.env.MAESTRO_USER || 'maestro').trim(), hash]
+    const { rows: sa } = await pool.query(
+      `SELECT id, email FROM usuarios WHERE es_superadmin=1 AND activo=1 ORDER BY creado ASC LIMIT 1`
     );
-    console.log(`✅ Usuario maestro creado: ${email}. Ya puedes quitar MAESTRO_PASS del .env.`);
+    if (!sa.length) return console.warn('⚠️  No hay superadmin para marcar como usuario maestro.');
+    await pool.query(`UPDATE usuarios SET es_maestro=1 WHERE id=?`, [sa[0].id]);
+    console.log(`✅ Usuario maestro: ${sa[0].email}`);
   } catch (e) {
-    console.error('Error creando usuario maestro:', e.message);
+    console.error('Error marcando el usuario maestro:', e.message);
   }
 }
 
@@ -609,6 +603,23 @@ async function runMigrations() {
 
     // Única cuenta que puede cambiar claves de administradores (middleware/cuentas.js)
     { table: 'usuarios', column: 'es_maestro', sql: `ALTER TABLE usuarios ADD COLUMN es_maestro TINYINT(1) NOT NULL DEFAULT 0` },
+    // PIN de ingreso de domiciliarios (routes/domicilios.js, routes/admin.js)
+    { table: 'empleados', column: 'pin_hash', sql: `ALTER TABLE empleados ADD COLUMN pin_hash VARCHAR(100) NULL` },
+    // Código de 6 dígitos para administradores (routes/auth.js, totp.js)
+    { table: 'usuarios', column: 'totp_secret',      sql: `ALTER TABLE usuarios ADD COLUMN totp_secret VARCHAR(64) NULL` },
+    { table: 'usuarios', column: 'totp_activo',      sql: `ALTER TABLE usuarios ADD COLUMN totp_activo TINYINT(1) NOT NULL DEFAULT 0` },
+    { table: 'usuarios', column: 'totp_ultimo_paso', sql: `ALTER TABLE usuarios ADD COLUMN totp_ultimo_paso BIGINT NULL` },
+    {
+      table: 'totp_respaldo', column: '__create__',
+      createSql: `CREATE TABLE IF NOT EXISTS totp_respaldo (
+        id         VARCHAR(36) PRIMARY KEY,
+        usuario_id VARCHAR(36) NOT NULL,
+        code_hash  CHAR(64)    NOT NULL,
+        usado      DATETIME    NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+        INDEX idx_usuario_code (usuario_id, code_hash)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    },
     // Sube con cada cambio de contraseña para invalidar sesiones abiertas (middleware/auth.js)
     { table: 'usuarios', column: 'token_version', sql: `ALTER TABLE usuarios ADD COLUMN token_version INT NOT NULL DEFAULT 0` },
 

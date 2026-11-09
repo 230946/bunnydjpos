@@ -184,7 +184,7 @@ body{display:flex;flex-direction:column;min-height:100vh}
 <div id="view-login" style="display:none">
   <div class="login-logo">🛵</div>
   <div class="login-title">Domiciliario</div>
-  <div class="login-sub">Ingresa con tu documento y celular registrado</div>
+  <div class="login-sub">Ingresa con tu documento, celular y PIN</div>
   <div class="login-card">
     <div class="lf">
       <label>Número de documento</label>
@@ -193,6 +193,10 @@ body{display:flex;flex-direction:column;min-height:100vh}
     <div class="lf">
       <label>Celular</label>
       <input id="l-cel" type="tel" inputmode="numeric" placeholder="3001234567" maxlength="15" autocomplete="off">
+    </div>
+    <div class="lf">
+      <label>PIN</label>
+      <input id="l-pin" type="password" inputmode="numeric" placeholder="Te lo da tu administrador" maxlength="6" autocomplete="current-password">
     </div>
     <button id="btn-login" onclick="login()">Ingresar →</button>
     <div class="login-error" id="login-error"></div>
@@ -354,7 +358,7 @@ async function login(){
     const data = await fetch(`${API}/empleado-login`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({negocio_id:NEG_ID, documento:doc, celular:cel})
+      body: JSON.stringify({negocio_id:NEG_ID, documento:doc, celular:cel, pin:document.getElementById('l-pin').value.trim()})
     }).then(r=>r.json());
     if(data.error) throw new Error(data.error);
     if(data.rol !== 'domiciliario') throw new Error('Tu cuenta no tiene el rol de domiciliario');

@@ -12,6 +12,7 @@ const router = require('express').Router();
 const { v4: uuid } = require('uuid');
 const { pool, ph } = require('../db');
 const { authMiddleware, requirePermiso, limpiarCacheTurno } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
 const { enviarFactura } = require('../mailer');
 const multer = require('multer');
 const path = require('path');
@@ -1148,7 +1149,7 @@ router.get('/ventas', requirePermiso('reportes'), async (req, res) => {
 router.get('/empleados', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, nombre, documento, celular, rol, activo, created_at, foto_url, vehiculo, placa, color_vehiculo FROM empleados
+      `SELECT id, nombre, documento, celular, rol, activo, created_at, foto_url, vehiculo, placa, color_vehiculo, (pin_hash IS NOT NULL) AS tiene_pin FROM empleados
        WHERE negocio_id=? ORDER BY nombre`,
       [nid(req)]
     );
@@ -1156,17 +1157,18 @@ router.get('/empleados', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/empleados', async (req, res) => {
+router.post('/empleados', requirePermiso('personal'), async (req, res) => {
   try {
-    const { nombre, documento, celular, rol = 'domiciliario', vehiculo, placa, color_vehiculo } = req.body;
+    const { nombre, documento, celular, rol = 'domiciliario', vehiculo, placa, color_vehiculo, pin } = req.body;
     if (!nombre || !documento || !celular) return res.status(400).json({ error: 'Nombre, documento y celular son requeridos' });
+    if (!/^\d{4,6}$/.test(String(pin || ''))) return res.status(400).json({ error: 'El PIN debe tener de 4 a 6 números' });
     const id    = uuid();
     const token = uuid().replace(/-/g,'') + uuid().replace(/-/g,'').slice(0,8);
     const cel   = String(celular).replace(/[\s\-()]/g, '');
     await pool.query(
-      `INSERT INTO empleados (id, negocio_id, nombre, documento, celular, rol, token, vehiculo, placa, color_vehiculo)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)})`,
-      [id, nid(req), nombre.trim(), documento.trim(), cel, rol, token, vehiculo||null, placa||null, color_vehiculo||null]
+      `INSERT INTO empleados (id, negocio_id, nombre, documento, celular, rol, token, vehiculo, placa, color_vehiculo, pin_hash)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)},${ph(9)},${ph(10)},${ph(11)})`,
+      [id, nid(req), nombre.trim(), documento.trim(), cel, rol, token, vehiculo||null, placa||null, color_vehiculo||null, await bcrypt.hash(String(pin), 10)]
     );
     res.status(201).json({ ok: true, id });
   } catch (e) {
@@ -1175,9 +1177,10 @@ router.post('/empleados', async (req, res) => {
   }
 });
 
-router.put('/empleados/:id', async (req, res) => {
+router.put('/empleados/:id', requirePermiso('personal'), async (req, res) => {
   try {
-    const { nombre, documento, celular, rol, activo, vehiculo, placa, color_vehiculo } = req.body;
+    const { nombre, documento, celular, rol, activo, vehiculo, placa, color_vehiculo, pin } = req.body;
+    if (pin && !/^\d{4,6}$/.test(String(pin))) return res.status(400).json({ error: 'El PIN debe tener de 4 a 6 números' });
     const cel = celular ? String(celular).replace(/[\s\-()]/g, '') : null;
     await pool.query(
       `UPDATE empleados SET nombre=COALESCE(?,nombre), documento=COALESCE(?,documento),
@@ -1187,11 +1190,17 @@ router.put('/empleados/:id', async (req, res) => {
       [nombre||null, documento||null, cel||null, rol||null, activo!=null?activo:null,
        vehiculo||null, placa||null, color_vehiculo||null, req.params.id, nid(req)]
     );
+    // Un PIN nuevo cierra la sesión que el domiciliario tenga abierta.
+    if (pin) {
+      const nuevoToken = uuid().replace(/-/g,'') + uuid().replace(/-/g,'').slice(0,8);
+      await pool.query(`UPDATE empleados SET pin_hash=?, token=? WHERE id=? AND negocio_id=?`,
+        [await bcrypt.hash(String(pin), 10), nuevoToken, req.params.id, nid(req)]);
+    }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/empleados/:id/foto', uploadEmpFoto.single('foto'), async (req, res) => {
+router.post('/empleados/:id/foto', requirePermiso('personal'), uploadEmpFoto.single('foto'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
     const url = `/uploads/${req.file.filename}`;
@@ -1200,7 +1209,7 @@ router.post('/empleados/:id/foto', uploadEmpFoto.single('foto'), async (req, res
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.delete('/empleados/:id', async (req, res) => {
+router.delete('/empleados/:id', requirePermiso('personal'), async (req, res) => {
   try {
     await pool.query(`DELETE FROM empleados WHERE id=? AND negocio_id=?`, [req.params.id, nid(req)]);
     res.json({ ok: true });
