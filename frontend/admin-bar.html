@@ -3029,7 +3029,7 @@ function renderMesaPedidoExistente(){
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${qty}× ${esc(i.nombre)}</span>
       <span style="font-weight:600;flex:none">${descLinea>0?`<span style="text-decoration:line-through;color:var(--text2);font-weight:400;font-size:11px;margin-right:4px">${fmt(precio*qty)}</span>`:''}${fmt(precio*qty-descLinea)}</span>
     </span>
-    <button class="btn-qty btn-qty-plus" title="Agregar 1" onclick="agregarUnidadTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}','${i.item_id||''}','${esc(i.nombre).replace(/'/g,"\\'")}','${i.emoji||''}',${+i.precio||0})">+</button>
+    <button class="btn-qty btn-qty-plus" title="Agregar" onclick="agregarUnidadTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}','${i.item_id||''}','${esc(i.nombre).replace(/'/g,"\\'")}','${i.emoji||''}',${+i.precio||0})">+</button>
   </div>`;
   }).join('');
   box.classList.remove('hide');
@@ -3262,6 +3262,9 @@ function elegirSinMesa(){
   if (pid) _agregarAlCarritoCore(pid);
 }
 let _qtyItemId = null, _qtyAbiertoEn = 0;
+// Si el popup se abrió desde el "+" de un pedido ya enviado, aquí va la mesa
+// y el producto; si no, la cantidad elegida va al carrito.
+let _qtyTicket = null;
 // Enteros que todavía se pueden pedir, descontando lo que ya está en el
 // carrito (el servidor rechaza el pedido entero si alguno supera el stock).
 function _qtyDisponible(it){
@@ -3275,9 +3278,12 @@ function _agregarAlCarritoCore(id){
   if (itemAgotado(it)) { showToast(`"${it.nombre}" está agotado`); return; }
   const disp = _qtyDisponible(it);
   if (disp < 1) { showToast(`No queda más stock de "${it.nombre}"`); return; }
-  _qtyItemId = id;
-  $('qty-titulo').textContent = `${it.emoji||''} ${it.nombre}`.trim();
-  $('qty-info').textContent = fmt(it.promo_vigente ? it.precio_efectivo : it.precio) + (disp === Infinity ? '' : ` · Disponibles: ${disp}`);
+  _qtyItemId = id; _qtyTicket = null;
+  _mostrarPopupCantidad(`${it.emoji||''} ${it.nombre}`.trim(), it.promo_vigente ? it.precio_efectivo : it.precio, disp);
+}
+function _mostrarPopupCantidad(titulo, precio, disp){
+  $('qty-titulo').textContent = titulo;
+  $('qty-info').textContent = fmt(precio) + (disp === Infinity ? '' : ` · Disponibles: ${disp}`);
   $('qty-grid').innerHTML = Array.from({length:12}, (_,i) => i+1)
     .map(n => `<button type="button" class="qty-num" ${n>disp?'disabled':''} onclick="elegirCantidad(${n})">${n}</button>`).join('');
   $('qty-otra').value = '';
@@ -3290,10 +3296,11 @@ function _qtyToqueAccidental(){ return Date.now() - _qtyAbiertoEn < 300; }
 function cerrarCantidadModal(){
   if (_qtyToqueAccidental()) return;
   closeModal('cantidad-modal');
-  _qtyItemId = null;
+  _qtyItemId = null; _qtyTicket = null;
 }
 function elegirCantidad(n){
   if (_qtyToqueAccidental()) return;
+  if (_qtyTicket) return _elegirCantidadTicket(n);
   const it = items.find(x => x.id === _qtyItemId); if (!it) return;
   if (!Number.isInteger(n) || n < 1) return showToast('Ingresá una cantidad válida');
   const disp = _qtyDisponible(it);
@@ -3423,12 +3430,31 @@ async function quitarUnidadTicket(mesaId, nombre){
   try{ await api('/pos/comandas/reducir', { method:'PUT', body: JSON.stringify({ mesa_id: mesaId, nombre, cantidad: 1 }) }); await cargarTickets(); }
   catch(e){ alert('Error: ' + e.message); }
 }
-async function agregarUnidadTicket(mesaId, mesaNum, mesaNombre, itemId, nombre, emoji, precio){
+// El "+" de un pedido ya enviado abre el mismo popup de números grandes
+// y suma a la mesa la cantidad elegida.
+function agregarUnidadTicket(mesaId, mesaNum, mesaNombre, itemId, nombre, emoji, precio){
+  const it = itemId ? items.find(x => x.id === itemId) : null;
+  if (it && itemAgotado(it)) { showToast(`"${it.nombre}" está agotado`); return; }
+  const disp = it ? _qtyDisponible(it) : Infinity;
+  if (disp < 1) { showToast(`No queda más stock de "${nombre}"`); return; }
+  _qtyItemId = null;
+  _qtyTicket = { mesaId, mesaNum, mesaNombre, itemId, nombre, emoji, precio };
+  _mostrarPopupCantidad(`${emoji||''} ${nombre}`.trim(), precio, disp);
+}
+async function _elegirCantidadTicket(n){
+  const tk = _qtyTicket;
+  if (!Number.isInteger(n) || n < 1) return showToast('Ingresá una cantidad válida');
+  const it = tk.itemId ? items.find(x => x.id === tk.itemId) : null;
+  const disp = it ? _qtyDisponible(it) : Infinity;
+  if (n > disp) return showToast(`Solo hay ${disp} disponibles`);
+  closeModal('cantidad-modal');
+  _qtyTicket = null;
   try{
     await api('/pos/comandas', { method:'POST', body: JSON.stringify({
-      mesa_id: mesaId, mesa_num: mesaNum, mesa_nombre: mesaNombre,
-      items: [{ item_id: itemId||null, nombre, emoji, precio, qty: 1 }]
+      mesa_id: tk.mesaId, mesa_num: tk.mesaNum, mesa_nombre: tk.mesaNombre,
+      items: [{ item_id: tk.itemId||null, nombre: tk.nombre, emoji: tk.emoji, precio: tk.precio, qty: n }]
     })});
+    showToast(`+${n} × ${tk.nombre}`);
     await cargarTickets();
   }catch(e){ showToast('Error: ' + e.message); }
 }
@@ -3514,7 +3540,7 @@ function renderTickets(){
         <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.qty||1}× ${esc(i.nombre)}</span>
         <span style="font-weight:600;flex:none">${fmt((+i.precio||0)*(i.qty||1))}</span>
       </span>
-      <button class="btn-qty btn-qty-plus" title="Agregar 1" onclick="agregarUnidadTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}','${i.item_id||''}','${esc(i.nombre).replace(/'/g,"\\'")}','${i.emoji||''}',${+i.precio||0})">+</button>
+      <button class="btn-qty btn-qty-plus" title="Agregar" onclick="agregarUnidadTicket('${t.mesa_id}',${JSON.stringify(t.mesa_num)},'${esc(t.mesa_nombre||'').replace(/'/g,"\\'")}','${i.item_id||''}','${esc(i.nombre).replace(/'/g,"\\'")}','${i.emoji||''}',${+i.precio||0})">+</button>
     </div>` : `<div class="it" style="display:flex;align-items:center;justify-content:space-between;gap:6px">
       <span>${i.qty||1}× ${esc(i.nombre)}</span>
       <span style="font-weight:600">${fmt((+i.precio||0)*(i.qty||1))}</span>
