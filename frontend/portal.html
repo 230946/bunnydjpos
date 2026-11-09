@@ -24,6 +24,7 @@
 
     /* ── Tarjetas ── */
     .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;max-width:680px;width:100%}
+    .cards > .card:only-child{grid-column:1/-1;justify-self:center;width:100%;max-width:340px}
     .card{background:#fff;border-radius:16px;padding:26px 16px 20px;text-align:center;text-decoration:none;color:inherit;box-shadow:0 2px 8px rgba(0,0,0,.12);border:2.5px solid transparent;transition:transform .18s,box-shadow .18s,border-color .18s;display:flex;flex-direction:column;align-items:center;gap:9px}
     .card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(0,0,0,.18);border-color:var(--cc)}
     .card-icon{font-size:2.5rem;line-height:1}
@@ -178,22 +179,15 @@ let _tipo = 'restaurante';
 
 const TIPOS = {
   restaurante:'Restaurante', peluqueria:'Peluquería / Salón de Belleza',
-  minimercado:'Minimercado', bar:'Bar', veterinaria:'Veterinaria',
-  taller:'Taller', lavanderia:'Lavandería', gimnasio:'Gimnasio', farmacia:'Farmacia',
+  minimercado:'Minimercado', bar:'Bar',
 };
 const ADMIN_URL = {
   restaurante:'admin-restaurante.html', peluqueria:'admin-peluqueria.html',
   minimercado:'admin-minimercado.html', bar:'admin-bar.html',
-  veterinaria:'admin-restaurante.html', taller:'admin-restaurante.html',
-  lavanderia:'admin-restaurante.html', gimnasio:'admin-restaurante.html',
-  farmacia:'admin-restaurante.html',
 };
 const POS_URL = {
   restaurante:'pos-restaurante.html', peluqueria:'pos-peluqueria.html',
   minimercado:'pos-minimercado.html', bar:'pos-bar.html',
-  veterinaria:'pos-restaurante.html', taller:'pos-restaurante.html',
-  lavanderia:'pos-restaurante.html', gimnasio:'pos-restaurante.html',
-  farmacia:'pos-restaurante.html',
 };
 
 // Claves de sessionStorage que usa cada portal
@@ -218,16 +212,14 @@ function showError(titulo, msg){
   $('error-wrap').style.display = 'block';
 }
 
-// Determina si el usuario puede acceder al panel admin (no solo POS).
-// Se basa en los permisos reales del usuario, no en el nombre del rol:
-// un rol sin ninguno de estos permisos (ej. Mesero) no debe entrar al admin,
-// aunque su nombre no coincida con una lista negra de roles "obvios".
-const ADMIN_ACCESS_KEYS = ['personal','inventario','inventario_borrar','proveedores',
-  'gastos','reportes','facturacion','clientes','horarios'];
+// Administrador = superadmin o rol con permiso "personal" (la misma regla que
+// aplica el servidor al ingresar). El administrador solo entra al panel y el
+// resto del personal solo a la caja (POS).
 function puedeAdmin(user){
   if(user.es_superadmin) return true;
-  const p = user.permisos||{};
-  return ADMIN_ACCESS_KEYS.some(k => p[k]);
+  let p = user.permisos||{};
+  try{ if(typeof p === 'string') p = JSON.parse(p); }catch{ p = {}; }
+  return !!p.personal;
 }
 
 // Guarda las claves de sessionStorage que cada portal espera encontrar.
@@ -285,15 +277,15 @@ function mostrarTarjetasAdmin(user){
       desc:  'Gestión, reportes e inventario',
       badge: 'ADMIN',
     });
+  } else {
+    accesos.push({
+      url:   (POS_URL[tipo]||'pos-restaurante.html')+'?n='+nid,
+      clase: 'pos', icon:'🛒',
+      title: 'Punto de Venta',
+      desc:  'Registrar ventas y cobros',
+      badge: 'POS',
+    });
   }
-
-  accesos.push({
-    url:   (POS_URL[tipo]||'pos-restaurante.html')+'?n='+nid,
-    clase: 'pos', icon:'🛒',
-    title: 'Punto de Venta',
-    desc:  'Registrar ventas y cobros',
-    badge: 'POS',
-  });
 
   $('admin-cards').innerHTML = accesos.map(a=>`
     <a href="${a.url}" class="card card-${a.clase}">
@@ -338,7 +330,8 @@ async function doLogin(){
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error||'Credenciales incorrectas');
-    guardarSesion(d.token, d.user);
+    // Solo la sesión del panel se hereda; la caja siempre pide ingresar.
+    if(puedeAdmin(d.user)) guardarSesion(d.token, d.user);
     mostrarTarjetasAdmin(d.user);
   } catch(e){
     errEl.textContent = e.message;

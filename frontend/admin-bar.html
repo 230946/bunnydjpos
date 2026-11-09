@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <script src="/js/login-2fa.js"></script>
+<script src="/js/ambito.js" data-ambito="admin" data-claves="bdj_bar_token"></script>
 <meta charset="UTF-8">
 <title>Admin Bar — BUNNYDJPOS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -821,7 +822,7 @@ table tr:hover td{background:var(--bg2)}
                   <option value="todos">Todos los estados</option>
                   <option value="pendiente" selected>Pendiente ⏳</option>
                   <option value="aceptado">Aceptado ✅</option>
-                  <option value="en_preparacion">En preparación 👨‍🍳</option>
+                  <option value="en_preparacion">En preparación 🍹</option>
                   <option value="listo">Listo 📦</option>
                   <option value="en_camino">En camino 🛵</option>
                   <option value="entregado">Entregado 🎉</option>
@@ -4400,7 +4401,7 @@ const DOM_ESTADOS = {
 const DOM_SIGUIENTE = {
   pendiente:      [{label:'✅ Aceptar',    estado:'aceptado',      cls:'btn-success'},
                    {label:'❌ Cancelar',   estado:'cancelado',     cls:'btn-danger'}],
-  aceptado:       [{label:'👨‍🍳 Preparando', estado:'en_preparacion',cls:'btn-primary'}],
+  aceptado:       [{label:'🍹 Preparando', estado:'en_preparacion',cls:'btn-primary'}],
   en_preparacion: [{label:'📦 Listo',     estado:'listo',         cls:'btn-primary'}],
   listo:          [{label:'🛵 En camino', estado:'en_camino',     cls:'btn-primary'}],
   en_camino:      [{label:'🎉 Entregado', estado:'entregado',     cls:'btn-success'}],
@@ -5486,8 +5487,8 @@ let rolesCache = [];
 let rolEditId = null;
 const CATEGORIAS_PERMISOS = [
   { grupo:'🖥️ Punto de Venta', permisos:[
-    ['pos_mesas','Mesas'],['pos_menu','Menú'],
-    ['pos_cocina','Cocina'],['pos_cobro','Cobro / Caja'],
+    ['pos_mesas','Mesas'],['pos_menu','Menú (productos)'],
+    ['pos_cobro','Cobro / Caja'],
   ]},
   { grupo:'📦 Inventario', permisos:[
     ['inventario','Gestionar inventario'],

@@ -65,6 +65,9 @@ function generarRespaldo() {
   });
 }
 
+const MSG_ADMIN_EN_POS = 'Los administradores no ingresan a la caja. Usa una cuenta de mesero o cajero, o entra al panel administrativo.';
+const MSG_PERSONAL_EN_ADMIN = 'Esta cuenta no tiene acceso al panel administrativo. Entra por la caja (POS).';
+
 const _intentosDesafio = new Map(); // jti → intentos fallidos
 const MAX_INTENTOS_DESAFIO = 5;
 
@@ -109,6 +112,14 @@ router.post('/login', async (req, res) => {
 
     const bloqueo = await bloqueoFueraDeTurno({ negocio_id: user.negocio_id, es_superadmin: user.es_superadmin, permisos });
     if (bloqueo) return res.status(403).json({ error: bloqueo });
+
+    // Cada pantalla dice si es una caja (pos) o un panel (admin). Los
+    // administradores (superadmin o rol con permiso Personal) no operan la
+    // caja, y el resto del personal no entra a los paneles.
+    const ambito = req.body.ambito;
+    const esAdmin = !!user.es_superadmin || !!permisos.personal;
+    if (ambito === 'pos' && esAdmin) return res.status(403).json({ error: MSG_ADMIN_EN_POS });
+    if (ambito === 'admin' && !esAdmin) return res.status(403).json({ error: MSG_PERSONAL_EN_ADMIN });
 
     // Administradores y superadmins: segundo paso con el código de la app.
     if (user.es_superadmin || permisos.personal) {

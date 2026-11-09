@@ -179,8 +179,7 @@ async function obtenerMenuData(nid) {
   // Color corporativo: campo explícito o default por tipo de negocio
   const COLOR_TIPO = {
     restaurante: '#e65c00', bar: '#7c1f3e', minimercado: '#0B8457',
-    peluqueria: '#0B8457', veterinaria: '#0ea5e9', farmacia: '#dc2626',
-    taller: '#374151', lavanderia: '#0284c7', gimnasio: '#7c3aed',
+    peluqueria: '#0B8457',
   };
   neg[0].color_primario = neg[0].color_primario || COLOR_TIPO[neg[0].tipo] || '#6c4ff6';
 
