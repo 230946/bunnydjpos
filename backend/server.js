@@ -31,7 +31,6 @@ const peluqueriaRouter  = require('./routes/peluqueria');
 const domiciliosRouter  = require('./routes/domicilios');
 const publicoRouter     = require('./routes/publico');
 const turnoRouter       = require('./routes/turno');
-const hotelRouter       = require('./routes/hotel');
 const soporteRouter     = require('./routes/soporte');
 const motoratonRouter   = require('./routes/motoraton');
 const atrilRouter       = require('./routes/atril');
@@ -74,7 +73,6 @@ app.get('/restablecer',      (_, res) => res.sendFile(path.join(frontendPath, 'r
 app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'pos-restaurante.html')));
 app.get('/minimercado',      (_, res) => res.sendFile(path.join(frontendPath, 'pos-minimercado.html')));
 app.get('/peluqueria',       (_, res) => res.sendFile(path.join(frontendPath, 'pos-peluqueria.html')));
-app.get('/hotel',            (_, res) => res.sendFile(path.join(frontendPath, 'pos-hotel.html')));
 app.get('/cocina',           (_, res) => res.sendFile(path.join(frontendPath, 'cocina.html')));
 app.get('/menu',             (_, res) => res.sendFile(path.join(frontendPath, 'menu-cliente.html')));
 app.get('/cuenta',           (_, res) => res.sendFile(path.join(frontendPath, 'cuenta-cliente.html')));
@@ -88,7 +86,6 @@ app.get('/rider',            (_, res) => res.sendFile(path.join(frontendPath, 'r
 app.get('/admin',            (_, res) => res.sendFile(path.join(frontendPath, 'admin-restaurante.html')));
 app.get('/minimercado-admin',(_, res) => res.sendFile(path.join(frontendPath, 'admin-minimercado.html')));
 app.get('/peluqueria-admin', (_, res) => res.sendFile(path.join(frontendPath, 'admin-peluqueria.html')));
-app.get('/hotel-admin',      (_, res) => res.sendFile(path.join(frontendPath, 'admin-hotel.html')));
 app.get('/soporte',          (_, res) => res.sendFile(path.join(frontendPath, 'soporte.html')));
 app.get('/soporte-admin',    (_, res) => res.sendFile(path.join(frontendPath, 'admin-soporte.html')));
 app.get('/superadmin',       (_, res) => res.sendFile(path.join(frontendPath, 'superadmin.html')));
@@ -97,7 +94,6 @@ app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'p
 app.get('/portal-empleado',  (_, res) => res.sendFile(path.join(frontendPath, 'portal-empleado.html')));
 app.get('/turno',            (_, res) => res.sendFile(path.join(frontendPath, 'portal-turno.html')));
 app.get('/reservas',         (_, res) => res.sendFile(path.join(frontendPath, 'reservas-peluqueria.html')));
-app.get('/reservas-hotel',   (_, res) => res.sendFile(path.join(frontendPath, 'reservas-hotel.html')));
 
 // ── Multer para logos ─────────────────────────────────────────────
 const storage = multer.diskStorage({
@@ -147,7 +143,6 @@ app.use('/api/peluqueria', peluqueriaRouter);
 app.use('/api/domicilios', domiciliosRouter);
 app.use('/api/publico',   publicoRouter);
 app.use('/api/turno',     turnoRouter);
-app.use('/api/hotel',     hotelRouter);
 app.use('/api/soporte',   soporteRouter);
 app.use('/api/motoraton', motoratonRouter);
 app.use('/api/bold',      boldRouter);

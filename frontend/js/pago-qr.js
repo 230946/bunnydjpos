@@ -6,7 +6,7 @@
  */
 /**
  * QR de pago (Nequi / transferencia) y foto de comprobante, compartidos por las
- * cajas de Restaurante, Minimercado, Ferretería y Ropa.
+ * cajas de Restaurante y Minimercado.
  *
  *   PagoQr.mostrar(el, token, ['nequi'])     muestra los QR; con [] los oculta
  *   PagoQr.pedirEvidencia(file => ...)       abre la cámara; llamar desde el clic

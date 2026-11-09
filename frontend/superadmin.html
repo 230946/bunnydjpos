@@ -585,9 +585,6 @@ tr:hover td{background:var(--bg2)}
           <option value="lavanderia">Lavandería</option>
           <option value="gimnasio">Gimnasio</option>
           <option value="farmacia">Farmacia</option>
-          <option value="ferreteria">Ferretería</option>
-          <option value="ropa">Ropa y Moda</option>
-          <option value="hotel">Hotel</option>
         </select>
       </div>
       <div class="field"><label>NIT</label><input id="neg-nit" placeholder="900.123.456-7"></div>
@@ -876,23 +873,6 @@ function showQR(negocioId, nombre, tipo){
       { label:'⚙️ Admin Minimercado',             url:`${base}/admin-minimercado.html?n=${negocioId}` },
       { label:'🖥️ POS Minimercado',               url:`${base}/pos-minimercado.html?n=${negocioId}` },
     ],
-    ferreteria: [
-      { label:'🛵 App Domicilios (Clientes)',    url:`${base}/domicilios?n=${negocioId}` },
-      { label:'🏍️ App Domiciliario (Repartidor)', url:`${base}/domiciliario?n=${negocioId}` },
-      { label:'⚙️ Admin Ferretería',              url:`${base}/admin-ferreteria.html?n=${negocioId}` },
-      { label:'🖥️ POS Ferretería',                url:`${base}/pos-ferreteria.html?n=${negocioId}` },
-    ],
-    ropa: [
-      { label:'🛵 App Domicilios (Clientes)',    url:`${base}/domicilios?n=${negocioId}` },
-      { label:'🏍️ App Domiciliario (Repartidor)', url:`${base}/domiciliario?n=${negocioId}` },
-      { label:'⚙️ Admin Ropa y Moda',             url:`${base}/admin-ropa.html?n=${negocioId}` },
-      { label:'🖥️ POS Ropa y Moda',               url:`${base}/pos-ropa.html?n=${negocioId}` },
-    ],
-    hotel: [
-      { label:'🛏️ Reservar habitación', url:`${base}/reservas-hotel.html?n=${negocioId}` },
-      { label:'⚙️ Admin Hotel',          url:`${base}/admin-hotel.html?n=${negocioId}` },
-      { label:'🖥️ Recepción (POS)',      url:`${base}/pos-hotel.html?n=${negocioId}` },
-    ],
     peluqueria: [
       { label:'📅 Reservar cita',     url:`${base}/reservas-peluqueria.html?n=${negocioId}` },
       { label:'👤 Portal Empleados',  url:`${base}/portal-empleado.html?n=${negocioId}` },
@@ -1083,12 +1063,10 @@ async function loadNegocios(){
     const data = await api('/superadmin/negocios');
     negociosCache = data;
     const base = window.location.origin;
-    const _tipoBadge = t => `<span class="badge ${t==='minimercado'||t==='ferreteria'||t==='ropa'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia','hotel'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
+    const _tipoBadge = t => `<span class="badge ${t==='minimercado'?'tipo-mini':t==='peluqueria'?'tipo-pel':t==='bar'?'tipo-bar':['veterinaria','taller','lavanderia','gimnasio','farmacia'].includes(t)?'tipo-ext':'tipo-rest'}">${t}</span>`;
     const _negLinks = {
       restaurante: [['Admin','/admin'],['POS','/pos'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario'],['🕐 Turno','/turno']],
       minimercado: [['Admin','/admin-minimercado.html'],['POS','/pos-minimercado.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario'],['🕐 Turno','/turno']],
-      ferreteria:  [['Admin','/admin-ferreteria.html'],['POS','/pos-ferreteria.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario'],['🕐 Turno','/turno']],
-      ropa:        [['Admin','/admin-ropa.html'],['POS','/pos-ropa.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario'],['🕐 Turno','/turno']],
       peluqueria:  [['Admin','/admin-peluqueria.html'],['POS','/pos-peluqueria.html'],['Reservas','/reservas-peluqueria.html'],['Portal','/portal-empleado.html']],
       bar:         [['Admin','/admin-bar.html'],['POS','/pos-bar.html'],['Domicilios','/domicilios'],['🏍️ Domiciliario','/domiciliario']],
       veterinaria: [['Admin','/vet-admin.html']],
@@ -1096,7 +1074,6 @@ async function loadNegocios(){
       lavanderia:  [['Admin','/lavanderia-admin.html']],
       gimnasio:    [['Admin','/gimnasio-admin.html']],
       farmacia:    [['Admin','/farmacia-admin.html']],
-      hotel:       [['Admin','/admin-hotel.html'],['POS','/pos-hotel.html'],['Reservar','/reservas-hotel.html']],
     };
     const _urlBtns = n => (_negLinks[n.tipo]||[]).map(([lbl,p])=>
       `<a class="btn btn-primary btn-sm" href="${base}${p}?n=${n.id}" target="_blank" style="text-decoration:none;font-size:11px;padding:4px 12px;font-weight:600">↗ ${lbl}</a>`
@@ -1195,7 +1172,7 @@ function openNegocioModal(id){
   aplicarPaisNegocio();
   const _colorTipo = { restaurante:'#e65c00', bar:'#7c1f3e', minimercado:'#0B8457',
     peluqueria:'#0B8457', veterinaria:'#0ea5e9', farmacia:'#dc2626',
-    taller:'#374151', lavanderia:'#0284c7', gimnasio:'#7c3aed', ferreteria:'#b45309', ropa:'#db2777', hotel:'#1d4ed8' };
+    taller:'#374151', lavanderia:'#0284c7', gimnasio:'#7c3aed' };
   document.getElementById('neg-color').value  = n?.color_primario || _colorTipo[n?.tipo] || '#6c4ff6';
   // Idioma mandarín (único adicional configurable)
   let selIdiomas = ['es'];
