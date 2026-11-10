@@ -901,7 +901,17 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   </div>
   <div class="foot-fine">© 2026 DJPOS. Software de uso propietario. Todos los derechos reservados.</div>
 </footer>
-<!-- Chat con el agente de IA de Ordena ERP (encima del botón de WhatsApp) -->
-<script src="https://erp.djmpos.com/js/widget.js" defer data-color="#0B8457" data-lado="derecha" data-abajo="92" data-abajo-movil="80" data-texto="¿Tiene preguntas sobre DJPOS? Escríbanos aquí"></script>
+<!-- Chat con el agente de IA de Ordena ERP (encima del botón de WhatsApp).
+     En el PC de pruebas (localhost) usa el Ordena local; en djmpos.com, erp.djmpos.com. -->
+<script>
+(function(){
+  var local=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var s=document.createElement('script');
+  s.src=(local?'http://localhost:3010':'https://erp.djmpos.com')+'/js/widget.js'; s.defer=true;
+  s.dataset.color='#0B8457'; s.dataset.lado='derecha'; s.dataset.abajo='92'; s.dataset.abajoMovil='80';
+  s.dataset.texto='¿Tiene preguntas sobre DJPOS? Escríbanos aquí';
+  document.body.appendChild(s);
+})();
+</script>
 </body>
 </html>
