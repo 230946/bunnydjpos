@@ -9,8 +9,12 @@
  *
  * Basta con marcar el <tbody> de la tabla:
  *   <tbody id="fact-tbody" data-tarjetas data-tt-valor="Total"></tbody>
- * - La primera columna es el título de la tarjeta.
+ * - La primera columna es el título de la tarjeta. Con data-tt-icono, la
+ *   primera columna es una foto o emoji que va junto al título (la segunda).
  * - data-tt-valor: título de la columna que va en grande a la derecha.
+ * - data-tt-titulo: título de la columna que encabeza la tarjeta (si no es la primera).
+ * - data-tt-sin-acciones: la tabla no tiene columna de botones al final.
+ * - Si la tabla tiene campos editables (input/select), se deja como tabla.
  * - La última columna (botones) va abajo.
  * - Las demás columnas se muestran con su título; las vacías ("—") se omiten.
  * Las tarjetas se rehacen solas cada vez que la página cambia las filas, y
@@ -25,7 +29,9 @@
 @media(prefers-color-scheme:dark){.tt-card{--okl:#0f2a20;--tx:#eef3f0;--tx2:#a7b8b1;--bo:rgba(93,202,165,.4);--rjl:#2e1414;--rj:#F09595}}
 .tt-card.anulada{background:var(--rjl);border-color:var(--rj);opacity:.8}
 .tt-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px}
-.tt-tit{font-size:15px;font-weight:800;min-width:0;word-break:break-word}
+.tt-tit{font-size:15px;font-weight:800;min-width:0;word-break:break-word;display:flex;align-items:center;gap:10px}
+.tt-ico{flex:none;font-size:26px;line-height:1;display:flex}
+.tt-ico img{width:44px!important;height:44px!important;border-radius:8px;object-fit:cover}
 .tt-val{font-size:20px;font-weight:800;color:var(--ok);flex:none;text-align:right}
 .tt-card.anulada .tt-val{color:var(--rj)}
 .tt-filas{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12.5px}
@@ -33,6 +39,8 @@
 .tt-filas dd{margin:0;text-align:right;color:var(--tx);min-width:0;word-break:break-word}
 .tt-acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .tt-acc .btn,.tt-acc button{flex:1 1 auto;width:auto!important;justify-content:center;padding:9px 10px!important;font-size:13px!important}
+.tt-acc .icon-btn{background:rgba(255,255,255,.75);border:1px solid var(--bo);border-radius:8px;font-size:16px!important;min-height:40px}
+@media(prefers-color-scheme:dark){.tt-acc .icon-btn{background:rgba(0,0,0,.2)}}
 .tt-vacio{grid-column:1/-1;text-align:center;color:#5b6e67;padding:22px 8px}
 @media(max-width:${ANCHO}px){.tt-grid{display:grid}.tt-oculta{display:none!important}
   .card:has(.tt-oculta) > .card-header{flex-wrap:wrap;gap:8px}
@@ -47,27 +55,37 @@
     document.head.append(st);
   }
 
-  function pintar(tbody, grid) {
+  function pintar(tbody, grid, envoltura) {
+    // Una tabla con campos editables se deja como tabla: copiarlos a la
+    // tarjeta los desconectaría de la página.
+    const conCampos = !!tbody.querySelector('input,select,textarea');
+    envoltura.classList.toggle('tt-oculta', !conCampos);
+    grid.style.display = conCampos ? 'none' : '';
+    if (conCampos) return;
     const tabla = tbody.closest('table');
     const titulos = tabla?.tHead ? [...tabla.tHead.rows[0].cells].map(th => th.textContent.trim()) : [];
-    const colValor = titulos.findIndex(t => t.toLowerCase() === String(tbody.dataset.ttValor || 'total').toLowerCase());
+    const idx = nombre => titulos.findIndex(t => t.toLowerCase() === String(nombre).toLowerCase());
+    const colValor = idx(tbody.dataset.ttValor || 'total');
+    const conIcono = 'ttIcono' in tbody.dataset;
+    const colTit = tbody.dataset.ttTitulo && idx(tbody.dataset.ttTitulo) >= 0 ? idx(tbody.dataset.ttTitulo) : (conIcono ? 1 : 0);
+    const sinAcciones = 'ttSinAcciones' in tbody.dataset;
     const filas = [...tbody.rows];
     if (!filas.length) { grid.innerHTML = ''; return; }
     grid.innerHTML = filas.map(tr => {
       const celdas = [...tr.cells];
       if (celdas.length === 1) return `<div class="tt-vacio">${celdas[0].innerHTML}</div>`; // "Sin resultados"
-      const ult = celdas.length - 1;
+      const ult = sinAcciones ? -1 : celdas.length - 1;
       const filasHtml = celdas.map((td, i) => {
-        if (i === 0 || i === ult || i === colValor) return '';
+        if (i === colTit || (conIcono && i === 0) || i === ult || i === colValor) return '';
         const txt = td.textContent.trim();
         if (!txt || txt === '—' || txt === '-') return '';
         return `<dt>${titulos[i] || ''}</dt><dd>${td.innerHTML}</dd>`;
       }).join('');
       const anulada = /ANULADA/.test(tr.textContent);
       return `<div class="tt-card${anulada ? ' anulada' : ''}">
-        <div class="tt-top"><div class="tt-tit">${celdas[0].innerHTML}</div>${colValor > 0 ? `<div class="tt-val">${celdas[colValor].innerHTML}</div>` : ''}</div>
+        <div class="tt-top"><div class="tt-tit">${conIcono ? `<span class="tt-ico">${celdas[0].innerHTML}</span>` : ''}<span>${celdas[colTit]?.innerHTML ?? ''}</span></div>${colValor >= 0 && colValor !== colTit && celdas[colValor] ? `<div class="tt-val">${celdas[colValor].innerHTML}</div>` : ''}</div>
         ${filasHtml ? `<dl class="tt-filas">${filasHtml}</dl>` : ''}
-        ${celdas[ult].textContent.trim() || celdas[ult].querySelector('button') ? `<div class="tt-acc">${celdas[ult].innerHTML}</div>` : ''}
+        ${ult >= 0 && (celdas[ult].textContent.trim() || celdas[ult].querySelector('button,a')) ? `<div class="tt-acc">${celdas[ult].innerHTML}</div>` : ''}
       </div>`;
     }).join('');
   }
@@ -83,9 +101,9 @@
     grid.className = 'tt-grid';
     envoltura.after(grid);
     let pendiente = false;
-    const programar = () => { if (pendiente) return; pendiente = true; requestAnimationFrame(() => { pendiente = false; pintar(tbody, grid); }); };
+    const programar = () => { if (pendiente) return; pendiente = true; requestAnimationFrame(() => { pendiente = false; pintar(tbody, grid, envoltura); }); };
     new MutationObserver(programar).observe(tbody, { childList: true, subtree: true, characterData: true });
-    pintar(tbody, grid);
+    pintar(tbody, grid, envoltura);
   }
 
   function buscar(raiz) { (raiz.querySelectorAll ? raiz.querySelectorAll('tbody[data-tarjetas]') : []).forEach(activar); }

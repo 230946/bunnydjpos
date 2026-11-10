@@ -693,7 +693,7 @@ table tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap"><table>
           <thead id="items-thead"><tr><th></th><th data-orden="nombre">Nombre</th><th data-orden="categoria">Categoría</th><th data-orden="precio">Precio</th><th data-orden="stock">Stock</th><th data-orden="disponible">Estado</th><th></th></tr></thead>
-          <tbody id="items-tbody"></tbody>
+          <tbody id="items-tbody" data-tarjetas data-tt-icono data-tt-valor="Precio"></tbody>
         </table></div>
       </section>
 
@@ -732,7 +732,7 @@ table tr:hover td{background:var(--bg2)}
         <h3 style="margin:20px 0 10px">Historial</h3>
         <div class="table-wrap"><table>
           <thead><tr><th>Fecha</th><th>Usuario</th><th>Apertura</th><th>Cierre</th><th>Ventas</th><th>Gastos</th><th>Estado</th></tr></thead>
-          <tbody id="caja-hist-tbody"></tbody>
+          <tbody id="caja-hist-tbody" data-tarjetas data-tt-valor="Ventas" data-tt-sin-acciones></tbody>
         </table></div>
       </section>
 
@@ -753,12 +753,12 @@ table tr:hover td{background:var(--bg2)}
           <h3 style="margin-bottom:8px;font-size:14px">Cuentas por proveedor</h3>
           <div class="table-wrap"><table>
             <thead><tr><th>Proveedor</th><th>Facturas pendientes</th><th>Saldo total</th><th></th></tr></thead>
-            <tbody id="cuentas-proveedor-tbody"></tbody>
+            <tbody id="cuentas-proveedor-tbody" data-tarjetas data-tt-valor="Saldo total"></tbody>
           </table></div>
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Método</th><th>Monto</th><th></th></tr></thead>
-          <tbody id="gastos-tbody"></tbody>
+          <tbody id="gastos-tbody" data-tarjetas data-tt-titulo="Descripción" data-tt-valor="Monto"></tbody>
         </table></div>
       </section>
 
@@ -773,7 +773,7 @@ table tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>Nombre</th><th>Teléfono</th><th>Documento</th><th>Email</th><th>Estado</th><th></th></tr></thead>
-          <tbody id="cli-tbody"></tbody>
+          <tbody id="cli-tbody" data-tarjetas></tbody>
         </table></div>
       </section>
 
@@ -792,7 +792,7 @@ table tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>Cliente</th><th>Teléfono</th><th>Mesa</th><th>Fecha</th><th>Total</th><th>Estado</th><th></th></tr></thead>
-          <tbody id="fiados-tbody"></tbody>
+          <tbody id="fiados-tbody" data-tarjetas></tbody>
         </table></div>
       </section>
 
@@ -821,7 +821,7 @@ table tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th></th></tr></thead>
-          <tbody id="prov-tbody"></tbody>
+          <tbody id="prov-tbody" data-tarjetas></tbody>
         </table></div>
       </section>
 
@@ -880,7 +880,7 @@ table tr:hover td{background:var(--bg2)}
             <div class="card-body">
               <div class="table-wrap"><table>
                 <thead><tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Link rider</th><th></th></tr></thead>
-                <tbody id="dom-riders-tbody"></tbody>
+                <tbody id="dom-riders-tbody" data-tarjetas></tbody>
               </table></div>
             </div>
           </div>
@@ -896,7 +896,7 @@ table tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>Proveedor</th><th>Fecha</th><th>Entrega</th><th>Total</th><th>Estado</th><th></th></tr></thead>
-          <tbody id="pedidos-prov-tbody"></tbody>
+          <tbody id="pedidos-prov-tbody" data-tarjetas></tbody>
         </table></div>
       </section>
 
@@ -908,7 +908,7 @@ table tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>#</th><th>Nombre</th><th>Usuario</th><th>Cargo</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
-          <tbody id="personal-tbody"></tbody>
+          <tbody id="personal-tbody" data-tarjetas data-tt-titulo="Nombre"></tbody>
         </table></div>
       </section>
 
@@ -920,7 +920,7 @@ table tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>Nombre</th><th>Descripción</th><th>Usuarios</th><th></th></tr></thead>
-          <tbody id="roles-tbody"></tbody>
+          <tbody id="roles-tbody" data-tarjetas></tbody>
         </table></div>
       </section>
 
@@ -971,7 +971,7 @@ table tr:hover td{background:var(--bg2)}
           </div>
           <div class="table-wrap"><table>
             <thead><tr><th>Fecha</th><th>Empleado</th><th>Entrada</th><th>Salida</th></tr></thead>
-            <tbody id="asi-tbody"></tbody>
+            <tbody id="asi-tbody" data-tarjetas data-tt-titulo="Empleado" data-tt-sin-acciones></tbody>
           </table></div>
         </div>
 
@@ -983,7 +983,7 @@ table tr:hover td{background:var(--bg2)}
           </div>
           <div class="table-wrap"><table>
             <thead><tr><th>Empleado</th><th>Horas</th><th>Extra</th><th>Sueldo base</th><th>Pago horas</th><th>Bonos</th><th>Descuentos</th><th>Total</th><th></th></tr></thead>
-            <tbody id="nom-tbody"></tbody>
+            <tbody id="nom-tbody" data-tarjetas data-tt-titulo="Empleado"></tbody>
           </table></div>
           <div class="modal-actions" style="justify-content:flex-start;margin-top:14px">
             <button class="btn btn-outline btn-sm" onclick="abrirAjusteModal()">+ Bono/Descuento</button>
@@ -1136,7 +1136,7 @@ table tr:hover td{background:var(--bg2)}
           <div class="table-wrap">
             <table id="tbl-rep-inv" style="font-size:12px">
               <thead><tr><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mínimo</th><th>Unidad</th><th>Costo unit.</th><th>Valor total</th><th>Estado</th></tr></thead>
-              <tbody id="r-inv-tbody"><tr><td colspan="8" style="color:var(--text2);text-align:center;padding:20px">Consulta un período para ver el inventario</td></tr></tbody>
+              <tbody id="r-inv-tbody" data-tarjetas data-tt-titulo="Artículo" data-tt-valor="Valor total" data-tt-sin-acciones><tr><td colspan="8" style="color:var(--text2);text-align:center;padding:20px">Consulta un período para ver el inventario</td></tr></tbody>
             </table>
           </div>
         </div>
