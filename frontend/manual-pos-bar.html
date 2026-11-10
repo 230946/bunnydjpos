@@ -123,7 +123,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <div class="manual-header">
       <h1>Manual del Mesero / Cajero</h1>
       <p>POS Barra — Toma de pedidos, mesas, fiados y cobro.</p>
-      <span class="badge">Versión 1.0 — Octubre 2026</span>
+      <span class="badge">Versión 1.1 — Noviembre 2026</span>
     </div>
 
     <!-- ACCESO -->
@@ -139,6 +139,8 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Entrar</strong><p>Si no hay caja abierta, el sistema te lleva directo al panel de Caja para que la abras antes de empezar.</p></div></div>
       </div>
       <div class="alert alert-warn">⚠️ <span><strong>Sin caja abierta no puedes tomar pedidos, cobrar, fiar ni abonar.</strong> Siempre revisá el estado de caja al iniciar tu turno.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">🔒 <span><strong>El POS es solo para meseros y cajeros.</strong> Las cuentas de administrador (superadmin o un rol con el permiso <strong>Personal</strong>) no entran aquí: verán el aviso <em>"Los administradores no ingresan a la caja"</em>. Debajo del formulario está el botón <strong>⚙️ Panel administrativo</strong>, que los lleva a su panel.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>¿Olvidaste tu contraseña? Toca <strong>¿Olvidaste tu contraseña?</strong>: te llega por correo un enlace que sirve <strong>una sola vez</strong> y vence en 30 minutos. Si tu cuenta no tiene correo, pídele al administrador que te asigne una nueva.</span></div>
     </div>
 
     <!-- PANTALLA PRINCIPAL -->
@@ -200,6 +202,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Si ya tenía pedido</strong><p>Lo verás de inmediato arriba de la grilla de productos, con lo que ya pidieron, el total y el saldo si hubo abonos.</p></div></div>
       </div>
       <div class="alert alert-tip">💡 <span>Las mesas se crean y se borran desde el panel de administración — el mesero solo las usa, no las crea. Tampoco existe una función para "unir" varias mesas en un mismo pedido.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">🍺 <span><strong>Cervezas vendidas hoy:</strong> arriba de las mesas se ve cuántas cervezas lleva vendidas el turno. Cuenta los productos de la categoría del menú cuyo nombre incluye "Cerveza" (por ejemplo "Cervezas" o "Cervezas nacionales"), no descuenta las ventas anuladas y se actualiza sola cada vez que se cobra o se libera una mesa.</span></div>
     </div>
 
     <!-- BARRA -->
@@ -227,12 +230,19 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
       <h3 class="sub">Agregar productos</h3>
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Buscar o filtrar por categoría</strong><p>El buscador encuentra por nombre de producto o por nombre de categoría (sin importar tildes), ignorando el filtro de categoría activo.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Toca el producto</strong><p>Se agrega al carrito de la derecha. Tócalo otra vez para sumar unidades.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Primer producto sin mesa</strong><p>Si todavía no elegiste mesa, el sistema te pregunta "¿Mesa para este pedido?" — elegí una mesa o "🥤 Sin mesa / Para llevar".</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Toca el producto y elegí la cantidad</strong><p>Se abre una ventana con <strong>números grandes del 1 al 12</strong>: toca cuántas unidades quieres y se agregan al carrito de una vez. Para más de 12, escribe el número en <strong>Otra cantidad</strong> y toca <strong>Agregar</strong>. Los números que pasan del stock disponible salen bloqueados.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ajustar cantidades</strong><p>En el carrito usa <strong>+</strong> / <strong>−</strong> junto a cada línea.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>✏️ Manual</strong><p>Para algo puntual que no está cargado en el menú: nombre, precio y cantidad libres.</p></div></div>
       </div>
       <div class="alert alert-warn">⚠️ <span>Un producto gris con la etiqueta <strong>Agotado</strong> no tiene stock y no se puede agregar.</span></div>
+
+      <h3 class="sub">★ Favoritos</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Cada producto tiene una estrella en la esquina. Tócala para marcarlo como favorito: se pone <strong>dorada</strong> y el producto pasa a la sección <strong>★ Favoritos</strong>, arriba de <strong>Demás productos</strong>. Tócala de nuevo para quitarlo. Tocar la estrella no agrega el producto al pedido.</p>
+      <div class="alert alert-tip">💡 <span>Los favoritos son de todo el negocio: si los marca una caja, las demás pantallas abiertas los ven al instante. Un producto con la etiqueta <strong>Sugerido</strong> es el que el administrador recomienda a los clientes de domicilios — es otra cosa.</span></div>
+
+      <h3 class="sub">Agregar a un pedido ya enviado</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Al entrar a una mesa que ya tiene pedido, en <strong>Ya pedido en esta mesa</strong> cada producto tiene <strong>−</strong> y <strong>+</strong>. El <strong>+</strong> abre la misma ventana de números grandes: elegí cuántas unidades más y se suman a la mesa. El <strong>−</strong> quita una unidad (te pide confirmar).</p>
 
       <h3 class="sub">Enviar a barra</h3>
       <div class="steps">
@@ -270,7 +280,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
       </div>
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>💳 Cobrar directo (desde Barra) o 💳 Cobrar (desde Pedidos)</strong><p>Abre el modal de cobro con el detalle y el total.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elegí el método de pago</strong><p>Efectivo, Tarjeta, Nequi/transferencia, Mixto, o 📝 Fiado (ver sección <strong>Fiar</strong>).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elegí el método de pago</strong><p>Efectivo, Tarjeta, Nequi/transferencia, 📲 Bold (si está activo), Mixto, o 📝 Fiado (ver sección <strong>Fiar</strong>).</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cliente (opcional)</strong><p>Podés escribir el nombre del cliente para que quede en la factura, aunque no sea un cliente registrado.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro</strong><p>Registra la venta, libera la mesa (si era de mesa) y muestra el recibo con opción de imprimir.</p></div></div>
       </div>
@@ -301,7 +311,16 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Cobra en el datáfono o app por fuera del sistema</strong></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar cobro en el POS</strong><p>Solo cuando el pago electrónico ya fue aprobado.</p></div></div>
       </div>
-      <div class="alert alert-warn">⚠️ <span>El sistema <strong>no</strong> procesa el pago electrónico — solo registra que se cobró por ese medio. Asegurate de que el pago en el datáfono o Nequi haya sido exitoso antes de confirmar.</span></div>
+      <div class="alert alert-warn">⚠️ <span>Con Tarjeta o Nequi el sistema <strong>no</strong> procesa el pago — solo registra que se cobró por ese medio. Asegurate de que el pago en el datáfono o Nequi haya sido exitoso antes de confirmar.</span></div>
+
+      <h3 class="sub">📲 Bold (QR: tarjeta, PSE, Nequi)</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Si el administrador activó Bold, aparece este método. Aquí sí el sistema confirma el pago solo:</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elegí "📲 Bold" y toca "Generar QR de Bold"</strong><p>Aparece un QR por el valor exacto de la cuenta.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>El cliente escanea y paga</strong><p>Con tarjeta, PSE o Nequi desde su celular. También puedes tocar <strong>Copiar link de pago</strong> y enviárselo.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Esperá a que Bold lo apruebe</strong><p>Cuando el pago entra, la venta se registra sola. En el cierre de caja suma como tarjeta. El QR vence a los 15 minutos.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Si el cliente ya había pagado un QR que se canceló o venció, al cobrar de nuevo el mismo valor el sistema avisa <strong>"Ya hay un pago aprobado"</strong>: elegí <strong>Usar este pago</strong> para no cobrarle dos veces.</span></div>
     </div>
 
     <!-- PAGO MIXTO -->

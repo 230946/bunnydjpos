@@ -9,6 +9,7 @@
 <head>
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="admin" data-claves="bdj_adm_token" data-otro="/pos-restaurante.html"></script>
+<script src="/js/inv-tarjetas.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/responsive.css">
@@ -1220,6 +1221,7 @@ tr:hover td{background:var(--bg2)}
                 <tbody id="inv-tbody"></tbody>
               </table>
             </div>
+            <div id="inv-cards"></div>
           </div>
         </div>
       </div>
@@ -4761,6 +4763,16 @@ async function loadInventario(){
           ${canDeleteInv?`<button class="btn btn-danger btn-sm" onclick="deleteInv('${i.id}','${i.nombre.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">🗑</button>`:''}
         </td></tr>`;
     }).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text2)">Sin resultados</td></tr>';
+    // En el celular, tarjetas en vez de la tabla (js/inv-tarjetas.js).
+    invTarjetas.render('inv-cards', data.map(i=>{
+      const st=+i.stock||0, mn=+i.stock_min||0;
+      return { nombre:i.nombre, sub:[i.codigo, i.categoria].filter(Boolean).join(' · '),
+        stock: Math.round(st*100)/100, minimo: `${Math.round(mn*100)/100} ${i.unidad||''}`.trim(),
+        estado: st<=0?'agotado':(mn>0&&st<mn?'bajo':'ok'),
+        precios: [['Compra', fmt(i.costo)], ['Venta', +i.precio_venta?fmt(i.precio_venta):'—']],
+        acciones: [{tipo:'entrada', fn:`abrirAdjTipo('${i.id}','entrada')`}, {tipo:'salida', fn:`abrirAdjTipo('${i.id}','salida')`},
+          {tipo:'editar', fn:`openInvModal('${i.id}')`}].concat(canDeleteInv?[{tipo:'borrar', fn:`deleteInv('${i.id}', _invMap['${i.id}'].nombre)`}]:[]) };
+    }), { ocultar:'#panel-inventario .table-wrap', vacio:'Sin resultados' });
     try {
       const cats=await api('/inventario/categorias');
       const sel=$('inv-cat-filter'); const val=sel.value;
@@ -4974,6 +4986,13 @@ async function autoLinkInventario(){
   } catch(e){ toast('Error: '+e.message); }
 }
 let adjUnidadCompra='', adjCantPaquete=1, adjUnidad='unidades';
+// Desde las tarjetas del celular: abre el ajuste ya en "entrada" o "salida".
+function abrirAdjTipo(id,tipo){
+  const i=_invMap[id]; if(!i) return;
+  openAdjModal(i.id,i.nombre,i.stock,i.unidad,i.unidad_compra||'',i.cantidad_paquete||1);
+  $('adj-tipo').value=tipo; adjTipoChange();
+  setTimeout(()=>{ const paq=$('adj-paquete-row').style.display!=='none'; (paq?$('adj-paquetes'):$('adj-cant')).focus(); },50);
+}
 function openAdjModal(id,nombre,stock,unidad,unidadCompra,cantPaquete){
   adjItemId=id; adjUnidadCompra=unidadCompra||''; adjCantPaquete=cantPaquete||1; adjUnidad=unidad||'unidades';
   const stockDisp=adjUnidadCompra&&adjCantPaquete>1

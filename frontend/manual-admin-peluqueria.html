@@ -116,13 +116,15 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
     <div class="manual-header">
       <h1>Manual del Administrador</h1>
       <p>Peluquería — Agenda, servicios, empleados, comisiones y reportes.</p>
-      <span class="badge">Versión 1.1 — Julio 2026</span>
+      <span class="badge">Versión 1.2 — Noviembre 2026</span>
     </div>
 
     <div class="section" id="acceso">
       <div class="section-header"><div class="section-icon">🔐</div><div><h2>Acceso</h2><p>Cómo ingresar al panel</p></div></div>
       <p style="color:var(--text2);margin-bottom:12px">Entra con tu usuario/correo y contraseña desde el enlace directo de tu negocio (<code style="background:var(--bg2);padding:1px 6px;border-radius:4px">/peluqueria-admin?n=ID_NEGOCIO</code>) o desde la página principal del dominio, sin indicar el negocio — el sistema lo detecta automáticamente y te lleva a tu portal.</p>
-      <div class="alert alert-tip">💡 <span>Puedes cambiar tu contraseña en cualquier momento desde el botón <strong>🔑 Cambiar contraseña</strong> del menú lateral (junto a "Cerrar sesión"). Si la olvidaste, usa <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de inicio de sesión — te llega una contraseña temporal por correo.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">🔒 <span><strong>Solo administradores.</strong> Al panel entran el superadmin y los roles con el permiso <strong>Personal</strong>. Las demás cuentas (meseros, cajeros) ven el aviso <em>"Esta cuenta no tiene acceso al panel administrativo"</em> y el botón <strong>🛒 Ir a la caja (POS)</strong>. Y al revés: los administradores no entran a la caja, así que para cobrar hace falta una cuenta de caja (un rol sin el permiso Personal).</span></div>
+      <div class="alert alert-warn" style="margin-top:10px">📱 <span><strong>Código de 6 dígitos.</strong> Después de la contraseña, el panel pide el código de una app autenticadora. La primera vez: instala <strong>Google Authenticator</strong> o <strong>Microsoft Authenticator</strong>, toca <strong>+</strong>, escanea el QR que aparece en pantalla y escribe los 6 números. Luego verás <strong>10 códigos de emergencia</strong>: guárdalos fuera del celular; cada uno sirve una sola vez si pierdes el teléfono (<em>"Perdí el celular: usar un código de emergencia"</em>). Si te quedas sin celular y sin códigos, el usuario maestro puede reiniciar tu código.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span><strong>Contraseña.</strong> Cámbiala cuando quieras desde el botón <strong>🔑</strong> de contraseña del menú lateral, escribiendo la actual; al cambiarla se cierran tus sesiones en todos los dispositivos. Por seguridad, las cuentas de administrador <strong>no</strong> reciben enlace de recuperación por correo: si la olvidas, pídele al <strong>usuario maestro</strong> (el superadmin principal) que te la restablezca.</span></div>
     </div>
 
     <div class="section" id="dashboard">
@@ -234,6 +236,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Activar en POS (En venta)</strong><p>Marca el checkbox <strong>En POS</strong> en la columna de la tabla para que el producto aparezca en la pestaña 🛍️ Productos del POS y pueda venderse directamente sin necesidad de cita.</p></div></div>
       </div>
       <div class="alert alert-tip">💡 <span>Solo los productos con el checkbox <strong>En POS</strong> activado y con stock disponible aparecen en el catálogo de venta del POS.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">📱 <span><strong>Desde el celular</strong> la tabla se cambia por <strong>tarjetas</strong>, una por producto: <strong>verde</strong> si el stock está bien, <strong>amarillo</strong> si está bajo el mínimo y <strong>rojo</strong> si está agotado. Cada tarjeta muestra el stock en grande, el mínimo y los precios, con botones grandes: <strong>+ Entrada</strong> y <strong>− Salida</strong> abren el ajuste ya listo con el cursor en la cantidad, y <strong>✏️</strong> edita el producto. El checkbox <strong>En POS</strong> se sigue cambiando desde el computador o al editar el producto.</span></div>
     </div>
 
     <div class="section" id="comisiones">
@@ -296,6 +299,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px}
           <tr><td><strong>Recepcionista</strong></td><td>POS + agenda (todas las citas) + clientes</td></tr>
         </tbody>
       </table>
+      <div class="alert alert-warn" style="margin-top:10px">🔒 <span><strong>El permiso Personal decide a dónde entra cada cuenta.</strong> Un rol <strong>con</strong> Personal es de administrador: entra al panel (con código de 6 dígitos) y <strong>no</strong> entra al POS. Un rol <strong>sin</strong> Personal (Estilista, Recepcionista) es de caja: entra al POS y no al panel. Quien hace las dos cosas necesita dos cuentas.</span></div>
     </div>
 
     <div class="section" id="horarios">

@@ -129,7 +129,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <div class="manual-header">
       <h1>Manual del Administrador</h1>
       <p>Barra — Gestión completa de mesas, inventario, fiados, personal y reportes del bar.</p>
-      <span class="badge">Versión 1.0 — Octubre 2026</span>
+      <span class="badge">Versión 1.1 — Noviembre 2026</span>
     </div>
 
     <!-- ACCESO -->
@@ -143,8 +143,10 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresa usuario o email y contraseña</strong><p>Credenciales asignadas por el superadmin o creadas al registrar el negocio.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Entra con tu rol</strong><p>Si tienes permisos de administrador verás todos los módulos. Los roles restringidos solo ven lo que tienen autorizado (ver sección <strong>Roles</strong>).</p></div></div>
       </div>
-      <div class="alert alert-tip">💡 <span>El panel Admin Barra es distinto del <strong>POS Bar</strong>: el Admin es para gestión; el POS es la pantalla que usan los meseros/cajeros para tomar pedidos y cobrar. Desde el menú lateral, en <strong>Accesos directos → POS Bar ↗</strong>, puedes abrir el POS en una pestaña nueva.</span></div>
-      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Puedes cambiar tu contraseña en cualquier momento desde <strong>🔑 Contraseña</strong> al final del menú lateral. Si la olvidaste, usa <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de inicio de sesión — te llega una contraseña temporal por correo.</span></div>
+      <div class="alert alert-tip">💡 <span>El panel Admin Barra es distinto del <strong>POS Bar</strong>: el Admin es para gestión; el POS es la pantalla que usan los meseros/cajeros para tomar pedidos y cobrar. En <strong>Accesos directos → POS Bar ↗</strong> puedes abrir el POS en otra pestaña para un mesero o cajero: pedirá ingresar con su cuenta de caja. Desde el propio panel, la sección <strong>Barra</strong> sí te deja tomar pedidos y cobrar.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">🔒 <span><strong>Solo administradores.</strong> Al panel entran el superadmin y los roles con el permiso <strong>Personal</strong>. Las demás cuentas (meseros, cajeros) ven el aviso <em>"Esta cuenta no tiene acceso al panel administrativo"</em> y el botón <strong>🛒 Ir a la caja (POS)</strong>. Y al revés: los administradores no entran a la caja, así que para cobrar hace falta una cuenta de caja (un rol sin el permiso Personal).</span></div>
+      <div class="alert alert-warn" style="margin-top:10px">📱 <span><strong>Código de 6 dígitos.</strong> Después de la contraseña, el panel pide el código de una app autenticadora. La primera vez: instala <strong>Google Authenticator</strong> o <strong>Microsoft Authenticator</strong>, toca <strong>+</strong>, escanea el QR que aparece en pantalla y escribe los 6 números. Luego verás <strong>10 códigos de emergencia</strong>: guárdalos fuera del celular; cada uno sirve una sola vez si pierdes el teléfono (<em>"Perdí el celular: usar un código de emergencia"</em>). Si te quedas sin celular y sin códigos, el usuario maestro puede reiniciar tu código.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span><strong>Contraseña.</strong> Cámbiala cuando quieras desde el botón <strong>🔑</strong> de contraseña del menú lateral, escribiendo la actual; al cambiarla se cierran tus sesiones en todos los dispositivos. Por seguridad, las cuentas de administrador <strong>no</strong> reciben enlace de recuperación por correo: si la olvidas, pídele al <strong>usuario maestro</strong> (el superadmin principal) que te la restablezca.</span></div>
     </div>
 
     <!-- DASHBOARD -->
@@ -444,6 +446,13 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>📥 Agregar / quitar stock</strong><p>Entrada (llegó mercancía) o salida (merma, pérdida) con cantidad y nota.</p></div></div>
       </div>
+      <h3 class="sub">📱 Inventario desde el celular</h3>
+      <p style="color:var(--text2);margin-bottom:12px">En el celular la tabla se cambia por <strong>tarjetas</strong>, una por artículo: <strong>verde</strong> si el stock está bien, <strong>amarillo</strong> si está bajo el mínimo y <strong>rojo</strong> si está agotado. Cada tarjeta muestra el stock en grande, el mínimo, el precio de compra, el de venta y la ganancia, con botones grandes:</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Entrada</strong><p>Abre el movimiento ya en "Entrada" con el cursor en la cantidad: escribe el número y presiona Enter.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>− Salida</strong><p>Lo mismo, pero para restar (merma, rotura).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>✏️ / 🗑️</strong><p>Editar o borrar el artículo.</p></div></div>
+      </div>
       <div class="alert alert-warn" style="margin-top:10px">⚠️ <span>Si un artículo vinculado a inventario llega a stock 0, se marca <strong>Agotado</strong> en Barra y no se puede vender hasta reponerlo.</span></div>
     </div>
 
@@ -501,7 +510,8 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>+ Nuevo rol</strong><p>Nombre, descripción y los permisos que quieras activar.</p></div></div>
       </div>
-      <div class="alert alert-tip">💡 <span>Pensá en roles típicos: "Mesero/Cajero" (solo POS), "Encargado de barra" (POS + inventario), "Admin completo" (todos los permisos).</span></div>
+      <div class="alert alert-warn">🔒 <span><strong>El permiso Personal decide a dónde entra cada cuenta.</strong> Un rol <strong>con</strong> Personal es de administrador: entra al panel (con código de 6 dígitos) y <strong>no</strong> entra al POS. Un rol <strong>sin</strong> Personal es de caja: entra al POS y no al panel. Para que alguien pueda cobrar en el POS, su rol no debe tener Personal.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Roles típicos: "Mesero/Cajero" (Mesas + Cobro / Caja, sin Personal), "Encargado de barra" (además Menú e Inventario, sin Personal), "Administrador" (todos los permisos, con Personal). Quien hace las dos cosas necesita dos cuentas: una de administrador y otra de caja.</span></div>
     </div>
 
     <!-- HORARIOS -->
@@ -548,6 +558,14 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         </tbody>
       </table>
       <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>Este campo hoy es solo informativo: guárdalo como recordatorio del monto que suelen usar tus cajeros, pero cada descuento "Es cliente" (en Carrito, Cobro, Abono de mesa o Abono de fiado) hay que escribirlo manualmente en esa pantalla — no se precarga automáticamente desde acá.</span></div>
+      <h3 class="sub" style="margin-top:16px">📲 Cobros con Bold</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Con Bold, la caja genera un QR por el valor exacto y la venta se registra sola cuando el cliente paga (tarjeta, PSE o Nequi). En el cierre de caja suma como tarjeta.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Saca las llaves en Bold</strong><p>En tu cuenta de bold.co ve a <strong>Integraciones → Llaves de integración</strong> y activa las llaves (llave de identidad y llave secreta). Hay un par de <strong>pruebas</strong> y otro de <strong>producción</strong>; las de producción las habilita Bold después de su proceso de certificación.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Pégalas aquí y marca "Ofrecer Bold en la caja"</strong><p>Deja <strong>Modo pruebas</strong> marcado mientras uses las llaves de prueba, y toca <strong>Guardar Bold</strong>.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Registra el webhook en Bold</strong><p>Copia la <strong>URL del webhook</strong> que muestra esta pantalla y pégala en Bold, en <strong>Integraciones → Webhooks → Configurar webhook</strong>. Debe ser la dirección pública con https (configúralo desde el sistema publicado, no desde un computador local).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Al pasar a producción</strong><p>Cambia a las llaves de producción, <strong>desmarca Modo pruebas</strong> y haz un cobro pequeño para confirmar.</p></div></div>
+      </div>
     </div>
 
     <!-- CONFIG IMPRESORA -->

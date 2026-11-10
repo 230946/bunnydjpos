@@ -295,6 +295,32 @@ table tr:hover td{background:var(--bg2)}
   .barra-grid{grid-template-columns:1fr}
   .cart-box{position:static}
 }
+/* ---------- Inventario en tarjetas (celular) ---------- */
+.inv-cards{display:none;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.inv-card{background:var(--green-l);border:1.5px solid var(--green);border-radius:var(--rl);padding:12px}
+.inv-card.bajo{background:var(--yellow-l);border-color:var(--yellow-d)}
+.inv-card.agotado{background:var(--red-l);border-color:var(--red-d)}
+.inv-card .ic-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.inv-card .ic-nom{font-size:15px;font-weight:800;color:var(--text);line-height:1.25;word-break:break-word}
+.inv-card .ic-sub{font-size:11.5px;color:var(--text2);margin-top:2px}
+.inv-card .ic-stock{text-align:right;flex:none}
+.inv-card .ic-stock b{display:block;font-size:30px;line-height:1;color:var(--green-d)}
+.inv-card.bajo .ic-stock b{color:var(--yellow-d)}
+.inv-card.agotado .ic-stock b{color:var(--red-d)}
+.inv-card .ic-stock span{font-size:11px;color:var(--text2)}
+.inv-card .ic-precios{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin:10px 0}
+.inv-card .ic-precios b{color:var(--text)}
+.inv-card .ic-acc{display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px}
+.inv-card .ic-acc .btn{padding:11px 6px;font-size:14px;justify-content:center}
+.inv-card .ic-acc .icon-btn{background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);padding:0 12px;font-size:16px}
+@media (max-width: 700px){
+  #panel-inventario .table-wrap{display:none}
+  .inv-cards{display:grid}
+  #panel-inventario .panel-head{flex-wrap:wrap;gap:8px}
+  #panel-inventario .panel-head > div{width:100%}
+  #inv-buscar{flex:1 1 auto;width:auto!important;min-width:0}
+  #panel-inventario .panel-head > div > .btn{flex:none;width:auto!important}
+}
 #contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
 #contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
 #contrato-block p{margin:0;opacity:.85;max-width:380px;line-height:1.6;font-size:14px}
@@ -678,6 +704,7 @@ table tr:hover td{background:var(--bg2)}
           <thead id="inv-thead"><tr><th data-orden="codigo">Código</th><th data-orden="nombre">Nombre</th><th data-orden="categoria">Categoría</th><th data-orden="stock">Stock</th><th data-orden="stock_min">Mín.</th><th data-orden="costo">Precio de compra</th><th data-orden="precio_venta">Precio</th><th data-orden="ganancia">Ganancia</th><th></th></tr></thead>
           <tbody id="inv-tbody"></tbody>
         </table></div>
+        <div id="inv-cards" class="inv-cards"></div>
       </section>
 
       <!-- ===== CAJA ===== -->
@@ -1522,7 +1549,7 @@ table tr:hover td{background:var(--bg2)}
         <option value="salida">➖ Salida (restar del stock actual)</option>
       </select>
     </div>
-    <div class="field"><label>Cantidad</label><input id="mov-stock-cantidad" type="number" min="0" step="any" placeholder="0"></div>
+    <div class="field"><label>Cantidad</label><input id="mov-stock-cantidad" type="number" min="0" step="any" inputmode="decimal" placeholder="0" style="font-size:22px;font-weight:700" onkeydown="if(event.key==='Enter')guardarMovStock()"></div>
     <div class="field"><label>Nota (opcional)</label><input id="mov-stock-nota" placeholder="Ej: compra a proveedor, rotura..."></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('mov-stock-modal')">Cancelar</button>
@@ -3941,7 +3968,36 @@ function valorOrdenInv(i, col){
 function renderInvTabla(lista){
   lista = ordenarFilas(lista || inventario, invOrden, valorOrdenInv);
   marcarOrden('inv-thead', invOrden, ordenarInv);
-  if (!lista.length) { $('inv-tbody').innerHTML = `<tr><td colspan="9" class="empty-msg">${inventario.length?'Sin resultados':'Sin artículos de inventario'}</td></tr>`; return; }
+  if (!lista.length) {
+    const vacio = inventario.length ? 'Sin resultados' : 'Sin artículos de inventario';
+    $('inv-tbody').innerHTML = `<tr><td colspan="9" class="empty-msg">${vacio}</td></tr>`;
+    $('inv-cards').innerHTML = `<div class="empty-msg">${vacio}</div>`;
+    return;
+  }
+  // En el celular se muestran tarjetas en vez de la tabla (ver .inv-cards).
+  $('inv-cards').innerHTML = lista.map(i => {
+    const costo = +i.costo || 0, precio = +i.precio_venta || 0, ganancia = precio - costo;
+    const estado = +i.stock <= 0 ? 'agotado' : (+i.stock_min > 0 && +i.stock <= +i.stock_min ? 'bajo' : '');
+    return `<div class="inv-card ${estado}">
+      <div class="ic-top">
+        <div style="min-width:0">
+          <div class="ic-nom">${esc(i.nombre)}</div>
+          <div class="ic-sub">${esc(i.codigo||'')}${i.codigo&&i.categoria?' · ':''}${esc(i.categoria||'')}</div>
+        </div>
+        <div class="ic-stock"><b>${fmtQty(i.stock)}</b><span>${estado==='agotado'?'Agotado':estado==='bajo'?'Bajo stock':'en stock'} · mín ${fmtQty(i.stock_min)}</span></div>
+      </div>
+      <div class="ic-precios">
+        <span>Compra <b>${fmt(costo)}</b></span><span>Venta <b>${precio>0?fmt(precio):'—'}</b></span>
+        ${precio>0?`<span>Ganancia <b style="color:${ganancia>=0?'var(--green-d)':'var(--red-d)'}">${fmt(ganancia)}</b></span>`:''}
+      </div>
+      <div class="ic-acc">
+        <button class="btn btn-primary" onclick="abrirMovStock('${i.id}','entrada')"><b style="font-size:18px;line-height:1">+</b>&nbsp;Entrada</button>
+        <button class="btn btn-outline" onclick="abrirMovStock('${i.id}','salida')"><b style="font-size:18px;line-height:1">−</b>&nbsp;Salida</button>
+        <button class="icon-btn" title="Editar" aria-label="Editar" onclick="editarInv('${i.id}')">✏️</button>
+        <button class="icon-btn" title="Borrar" aria-label="Borrar" onclick="borrarInv('${i.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
   $('inv-tbody').innerHTML = lista.map(i => {
     const costo = +i.costo || 0, precio = +i.precio_venta || 0;
     const ganancia = precio - costo;
@@ -4032,14 +4088,15 @@ async function borrarInv(id){
   catch(e){ showToast('Error: '+e.message); }
 }
 let movStockId = null;
-function abrirMovStock(id){
+function abrirMovStock(id, tipo){
   const i = inventario.find(x => x.id === id); if (!i) return;
   movStockId = id;
   $('mov-stock-info').textContent = `${i.nombre} — stock actual: ${fmtQty(i.stock)} ${i.unidad||''}`;
-  $('mov-stock-tipo').value = 'entrada';
+  $('mov-stock-tipo').value = tipo === 'salida' ? 'salida' : 'entrada';
   $('mov-stock-cantidad').value = '';
   $('mov-stock-nota').value = '';
   openModal('mov-stock-modal');
+  setTimeout(() => $('mov-stock-cantidad').focus(), 50);
 }
 async function guardarMovStock(){
   const cantidad = +$('mov-stock-cantidad').value;

@@ -122,7 +122,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <div class="manual-header">
       <h1>Manual del Mesero / Cajero</h1>
       <p>POS Restaurante — Toma de pedidos, envío a cocina y procesamiento de pagos.</p>
-      <span class="badge">Versión 1.0 — Junio 2026</span>
+      <span class="badge">Versión 1.1 — Noviembre 2026</span>
     </div>
 
     <!-- ACCESO -->
@@ -138,6 +138,8 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresar</strong><p>Si no tienes caja abierta, el sistema te llevará automáticamente al panel de Caja para que la abras antes de empezar.</p></div></div>
       </div>
       <div class="alert alert-warn">⚠️ <span><strong>Sin caja abierta no puedes tomar pedidos ni cobrar.</strong> Siempre abre la caja al iniciar tu turno.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">🔒 <span><strong>El POS es solo para meseros y cajeros.</strong> Las cuentas de administrador (superadmin o un rol con el permiso <strong>Personal</strong>) no entran aquí: verán el aviso <em>"Los administradores no ingresan a la caja"</em>. Debajo del formulario está el botón <strong>⚙️ Panel administrativo</strong>, que los lleva a su panel.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>¿Olvidaste tu contraseña? Toca <strong>¿Olvidaste tu contraseña?</strong>: te llega por correo un enlace que sirve <strong>una sola vez</strong> y vence en 30 minutos. Si tu cuenta no tiene correo, pídele al administrador que te asigne una nueva.</span></div>
     </div>
 
     <!-- PANTALLA PRINCIPAL -->
@@ -312,7 +314,15 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Procesa el pago en el datáfono o app</strong><p>Cobra el monto total al cliente por el medio seleccionado (datáfono físico o transferencia Nequi).</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Confirmar en el sistema</strong><p>Una vez que el pago electrónico se apruebe, haz clic en <span class="btn-demo">✅ Confirmar</span> en el POS.</p></div></div>
       </div>
-      <div class="alert alert-warn">⚠️ <span>El sistema <strong>no</strong> procesa el pago electrónico directamente — solo registra que se cobró por ese medio. Asegúrate de que el pago en el datáfono o Nequi sea exitoso antes de confirmar.</span></div>
+      <div class="alert alert-warn">⚠️ <span>Con Tarjeta o Nequi el sistema <strong>no</strong> procesa el pago directamente — solo registra que se cobró por ese medio. Asegúrate de que el pago en el datáfono o Nequi sea exitoso antes de confirmar.</span></div>
+      <h3 class="sub">📲 Bold (QR: tarjeta, PSE, Nequi)</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Si el administrador activó Bold, aparece este método y aquí sí el sistema confirma el pago solo:</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Elige "📲 Bold"</strong><p>Aparece un QR por el valor exacto de la cuenta. También puedes tocar <strong>Copiar link de pago</strong> y enviárselo al cliente.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>El cliente paga desde su celular</strong><p>Con tarjeta, PSE o Nequi.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>La venta se registra sola</strong><p>Cuando Bold aprueba el pago. En el cierre de caja suma como tarjeta. El QR vence a los 15 minutos.</p></div></div>
+      </div>
+      <div class="alert alert-tip">💡 <span>Si un QR anterior ya quedó pagado, al cobrar de nuevo el mismo valor el sistema avisa <strong>"Ya hay un pago aprobado"</strong>: elige <strong>Usar este pago</strong> para no cobrar dos veces.</span></div>
     </div>
 
     <!-- PAGO MIXTO -->

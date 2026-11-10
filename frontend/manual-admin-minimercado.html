@@ -108,7 +108,9 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li>El sistema carga el panel de administración con tu rol y permisos.</li>
   </ol>
   <div class="tip">También puedes ingresar desde la página principal del dominio (sin el ID del negocio en la URL): con tu usuario y contraseña, el sistema detecta tu negocio y te lleva directo a su portal.</div>
-  <div class="tip">Puedes cambiar tu contraseña en cualquier momento desde el botón <strong>🔑 Contraseña</strong> del menú lateral. Si la olvidaste, usa <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de inicio de sesión — te llega una contraseña temporal por correo.</div>
+  <div class="warn">🔒 <strong>Solo administradores.</strong> Al panel entran el superadmin y los roles con el permiso <strong>Personal</strong>. Las demás cuentas (meseros, cajeros) ven el aviso <em>"Esta cuenta no tiene acceso al panel administrativo"</em> y el botón <strong>🛒 Ir a la caja (POS)</strong>. Y al revés: los administradores no entran a la caja, así que para cobrar hace falta una cuenta de caja (un rol sin el permiso Personal).</div>
+  <div class="warn">📱 <strong>Código de 6 dígitos.</strong> Después de la contraseña, el panel pide el código de una app autenticadora. La primera vez: instala <strong>Google Authenticator</strong> o <strong>Microsoft Authenticator</strong>, toca <strong>+</strong>, escanea el QR que aparece en pantalla y escribe los 6 números. Luego verás <strong>10 códigos de emergencia</strong>: guárdalos fuera del celular; cada uno sirve una sola vez si pierdes el teléfono (<em>"Perdí el celular: usar un código de emergencia"</em>). Si te quedas sin celular y sin códigos, el usuario maestro puede reiniciar tu código.</div>
+  <div class="tip"><strong>Contraseña.</strong> Cámbiala cuando quieras desde el botón <strong>🔑</strong> de contraseña del menú lateral, escribiendo la actual; al cambiarla se cierran tus sesiones en todos los dispositivos. Por seguridad, las cuentas de administrador <strong>no</strong> reciben enlace de recuperación por correo: si la olvidas, pídele al <strong>usuario maestro</strong> (el superadmin principal) que te la restablezca.</div>
 
   <h2 id="navegacion">Navegación</h2>
   <p>La interfaz tiene una barra lateral izquierda con cinco grupos:</p>
@@ -187,6 +189,8 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li>Ingresa la cantidad a sumar o restar y el motivo.</li>
     <li>Guarda — el movimiento queda registrado en el historial de inventario.</li>
   </ol>
+  <h3>📱 Inventario desde el celular</h3>
+  <p>En el celular la tabla se cambia por <strong>tarjetas</strong>, una por producto: <strong>verde</strong> si el stock está bien, <strong>amarillo</strong> si está bajo el mínimo y <strong>rojo</strong> si está agotado. Cada tarjeta muestra el stock en grande, el mínimo y los precios de compra y venta, con botones grandes: <strong>+ Entrada</strong> y <strong>− Salida</strong> abren el ajuste ya listo con el cursor en la cantidad, y <strong>✏️ / 🗑️</strong> editan o borran el producto.</p>
 
   <h2 id="productos">Productos</h2>
   <p>Catálogo completo de productos disponibles en el POS.</p>
@@ -270,6 +274,7 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li>Asigna el rol al crear o editar un usuario.</li>
   </ul>
   <div class="warn">Un usuario sin el permiso de un módulo no verá ese panel en la barra lateral.</div>
+  <div class="warn">🔒 <strong>El permiso Personal decide a dónde entra cada cuenta.</strong> Un rol <strong>con</strong> Personal es de administrador: entra al panel (con código de 6 dígitos) y <strong>no</strong> entra al POS. Un rol <strong>sin</strong> Personal es de caja: entra al POS y no al panel. Para que alguien pueda cobrar, su rol no debe tener Personal; quien hace las dos cosas necesita dos cuentas.</div>
 
   <h2 id="horarios">Horarios</h2>
   <p>Define el horario que <strong>debería</strong> trabajar cada empleado por día de la semana: hora de entrada y hora de salida. Es la plantilla contra la que se compara el fichaje real (ver <strong>Asistencia</strong>).</p>
@@ -317,6 +322,14 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li>Vigente hasta.</li>
   </ul>
   <div class="tip">Estos campos por ahora solo se guardan — el envío automático a la DIAN todavía no está conectado. Se actualizará este manual cuando esa integración quede activa.</div>
+  <h3>📲 Cobros con Bold</h3>
+  <p>Con Bold, la caja genera un QR por el valor exacto y la venta se registra sola cuando el cliente paga (tarjeta, PSE o Nequi). En el cierre de caja suma como tarjeta.</p>
+  <ol class="steps">
+    <li>En tu cuenta de bold.co ve a <strong>Integraciones → Llaves de integración</strong> y activa la llave de identidad y la llave secreta. Hay un par de <strong>pruebas</strong> y otro de <strong>producción</strong>; las de producción las habilita Bold después de su certificación.</li>
+    <li>Pégalas aquí, marca <strong>Ofrecer Bold en la caja</strong>, deja <strong>Modo pruebas</strong> marcado mientras uses las de prueba y toca <strong>Guardar Bold</strong>.</li>
+    <li>Copia la <strong>URL del webhook</strong> que muestra la pantalla y pégala en Bold, en <strong>Integraciones → Webhooks → Configurar webhook</strong>. Debe ser la dirección pública con https.</li>
+    <li>Al pasar a producción: cambia a las llaves de producción, <strong>desmarca Modo pruebas</strong> y haz un cobro pequeño para confirmar.</li>
+  </ol>
 
   <h2 id="cfg-impresora">Impresora</h2>
   <p>Configura la impresora de tickets térmica:</p>

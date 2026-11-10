@@ -96,7 +96,7 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
   <div class="tip">También existe un <strong>login principal</strong> en la página raíz del dominio (sin <code>?n=</code>): con solo usuario/correo y contraseña, el sistema detecta a qué negocio pertenece la persona y la redirige automáticamente a su portal, ya con la sesión iniciada.</div>
 
   <h2 id="tarjetas">Tarjetas disponibles</h2>
-  <p>El portal muestra entre 2 y 4 tarjetas dependiendo del tipo de negocio:</p>
+  <p>El portal puede mostrar estas tarjetas, según el tipo de negocio y quién ingresa:</p>
 
   <div class="card-grid">
     <div class="card-ex" style="background:#ede9fe">
@@ -117,20 +117,24 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     </div>
   </div>
 
+  <div class="warn">🔒 <strong>Cada cuenta ve solo la tarjeta que le corresponde.</strong> Al ingresar, los administradores (superadmin o un rol con el permiso <strong>Personal</strong>) ven solo <strong>Administración</strong>, y el resto del personal ve solo <strong>POS</strong>. Los administradores no pueden entrar a la caja ni los meseros o cajeros al panel.</div>
+
   <h2 id="admin">Tarjeta Administración</h2>
-  <p>Acceso al panel de administración del negocio. Requiere usuario y contraseña con rol de administrador o con los permisos correspondientes.</p>
+  <p>Acceso al panel de administración del negocio. Solo para administradores: superadmin o rol con el permiso <strong>Personal</strong>. Después de la contraseña pide el <strong>código de 6 dígitos</strong> de la app autenticadora.</p>
   <p>Dependiendo del tipo de negocio abre:</p>
   <ul>
-    <li><strong>Restaurante / Bar</strong> → Admin Restaurante</li>
+    <li><strong>Restaurante</strong> → Admin Restaurante</li>
+    <li><strong>Bar</strong> → Admin Bar</li>
     <li><strong>Peluquería</strong> → Admin Peluquería</li>
     <li><strong>Minimercado</strong> → Admin Minimercado</li>
   </ul>
 
   <h2 id="pos">Tarjeta POS</h2>
-  <p>Acceso al punto de venta para cajeros y meseros. Requiere usuario y contraseña.</p>
+  <p>Acceso al punto de venta para cajeros y meseros. Requiere usuario y contraseña; siempre pide ingresar de nuevo, para que quede claro quién operó la caja.</p>
   <p>Dependiendo del tipo de negocio abre:</p>
   <ul>
-    <li><strong>Restaurante / Bar</strong> → POS Restaurante</li>
+    <li><strong>Restaurante</strong> → POS Restaurante</li>
+    <li><strong>Bar</strong> → POS Bar</li>
     <li><strong>Peluquería</strong> → POS Peluquería</li>
     <li><strong>Minimercado</strong> → POS Minimercado</li>
   </ul>

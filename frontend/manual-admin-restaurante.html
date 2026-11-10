@@ -128,7 +128,7 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
     <div class="manual-header">
       <h1>Manual del Administrador</h1>
       <p>Restaurante — Gestión completa de operaciones, personal, inventario y reportes.</p>
-      <span class="badge">Versión 1.1 — Julio 2026</span>
+      <span class="badge">Versión 1.2 — Noviembre 2026</span>
     </div>
 
     <!-- ACCESO -->
@@ -144,7 +144,9 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
       </div>
       <div class="alert alert-tip">💡 <span>El panel Admin es diferente al POS (punto de venta). El Admin es para gestión; el POS es para los meseros y cajeros.</span></div>
       <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>También puedes entrar por la página principal del dominio (sin <code style="background:var(--bg2);padding:1px 6px;border-radius:4px">?n=</code> en la URL): ingresa tu usuario o correo y contraseña, y el sistema te lleva automáticamente al portal de tu negocio.</span></div>
-      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Puedes cambiar tu contraseña en cualquier momento desde el botón <strong>🔑 Contraseña</strong> del menú lateral. Si la olvidaste, usa <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de inicio de sesión — te llega una contraseña temporal por correo.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">🔒 <span><strong>Solo administradores.</strong> Al panel entran el superadmin y los roles con el permiso <strong>Personal</strong>. Las demás cuentas (meseros, cajeros) ven el aviso <em>"Esta cuenta no tiene acceso al panel administrativo"</em> y el botón <strong>🛒 Ir a la caja (POS)</strong>. Y al revés: los administradores no entran a la caja, así que para cobrar hace falta una cuenta de caja (un rol sin el permiso Personal).</span></div>
+      <div class="alert alert-warn" style="margin-top:10px">📱 <span><strong>Código de 6 dígitos.</strong> Después de la contraseña, el panel pide el código de una app autenticadora. La primera vez: instala <strong>Google Authenticator</strong> o <strong>Microsoft Authenticator</strong>, toca <strong>+</strong>, escanea el QR que aparece en pantalla y escribe los 6 números. Luego verás <strong>10 códigos de emergencia</strong>: guárdalos fuera del celular; cada uno sirve una sola vez si pierdes el teléfono (<em>"Perdí el celular: usar un código de emergencia"</em>). Si te quedas sin celular y sin códigos, el usuario maestro puede reiniciar tu código.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span><strong>Contraseña.</strong> Cámbiala cuando quieras desde el botón <strong>🔑</strong> de contraseña del menú lateral, escribiendo la actual; al cambiarla se cierran tus sesiones en todos los dispositivos. Por seguridad, las cuentas de administrador <strong>no</strong> reciben enlace de recuperación por correo: si la olvidas, pídele al <strong>usuario maestro</strong> (el superadmin principal) que te la restablezca.</span></div>
     </div>
 
     <!-- DASHBOARD -->
@@ -292,6 +294,8 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Entrada de mercancía</strong><p>Cuando llega un pedido de proveedor, registra la cantidad recibida para sumar al stock.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ajuste por pérdida</strong><p>Descuenta stock por merma, vencimiento o pérdida indicando la razón.</p></div></div>
       </div>
+      <h3 class="sub">📱 Inventario desde el celular</h3>
+      <p style="color:var(--text2);margin-bottom:12px">En el celular la tabla se cambia por <strong>tarjetas</strong>, una por artículo: <strong>verde</strong> si el stock está bien, <strong>amarillo</strong> si está bajo el mínimo y <strong>rojo</strong> si está agotado. Cada tarjeta muestra el stock en grande, el mínimo y los precios de compra y venta, con botones grandes: <strong>+ Entrada</strong> y <strong>− Salida</strong> abren el ajuste ya listo con el cursor en la cantidad, y <strong>✏️ / 🗑️</strong> editan o borran el artículo.</p>
       <div class="alert alert-warn">⚠️ <span>Si un ítem del menú tiene ingredientes configurados y el stock llega a 0, el plato aparece como <strong>agotado</strong> en el POS y no se puede agregar al pedido.</span></div>
     </div>
 
@@ -411,11 +415,12 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
       </div>
       <p style="color:var(--text2);margin-bottom:12px">Registra a tus domiciliarios para que puedan tomar y entregar pedidos desde su propia app, y que el cliente los vea en su seguimiento.</p>
       <div class="steps">
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo domiciliario</strong><p>Nombre, número de documento y celular (con esos dos datos inicia sesión en su app).</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Nuevo domiciliario</strong><p>Nombre, número de documento, celular y un <strong>PIN de ingreso</strong> de 4 a 6 números. Con documento, celular y PIN inicia sesión en su app.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Foto (opcional)</strong><p>Sube su foto — aparece en su propia app y para el cliente en cuanto toma el domicilio.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Vehículo</strong><p>Elige Moto (registra la <strong>placa</strong>), Bicicleta (registra el <strong>color</strong>) o A pie.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Compartir acceso</strong><p>Usa el botón <span class="btn-demo">Link app</span> para copiar el enlace de la app del domiciliario.</p></div></div>
       </div>
+      <div class="alert alert-warn" style="margin-top:12px">🔑 <span><strong>PIN de los domiciliarios.</strong> Los que todavía no tienen PIN aparecen con la etiqueta <strong>⚠ Sin PIN</strong> y entran solo con documento y celular: edítalos y asígnales uno. Para cambiarlo, escribe el nuevo en <strong>Nuevo PIN</strong> (déjalo vacío para no cambiarlo); al cambiarlo se cierra la sesión que tenga abierta en su celular.</span></div>
       <div class="alert alert-info" style="margin-top:12px">ℹ️ <span>En <strong>Caja diaria</strong> se muestran los domicilios <strong>en camino / pendientes</strong> y los <strong>entregados</strong>. El domiciliario controla el paso a "Entregado" desde su propia app — cobrar en Caja no cambia ese estado.</span></div>
     </div>
 
@@ -470,7 +475,8 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
           <tr><td><strong>horarios</strong></td><td>Ver y gestionar horarios y asistencia</td></tr>
         </tbody>
       </table>
-      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Crea roles como "Mesero" (solo pos_cobro), "Supervisor" (pos_cobro + reportes) o "Admin completo" (todos los permisos).</span></div>
+      <div class="alert alert-warn" style="margin-top:10px">🔒 <span><strong>El permiso personal decide a dónde entra cada cuenta.</strong> Un rol <strong>con</strong> personal es de administrador: entra al panel (con código de 6 dígitos) y <strong>no</strong> entra al POS. Un rol <strong>sin</strong> personal es de caja: entra al POS y no al panel. Para que alguien pueda cobrar en el POS, su rol no debe tener personal.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Crea roles como "Mesero" (solo pos_cobro), "Supervisor de caja" (pos_cobro + reportes, sin personal) o "Administrador" (todos los permisos, con personal). Quien hace las dos cosas necesita dos cuentas: una de administrador y otra de caja.</span></div>
     </div>
 
     <!-- HORARIOS -->
@@ -573,6 +579,14 @@ h3.sub{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
         </tbody>
       </table>
       <div class="alert alert-info" style="margin-top:10px">ℹ️ <span>Estos campos por ahora solo se <strong>guardan</strong> — el envío automático a la DIAN todavía no está conectado. Se actualizará este manual cuando esa integración quede activa.</span></div>
+      <h3 class="sub">📲 Cobros con Bold</h3>
+      <p style="color:var(--text2);margin-bottom:12px">Con Bold, la caja genera un QR por el valor exacto y la venta se registra sola cuando el cliente paga (tarjeta, PSE o Nequi). En el cierre de caja suma como tarjeta.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Saca las llaves en Bold</strong><p>En tu cuenta de bold.co ve a <strong>Integraciones → Llaves de integración</strong> y activa la llave de identidad y la llave secreta. Hay un par de <strong>pruebas</strong> y otro de <strong>producción</strong>; las de producción las habilita Bold después de su certificación.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Pégalas y marca "Ofrecer Bold en la caja"</strong><p>Deja <strong>Modo pruebas</strong> marcado mientras uses las de prueba y toca <strong>Guardar Bold</strong>.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Registra el webhook</strong><p>Copia la <strong>URL del webhook</strong> que muestra la pantalla y pégala en Bold, en <strong>Integraciones → Webhooks → Configurar webhook</strong>. Debe ser la dirección pública con https.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Al pasar a producción</strong><p>Cambia a las llaves de producción, <strong>desmarca Modo pruebas</strong> y haz un cobro pequeño para confirmar.</p></div></div>
+      </div>
     </div>
 
     <!-- CONFIG IMPRESORA -->

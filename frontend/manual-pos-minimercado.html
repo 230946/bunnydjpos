@@ -107,6 +107,8 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li>El sistema carga los productos y abre la pantalla principal.</li>
   </ol>
   <div class="tip">Si ves un mensaje de contrato suspendido, comunícate con el administrador. El negocio puede no tener suscripción activa.</div>
+  <div class="warn">🔒 <strong>El POS es solo para cajeros.</strong> Las cuentas de administrador (superadmin o un rol con el permiso <strong>Personal</strong>) no entran aquí: verán el aviso <em>"Los administradores no ingresan a la caja"</em>. Debajo del formulario está el botón <strong>⚙️ Panel administrativo</strong>, que los lleva a su panel.</div>
+  <div class="tip">¿Olvidaste tu contraseña? Toca <strong>¿Olvidaste tu contraseña?</strong>: te llega por correo un enlace que sirve <strong>una sola vez</strong> y vence en 30 minutos. Si tu cuenta no tiene correo, pídele al administrador que te asigne una nueva.</div>
 
   <h2 id="pantalla">Pantalla principal</h2>
   <p>La pantalla tiene dos pestañas en la barra superior:</p>
@@ -163,7 +165,9 @@ li{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:3px}
     <li><span class="badge b-blue">Tarjeta</span> — confirma y el sistema registra el pago con tarjeta sin calcular cambio.</li>
     <li><span class="badge b-purple">Nequi</span> — transferencia por Nequi.</li>
     <li><span class="badge b-amber">Transferencia</span> — transferencia bancaria.</li>
+    <li><span class="badge b-blue">📲 Bold</span> — si el administrador lo activó: aparece un QR por el valor exacto; el cliente paga con tarjeta, PSE o Nequi desde su celular (o con el link que puedes copiarle), y la venta se registra sola cuando Bold aprueba el pago. En el cierre de caja suma como tarjeta. El QR vence a los 15 minutos.</li>
   </ul>
+  <div class="tip">Si un QR de Bold anterior ya quedó pagado, al cobrar de nuevo el mismo valor el sistema avisa <strong>"Ya hay un pago aprobado"</strong>: elige <strong>Usar este pago</strong> para no cobrar dos veces.</div>
   <div class="tip">Para pagos en efectivo, si el cambio es negativo (monto menor al total) el botón de confirmar permanece desactivado.</div>
 
   <h2 id="recibo">Recibo</h2>

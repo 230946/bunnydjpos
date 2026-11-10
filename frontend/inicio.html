@@ -196,7 +196,7 @@ p{margin:0}
 .brand-name{font-weight:700;font-size:1.28rem;letter-spacing:-.01em;color:var(--ink)}
 .brand-tag{margin-top:3px;font-size:.62rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--lime)}
 .brand-mark{width:54px;height:54px;border-radius:50%;flex-shrink:0;display:block}
-.nav-links{display:flex;gap:28px;font-size:.87rem;font-weight:500;color:var(--ink-soft)}
+.nav-links{display:flex;gap:clamp(14px,1.6vw,28px);font-size:.87rem;font-weight:500;color:var(--ink-soft)}
 .nav-links a{text-decoration:none;transition:color .15s}
 .nav-links a:hover{color:var(--forest)}
 .nav-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -205,7 +205,9 @@ p{margin:0}
 .nav-toggle-btn{display:none;align-items:center;justify-content:center;width:38px;height:38px;cursor:pointer;color:var(--ink);border-radius:8px}
 .nav-toggle-btn:hover{background:var(--line-soft)}
 .nav-toggle-btn svg{width:22px;height:22px}
-@media (max-width:760px){
+/* El menú pasa a botón ☰ antes de que deje de caber (tablets y portátiles pequeños). */
+@media (max-width:760px){ .nav-actions .btn-forest{display:none} }
+@media (max-width:1260px){
   .nav-toggle-btn{display:flex}
   .nav-links{
     display:none;flex-direction:column;gap:0;
@@ -217,7 +219,6 @@ p{margin:0}
   .nav-links a{padding:13px 28px;border-top:1px solid var(--line-soft)}
   .nav-links a:first-child{border-top:none}
   .nav-toggle-check:checked ~ .nav-links{display:flex}
-  .nav-actions .btn-forest{display:none}
 }
 @media (max-width:480px){
   .brand-mark{width:40px;height:40px}
@@ -404,6 +405,7 @@ p{margin:0}
   background:var(--lime-tint);border:1px solid var(--lime-bright);
   border-radius:12px;padding:10px 13px;margin:0 -13px;align-items:center;
 }
+@media(max-width:600px){.vfeat-list li.vfeat-highlight{margin:0}}
 .vfeat-badge{
   flex-shrink:0;font-size:.66rem;font-weight:800;letter-spacing:.02em;
   background:var(--lime-bright);color:var(--lime-ink);padding:4px 10px;border-radius:100px;
@@ -542,6 +544,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <a href="#bar">Bar</a>
       <a href="#minimercado">Minimercado</a>
       <a href="#plataforma">Plataforma</a>
+      <a href="#seguridad">Seguridad</a>
       <a href="#precios">Precios</a>
       <a href="#nosotros">Nosotros</a>
     </nav>
@@ -686,6 +689,8 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
           <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Cuentas abiertas por barra, mesa o para llevar</li>
           <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Control de fiados — saldo pendiente por cliente, sin libretas</li>
           <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Carta propia por categorías: cócteles, cervezas, vinos, shots</li>
+          <li class="vfeat-highlight"><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="vfeat-text">Cantidades con números grandes y productos favoritos primero</span><span class="vfeat-badge">✨ Nuevo</span></li>
+          <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Cervezas vendidas del turno, en vivo</li>
         </ul>
       </div>
       <div class="vcard-visual">
@@ -733,7 +738,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <div class="price-tag"><span class="price-num">9%</span><span class="price-unit">por venta mensual</span></div>
       <a class="btn btn-ghost" href="#contacto">Agendar una demo</a>
       <ul class="price-feat">
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1 caja, 1 usuario</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1 caja, con 1 administrador y 2 cajeros</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Ventas y cobro (efectivo, tarjeta, Nequi)</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reportes básicos del día</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>App desde el celular</li>
@@ -780,6 +785,8 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <span class="strip-item"><b>Caja bloqueada</b> hasta cuadrar el día anterior</span>
     <span class="strip-item"><b>Reservas online</b> sin llamadas</span>
     <span class="strip-item"><b>Chat con IA</b> para pedidos de domicilio</span>
+    <span class="strip-item"><b>Código de 6 dígitos</b> para administradores</span>
+    <span class="strip-item"><b>Cobro con QR</b> de Bold</span>
     <span class="strip-item"><b>Reportes en tiempo real</b> desde el celular</span>
     <span class="strip-item"><b>Software a la medida</b> de tu negocio</span>
     <span class="strip-item"><b>Pago por uso</b>, sin letra chiquita</span>
@@ -790,6 +797,8 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <span class="strip-item"><b>Caja bloqueada</b> hasta cuadrar el día anterior</span>
     <span class="strip-item"><b>Reservas online</b> sin llamadas</span>
     <span class="strip-item"><b>Chat con IA</b> para pedidos de domicilio</span>
+    <span class="strip-item"><b>Código de 6 dígitos</b> para administradores</span>
+    <span class="strip-item"><b>Cobro con QR</b> de Bold</span>
     <span class="strip-item"><b>Reportes en tiempo real</b> desde el celular</span>
     <span class="strip-item"><b>Software a la medida</b> de tu negocio</span>
     <span class="strip-item"><b>Pago por uso</b>, sin letra chiquita</span>
@@ -827,7 +836,19 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   </div>
   <div class="prose prose-2col">
     <p><b>Caja que no deja facturar descuadrada:</b> si queda una caja del día anterior sin cerrar, el sistema bloquea la venta hasta que se cuadre — nadie puede "seguir vendiendo" y arreglarlo después. <b>Reportes que entiende cualquiera:</b> ventas del día, productos que más rotan, quién vendió qué, sin exportar nada a Excel. <b>Portal para tu equipo:</b> cada empleado entra desde su celular a ver su horario, sus citas o sus comisiones, sin tener que preguntarte a ti.</p>
-    <p><b>Clientes que reservan o piden solos:</b> un link para reservar citas o un código QR para pedir en la mesa — menos llamadas, menos filas, menos errores al tomar el pedido. <b>Varios métodos de pago, incluso mezclados:</b> efectivo, tarjeta, Nequi o transferencia, y si el cliente paga con dos métodos a la vez, el sistema también lo cuadra. <b>Todo en la nube:</b> no se instala nada — entras desde el navegador del celular, la tablet del mostrador o el computador de la oficina.</p>
+    <p><b>Clientes que reservan o piden solos:</b> un link para reservar citas o un código QR para pedir en la mesa — menos llamadas, menos filas, menos errores al tomar el pedido. <b>Varios métodos de pago, incluso mezclados:</b> efectivo, tarjeta, Nequi o transferencia, y si el cliente paga con dos métodos a la vez, el sistema también lo cuadra. <b>Cobro con QR de Bold:</b> la caja muestra un QR por el valor exacto, el cliente paga con tarjeta, PSE o Nequi desde su celular y la venta se registra sola. <b>Todo en la nube:</b> no se instala nada — entras desde el navegador del celular, la tablet del mostrador o el computador de la oficina, y el inventario se actualiza desde el celular con botones grandes.</p>
+  </div>
+</section>
+
+<section class="section shell" id="seguridad">
+  <div class="section-head">
+    <div class="eyebrow">Seguridad</div>
+    <h2>Cada quien entra solo a lo suyo, y nadie entra con una clave robada.</h2>
+    <p>Los correos se pierden y las claves se comparten. Por eso el acceso no depende solo de una contraseña.</p>
+  </div>
+  <div class="prose prose-2col">
+    <p><b>Código de 6 dígitos para administradores:</b> además de la contraseña, el panel pide el código de una app como Google Authenticator. Aunque alguien conozca la clave, sin el celular del administrador no entra. <b>Caja y administración separadas:</b> el mesero o cajero solo entra al punto de venta, y el administrador solo al panel — así siempre queda claro quién operó la caja.</p>
+    <p><b>Un usuario maestro:</b> solo él puede restablecer la clave de un administrador; nadie la recupera con un correo viejo. <b>Recuperación segura para el resto del equipo:</b> enlace de un solo uso que vence en 30 minutos, límite de intentos de ingreso y cierre de todas las sesiones al cambiar la clave. <b>Domiciliarios con PIN</b> personal para entrar a su app.</p>
   </div>
 </section>
 

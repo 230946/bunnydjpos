@@ -140,7 +140,7 @@ tr:hover td{background:var(--bg2)}
     <div class="manual-header">
       <h1>Manual del Superadministrador</h1>
       <p>Guía completa para gestionar negocios, usuarios, contratos y configuración del sistema BUNNYDJPOS.</p>
-      <span class="badge">Versión 1.0 — Junio 2026</span>
+      <span class="badge">Versión 1.1 — Noviembre 2026</span>
     </div>
 
     <!-- ACCESO -->
@@ -158,7 +158,9 @@ tr:hover td{background:var(--bg2)}
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Ingresar</strong><p>Haz clic en <span class="btn-demo">Ingresar</span>. Si las credenciales son correctas, serás redirigido al Dashboard.</p></div></div>
       </div>
       <div class="alert alert-warn">⚠️ <span>El panel de superadmin es exclusivo para el administrador del sistema. No compartas estas credenciales con administradores de negocios.</span></div>
-      <div class="alert alert-tip" style="margin-top:10px">💡 <span>Puedes cambiar tu contraseña en cualquier momento desde el botón <strong>🔑 Cambiar contraseña</strong> del menú lateral. Si la olvidaste, usa <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de inicio de sesión — te llega una contraseña temporal por correo.</span></div>
+      <div class="alert alert-warn" style="margin-top:10px">📱 <span><strong>Código de 6 dígitos.</strong> Después de la contraseña se pide el código de una app autenticadora. La primera vez: instala <strong>Google Authenticator</strong> o <strong>Microsoft Authenticator</strong>, toca <strong>+</strong>, escanea el QR y escribe los 6 números. Luego verás <strong>10 códigos de emergencia</strong>: guárdalos impresos o fuera del celular; cada uno sirve una sola vez si pierdes el teléfono.</span></div>
+      <div class="alert alert-tip" style="margin-top:10px">💡 <span><strong>Contraseña.</strong> Cámbiala desde <strong>🔑 Cambiar contraseña</strong> en el menú lateral, escribiendo la actual; al cambiarla se cierran tus sesiones en todos los dispositivos. Las cuentas de administrador <strong>no</strong> reciben enlace de recuperación por correo: solo el <strong>usuario maestro</strong> puede restablecerlas (ver <strong>Usuarios</strong>). El enlace por correo, de un solo uso y válido 30 minutos, es para el personal de caja.</span></div>
+      <div class="alert alert-info" style="margin-top:10px">🔒 <span>Los superadmins no pueden ingresar a la caja (POS) de los negocios: para probar o cobrar en un POS se necesita una cuenta de caja de ese negocio.</span></div>
     </div>
 
     <!-- DASHBOARD -->
@@ -196,7 +198,7 @@ tr:hover td{background:var(--bg2)}
       <div class="steps">
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Haz clic en "＋ Nuevo negocio"</strong><p>Botón ubicado en la parte superior derecha del panel.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Completa los datos</strong><p>Nombre del negocio, tipo (restaurante, peluquería, minimercado), dirección y teléfono.</p></div></div>
-        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el tipo</strong><p>El tipo determina qué módulos POS tendrá disponibles el negocio.</p></div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Selecciona el tipo</strong><p>Restaurante, Minimercado, Peluquería / Salón o Bar / Cafetería. El tipo determina qué módulos POS tendrá disponibles el negocio.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>País (moneda y zona horaria)</strong><p>Elige el país del negocio — fija automáticamente su moneda (ej. COP, CRC) y zona horaria para que caja y reportes calculen "hoy" correctamente.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Idioma mandarín (opcional)</strong><p>El negocio siempre usa español. Activa la casilla "Habilitar 中文 (Mandarín)" solo si ese negocio necesita menú/interfaz también en mandarín.</p></div></div>
         <div class="step"><div class="step-num"></div><div class="step-body"><strong>Guardar</strong><p>El negocio queda creado con estado <span class="tag tag-amber">pendiente</span> hasta que se le asigne un contrato.</p></div></div>
@@ -246,6 +248,14 @@ tr:hover td{background:var(--bg2)}
         <div class="card"><div class="card-icon">🗑</div><h4>Eliminar</h4><p>Borra la cuenta del superadmin (no se puede deshacer)</p></div>
       </div>
       <div class="alert alert-warn" style="margin-top:14px">⚠️ <span>No elimines el único superadmin del sistema — perderías el acceso completo al panel.</span></div>
+
+      <h3 style="font-size:14px;margin:18px 0 10px">👑 Usuario maestro</h3>
+      <p style="color:var(--text2);margin-bottom:12px">El superadmin principal es el <strong>usuario maestro</strong> (en la lista aparece como <strong>Maestro</strong>). Es la única cuenta que puede cambiar la contraseña de un administrador — de un superadmin o de un rol con el permiso Personal en cualquier negocio. Solo él ve la columna <strong>Clave</strong> en esta lista:</p>
+      <div class="cards">
+        <div class="card"><div class="card-icon">🔑</div><h4>Restablecer</h4><p>Asigna una contraseña nueva (mínimo 8 caracteres) a la cuenta. Se cierran sus sesiones abiertas y, si tiene correo, se le avisa del cambio. Dásela por un medio seguro.</p></div>
+        <div class="card"><div class="card-icon">📱</div><h4>Reiniciar código</h4><p>Para quien perdió el celular y sus códigos de emergencia: borra su código de 6 dígitos y en el próximo ingreso configura uno nuevo escaneando el QR.</p></div>
+      </div>
+      <div class="alert alert-tip" style="margin-top:14px">💡 <span>El maestro no puede restablecer su propia cuenta desde aquí. Por eso es clave que guarde sus códigos de emergencia: son su salida si pierde el celular.</span></div>
     </div>
 
     <!-- POR ESTABLECIMIENTO -->
