@@ -216,7 +216,10 @@ table tr:hover td{background:var(--bg2)}
 .fav-btn{position:absolute;top:1px;left:1px;width:32px;height:32px;padding:0;border:none;background:transparent;font-size:21px;line-height:32px;color:#c4c4c4;cursor:pointer;z-index:1;transition:color .15s,transform .15s}
 .fav-btn:hover{transform:scale(1.15)}
 .fav-btn.on{color:#f5b301;text-shadow:0 0 1px #9a6b00}
-.barra-sec{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--text);margin:4px 0 -2px}
+.barra-sec{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--text);margin:4px 0 -2px;width:100%;background:transparent;border:none;padding:6px 0;font-family:inherit;text-align:left;cursor:pointer;touch-action:manipulation}
+.barra-sec .flecha{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:var(--bg);border:1px solid var(--border2);color:var(--green-d);font-size:15px;flex:none;transition:transform .15s}
+.barra-sec.cerrada .flecha{transform:rotate(-90deg)}
+.barra-sec .ver{font-size:11px;font-weight:700;color:var(--green-d);flex:none;order:3}
 .barra-sec::after{content:"";flex:1;height:1px;background:var(--border)}
 .barra-sec .n{font-size:11px;font-weight:600;color:var(--text2)}
 .barra-sec .estrella{color:#f5b301}
@@ -3272,10 +3275,30 @@ function renderBarraItems(){
   // Con favoritos, la lista se parte en dos secciones con título; sin ellos
   // se ve como siempre.
   const favs = lista.filter(it => +it.favorito), resto = lista.filter(it => !+it.favorito);
-  const titulo = (txt, n, sep) => `<div class="barra-sec${sep?' sep':''}">${txt} <span class="n">${n}</span></div>`;
+  // Cada sección se pliega con su título. Al buscar se muestra todo.
+  const abierta = sec => q ? true : _secAbierta(sec, favs.length > 0);
+  const titulo = (sec, txt, n, sep) => {
+    const ab = abierta(sec);
+    return `<button type="button" class="barra-sec${sep?' sep':''}${ab?'':' cerrada'}" aria-expanded="${ab}" onclick="toggleSecBarra('${sec}')"><span class="flecha">▾</span>${txt} <span class="n">${n}</span>${ab?'':'<span class="ver">Mostrar</span>'}</button>`;
+  };
   $('barra-items').innerHTML = !favs.length ? resto.map(tarjeta).join('')
-    : titulo('<span class="estrella">★</span> Favoritos', favs.length) + favs.map(tarjeta).join('')
-      + (resto.length ? titulo('Demás productos', resto.length, true) + resto.map(tarjeta).join('') : '');
+    : titulo('fav', '<span class="estrella">★</span> Favoritos', favs.length) + (abierta('fav') ? favs.map(tarjeta).join('') : '')
+      + (resto.length ? titulo('resto', 'Demás productos', resto.length, true) + (abierta('resto') ? resto.map(tarjeta).join('') : '') : '');
+}
+// Estado de las secciones plegables de Barra. Lo elegido se recuerda en este
+// navegador; si no se ha elegido, en el celular "Demás productos" empieza
+// plegado cuando hay favoritos (en el computador, todo desplegado).
+const _secBarra = {};
+try { Object.assign(_secBarra, JSON.parse(localStorage.getItem('barra_secciones') || '{}')); } catch {}
+function _secAbierta(sec, hayFavs){
+  if (sec in _secBarra) return !!_secBarra[sec];
+  return !(sec === 'resto' && hayFavs && window.matchMedia('(max-width:700px)').matches);
+}
+function toggleSecBarra(sec){
+  const hayFavs = items.some(it => +it.favorito);
+  _secBarra[sec] = !_secAbierta(sec, hayFavs);
+  try { localStorage.setItem('barra_secciones', JSON.stringify(_secBarra)); } catch {}
+  renderBarraItems();
 }
 // Marca o quita la estrella. Se ve de inmediato y, si el servidor falla, vuelve atrás.
 async function toggleFavorito(id, ev){
