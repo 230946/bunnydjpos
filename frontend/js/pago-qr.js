@@ -9,7 +9,7 @@
  * cajas de Restaurante y Minimercado.
  *
  *   PagoQr.mostrar(el, token, ['nequi'])     muestra los QR; con [] los oculta
- *   PagoQr.pedirEvidencia(file => ...)       abre la cámara; llamar desde el clic
+ *   PagoQr.pedirEvidencia(file => ...)       cámara o archivo; llamar desde el clic
  *   PagoQr.subirEvidencia(ventaId, file, token)
  *   PagoQr.verImagen(url, titulo)            pantalla completa; se cierra tocando
  *   PagoQr.montarConfig(contenedor, token)   QR y hora de turno, en el admin
@@ -73,6 +73,8 @@ window.PagoQr = (function () {
   // Control interno: comprueba que el QR mostrado sí se cobró. No devuelve
   // promesa porque el navegador no siempre avisa cuando se cancela la cámara.
   function pedirEvidencia(alCapturar) {
+    // Con js/elegir-foto.js cargado se deja escoger entre cámara y archivo.
+    if (typeof window.elegirFoto === 'function') return window.elegirFoto(alCapturar);
     let input = document.getElementById('pago-evidencia-input');
     if (!input) {
       input = document.createElement('input');
@@ -116,7 +118,7 @@ window.PagoQr = (function () {
     };
     contenedor.innerHTML = `
       <h3 style="margin:0 0 4px">📱 QR de pago</h3>
-      <p style="font-size:12px;color:var(--text2);margin:0 0 10px">Se muestra en la caja al cobrar por Nequi o transferencia, y el cajero toma foto del comprobante.</p>
+      <p style="font-size:12px;color:var(--text2);margin:0 0 10px">Se muestra en la caja al cobrar por Nequi o transferencia, y el cajero toma una foto del comprobante o elige la imagen (por ejemplo, la captura que le envió el cliente).</p>
       <div style="display:flex;gap:14px;flex-wrap:wrap">${casilla('nequi')}${casilla('transferencia')}</div>
       <div class="field" style="max-width:260px"><label>Hora de inicio del siguiente turno</label>
         <input data-c="hora" type="time" value="${esc(cfg.horaInicioTurno || '14:00')}">

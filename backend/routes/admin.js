@@ -1318,7 +1318,7 @@ router.get('/facturas', async (req, res) => {
       SELECT v.id, v.numero_factura, v.creado, v.mesa_num, v.cliente_nombre,
              v.metodo_pago, v.monto_efectivo, v.monto_tarjeta, v.monto_nequi,
              v.subtotal, v.iva, v.total, v.recibido, v.cambio, v.estado,
-             v.anulado_en, v.motivo_anulacion,
+             v.anulado_en, v.motivo_anulacion, v.evidencia_pago_url,
              u.nombre AS cajero_nombre,
              c.telefono AS cliente_tel, c.documento AS cliente_doc,
              c.email AS cliente_email, c.direccion AS cliente_dir,
@@ -1420,6 +1420,48 @@ router.get('/facturas/:id', async (req, res) => {
     if (typeof v.items === 'string') { try { v.items = JSON.parse(v.items); } catch{ v.items = []; } }
     res.json(v);
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Comprobantes de pago (Nequi / transferencia) ─────────────────
+// Revisión mensual: el administrador compara cada cobro con el extracto de
+// Nequi o del banco y lo marca como confirmado (queda quién y cuándo).
+router.get('/comprobantes', requirePermiso('personal'), async (req, res) => {
+  try {
+    const mes = /^\d{4}-\d{2}$/.test(String(req.query.mes || '')) ? req.query.mes : localDate(req.user.zona_horaria).slice(0, 7);
+    const [a, m] = mes.split('-').map(Number);
+    const desde = `${mes}-01`;
+    const hasta = new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10); // último día del mes
+    const { rows } = await pool.query(`
+      SELECT v.id, v.numero_factura, v.creado, v.total, v.metodo_pago, v.monto_nequi,
+             v.cliente_nombre, v.mesa_num, v.evidencia_pago_url,
+             v.evidencia_confirmada_en, uc.nombre AS confirmada_por_nombre,
+             u.nombre AS cajero_nombre
+      FROM ventas v
+      LEFT JOIN usuarios u  ON u.id  = v.cajero_id
+      LEFT JOIN usuarios uc ON uc.id = v.evidencia_confirmada_por
+      WHERE v.negocio_id=${ph(1)} AND v.estado != 'anulada'
+        AND (v.monto_nequi > 0 OR v.metodo_pago IN ('nequi','transferencia'))
+        AND DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}
+      ORDER BY v.creado DESC
+    `, [nid(req), desde, hasta]);
+    res.json({ mes, ventas: rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/comprobantes/:id/confirmar', requirePermiso('personal'), async (req, res) => {
+  try {
+    const confirmar = req.body?.confirmado !== false;
+    const { rows: existe } = await pool.query(
+      `SELECT id FROM ventas WHERE id=${ph(1)} AND negocio_id=${ph(2)}`, [req.params.id, nid(req)]
+    );
+    if (!existe.length) return res.status(404).json({ error: 'Venta no encontrada' });
+    await pool.query(
+      `UPDATE ventas SET evidencia_confirmada_en=${confirmar ? 'NOW()' : 'NULL'}, evidencia_confirmada_por=${ph(1)}
+       WHERE id=${ph(2)} AND negocio_id=${ph(3)}`,
+      [confirmar ? req.user.id : null, req.params.id, nid(req)]
+    );
+    res.json({ ok: true, confirmado: confirmar });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.post('/facturas/:id/email', async (req, res) => {

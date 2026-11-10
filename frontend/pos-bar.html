@@ -3,6 +3,7 @@
 <head>
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="pos" data-claves="bdj_pos_bar_token" data-otro="/admin-bar.html"></script>
+<script src="/js/elegir-foto.js"></script>
 <meta charset="UTF-8">
 <title>POS Bar — BUNNYDJPOS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -584,7 +585,6 @@ table tr:hover td{background:var(--bg2)}
       </select>
     </div>
     <div id="cobro-qr" class="qr-pago hide"></div>
-    <input type="file" id="cobro-evidencia-file" accept="image/*" capture="environment" class="hide" onchange="onEvidenciaPagoCapturada(event)">
     <div id="cobro-campos-efectivo">
       <div class="field"><label>Recibido</label><input id="cobro-recibido" type="number" oninput="calcCambio()"></div>
       <div class="field"><label>Cambio</label><input id="cobro-cambio" type="number" readonly></div>
@@ -1830,20 +1830,14 @@ async function confirmarCobroSaldo(){
   }catch(e){ showToast('Error: '+e.message); }
 }
 // Evidencia fotográfica del pago (Nequi/transferencia): control interno
-// para verificar que el QR mostrado sí se cobró. Se toma con la cámara del
-// celular (capture="environment") antes de registrar la venta.
+// para verificar que el QR mostrado sí se cobró. Antes de registrar la venta
+// se toma la foto o se elige la imagen (js/elegir-foto.js).
 let _cobroEvidenciaFile = null;
 let _cobroBoldPagoId = null; // pago Bold ya aprobado para este cobro
 function requiereEvidenciaPago(metodo){
   if (metodo === 'nequi') return true;
   if (metodo === 'mixto') return (+$('cobro-mix-nequi').value||0) > 0;
   return false;
-}
-function onEvidenciaPagoCapturada(e){
-  const file = e.target.files[0];
-  if (!file) return;
-  _cobroEvidenciaFile = file;
-  confirmarCobro();
 }
 async function subirEvidenciaPago(ventaId){
   if (!_cobroEvidenciaFile || !ventaId) return;
@@ -1857,7 +1851,7 @@ async function confirmarCobro(){
   const metodo0 = $('cobro-metodo').value;
   if (metodo0 === 'fiado') return confirmarFiado();
   if (!cajaLista()) { avisarCajaNoLista(); closeModal('cobro-modal'); return; }
-  if (requiereEvidenciaPago(metodo0) && !_cobroEvidenciaFile) { $('cobro-evidencia-file').value = ''; $('cobro-evidencia-file').click(); return; }
+  if (requiereEvidenciaPago(metodo0) && !_cobroEvidenciaFile) { elegirFoto(f => { _cobroEvidenciaFile = f; confirmarCobro(); }); return; }
   if (metodo0 === 'bold' && !_cobroBoldPagoId) {
     const pago = await BoldPago.cobrar({ token, monto: Math.round(totalCobro()), descripcion: cobroOrigenMesaNum ? `Mesa ${cobroOrigenMesaNum}` : 'Venta en barra' });
     if (!pago) return;

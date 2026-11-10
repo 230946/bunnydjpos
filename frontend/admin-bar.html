@@ -3,6 +3,8 @@
 <head>
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="admin" data-claves="bdj_bar_token" data-otro="/pos-bar.html"></script>
+<script src="/js/comprobantes.js"></script>
+<script src="/js/elegir-foto.js"></script>
 <meta charset="UTF-8">
 <title>Admin Bar — BUNNYDJPOS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -320,6 +322,10 @@ table tr:hover td{background:var(--bg2)}
   #panel-inventario .panel-head > div{width:100%}
   #inv-buscar{flex:1 1 auto;width:auto!important;min-width:0}
   #panel-inventario .panel-head > div > .btn{flex:none;width:auto!important}
+  /* Menú lateral en el celular: ícono y nombre en la misma fila, juntos. */
+  .sidebar .nav-btn{width:100%!important;flex-direction:row;justify-content:flex-start;gap:10px;padding:9px 10px}
+  .sidebar .nav-btn .nav-icon{width:auto!important;height:auto!important;font-size:18px;flex:none;line-height:1}
+  .sidebar .nav-btn-label{font-size:13px;text-align:left;line-height:1.2}
 }
 #contrato-block{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,20,.93);align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;gap:16px}
 #contrato-block h2{font-size:1.4rem;color:#ff6b6b;margin:0}
@@ -794,6 +800,7 @@ table tr:hover td{background:var(--bg2)}
             <input type="date" id="fact-desde" style="padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)" onchange="cargarFacturas()">
             <input type="date" id="fact-hasta" style="padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)" onchange="cargarFacturas()">
             <input id="fact-q" placeholder="N° factura o cliente..." style="padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);width:180px" oninput="cargarFacturas()">
+            <button class="btn btn-primary btn-sm" title="Revisar y confirmar los pagos por Nequi o transferencia del mes" onclick="Comprobantes.abrir(api)">📸 Comprobantes</button>
           </div>
         </div>
         <div class="table-wrap"><table>
@@ -1494,7 +1501,6 @@ table tr:hover td{background:var(--bg2)}
       </div>
     </div>
     <div id="cobro-qr" class="qr-pago hide"></div>
-    <input type="file" id="cobro-evidencia-file" accept="image/*" capture="environment" class="hide" onchange="onEvidenciaPagoCapturada(event)">
     <div id="cobro-campos-fiado" class="hide">
       <p style="font-size:12px;color:var(--text2);margin-bottom:8px">No se cobra ahora. Se registra como deuda del cliente y la mesa se libera igual.</p>
       <div class="row2">
@@ -2246,7 +2252,7 @@ function openMobileSidebar(){
   sb.style.position='fixed'; sb.style.top='0'; sb.style.left='0';
   sb.style.height='100vh'; sb.style.zIndex='100';
   sb.style.boxShadow='4px 0 20px rgba(0,0,0,.2)';
-  sb.style.width='142px'; sb.style.minWidth='142px';
+  sb.style.width='200px'; sb.style.minWidth='200px';
   ov.style.display='block';
 }
 function closeMobileSidebar(){
@@ -3844,20 +3850,14 @@ async function confirmarCobroSaldo(){
   }catch(e){ showToast('Error: '+e.message); }
 }
 // Evidencia fotográfica del pago (Nequi/transferencia): control interno
-// para verificar que el QR mostrado sí se cobró. Se toma con la cámara del
-// celular (capture="environment") antes de registrar la venta.
+// para verificar que el QR mostrado sí se cobró. Antes de registrar la venta
+// se toma la foto o se elige la imagen (js/elegir-foto.js).
 let _cobroEvidenciaFile = null;
 let _cobroBoldPagoId = null; // pago Bold ya aprobado para este cobro
 function requiereEvidenciaPago(metodo){
   if (metodo === 'nequi') return true;
   if (metodo === 'mixto') return (+$('cobro-mix-nequi').value||0) > 0;
   return false;
-}
-function onEvidenciaPagoCapturada(e){
-  const file = e.target.files[0];
-  if (!file) return;
-  _cobroEvidenciaFile = file;
-  confirmarCobro();
 }
 async function subirEvidenciaPago(ventaId){
   if (!_cobroEvidenciaFile || !ventaId) return;
@@ -3871,7 +3871,7 @@ async function confirmarCobro(){
   const metodo0 = $('cobro-metodo').value;
   if (metodo0 === 'fiado') return confirmarFiado();
   if (!cajaLista()) { showToast(mensajeCajaNoLista()); closeModal('cobro-modal'); return; }
-  if (requiereEvidenciaPago(metodo0) && !_cobroEvidenciaFile) { $('cobro-evidencia-file').value = ''; $('cobro-evidencia-file').click(); return; }
+  if (requiereEvidenciaPago(metodo0) && !_cobroEvidenciaFile) { elegirFoto(f => { _cobroEvidenciaFile = f; confirmarCobro(); }); return; }
   if (metodo0 === 'bold' && !_cobroBoldPagoId) {
     const pago = await BoldPago.cobrar({ token, monto: Math.round(totalCobro()), descripcion: cobroOrigenMesaNum ? `Mesa ${cobroOrigenMesaNum}` : 'Venta en barra' });
     if (!pago) return;
@@ -5421,7 +5421,7 @@ async function cargarFacturas(){
         <td style="font-size:12px">${_metodoStrFact(v)}</td>
         <td><b style="${anulada?'text-decoration:line-through':''}">${fmt(+v.total)}</b></td>
         <td style="color:var(--text2);font-size:12px">${esc(v.cajero_nombre||'—')}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td>
+        <td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button>${v.evidencia_pago_url?` <button class="btn btn-outline btn-sm" title="Ver el comprobante del pago" onclick="verQrGrandeImg('${esc(v.evidencia_pago_url)}','Comprobante del pago — ${esc(v.numero_factura||'')}')">📸 Comprobante</button>`:''}</td>
       </tr>`;
     }).join('');
   }catch(e){ showToast('Error: '+e.message); }

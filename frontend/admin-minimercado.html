@@ -9,6 +9,7 @@
 <head>
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="admin" data-claves="bdj_adm_token" data-otro="/pos-minimercado.html"></script>
+<script src="/js/comprobantes.js"></script>
 <script src="/js/inv-tarjetas.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,6 +95,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .sidebar.collapsed .nav-btn{justify-content:center;padding:8px 4px}
 .sidebar.collapsed #sb-user{display:none}
 .nav-btn:hover:not(.active){background:var(--bg2)}
+/* Menú lateral en el celular: ícono y nombre en la misma fila, sin cortar el nombre. */
+@media (max-width:700px){
+  .sidebar .nav-btn{width:100%!important}
+  .sidebar .nav-icon{width:auto!important;height:auto!important;font-size:17px;line-height:1}
+  .sidebar .nav-label{max-width:none}
+  .sidebar > *{flex-shrink:0}
+}
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
 .topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:11px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .topbar-left{display:flex;align-items:center;gap:12px}
@@ -707,7 +715,7 @@ tr:hover td{background:var(--bg2)}
               <input type="date" id="fact-desde" style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px" onchange="loadFacturas()">
               <input type="date" id="fact-hasta" style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px" onchange="loadFacturas()">
               <input id="fact-q" placeholder="N° factura o cliente..." style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:13px;width:200px" oninput="loadFacturas()">
-              <button class="btn btn-outline btn-sm" onclick="loadFacturas()">↻ Actualizar</button>
+              <button class="btn btn-outline btn-sm" onclick="loadFacturas()">↻ Actualizar</button> <button class="btn btn-primary btn-sm" title="Revisar y confirmar los pagos por Nequi o transferencia del mes" onclick="Comprobantes.abrir(api)">📸 Comprobantes</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -2719,7 +2727,8 @@ let _factActual = null;
 let _factCfg = null;
 
 function _factInitDates(){
-  const hoy = new Date().toISOString().slice(0,10);
+  // Fecha del negocio, no UTC: desde las 7 p. m. en Colombia UTC ya es el día siguiente.
+  const hoy = new Intl.DateTimeFormat('en-CA',{timeZone:(typeof NEG_ZONA==='string'&&NEG_ZONA)||'America/Bogota',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   if(!$('fact-desde').value) $('fact-desde').value = hoy;
   if(!$('fact-hasta').value) $('fact-hasta').value = hoy;
 }
@@ -2758,7 +2767,7 @@ async function loadFacturas(){
         <td style="font-size:12px">${_metodoStr(v)}</td>
         <td><b style="${anulada?'text-decoration:line-through':''}">${fmt(+v.total)}</b></td>
         <td style="color:var(--text2);font-size:12px">${v.cajero_nombre||'—'}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td>
+        <td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button>${v.evidencia_pago_url?` <button class="btn btn-outline btn-sm" title="Ver el comprobante del pago" onclick="PagoQr.verImagen('${v.evidencia_pago_url}','Comprobante del pago — ${v.numero_factura||''}')">📸 Comprobante</button>`:''}</td>
       </tr>`;
     }).join('');
   } catch(e){ $('fact-loading').style.display='none'; toast('Error: '+e.message); }
@@ -2835,6 +2844,10 @@ async function abrirFactura(id){
     }
     h+=`</div>`;
     $('fact-recibo-wrap').innerHTML=h;
+    // Comprobante del pago (Nequi/transferencia), fuera del recibo para que no se imprima
+    let evw=document.getElementById('fact-evidencia-wrap');
+    if(!evw){ evw=document.createElement('div'); evw.id='fact-evidencia-wrap'; evw.style.cssText='padding:0 16px 12px;text-align:center'; $('fact-recibo-wrap').after(evw); }
+    evw.innerHTML=v.evidencia_pago_url?`<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">📸 Comprobante del pago</div><img src="${v.evidencia_pago_url}" alt="Comprobante del pago" title="Tocar para agrandar" style="max-width:180px;max-height:220px;border-radius:8px;cursor:zoom-in;border:1px solid var(--border)" onclick="PagoQr.verImagen(this.src,'Comprobante del pago')">`:'';
     $('fact-anular-btn').style.display = v.estado==='anulada' ? 'none' : 'block';
     $('fact-modal').style.display='flex';
   } catch(e){ toast('Error cargando factura: '+e.message); }
