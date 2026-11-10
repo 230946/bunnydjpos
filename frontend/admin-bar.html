@@ -3,6 +3,7 @@
 <head>
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="admin" data-claves="bdj_bar_token" data-otro="/pos-bar.html"></script>
+<script src="/js/tabla-tarjetas.js"></script>
 <script src="/js/comprobantes.js"></script>
 <script src="/js/elegir-foto.js"></script>
 <meta charset="UTF-8">
@@ -805,7 +806,7 @@ table tr:hover td{background:var(--bg2)}
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>N° Factura</th><th>Fecha</th><th>Cliente</th><th>Mesa</th><th>Método</th><th>Total</th><th>Cajero</th><th></th></tr></thead>
-          <tbody id="fact-tbody"></tbody>
+          <tbody id="fact-tbody" data-tarjetas data-tt-valor="Total"></tbody>
         </table></div>
       </section>
 

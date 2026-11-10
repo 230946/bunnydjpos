@@ -9,6 +9,7 @@
 <head>
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="admin" data-claves="bdj_adm_token" data-otro="/pos-minimercado.html"></script>
+<script src="/js/tabla-tarjetas.js"></script>
 <script src="/js/comprobantes.js"></script>
 <script src="/js/inv-tarjetas.js"></script>
 <meta charset="UTF-8">
@@ -721,7 +722,7 @@ tr:hover td{background:var(--bg2)}
           <div class="table-wrap">
             <table>
               <thead><tr><th>N° Factura</th><th>Fecha</th><th>Cliente</th><th>Mesa</th><th>Método</th><th>Total</th><th>Cajero</th><th></th></tr></thead>
-              <tbody id="fact-tbody"></tbody>
+              <tbody id="fact-tbody" data-tarjetas data-tt-valor="Total"></tbody>
             </table>
           </div>
           <div id="fact-empty" style="display:none;text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin facturas en el rango seleccionado</div>

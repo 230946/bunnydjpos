@@ -9,6 +9,8 @@
 <head>
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="pos" data-claves="pos_pel_token" data-otro="/admin-peluqueria.html"></script>
+<script src="/js/pago-qr.js"></script>
+<script src="/js/elegir-foto.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="manifest" href="/manifest-pos-peluqueria.json">
@@ -569,6 +571,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
           <button class="ppay-btn" id="pqb-tarjeta"  onclick="selPQPay('tarjeta')"><span>💳</span>Tarjeta</button>
           <button class="ppay-btn" id="pqb-nequi"    onclick="selPQPay('nequi')"><span>📱</span>QR/Nequi</button>
         </div>
+        <div id="pq-qr" style="display:none;margin-top:10px"></div>
       </div>
       <button id="pq-procesar" onclick="venderPaquete()"
         class="btn btn-green btn-block" style="padding:12px;font-size:14px" disabled>Selecciona cliente y paquete</button>
@@ -736,6 +739,7 @@ img[src="/img/logo.png"]:hover{transform:scale(1.15)}
           <button class="ppay-btn" id="ppb-tarjeta"  onclick="selPPay('tarjeta')"><span>💳</span>Tarjeta</button>
           <button class="ppay-btn" id="ppb-nequi"    onclick="selPPay('nequi')"><span>📱</span>QR/Nequi</button>
         </div>
+        <div id="ppay-qr" style="display:none;margin-top:10px"></div>
       </div>
       <div id="ppay-mixed" style="display:none;flex-direction:column;gap:8px">
         <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;width:22px">💵</span><span style="flex:1;font-size:13px">Efectivo</span><input id="ppm-efectivo" type="number" min="0" placeholder="0" oninput="calcPPSplit()" style="width:90px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:14px;font-weight:600;text-align:right;background:var(--bg);color:var(--text);outline:none"><button onclick="ppmResto('efectivo')" style="padding:5px 8px;background:none;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--text2)">↑ resto</button></div>
@@ -1280,6 +1284,7 @@ function renderCobroPanel() {
       </div>
       <button class="pm${_metodoPago==='Transferencia'?' sel':''}" onclick="selPM(this,'Transferencia')" style="width:100%;margin-top:6px;flex-direction:row;gap:6px;padding:9px;justify-content:center"><span style="font-size:16px">🏦</span>Transferencia</button>
       ${_metodoPago==='mixto' ? renderMixto(total) : ''}
+      <div id="cobro-qr-pel" style="display:none;margin-top:10px"></div>
     </div>`;
 
   const todoCompletado = citaItems.length > 0
@@ -1293,6 +1298,15 @@ function renderCobroPanel() {
     : pendientes > 0
       ? `${pendientes} servicio${pendientes>1?'s':''} pendiente${pendientes>1?'s':''} de completar`
       : 'Marcar como Completada para cobrar';
+  _qrCobroCita();
+}
+// QR de pago del cobro de cita: Nequi, transferencia o la parte de un mixto
+function _qrCobroCita() {
+  const metodos = _metodoPago === 'mixto' ? _pagosRows.filter(p => +p.monto > 0).map(p => p.metodo) : [_metodoPago];
+  const tipos = [];
+  if (metodos.some(m => /nequi/i.test(m))) tipos.push('nequi');
+  if (metodos.some(m => /transf/i.test(m))) tipos.push('transferencia');
+  PagoQr.mostrar($('cobro-qr-pel'), TOKEN, tipos);
 }
 
 function renderMixto(total) {
@@ -1698,8 +1712,28 @@ function corregirFacturaPel() {
   else { $('cobroModal').style.display = 'flex'; }
 }
 
+// Comprobante de Nequi/transferencia (control interno, igual que en las demás
+// cajas): antes de registrar la venta se toma la foto o se elige la imagen.
+let _pelEvidencia = null;
+const _pagaConNequi = pagos => (pagos || []).some(p => /nequi|transf/i.test(p.metodo || '') && +p.monto > 0);
+// Devuelve true si hay que esperar la foto; al tenerla vuelve a llamar a seguir().
+function _faltaEvidenciaPel(pagos, seguir) {
+  if (!_pagaConNequi(pagos) || _pelEvidencia) return false;
+  elegirFoto(f => { _pelEvidencia = f; seguir(); });
+  return true;
+}
+// Un fallo aquí no debe tumbar un cobro que ya quedó registrado
+async function _subirEvidenciaPel(ventaId) {
+  const f = _pelEvidencia; _pelEvidencia = null;
+  if (!f || !ventaId) return;
+  const form = new FormData(); form.append('foto', f);
+  try { await fetch(`${API}/ventas/${ventaId}/evidencia`, { method: 'POST', headers: { Authorization: 'Bearer ' + TOKEN }, body: form }); }
+  catch (e) { console.warn('No se pudo subir el comprobante:', e.message); }
+}
+
 async function confirmarPagoPel() {
   if (_pendingVentaPel?.tipo === 'producto') return confirmarPagoProductos();
+  { const p0 = _pendingVentaPel; if (p0 && _faltaEvidenciaPel(p0.metodoPago === 'mixto' ? p0.pagosRows : [{ metodo: p0.metodoPago, monto: p0.total }], confirmarPagoPel)) return; }
   const btn = $('btn-confirmar-pago-pel');
   btn.disabled = true;
   try {
@@ -1725,6 +1759,7 @@ async function confirmarPagoPel() {
       paqueteUsos: Object.entries(_paqueteUsos).map(([detalleId, clientePaqueteId]) => ({ detalleId, clientePaqueteId })),
     });
     p.numeroFactura = r?.numeroFactura;
+    _subirEvidenciaPel(r?.ventaId);
     $('preview-pel-modal').style.display = 'none';
     $('success-pel-content').innerHTML = buildReciboHtmlPel(p);
     $('success-pel-modal').style.display = 'flex';
@@ -1732,6 +1767,7 @@ async function confirmarPagoPel() {
     $('cobroEmpty').style.display = 'flex';
     $('cobroContent').style.display = 'none';
   } catch(e) {
+    _pelEvidencia = null;
     $('preview-pel-modal').style.display = 'none';
     $('cobroModal').style.display = 'flex';
     $('cobro-err').textContent = e.message; $('cobro-err').style.display = 'block';
@@ -2191,6 +2227,7 @@ function cobrarProductos() {
   $('ppay-single').style.display = '';
   $('ppay-mixed').style.display = 'none';
   ['efectivo','tarjeta','nequi'].forEach(m => { $(`ppb-${m}`)?.classList.toggle('sel', m==='efectivo'); $(`ppm-${m}`).value=''; });
+  PagoQr.mostrar($('ppay-qr'), TOKEN, []);
   $('ppay-efectivo-sec').style.display = '';
   $('ppay-recibido').value = '';
   $('ppay-vueltas').style.display = 'none';
@@ -2203,6 +2240,7 @@ function cerrarPPay() { $('ppayModal').style.display = 'none'; }
 
 function selPPay(m) {
   _ppMetodo = m;
+  PagoQr.mostrar($('ppay-qr'), TOKEN, m === 'nequi' ? ['nequi'] : []);
   ['efectivo','tarjeta','nequi'].forEach(k => $(`ppb-${k}`)?.classList.toggle('sel', k===m));
   $('ppay-efectivo-sec').style.display = m==='efectivo' ? '' : 'none';
   $('ppay-recibido').value = '';
@@ -2388,6 +2426,7 @@ function procesarPagoProductos() {
 }
 
 async function confirmarPagoProductos() {
+  if (_pendingVentaPel && _faltaEvidenciaPel(_pendingVentaPel.pagos, confirmarPagoProductos)) return;
   const btn = $('btn-confirmar-pago-pel');
   btn.disabled = true;
   try {
@@ -2399,6 +2438,7 @@ async function confirmarPagoProductos() {
       empleadoId: p.empleadoId || null
     });
     p.numeroFactura = r?.numeroFactura;
+    _subirEvidenciaPel(r?.id);
     $('preview-pel-modal').style.display = 'none';
     $('success-pel-content').innerHTML = buildReciboHtmlPel(p, 'PRODUCTOS');
     $('success-pel-modal').style.display = 'flex';
@@ -2406,6 +2446,7 @@ async function confirmarPagoProductos() {
     cargarProductosPOS();
     _pendingVentaPel = null;
   } catch(e) {
+    _pelEvidencia = null;
     $('preview-pel-modal').style.display = 'none';
     $('ppayModal').style.display = 'flex';
     showToast('Error: '+e.message);
@@ -2508,6 +2549,7 @@ document.addEventListener('click', e => {
 });
 function selPQPay(m) {
   _pqMetodo = m;
+  PagoQr.mostrar($('pq-qr'), TOKEN, m === 'nequi' ? ['nequi'] : []);
   ['efectivo','tarjeta','nequi'].forEach(x => $(`pqb-${x}`)?.classList.toggle('sel', x===m));
 }
 function _actualizarBtnPQ() {
@@ -2526,6 +2568,7 @@ async function venderPaquete() {
   if (!requireCaja()) return;
   const p = _pqPaquetes.find(x => x.id === $('pq-select').value);
   if (!_pqCliSelId || !p) return;
+  if (_faltaEvidenciaPel([{ metodo: _pqMetodo, monto: p.precio }], venderPaquete)) return;
   const btn = $('pq-procesar');
   btn.disabled = true;
   try {
@@ -2535,6 +2578,7 @@ async function venderPaquete() {
       pagos: [{ metodo: metodoLbl, monto: p.precio }],
       clienteId: _pqCliSelId,
     });
+    _subirEvidenciaPel(r.id);
     await api('POST', `/clientes/${_pqCliSelId}/paquetes`, { paqueteId: p.id, ventaId: r.id });
     const vence = new Date(Date.now() + p.vigencia_dias * 86400000);
     const data = {
@@ -2550,6 +2594,7 @@ async function venderPaquete() {
     showToast('Paquete vendido ✓');
     cargarVistaPaquetes();
   } catch (e) {
+    _pelEvidencia = null;
     showToast('Error: ' + e.message);
   } finally { btn.disabled = false; }
 }

@@ -9,6 +9,9 @@
 <head>
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="admin" data-claves="pel_token" data-otro="/pos-peluqueria.html"></script>
+<script src="/js/tabla-tarjetas.js"></script>
+<script src="/js/pago-qr.js"></script>
+<script src="/js/comprobantes.js"></script>
 <script src="/js/inv-tarjetas.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -137,6 +140,8 @@
     .card-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
     .card-header h3{font-size:14px;font-weight:700;color:var(--acc)}
     .card-header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    /* En el celular: título arriba y filtros/botones debajo, a lo ancho */
+    @media(max-width:700px){.card-header{flex-wrap:wrap;gap:8px}.card-header-actions{width:100%}.card-header-actions input{flex:1 1 130px;min-width:0}}
     .card-body{padding:14px 16px}
     .table-wrap{overflow-x:auto}
     .table-wrap table{width:100%}
@@ -2958,8 +2963,9 @@ function renderFacturas(){
           <input type="date" id="fact-hasta" class="btn btn-outline btn-sm" onchange="cargarFacturas()" value="${today()}">
           <input id="fact-q" placeholder="N° o cliente..." oninput="cargarFacturas()" style="width:160px">
           <button class="btn btn-outline btn-sm" onclick="cargarFacturas()">↻</button>
+          <button class="btn btn-primary btn-sm" title="Revisar y confirmar los pagos por Nequi o transferencia del mes" onclick="Comprobantes.abrir((ruta,o)=>apiFetch(API+'/peluqueria'+ruta.replace('/admin',''),o),{ruta:'/comprobantes'})">📸 Comprobantes</button>
         </div></div>
-      <div class="table-wrap"><table><thead><tr><th>N°</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th><th>Profesional</th><th></th></tr></thead><tbody id="fact-tbody"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>N°</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th><th>Profesional</th><th></th></tr></thead><tbody id="fact-tbody" data-tarjetas data-tt-valor="Total"></tbody></table></div>
       <div id="fact-empty" style="display:none;text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin facturas en el rango seleccionado</div>
       <div id="fact-loading" style="display:none;text-align:center;padding:24px;color:var(--text2)">Cargando...</div>
     </div>`;
@@ -2978,7 +2984,7 @@ async function cargarFacturas(){
       const dt=new Date(v.fecha);
       const fStr=dt.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+dt.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
       const anulada=v.estado==='anulada';
-      return `<tr style="${anulada?'opacity:.55':''}"><td style="font-size:12px;font-family:monospace">${v.numero_factura?String(v.numero_factura).padStart(6,'0'):'—'}</td><td style="font-size:11px">${fStr}${anulada?' <span class="badge" style="background:var(--red);color:#fff;font-size:10px">ANULADA</span>':''}</td><td>${v.cliente_nombre||'<span style="color:var(--text3)">Mostrador</span>'}</td><td style="font-size:12px">${v.metodo_pago||'—'}</td><td><b style="${anulada?'text-decoration:line-through':''}">${fmt(+v.total)}</b></td><td style="color:var(--text2);font-size:12px">${v.empleado_nombre||v.cajero_nombre||'—'}</td><td><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button></td></tr>`;
+      return `<tr style="${anulada?'opacity:.55':''}"><td style="font-size:12px;font-family:monospace">${v.numero_factura?String(v.numero_factura).padStart(6,'0'):'—'}</td><td style="font-size:11px">${fStr}${anulada?' <span class="badge" style="background:var(--red);color:#fff;font-size:10px">ANULADA</span>':''}</td><td>${v.cliente_nombre||'<span style="color:var(--text3)">Mostrador</span>'}</td><td style="font-size:12px">${v.metodo_pago||'—'}</td><td><b style="${anulada?'text-decoration:line-through':''}">${fmt(+v.total)}</b></td><td style="color:var(--text2);font-size:12px">${v.empleado_nombre||v.cajero_nombre||'—'}</td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="abrirFactura('${v.id}')">🖨️ Ver</button>${v.evidencia_pago_url?` <button class="btn btn-outline btn-sm" title="Ver el comprobante del pago" onclick="PagoQr.verImagen('${v.evidencia_pago_url}','Comprobante del pago')">📸 Comprobante</button>`:''}</td></tr>`;
     }).join('');
   }catch(e){if(fl)fl.style.display='none';showToast(e.message,'err');}
 }
@@ -3026,6 +3032,9 @@ async function abrirFactura(id){
     if(Array.isArray(v.pagos)&&v.pagos.length){v.pagos.forEach(p=>h+=`<div class="recibo-row" style="font-size:11px;color:var(--text2)"><span>${esc(p.metodo)}</span><span>${fmt(+p.monto)}</span></div>`);}
     h+=`<div class="recibo-center" style="margin-top:10px;font-size:11px">¡Gracias por su visita!</div></div>`;
     _gel('fact-recibo-wrap').innerHTML=h;
+    let evw=document.getElementById('fact-evidencia-wrap');
+    if(!evw){ evw=document.createElement('div'); evw.id='fact-evidencia-wrap'; evw.style.cssText='padding:0 16px 12px;text-align:center'; _gel('fact-recibo-wrap').after(evw); }
+    evw.innerHTML=v.evidencia_pago_url?`<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">📸 Comprobante del pago</div><img src="${v.evidencia_pago_url}" alt="Comprobante del pago" title="Tocar para agrandar" style="max-width:180px;max-height:220px;border-radius:8px;cursor:zoom-in;border:1px solid var(--border)" onclick="PagoQr.verImagen(this.src,'Comprobante del pago')">`:'';
     const btnAnular=_gel('fact-anular-btn'); if(btnAnular)btnAnular.style.display=v.estado==='anulada'?'none':'block';
     _gel('fact-modal').style.display='flex';
   }catch(e){showToast('Error cargando factura: '+e.message,'err');}
@@ -3865,8 +3874,10 @@ function renderCfgFactura(){
           </div>
         </div>
       </div>
-    </div>`;
+    </div>
+    <div class="card" style="margin-top:14px"><div class="card-body" id="cfg-qr-pago"></div></div>`;
   cargarCfgFactura();
+  PagoQr.montarConfig(document.getElementById('cfg-qr-pago'), TOKEN);
 }
 async function cargarCfgFactura(){
   try{

@@ -364,6 +364,9 @@ async function runMigrations() {
     // Revisión mensual de comprobantes: quién y cuándo confirmó el pago
     { table: 'ventas', column: 'evidencia_confirmada_en',  sql: `ALTER TABLE ventas ADD COLUMN evidencia_confirmada_en DATETIME NULL` },
     { table: 'ventas', column: 'evidencia_confirmada_por', sql: `ALTER TABLE ventas ADD COLUMN evidencia_confirmada_por VARCHAR(36) NULL` },
+    { table: 'pel_ventas', column: 'evidencia_pago_url',       sql: `ALTER TABLE pel_ventas ADD COLUMN evidencia_pago_url VARCHAR(300) NULL` },
+    { table: 'pel_ventas', column: 'evidencia_confirmada_en',  sql: `ALTER TABLE pel_ventas ADD COLUMN evidencia_confirmada_en DATETIME NULL` },
+    { table: 'pel_ventas', column: 'evidencia_confirmada_por', sql: `ALTER TABLE pel_ventas ADD COLUMN evidencia_confirmada_por VARCHAR(36) NULL` },
     { table: 'menu_items', column: 'foto_url', sql: `ALTER TABLE menu_items ADD COLUMN foto_url VARCHAR(255) NULL` },
     { table: 'domicilios_pedidos', column: 'calificacion',      sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion TINYINT NULL` },
     { table: 'domicilios_pedidos', column: 'calificacion_nota', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN calificacion_nota VARCHAR(255) NULL` },

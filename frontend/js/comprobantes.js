@@ -7,8 +7,10 @@
 /**
  * comprobantes.js — revisión mensual de los comprobantes de pago
  * (Nequi / transferencia). El administrador compara cada cobro con el extracto
- * y lo marca como confirmado. Uso: Comprobantes.abrir(api)
- * donde api(ruta, opciones) es la función de la página que llama a /api.
+ * y lo marca como confirmado. Uso: Comprobantes.abrir(api, { ruta })
+ * donde api(ruta, opciones) es la función de la página que llama a /api y
+ * ruta es la base de las rutas (por defecto /admin/comprobantes; Peluquería
+ * usa /peluqueria/comprobantes).
  */
 (function () {
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -100,7 +102,7 @@
     const { caja, api, mes } = estado;
     caja.querySelector('.cmp-list').innerHTML = '<div class="cmp-vacio">Cargando…</div>';
     try {
-      const d = await api(`/admin/comprobantes?mes=${encodeURIComponent(mes)}`);
+      const d = await api(`${estado.ruta}?mes=${encodeURIComponent(mes)}`);
       estado.ventas = d.ventas || [];
       pintar();
     } catch (e) {
@@ -108,7 +110,7 @@
     }
   }
 
-  function abrir(api) {
+  function abrir(api, opts = {}) {
     if (!document.getElementById('cmp-css')) {
       const st = document.createElement('style'); st.id = 'cmp-css'; st.textContent = CSS; document.head.append(st);
     }
@@ -127,7 +129,7 @@
       <div class="cmp-list"></div></div>`;
     document.body.append(fondo);
     const caja = fondo.querySelector('.cmp');
-    estado = { caja, api, mes: hoy, filtro: 'pend', ventas: [] };
+    estado = { caja, api, mes: hoy, filtro: 'pend', ventas: [], ruta: opts.ruta || '/admin/comprobantes' };
     const cerrar = () => { fondo.remove(); estado = null; };
     fondo.querySelector('.cmp-x').onclick = cerrar;
     fondo.addEventListener('click', e => { if (e.target === fondo) cerrar(); });
@@ -143,7 +145,7 @@
       const b = e.target.closest('button[data-id]'); if (!b) return;
       b.disabled = true;
       try {
-        await api(`/admin/comprobantes/${encodeURIComponent(b.dataset.id)}/confirmar`, { method: 'PUT', body: JSON.stringify({ confirmado: b.dataset.c === '1' }) });
+        await api(`${estado.ruta}/${encodeURIComponent(b.dataset.id)}/confirmar`, { method: 'PUT', body: JSON.stringify({ confirmado: b.dataset.c === '1' }) });
         await cargar();
       } catch (err) { b.disabled = false; alert('No se pudo guardar: ' + err.message); }
     };

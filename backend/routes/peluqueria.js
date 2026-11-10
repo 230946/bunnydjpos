@@ -831,6 +831,74 @@ router.get('/booking/:negocioId/paquetes', async (req, res) => {
 router.use(authMiddleware);
 const nid = req => req.user.negocio_id;
 
+// ── Comprobantes de pago (Nequi / transferencia) ─────────────────
+// Igual que en las demás cajas: el cajero adjunta la foto al cobrar y el
+// administrador la confirma cada mes contra el extracto.
+const FOTO_EXT_EV = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
+const uploadEvidencia = multer({
+  storage: multer.diskStorage({
+    destination: process.env.UPLOADS_DIR || './uploads',
+    filename: (_, file, cb) => cb(null, uuid() + FOTO_EXT_EV[file.mimetype]),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => cb(null, !!FOTO_EXT_EV[file.mimetype]),
+});
+const SQL_ES_NEQUI = `(LOWER(p.metodo) LIKE '%nequi%' OR LOWER(p.metodo) LIKE '%transf%')`;
+
+router.post('/ventas/:id/evidencia', uploadEvidencia.single('foto'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Archivo requerido (JPG, PNG, WEBP o GIF)' });
+    const url = `/uploads/${req.file.filename}`;
+    const { rows } = await pool.query(`SELECT id FROM pel_ventas WHERE id=? AND negocio_id=?`, [req.params.id, nid(req)]);
+    if (!rows.length) return res.status(404).json({ error: 'Venta no encontrada' });
+    await pool.query(`UPDATE pel_ventas SET evidencia_pago_url=? WHERE id=? AND negocio_id=?`, [url, req.params.id, nid(req)]);
+    res.json({ ok: true, url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/comprobantes', requirePermiso('personal'), async (req, res) => {
+  try {
+    const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: req.user.zona_horaria || 'America/Bogota', year: 'numeric', month: '2-digit' }).format(new Date());
+    const mes = /^\d{4}-\d{2}$/.test(String(req.query.mes || '')) ? req.query.mes : hoy;
+    const [a, m] = mes.split('-').map(Number);
+    const hasta = new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10);
+    const { rows } = await pool.query(`
+      SELECT v.id, v.numero_factura, v.fecha AS creado, v.total, v.evidencia_pago_url,
+             v.evidencia_confirmada_en, uc.nombre AS confirmada_por_nombre,
+             u.nombre AS cajero_nombre, c.nombre AS cliente_nombre,
+             (SELECT COALESCE(SUM(p.monto),0) FROM pel_venta_pagos p WHERE p.venta_id=v.id AND ${SQL_ES_NEQUI}) AS monto_nequi,
+             (SELECT COUNT(*) FROM pel_venta_pagos p WHERE p.venta_id=v.id) AS n_pagos,
+             (SELECT MAX(LOWER(p.metodo)) FROM pel_venta_pagos p WHERE p.venta_id=v.id AND ${SQL_ES_NEQUI}) AS metodo_nequi
+      FROM pel_ventas v
+      LEFT JOIN usuarios u  ON u.id  = v.usuario_id
+      LEFT JOIN usuarios uc ON uc.id = v.evidencia_confirmada_por
+      LEFT JOIN clientes c  ON c.id  = v.cliente_id
+      WHERE v.negocio_id=? AND v.estado != 'anulada'
+        AND EXISTS (SELECT 1 FROM pel_venta_pagos p WHERE p.venta_id=v.id AND ${SQL_ES_NEQUI})
+        AND DATE(v.fecha) BETWEEN ? AND ?
+      ORDER BY v.fecha DESC
+    `, [nid(req), `${mes}-01`, hasta]);
+    // Mismo formato que /api/admin/comprobantes (js/comprobantes.js)
+    res.json({ mes, ventas: rows.map(r => ({
+      ...r,
+      metodo_pago: +r.n_pagos > 1 ? 'mixto' : (String(r.metodo_nequi || '').includes('transf') ? 'transferencia' : 'nequi'),
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/comprobantes/:id/confirmar', requirePermiso('personal'), async (req, res) => {
+  try {
+    const confirmar = req.body?.confirmado !== false;
+    const { rows } = await pool.query(`SELECT id FROM pel_ventas WHERE id=? AND negocio_id=?`, [req.params.id, nid(req)]);
+    if (!rows.length) return res.status(404).json({ error: 'Venta no encontrada' });
+    await pool.query(
+      `UPDATE pel_ventas SET evidencia_confirmada_en=${confirmar ? 'NOW()' : 'NULL'}, evidencia_confirmada_por=? WHERE id=? AND negocio_id=?`,
+      [confirmar ? req.user.id : null, req.params.id, nid(req)]
+    );
+    res.json({ ok: true, confirmado: confirmar });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 const toISO = v => {
   if (!v) return null;
   if (v instanceof Date) {
@@ -3248,7 +3316,7 @@ router.get('/facturas', async (req, res) => {
       where += ` AND (c.nombre LIKE ${ph(n1)} OR v.numero_factura = ${ph(n2)})`;
     }
     const { rows } = await pool.query(`
-      SELECT v.id, v.fecha, v.subtotal, v.descuento, v.total, v.notas, v.estado, v.numero_factura,
+      SELECT v.id, v.fecha, v.subtotal, v.descuento, v.total, v.notas, v.estado, v.numero_factura, v.evidencia_pago_url,
              c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
              c.email AS cliente_email, c.documento AS cliente_doc, c.direccion AS cliente_dir,
              e.nombre AS empleado_nombre,
