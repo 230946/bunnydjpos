@@ -229,12 +229,25 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
 const MANIFEST_APPS = {
   domicilios:        { label: 'Domicilios',      startUrl: '/domicilios.html',          themeColor: '#6C4FF6' },
   'citas-peluqueria': { label: 'Reservar Cita',   startUrl: '/reservas-peluqueria.html', themeColor: '#0B8457' },
+  // Pantallas del personal (interna: el nombre corto es la pantalla, no el
+  // negocio, para distinguir "POS" de "Admin" en la pantalla de inicio).
+  'pos-restaurante':   { label: 'POS Restaurante',   startUrl: '/pos-restaurante.html',   themeColor: '#0B8457', interna: true },
+  'pos-minimercado':   { label: 'POS Minimercado',   startUrl: '/pos-minimercado.html',   themeColor: '#0B8457', interna: true },
+  'pos-peluqueria':    { label: 'POS Peluquería',    startUrl: '/pos-peluqueria.html',    themeColor: '#0B8457', interna: true },
+  'pos-bar':           { label: 'POS Barra',         startUrl: '/pos-bar.html',           themeColor: '#086644', interna: true, icon: '/img/logo-bar.png', iconSizes: '256x256' },
+  'admin-restaurante': { label: 'Admin Restaurante', startUrl: '/admin-restaurante.html', themeColor: '#0B8457', interna: true },
+  'admin-minimercado': { label: 'Admin Minimercado', startUrl: '/admin-minimercado.html', themeColor: '#0B8457', interna: true },
+  'admin-peluqueria':  { label: 'Admin Peluquería',  startUrl: '/admin-peluqueria.html',  themeColor: '#0B8457', interna: true },
+  'admin-bar':         { label: 'Admin Barra',       startUrl: '/admin-bar.html',         themeColor: '#086644', interna: true, icon: '/img/logo-bar.png', iconSizes: '256x256' },
+  cocina:              { label: 'Cocina',            startUrl: '/cocina.html',            themeColor: '#0B8457', interna: true },
+  'admin-soporte':     { label: 'Soporte',           startUrl: '/admin-soporte.html',     themeColor: '#0B8457', interna: true },
+  superadmin:          { label: 'SuperAdmin',        startUrl: '/superadmin.html',        themeColor: '#0B8457', interna: true },
 };
 app.get('/api/manifest/:app', async (req, res) => {
   const cfg = MANIFEST_APPS[req.params.app];
   if (!cfg) return res.status(404).json({ error: 'App no encontrada' });
   const negocioId = req.query.n;
-  let nombre = 'BunnyDJPOS', icon = '/img/logo.png', iconSizes = '1000x1000', theme = cfg.themeColor;
+  let nombre = 'BunnyDJPOS', icon = cfg.icon || '/img/logo.png', iconSizes = cfg.iconSizes || '1000x1000', theme = cfg.themeColor;
   let startUrl = cfg.startUrl;
   if (negocioId) {
     try {
@@ -252,8 +265,10 @@ app.get('/api/manifest/:app', async (req, res) => {
   }
   res.set('Content-Type', 'application/manifest+json');
   res.json({
+    // id distinto por negocio: dos negocios en el mismo celular son dos apps.
+    id: startUrl,
     name: `${nombre} — ${cfg.label}`,
-    short_name: nombre.length > 12 ? nombre.slice(0, 12) : nombre,
+    short_name: cfg.interna ? cfg.label : (nombre.length > 12 ? nombre.slice(0, 12) : nombre),
     description: `${cfg.label} de ${nombre}, BunnyDJPOS`,
     start_url: startUrl,
     scope: cfg.startUrl,

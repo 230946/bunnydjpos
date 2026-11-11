@@ -1,4 +1,5 @@
-// Service worker compartido por los 3 POS (Restaurante, Minimercado, Peluquería).
+// Service worker compartido por las pantallas instalables (POS, paneles admin,
+// cocina, domicilios…); las del personal lo registran desde /js/pwa.js.
 // Cada página lo registra con su propio scope, así que self.registration.scope
 // es único por app y sirve para no mezclar el caché de una con el de otra.
 const CACHE = 'pos-shell-' + self.registration.scope.split('/').filter(Boolean).pop();
