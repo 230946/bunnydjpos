@@ -14,7 +14,8 @@
  * - data-tt-valor: título de la columna que va en grande a la derecha.
  * - data-tt-titulo: título de la columna que encabeza la tarjeta (si no es la primera).
  * - data-tt-sin-acciones: la tabla no tiene columna de botones al final.
- * - Si la tabla tiene campos editables (input/select), se deja como tabla.
+ * - Si la tabla tiene campos editables (input/select), se deja como tabla,
+ *   salvo los marcados con data-tt-ok (actúan solos con su onchange).
  * - La última columna (botones) va abajo.
  * - Las demás columnas se muestran con su título; las vacías ("—") se omiten.
  * Las tarjetas se rehacen solas cada vez que la página cambia las filas, y
@@ -39,6 +40,8 @@
 .tt-filas dd{margin:0;text-align:right;color:var(--tx);min-width:0;word-break:break-word}
 .tt-acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .tt-acc .btn,.tt-acc button{flex:1 1 auto;width:auto!important;justify-content:center;padding:9px 10px!important;font-size:13px!important}
+.tt-acc select{flex:1 1 100%;width:100%!important;min-height:40px;padding:8px 10px!important;font-size:13px!important;border-radius:8px}
+.tt-acc .badge{align-self:center}
 .tt-acc .icon-btn{background:rgba(255,255,255,.75);border:1px solid var(--bo);border-radius:8px;font-size:16px!important;min-height:40px}
 @media(prefers-color-scheme:dark){.tt-acc .icon-btn{background:rgba(0,0,0,.2)}}
 .tt-vacio{grid-column:1/-1;text-align:center;color:#5b6e67;padding:22px 8px}
@@ -58,7 +61,9 @@
   function pintar(tbody, grid, envoltura) {
     // Una tabla con campos editables se deja como tabla: copiarlos a la
     // tarjeta los desconectaría de la página.
-    const conCampos = !!tbody.querySelector('input,select,textarea');
+    // Un campo marcado con data-tt-ok actúa solo (p. ej. un select con
+    // onchange="accion(id,this.value)"), así que sí puede ir en la tarjeta.
+    const conCampos = !!tbody.querySelector('input:not([data-tt-ok]),select:not([data-tt-ok]),textarea:not([data-tt-ok])');
     envoltura.classList.toggle('tt-oculta', !conCampos);
     grid.style.display = conCampos ? 'none' : '';
     if (conCampos) return;

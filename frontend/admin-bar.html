@@ -4837,8 +4837,8 @@ async function loadPedidosProv(){
     <td style="display:flex;gap:6px">
       <button class="btn btn-outline btn-sm" onclick="openPedidoProvModal('${p.id}')">✏️ Editar</button>
       ${p.gasto_id ? '<span class="badge b-green" title="Ya tiene un gasto registrado">💳 Con gasto</span>' : `<button class="btn btn-outline btn-sm" onclick="registrarGastoPedido('${p.id}')" title="Anota la plata del pedido en Gastos, sin tocar el stock (para pedidos ya contados en el inventario)">💳 Registrar gasto</button>`}
-      <select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm">
-        <option>—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option>
+      <select data-tt-ok onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm">
+        <option value="" disabled selected>Cambiar estado…</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option>
       </select>
     </td>
   </tr>`).join('');

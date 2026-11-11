@@ -774,7 +774,7 @@ tr:hover td{background:var(--bg2)}
             <button class="btn btn-primary btn-sm" onclick="openPedidoProvModal()">+ Solicitud</button></div>
           <div class="table-wrap">
             <table><thead><tr><th>Proveedor</th><th>Fecha</th><th>Entrega</th><th>Total</th><th>Estado</th><th></th></tr></thead>
-            <tbody id="pedidos-prov-tbody"></tbody></table>
+            <tbody id="pedidos-prov-tbody" data-tarjetas></tbody></table>
           </div>
         </div>
       </div>
@@ -2944,7 +2944,7 @@ async function loadPedidosProv(){
   const data=await api('/admin/pedidos-proveedor');
   _pedidosProvList=data;
   const estadoBadge={pendiente:'badge-amber',enviado:'badge-blue',recibido:'badge-green',cancelado:'badge-red'};
-  $('pedidos-prov-tbody').innerHTML=data.map(p=>`<tr><td><b>${p.proveedor_nombre}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estadoBadge[p.estado]||'badge-gray'}">${p.estado}</span></td><td style="display:flex;gap:6px">${p.estado==='pendiente'?`<button class="btn btn-outline btn-sm" onclick="openPedidoProvModal('${p.id}')">✏️ Editar</button>`:''}<select onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option>—</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('');
+  $('pedidos-prov-tbody').innerHTML=data.map(p=>`<tr><td><b>${p.proveedor_nombre}</b></td><td>${fmtDate(p.fecha_pedido)}</td><td>${fmtDate(p.fecha_entrega)}</td><td>${fmt(p.total)}</td><td><span class="badge ${estadoBadge[p.estado]||'badge-gray'}">${p.estado}</span></td><td style="display:flex;gap:6px">${p.estado==='pendiente'?`<button class="btn btn-outline btn-sm" onclick="openPedidoProvModal('${p.id}')">✏️ Editar</button>`:''}<select data-tt-ok onchange="cambiarEstadoPedido('${p.id}',this.value)" class="btn btn-outline btn-sm"><option value="" disabled selected>Cambiar estado…</option><option value="enviado">Enviado</option><option value="recibido">Recibido</option><option value="cancelado">Cancelado</option></select></td></tr>`).join('');
 }
 async function cambiarEstadoPedido(id,estado){ await api(`/admin/pedidos-proveedor/${id}/estado`,{method:'PUT',body:JSON.stringify({estado})}); showToast('Estado actualizado'); loadPedidosProv(); }
 let _ppItems=[], _ppProductos=[], _ppEditId=null;
