@@ -483,6 +483,43 @@ p{margin:0}
 .price-check svg{width:9px;height:9px}
 .price-fine{margin-top:26px;font-size:.78rem;color:var(--ink-soft);text-align:center;max-width:60ch;margin-left:auto;margin-right:auto}
 
+/* ── SIMULADOR DE COSTO ──────────────────────────── */
+.sim{scroll-margin-top:96px;margin-top:40px;background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--r-l);padding:30px;display:grid;grid-template-columns:1.05fr 1fr;gap:34px}
+@media (max-width:860px){.sim{grid-template-columns:1fr;gap:26px;padding:22px 18px}}
+.sim-head{grid-column:1/-1}
+.sim-head h3{font-size:1.35rem}
+.sim-head p{margin-top:6px;font-size:.9rem;color:var(--ink-soft)}
+.sim-lbl{display:block;font-size:.82rem;font-weight:700;color:var(--ink);margin-bottom:8px}
+.sim-monto{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:var(--r-s);padding:0 14px;background:var(--paper);transition:border-color .15s}
+.sim-monto:focus-within{border-color:var(--forest)}
+.sim-monto span{font-weight:700;color:var(--ink-soft);font-size:1.2rem}
+.sim-monto input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:700 1.5rem/1 inherit;padding:12px 0;outline:none}
+.sim-range{width:100%;margin:14px 0 4px;accent-color:var(--forest)}
+.sim-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sim-chip{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:100px;padding:6px 12px;font:600 .8rem inherit;cursor:pointer}
+.sim-chip:hover,.sim-chip.on{border-color:var(--forest);background:var(--forest-tint);color:var(--forest)}
+.sim-needs{margin-top:22px;display:flex;flex-direction:column;gap:8px}
+.sim-need{display:flex;gap:10px;align-items:flex-start;font-size:.86rem;color:var(--ink-soft);line-height:1.4;cursor:pointer;padding:8px 10px;border-radius:var(--r-s);border:1px solid var(--line-soft)}
+.sim-need:has(input:checked){border-color:var(--forest);background:var(--forest-tint);color:var(--ink)}
+.sim-need input{margin-top:2px;accent-color:var(--forest);width:16px;height:16px;flex:none}
+.sim-res{background:var(--forest-tint);border-radius:var(--r-m);padding:24px;display:flex;flex-direction:column}
+.sim-plan{font-size:.82rem;font-weight:700;color:var(--forest);text-transform:uppercase;letter-spacing:.06em}
+.sim-total{font-family:'Fraunces Disp';font-size:2.6rem;font-weight:700;color:var(--ink);line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums}
+.sim-total small{white-space:nowrap;font:500 .9rem inherit;color:var(--ink-soft)}
+.sim-dia{font-size:.86rem;color:var(--ink-soft);margin-top:4px}
+.sim-bars{margin-top:20px;display:flex;flex-direction:column;gap:12px}
+.sim-bar-top{display:flex;justify-content:space-between;gap:10px;font-size:.84rem;color:var(--ink)}
+.sim-bar-top b{font-variant-numeric:tabular-nums}
+.sim-bar-top em{font-style:normal;font-size:.74rem;color:var(--ink-soft)}
+.sim-track{height:10px;border-radius:100px;background:var(--paper-raised);margin-top:5px;overflow:hidden}
+.sim-fill{height:100%;border-radius:100px;background:var(--forest);opacity:.35;transition:width .3s ease}
+.sim-row.on .sim-fill{opacity:1}
+.sim-row.off .sim-bar-top{color:var(--ink-soft)}
+.sim-res .btn{margin-top:22px;justify-content:center}
+.sim-nota{margin-top:10px;font-size:.74rem;color:var(--ink-soft);text-align:center}
+@media (prefers-reduced-motion: reduce){.sim-fill{transition:none}}
+@media (max-width:480px){.sim-total{font-size:2.1rem}}
+
 /* ── PROOF / TRUST STRIP ─────────────────────────── */
 .trust{display:flex;flex-wrap:wrap;gap:14px}
 .trust-item{
@@ -539,13 +576,13 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     </a>
     <input type="checkbox" id="nav-toggle" class="nav-toggle-check">
     <nav class="nav-links">
+      <a href="#precios">Precios</a>
       <a href="#peluqueria">Peluquería</a>
       <a href="#restaurante">Restaurante</a>
       <a href="#bar">Bar</a>
       <a href="#minimercado">Minimercado</a>
       <a href="#plataforma">Plataforma</a>
       <a href="#seguridad">Seguridad</a>
-      <a href="#precios">Precios</a>
       <a href="#nosotros">Nosotros</a>
     </nav>
     <div class="nav-actions">
@@ -574,7 +611,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       </div>
       <div class="hero-ctas">
         <a class="btn btn-forest btn-lg" href="#contacto">Ver una demo en vivo</a>
-        <a class="btn btn-ghost btn-lg" href="#plataforma">Cómo funciona ↓</a>
+        <a class="btn btn-ghost btn-lg" href="#simulador">¿Cuánto pagaría? ↓</a>
       </div>
       <div class="hero-note">Nada que descargar de tiendas · se instala como app en el celular, tablet o computador de tu negocio</div>
     </div>
@@ -599,6 +636,92 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     </div>
   </div>
 </header>
+
+<section class="section shell" id="precios">
+  <div class="section-head">
+    <div class="eyebrow">Pago a la medida</div>
+    <h2 class="h2-oneline">Solo pagas por lo que vendes — nunca una cuota fija.</h2>
+    <p>Nada de mensualidades ni contratos. Un porcentaje sobre tus ventas de cada mes, y entre más completo el plan, menor el porcentaje.</p>
+  </div>
+  <div class="pricing-grid">
+    <article class="price-card">
+      <div class="price-ic"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.6"/></svg></div>
+      <h3>Básico</h3>
+      <p class="price-desc">Para empezar a cobrar y controlar tu caja sin complicarte.</p>
+      <div class="price-tag"><span class="price-num">9%</span><span class="price-unit">por venta mensual</span></div>
+      <a class="btn btn-ghost" href="#contacto">Agendar una demo</a>
+      <ul class="price-feat">
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1 caja, con 1 administrador y 2 cajeros</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Ventas y cobro (efectivo, tarjeta, Nequi)</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reportes básicos del día</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>App desde el celular</li>
+      </ul>
+    </article>
+    <article class="price-card price-featured">
+      <div class="price-badge">Más elegido</div>
+      <div class="price-ic"><svg viewBox="0 0 20 20" fill="none"><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <h3>Plus</h3>
+      <p class="price-desc">Para un equipo completo con agenda, domicilios y reportes de verdad.</p>
+      <div class="price-tag"><span class="price-num">7%</span><span class="price-unit">por venta mensual</span></div>
+      <a class="btn btn-forest" href="#contacto">Agendar una demo</a>
+      <ul class="price-feat">
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Todo lo de Básico</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Cajas y usuarios ilimitados</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Portal para tu equipo — horarios, citas, comisiones</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reservas online, autopedido por QR y domicilios</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reportes avanzados y alertas de inventario</li>
+      </ul>
+    </article>
+    <article class="price-card">
+      <div class="price-ic"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2.5l2.1 4.4 4.9.7-3.5 3.4.8 4.9-4.3-2.3-4.3 2.3.8-4.9-3.5-3.4 4.9-.7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+      <h3>Premium</h3>
+      <p class="price-desc">Para negocios que quieren todo, incluido lo que aún no has pensado pedir.</p>
+      <div class="price-tag"><span class="price-num">5%</span><span class="price-unit">por venta mensual</span></div>
+      <a class="btn btn-ghost" href="#contacto">Agendar una demo</a>
+      <ul class="price-feat">
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Todo lo de Plus</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Chat con IA para pedidos de domicilio</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Soporte prioritario</li>
+        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Personalización a la medida de tu negocio</li>
+      </ul>
+    </article>
+  </div>
+  <div class="sim" id="simulador">
+    <div class="sim-head">
+      <div class="eyebrow">Simulador</div>
+      <h3>¿Cuánto pagarías con DJPOS?</h3>
+      <p>Escribe cuánto vende tu negocio en un mes y marca lo que necesitas. El cálculo es al instante.</p>
+    </div>
+    <div>
+      <label class="sim-lbl" for="sim-ventas">Ventas del mes</label>
+      <div class="sim-monto"><span>$</span><input id="sim-ventas" inputmode="numeric" autocomplete="off" value="15.000.000" aria-describedby="sim-dia"></div>
+      <input class="sim-range" id="sim-range" type="range" min="500000" max="100000000" step="500000" value="15000000" aria-label="Ventas del mes">
+      <div class="sim-chips">
+        <button type="button" class="sim-chip" data-v="5000000">$5 millones</button>
+        <button type="button" class="sim-chip" data-v="15000000">$15 millones</button>
+        <button type="button" class="sim-chip" data-v="30000000">$30 millones</button>
+        <button type="button" class="sim-chip" data-v="60000000">$60 millones</button>
+      </div>
+      <div class="sim-needs">
+        <span class="sim-lbl" style="margin-bottom:0">¿Qué necesitas?</span>
+        <label class="sim-need"><input type="checkbox" data-plan="1">Más de 1 caja o más de 2 cajeros</label>
+        <label class="sim-need"><input type="checkbox" data-plan="1">Agenda de citas, portal del equipo o comisiones</label>
+        <label class="sim-need"><input type="checkbox" data-plan="1">Reservas online, autopedido por QR o domicilios</label>
+        <label class="sim-need"><input type="checkbox" data-plan="2">Chat con IA para que los clientes pidan solos</label>
+        <label class="sim-need"><input type="checkbox" data-plan="2">Funciones hechas a la medida de mi negocio</label>
+      </div>
+    </div>
+    <div class="sim-res" aria-live="polite">
+      <div class="sim-plan" id="sim-plan">Tu plan: Básico · 9%</div>
+      <div class="sim-total"><span id="sim-total">$1.350.000</span> <small>al mes</small></div>
+      <div class="sim-dia" id="sim-dia">Unos $45.000 por día</div>
+      <div class="sim-bars" id="sim-bars"></div>
+      <a class="btn btn-forest btn-lg" id="sim-cta" href="#contacto" target="_blank" rel="noopener">Quiero este plan</a>
+      <div class="sim-nota">Valor de referencia: sin mensualidad fija ni contrato. Si no vendes, no pagas.</div>
+    </div>
+  </div>
+  <p class="price-fine">*Porcentajes de referencia — el plan final se ajusta según el volumen y las necesidades de tu negocio. Sin letra chiquita: te lo confirmamos antes de empezar.</p>
+</section>
 
 <section class="section shell" id="verticales">
   <div class="section-head">
@@ -724,58 +847,6 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       </div>
     </article>
   </div>
-</section>
-
-<section class="section shell" id="precios">
-  <div class="section-head">
-    <div class="eyebrow">Pago a la medida</div>
-    <h2 class="h2-oneline">Solo pagas por lo que vendes — nunca una cuota fija.</h2>
-    <p>Nada de mensualidades ni contratos. Un porcentaje sobre tus ventas de cada mes, y entre más completo el plan, menor el porcentaje.</p>
-  </div>
-  <div class="pricing-grid">
-    <article class="price-card">
-      <div class="price-ic"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.6"/></svg></div>
-      <h3>Básico</h3>
-      <p class="price-desc">Para empezar a cobrar y controlar tu caja sin complicarte.</p>
-      <div class="price-tag"><span class="price-num">9%</span><span class="price-unit">por venta mensual</span></div>
-      <a class="btn btn-ghost" href="#contacto">Agendar una demo</a>
-      <ul class="price-feat">
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1 caja, con 1 administrador y 2 cajeros</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Ventas y cobro (efectivo, tarjeta, Nequi)</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reportes básicos del día</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>App desde el celular</li>
-      </ul>
-    </article>
-    <article class="price-card price-featured">
-      <div class="price-badge">Más elegido</div>
-      <div class="price-ic"><svg viewBox="0 0 20 20" fill="none"><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-      <h3>Plus</h3>
-      <p class="price-desc">Para un equipo completo con agenda, domicilios y reportes de verdad.</p>
-      <div class="price-tag"><span class="price-num">7%</span><span class="price-unit">por venta mensual</span></div>
-      <a class="btn btn-forest" href="#contacto">Agendar una demo</a>
-      <ul class="price-feat">
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Todo lo de Básico</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Cajas y usuarios ilimitados</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Portal para tu equipo — horarios, citas, comisiones</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reservas online, autopedido por QR y domicilios</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reportes avanzados y alertas de inventario</li>
-      </ul>
-    </article>
-    <article class="price-card">
-      <div class="price-ic"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2.5l2.1 4.4 4.9.7-3.5 3.4.8 4.9-4.3-2.3-4.3 2.3.8-4.9-3.5-3.4 4.9-.7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
-      <h3>Premium</h3>
-      <p class="price-desc">Para negocios que quieren todo, incluido lo que aún no has pensado pedir.</p>
-      <div class="price-tag"><span class="price-num">5%</span><span class="price-unit">por venta mensual</span></div>
-      <a class="btn btn-ghost" href="#contacto">Agendar una demo</a>
-      <ul class="price-feat">
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Todo lo de Plus</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Chat con IA para pedidos de domicilio</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Soporte prioritario</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Personalización a la medida de tu negocio</li>
-      </ul>
-    </article>
-  </div>
-  <p class="price-fine">*Porcentajes de referencia — el plan final se ajusta según el volumen y las necesidades de tu negocio. Sin letra chiquita: te lo confirmamos antes de empezar.</p>
 </section>
 
 <div class="strip" role="presentation">
@@ -907,6 +978,51 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   </div>
   <div class="foot-fine">© 2026 DJPOS. Software de uso propietario. Todos los derechos reservados.</div>
 </footer>
+<!-- Simulador de costo (sección Precios) -->
+<script>
+(function(){
+  var PLANES=[{n:'Básico',p:9},{n:'Plus',p:7},{n:'Premium',p:5}];
+  var MAX=1e11;
+  var $=function(id){return document.getElementById(id)};
+  var inp=$('sim-ventas'), rng=$('sim-range');
+  if(!inp) return;
+  var chips=[].slice.call(document.querySelectorAll('.sim-chip'));
+  var needs=[].slice.call(document.querySelectorAll('.sim-need input'));
+  var cop=function(n){return '$'+Math.round(n).toLocaleString('es-CO')};
+  var leer=function(){return Math.min(MAX,parseInt(inp.value.replace(/\D/g,''),10)||0)};
+  function calcular(){
+    var v=leer();
+    var minPlan=needs.reduce(function(m,c){return c.checked?Math.max(m,+c.dataset.plan):m},0);
+    var plan=PLANES[minPlan], costo=v*plan.p/100;
+    $('sim-plan').textContent='Tu plan: '+plan.n+' · '+plan.p+'%';
+    $('sim-total').textContent=cop(costo);
+    $('sim-dia').textContent=v?'Unos '+cop(costo/30)+' por día':'Escribe tus ventas del mes';
+    var tope=v*PLANES[0].p/100||1;
+    $('sim-bars').innerHTML=PLANES.map(function(pl,i){
+      var c=v*pl.p/100, ok=i>=minPlan;
+      return '<div class="sim-row '+(i===minPlan?'on':ok?'':'off')+'"><div class="sim-bar-top"><span>'+pl.n+' ('+pl.p+'%)'+(ok?'':' <em>· no incluye lo que marcaste</em>')+'</span><b>'+cop(c)+'</b></div>'
+        +'<div class="sim-track"><div class="sim-fill" style="width:'+(c/tope*100)+'%"></div></div></div>';
+    }).join('');
+    chips.forEach(function(ch){ch.classList.toggle('on',+ch.dataset.v===v)});
+    var txt='Hola, usé el simulador de DJPOS: mi negocio vende unos '+cop(v)+' al mes y me serviría el plan '+plan.n+' ('+plan.p+'%). Quiero una demo.';
+    $('sim-cta').href='https://wa.me/573228848989?text='+encodeURIComponent(txt);
+  }
+  function poner(v,desdeRango){
+    inp.value=v?v.toLocaleString('es-CO'):'';
+    if(!desdeRango) rng.value=Math.min(+rng.max,Math.max(+rng.min,v));
+    calcular();
+  }
+  inp.addEventListener('input',function(){
+    var pos=inp.value.length-inp.selectionStart;
+    poner(leer());
+    var p=Math.max(0,inp.value.length-pos); try{inp.setSelectionRange(p,p)}catch(e){}
+  });
+  rng.addEventListener('input',function(){poner(+rng.value,true)});
+  chips.forEach(function(ch){ch.addEventListener('click',function(){poner(+ch.dataset.v)})});
+  needs.forEach(function(c){c.addEventListener('change',calcular)});
+  calcular();
+})();
+</script>
 <!-- Chat con el agente de IA de Ordena ERP (encima del botón de WhatsApp).
      En el PC de pruebas (localhost) usa el Ordena local; en djmpos.com, erp.djmpos.com. -->
 <script>
