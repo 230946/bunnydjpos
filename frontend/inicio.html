@@ -207,7 +207,7 @@ p{margin:0}
 .nav-toggle-btn svg{width:22px;height:22px}
 /* El menú pasa a botón ☰ antes de que deje de caber (tablets y portátiles pequeños). */
 @media (max-width:760px){ .nav-actions .btn-forest{display:none} }
-@media (max-width:1260px){
+@media (max-width:1340px){
   .nav-toggle-btn{display:flex}
   .nav-links{
     display:none;flex-direction:column;gap:0;
@@ -520,6 +520,48 @@ p{margin:0}
 @media (prefers-reduced-motion: reduce){.sim-fill{transition:none}}
 @media (max-width:480px){.sim-total{font-size:2.1rem}}
 
+/* ── VITRINA PUBLICITARIA ────────────────────────── */
+.vit{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--r-l);padding:44px}
+@media (max-width:900px){.vit{grid-template-columns:1fr;gap:34px;padding:28px 20px}}
+.vit-tag{display:inline-flex;gap:6px;align-items:center;background:var(--lime-tint);color:var(--lime-ink);border-radius:100px;padding:5px 12px;font-size:.74rem;font-weight:700;margin-bottom:14px}
+.vit h2{font-size:clamp(1.7rem,3.4vw,2.4rem);line-height:1.12}
+.vit .vit-p{margin-top:12px;color:var(--ink-soft);max-width:54ch}
+.vit .vfeat-list{margin-top:20px}
+.vit-ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.vit-ph{margin:0 auto;width:min(300px,100%);border-radius:34px;padding:10px;background:#111;box-shadow:var(--shadow-lg)}
+.vit-sc{--b:#f7f7f4;--s:#fff;--i:#16181d;--i2:#5b616c;--a:#0B8457;--ai:#fff;--t:#ffd60a;--h:'Work Sans Body',sans-serif;
+  border-radius:26px;overflow:hidden;background:var(--b);color:var(--i);font-size:11px;line-height:1.35;height:520px;transition:background .25s}
+.vit-sc[data-e="elegante"]{--b:#0f0d0b;--s:#1a1714;--i:#f3ece0;--i2:#b9ae9c;--a:#d4af37;--ai:#1a1408;--t:#d4af37;--h:Georgia,serif}
+.vit-sc[data-e="promo"]{--b:#fff4d6;--s:#fff;--i:#151515;--i2:#4f4a40;--a:#c0392b;--ai:#fff;--t:#ffd60a;--h:'Fraunces Disp',serif}
+.vit-hero{height:178px;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.75)),linear-gradient(135deg,var(--a),#1b1b1b)}
+.vit-hero b{font:700 1.45rem/1.05 var(--h)}
+.vit-sc[data-e="promo"] .vit-hero b{text-transform:uppercase;letter-spacing:.02em}
+.vit-hero i{opacity:.9;margin-top:3px}
+.vit-hb{display:flex;gap:6px;margin-top:9px}
+.vit-hb span{border-radius:100px;padding:5px 9px;font-weight:700;font-size:10px;background:var(--a);color:var(--ai)}
+.vit-hb span+span{background:#25D366;color:#06301a}
+.vit-sc[data-e="promo"] .vit-hb span{border-radius:6px;border:1.5px solid #111}
+.vit-bd{padding:12px}
+.vit-h3{font:700 .95rem var(--h);margin:4px 0 8px}
+.vit-promo{position:relative;background:var(--s);border-radius:12px;overflow:hidden;border:1px solid rgba(127,127,127,.18)}
+.vit-sc[data-e="promo"] .vit-promo,.vit-sc[data-e="promo"] .vit-card{border:1.5px solid #111}
+.vit-promo-img{height:72px;display:grid;place-items:center;font-size:2rem;background:color-mix(in srgb,var(--a) 14%,var(--s))}
+.vit-badge{position:absolute;top:7px;left:7px;background:var(--t);color:#151515;font-weight:800;border-radius:100px;padding:2px 8px;font-size:10px}
+.vit-sc[data-e="promo"] .vit-badge{border-radius:5px;transform:rotate(-4deg);border:1.5px solid #111}
+.vit-promo-in{padding:8px 10px}
+.vit-pr{display:flex;gap:6px;align-items:baseline;margin-top:2px}
+.vit-pr b{font-size:1.05rem;color:var(--a)}
+.vit-pr s{color:var(--i2)}
+.vit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vit-card{background:var(--s);border-radius:10px;overflow:hidden;border:1px solid rgba(127,127,127,.18)}
+.vit-card div{height:46px;display:grid;place-items:center;font-size:1.4rem;background:color-mix(in srgb,var(--a) 10%,var(--s))}
+.vit-card p{padding:6px 8px}
+.vit-card p b{display:block}
+.vit-est{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.vit-est button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:100px;padding:7px 14px;font:600 .8rem 'Work Sans Body',sans-serif;cursor:pointer}
+.vit-est button[aria-pressed="true"]{border-color:var(--forest);background:var(--forest-tint);color:var(--forest)}
+@media (prefers-reduced-motion: reduce){.vit-sc{transition:none}}
+
 /* ── PROOF / TRUST STRIP ─────────────────────────── */
 .trust{display:flex;flex-wrap:wrap;gap:14px}
 .trust-item{
@@ -577,6 +619,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <input type="checkbox" id="nav-toggle" class="nav-toggle-check">
     <nav class="nav-links">
       <a href="#precios">Precios</a>
+      <a href="#vitrina">Vitrina</a>
       <a href="#peluqueria">Peluquería</a>
       <a href="#restaurante">Restaurante</a>
       <a href="#bar">Bar</a>
@@ -725,6 +768,48 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   <p class="price-fine">*Porcentajes de referencia — el plan final se ajusta según el volumen y las necesidades de tu negocio. Sin letra chiquita: te lo confirmamos antes de empezar.</p>
 </section>
 
+<section class="section shell" id="vitrina">
+  <div class="vit">
+    <div>
+      <span class="vit-tag">✨ Nuevo · Planes Plus y Premium</span>
+      <h2>Tu negocio, con su propia vitrina en internet.</h2>
+      <p class="vit-p">Una página tipo anuncio con tus productos, tus promociones y tus recomendados, lista para compartir por WhatsApp, Instagram o con un QR en la mesa. Se arma sola con el menú que ya tienes en DJPOS: si cambias un precio o activas una promoción, la vitrina se actualiza.</p>
+      <ul class="vfeat-list">
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Promociones con precio de antes y de ahora, el % de descuento y hasta cuándo valen</li>
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Catálogo por categorías con fotos, buscador y los recomendados de la casa</li>
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Botones para pedir a domicilio, escribir por WhatsApp y llegar al local</li>
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tres estilos: Elegante, Promocional o Claro, con tu logo, portada y eslogan</li>
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Link y QR listos para imprimir; los productos agotados no aparecen</li>
+      </ul>
+      <div class="vit-ctas">
+        <a class="btn btn-forest btn-lg" href="https://wa.me/573228848989?text=Hola%2C%20quiero%20la%20vitrina%20publicitaria%20de%20DJPOS%20para%20mi%20negocio" target="_blank" rel="noopener">Quiero mi vitrina</a>
+        <a class="btn btn-ghost btn-lg" href="#precios">Ver planes</a>
+      </div>
+    </div>
+    <div>
+      <div class="vit-ph" aria-hidden="true">
+        <div class="vit-sc" id="vit-sc" data-e="elegante">
+          <div class="vit-hero"><b>La Terraza Bar</b><i>Las cervezas más frías del barrio</i><div class="vit-hb"><span>🛵 Pedir</span><span>💬 WhatsApp</span></div></div>
+          <div class="vit-bd">
+            <div class="vit-h3">🔥 Promociones</div>
+            <div class="vit-promo"><div class="vit-promo-img">🍺</div><span class="vit-badge">-25%</span><div class="vit-promo-in"><b>Michelada de la casa</b><div class="vit-pr"><b>$9.000</b><s>$12.000</s></div></div></div>
+            <div class="vit-h3" style="margin-top:12px">Cócteles</div>
+            <div class="vit-grid">
+              <div class="vit-card"><div>🍹</div><p><b>Mojito</b>$18.000</p></div>
+              <div class="vit-card"><div>🍸</div><p><b>Margarita</b>$20.000</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vit-est" role="group" aria-label="Probar estilos de la vitrina">
+        <button type="button" data-e="elegante" aria-pressed="true">Elegante</button>
+        <button type="button" data-e="promo" aria-pressed="false">Promocional</button>
+        <button type="button" data-e="claro" aria-pressed="false">Claro</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="section shell" id="verticales">
   <div class="section-head">
     <div class="eyebrow">Hecho a la medida de cada negocio</div>
@@ -864,6 +949,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <span class="strip-item"><b>Cobro con QR</b> de Bold</span>
     <span class="strip-item"><b>Comprobantes con foto</b> de cada transferencia</span>
     <span class="strip-item"><b>Se instala como app</b> en el celular</span>
+    <span class="strip-item"><b>Vitrina publicitaria</b> con tus productos</span>
     <span class="strip-item"><b>Reportes en tiempo real</b> desde el celular</span>
     <span class="strip-item"><b>Software a la medida</b> de tu negocio</span>
     <span class="strip-item"><b>Pago por uso</b>, sin letra chiquita</span>
@@ -878,6 +964,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     <span class="strip-item"><b>Cobro con QR</b> de Bold</span>
     <span class="strip-item"><b>Comprobantes con foto</b> de cada transferencia</span>
     <span class="strip-item"><b>Se instala como app</b> en el celular</span>
+    <span class="strip-item"><b>Vitrina publicitaria</b> con tus productos</span>
     <span class="strip-item"><b>Reportes en tiempo real</b> desde el celular</span>
     <span class="strip-item"><b>Software a la medida</b> de tu negocio</span>
     <span class="strip-item"><b>Pago por uso</b>, sin letra chiquita</span>
@@ -980,6 +1067,17 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   </div>
   <div class="foot-fine">© 2026 DJPOS. Software de uso propietario. Todos los derechos reservados.</div>
 </footer>
+<!-- Vitrina: probar estilos en la maqueta -->
+<script>
+(function(){
+  var sc=document.getElementById('vit-sc'); if(!sc) return;
+  var bs=[].slice.call(document.querySelectorAll('.vit-est button'));
+  bs.forEach(function(b){ b.addEventListener('click',function(){
+    sc.dataset.e=b.dataset.e;
+    bs.forEach(function(x){ x.setAttribute('aria-pressed', x===b ? 'true' : 'false'); });
+  }); });
+})();
+</script>
 <!-- Simulador de costo (sección Precios) -->
 <script>
 (function(){
