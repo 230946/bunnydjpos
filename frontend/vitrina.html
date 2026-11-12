@@ -1,0 +1,309 @@
+<!--
+  BUNNYDJPOS / DJPOS
+  © 2026 Juan Manuel Franco Rodríguez. Todos los derechos reservados.
+  Software de uso propietario y registrado. Prohibida su reproducción,
+  distribución o modificación sin autorización expresa del autor.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--OG-->
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="/img/logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Estilo "claro" (por defecto). Los otros dos redefinen las variables. */
+:root{
+  --bg:#f7f7f4; --surface:#ffffff; --ink:#16181d; --ink2:#5b616c; --line:rgba(22,24,29,.09);
+  --acc:#0B8457; --acc-ink:#ffffff; --tag:#ffd60a; --tag-ink:#1b1b1b; --old:#9aa0a8;
+  --head:'Plus Jakarta Sans',system-ui,sans-serif; --body:'Plus Jakarta Sans',system-ui,sans-serif;
+  --r:18px; --shadow:0 10px 30px -14px rgba(0,0,0,.25);
+}
+[data-estilo="elegante"]{
+  --bg:#0f0d0b; --surface:#1a1714; --ink:#f3ece0; --ink2:#b9ae9c; --line:rgba(212,175,55,.2);
+  --acc:#d4af37; --acc-ink:#1a1408; --tag:#d4af37; --tag-ink:#1a1408; --old:#7d7466;
+  --head:'Playfair Display',Georgia,serif; --r:14px; --shadow:0 14px 34px -16px rgba(0,0,0,.8);
+}
+[data-estilo="promo"]{
+  --bg:#fff4d6; --surface:#ffffff; --ink:#151515; --ink2:#4f4a40; --line:rgba(0,0,0,.1);
+  --tag:#ffd60a; --tag-ink:#151515; --head:'Archivo Black','Plus Jakarta Sans',sans-serif; --r:16px;
+  --shadow:6px 6px 0 rgba(0,0,0,.9);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+.oculto{display:none!important}
+
+/* ── Portada ── */
+.hero{position:relative;min-height:min(62vh,620px);display:flex;align-items:flex-end;color:#fff;
+  background:linear-gradient(135deg,var(--acc),#111) center/cover no-repeat;overflow:hidden}
+.hero.sin-ban{min-height:min(40vh,420px)}
+@media (max-width:640px){.hero{min-height:56vh}.hero.sin-ban{min-height:0}.hero.sin-ban .hero-in{padding-top:48px}}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.35) 45%,rgba(0,0,0,.82) 100%)}
+.hero-in{position:relative;z-index:1;width:100%;padding-top:90px;padding-bottom:34px}
+.logo{width:88px;height:88px;border-radius:50%;object-fit:cover;background:#fff;border:3px solid rgba(255,255,255,.9);box-shadow:0 8px 24px rgba(0,0,0,.35);margin-bottom:16px}
+.hero h1{font:400 clamp(2.1rem,7vw,4rem)/1.02 var(--head);letter-spacing:-.01em;text-wrap:balance}
+[data-estilo="claro"] .hero h1{font-weight:800}
+[data-estilo="elegante"] .hero h1{font-weight:700}
+[data-estilo="promo"] .hero h1{text-transform:uppercase}
+.eslogan{margin-top:10px;font-size:clamp(1rem,2.6vw,1.25rem);max-width:46ch;opacity:.93;text-wrap:pretty}
+[data-estilo="elegante"] .eslogan{font-style:italic;color:#f1e3bd}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.meta span{background:rgba(255,255,255,.16);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.22);border-radius:100px;padding:5px 12px;font-size:.82rem}
+.ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:100px;padding:12px 20px;font:700 .95rem var(--body);text-decoration:none;border:0;cursor:pointer;transition:transform .12s ease,filter .12s}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn-acc{background:var(--acc);color:var(--acc-ink)}
+.btn-wa{background:#25D366;color:#06301a}
+.btn-glass{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.35)}
+[data-estilo="promo"] .btn{border-radius:12px;border:2px solid #111;box-shadow:3px 3px 0 #111}
+[data-estilo="promo"] .btn-glass{background:#fff;color:#111}
+.redes{display:flex;gap:8px;margin-top:14px}
+.redes a{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);text-decoration:none}
+.redes svg{width:19px;height:19px}
+
+/* ── Barra de búsqueda y categorías ── */
+.barra{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.barra .wrap{display:flex;gap:10px;align-items:center;padding-top:10px;padding-bottom:10px}
+.buscar{flex:0 0 220px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:8px 14px}
+.buscar input{border:0;outline:0;background:transparent;color:var(--ink);font:500 .9rem var(--body);width:100%;min-width:0}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:100px;padding:7px 14px;font:600 .82rem var(--body);cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--acc);color:var(--acc)}
+[data-estilo="elegante"] .chip:hover{color:var(--acc)}
+@media (max-width:640px){.barra .wrap{flex-direction:column;align-items:stretch}.buscar{flex:auto}}
+
+/* ── Secciones ── */
+.sec{padding:34px 0 8px;scroll-margin-top:120px}
+.sec-tit{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-bottom:16px}
+.sec-tit h2{font:400 clamp(1.45rem,4vw,2rem)/1.1 var(--head)}
+[data-estilo="claro"] .sec-tit h2{font-weight:800}
+[data-estilo="elegante"] .sec-tit h2{font-weight:700}
+[data-estilo="promo"] .sec-tit h2{text-transform:uppercase}
+.sec-tit small{color:var(--ink2);font-size:.85rem}
+[data-estilo="elegante"] .sec-tit{border-bottom:1px solid var(--line);padding-bottom:10px}
+
+/* Promociones: tarjetas grandes */
+.promos{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+@media (max-width:640px){.promos{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:82%;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}.promos>*{scroll-snap-align:start}}
+.promo{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+[data-estilo="promo"] .promo{border:2px solid #111}
+.promo .foto{aspect-ratio:16/10}
+.badge{position:absolute;top:12px;left:12px;background:var(--tag);color:var(--tag-ink);font:800 .95rem var(--body);padding:6px 12px;border-radius:100px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+[data-estilo="promo"] .badge{font-family:'Archivo Black',sans-serif;font-size:1.15rem;border-radius:8px;transform:rotate(-4deg);border:2px solid #111}
+.promo-in{padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.promo h3{font:700 1.1rem/1.25 var(--body)}
+.precios{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.antes{color:var(--old);text-decoration:line-through;font-size:.95rem}
+.ahora{font:800 1.6rem/1 var(--body);color:var(--acc)}
+[data-estilo="promo"] .ahora{font-family:'Archivo Black',sans-serif;color:#d62828}
+.hasta{font-size:.78rem;color:var(--ink2)}
+
+/* Catálogo */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+@media (max-width:520px){.grid{grid-template-columns:1fr 1fr;gap:10px}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s ease,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+[data-estilo="promo"] .card{border:2px solid #111}
+.foto{position:relative;aspect-ratio:1;background:color-mix(in srgb,var(--acc) 12%,var(--surface));display:grid;place-items:center;overflow:hidden}
+.foto img{width:100%;height:100%;object-fit:cover}
+.foto .emo{font-size:3.4rem;line-height:1}
+.foto .ini{font:800 2.6rem var(--head);color:var(--acc);opacity:.55}
+.card-in{padding:12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.card h3{font:700 .95rem/1.3 var(--body)}
+.desc{color:var(--ink2);font-size:.8rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.reco{font-size:.74rem;font-weight:700;color:var(--acc)}
+.card-pie{margin-top:auto;padding-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.precio{font:800 1.05rem var(--body)}
+.mini{display:inline-flex;align-items:center;gap:4px;border-radius:100px;padding:6px 11px;font:700 .76rem var(--body);text-decoration:none;background:var(--acc);color:var(--acc-ink);white-space:nowrap}
+.mini.wa{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.pie-acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pie-acc .mini{flex:1;justify-content:center}
+.vacio{text-align:center;color:var(--ink2);padding:40px 0}
+
+/* Pie */
+footer{margin-top:50px;border-top:1px solid var(--line);padding:30px 0 90px;color:var(--ink2);font-size:.88rem}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px}
+footer b{color:var(--ink)}
+.djpos{color:var(--ink2);text-decoration:none;font-size:.8rem}
+.djpos:hover{color:var(--acc)}
+.wa-float{position:fixed;right:16px;bottom:16px;z-index:30;width:56px;height:56px;border-radius:50%;background:#25D366;display:grid;place-items:center;box-shadow:0 8px 22px rgba(0,0,0,.3)}
+.wa-float svg{width:28px;height:28px}
+
+/* Carga / error */
+.estado{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;color:var(--ink2)}
+.estado h1{font:800 1.4rem var(--body);color:var(--ink);margin-bottom:8px}
+.spin{width:38px;height:38px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--acc);animation:g .8s linear infinite;margin:0 auto 12px}
+@keyframes g{to{transform:rotate(1turn)}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.spin{animation:none}.card,.btn{transition:none}}
+</style>
+</head>
+<body data-estilo="claro">
+<div class="estado" id="estado"><div><div class="spin"></div>Cargando…</div></div>
+<div id="app" class="oculto"></div>
+
+<script>
+(function(){
+  var q = new URLSearchParams(location.search);
+  var NID = q.get('n') || '';
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var url = function(u){ u = String(u || ''); return /^(\/(?!\/)|https?:\/\/)/.test(u) ? u : ''; };
+  var cop = function(n){ return '$' + Math.round(+n || 0).toLocaleString('es-CO'); };
+  var MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var ICON_WA = '<svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.6 2 1.1 1 2 1.3 2.3 1.4.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.1z"/></svg>';
+
+  function fallo(t, d){
+    $('estado').innerHTML = '<div><h1>' + esc(t) + '</h1><p>' + esc(d || '') + '</p><p style="margin-top:18px"><a class="djpos" href="/">DJPOS</a></p></div>';
+  }
+  if (!/^[\w-]{8,64}$/.test(NID)) { fallo('Vitrina no encontrada', 'El link está incompleto.'); return; }
+
+  // Color de texto legible sobre el color del negocio
+  function tintaPara(hex){
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#fff';
+    var v = parseInt(m[1], 16), r = v >> 16 & 255, g = v >> 8 & 255, b = v & 255;
+    return (0.299*r + 0.587*g + 0.114*b) > 165 ? '#111' : '#fff';
+  }
+  function telWa(t){ t = String(t || '').replace(/\D/g, ''); if (!t) return ''; return t.length === 10 ? '57' + t : t; }
+  function hasta(f){ if (!f) return ''; var d = new Date(f + 'T12:00:00'); return isNaN(d) ? '' : 'Válida hasta el ' + d.getDate() + ' de ' + MESES[d.getMonth()] + '.'; }
+  function foto(p){
+    var u = url(p.imagen);
+    if (u) return '<img src="' + esc(u) + '" alt="' + esc(p.nombre) + '" loading="lazy">';
+    if (p.imagen && p.imagen.length <= 8) return '<span class="emo" aria-hidden="true">' + esc(p.imagen) + '</span>';
+    return '<span class="ini" aria-hidden="true">' + esc((p.nombre || '?').trim().charAt(0).toUpperCase()) + '</span>';
+  }
+
+  fetch('/api/vitrina/publica/' + encodeURIComponent(NID))
+    .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || 'No disponible'); return d; }); })
+    .then(pintar)
+    .catch(function(e){ fallo('Vitrina no disponible', e.message); });
+
+  function pintar(d){
+    var n = d.negocio, v = d.vitrina, prods = d.productos || [];
+    document.body.dataset.estilo = v.estilo;
+    if (v.estilo !== 'elegante' && /^#[0-9a-f]{6}$/i.test(n.color || '')) {
+      document.documentElement.style.setProperty('--acc', n.color);
+      document.documentElement.style.setProperty('--acc-ink', tintaPara(n.color));
+    }
+    var tc = document.querySelector('meta[name=theme-color]');
+    if (tc) tc.content = v.estilo === 'elegante' ? '#0f0d0b' : (n.color || '#ffffff');
+    if (!document.title || document.title === 'Vitrina') document.title = n.nombre;
+
+    var wa = telWa(v.whatsapp);
+    var waLink = function(txt){ return wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent(txt) : ''; };
+    var pedir = d.domicilios ? '/domicilios.html?n=' + encodeURIComponent(n.id) : '';
+    var dir = [n.direccion, n.ciudad].filter(Boolean).join(', ');
+    var mapa = dir ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(n.nombre + ' ' + dir) : '';
+    var ig = v.instagram ? 'https://instagram.com/' + encodeURIComponent(v.instagram) : '';
+    var fb = url(v.facebook) || (v.facebook ? 'https://facebook.com/' + encodeURIComponent(v.facebook) : '');
+
+    var promos = prods.filter(function(p){ return p.precio_promo != null && p.precio_promo < p.precio; });
+    var recos = prods.filter(function(p){ return p.destacado && promos.indexOf(p) < 0; });
+    var cats = [];
+    prods.forEach(function(p){ if (cats.indexOf(p.categoria) < 0) cats.push(p.categoria); });
+
+    function tarjeta(p){
+      var pr = p.precio_promo != null && p.precio_promo < p.precio;
+      var acc = (pedir ? '<a class="mini" href="' + esc(pedir) + '">Pedir</a>' : '')
+              + (wa ? '<a class="mini wa" href="' + esc(waLink('Hola, quiero preguntar por: ' + p.nombre)) + '" target="_blank" rel="noopener">Preguntar</a>' : '');
+      return '<article class="card" data-buscar="' + esc((p.nombre + ' ' + (p.descripcion || '') + ' ' + p.categoria).toLowerCase()) + '">'
+        + '<div class="foto">' + foto(p) + (pr ? '<span class="badge">-' + Math.round((1 - p.precio_promo / p.precio) * 100) + '%</span>' : '') + '</div>'
+        + '<div class="card-in">'
+        + (p.destacado ? '<span class="reco">★ ' + esc(p.destacado_texto || 'Recomendado') + '</span>' : '')
+        + '<h3>' + esc(p.nombre) + '</h3>'
+        + (p.descripcion ? '<p class="desc">' + esc(p.descripcion) + '</p>' : '')
+        + '<div class="card-pie"><span class="precio">' + (pr ? '<span class="antes" style="font-size:.78rem;font-weight:500">' + cop(p.precio) + '</span> ' + cop(p.precio_promo) : cop(p.precio)) + '</span></div>'
+        + (acc ? '<div class="pie-acc">' + acc + '</div>' : '')
+        + '</div></article>';
+    }
+
+    var h = '';
+    h += '<header class="hero" id="hero"><div class="wrap hero-in">'
+      + (url(n.logo_url) ? '<img class="logo" src="' + esc(url(n.logo_url)) + '" alt="Logo de ' + esc(n.nombre) + '">' : '')
+      + '<h1>' + esc(n.nombre) + '</h1>'
+      + (v.eslogan ? '<p class="eslogan">' + esc(v.eslogan) + '</p>' : '')
+      + '<div class="meta">' + (n.ciudad ? '<span>📍 ' + esc(n.ciudad) + '</span>' : '') + (v.horario ? '<span>🕒 ' + esc(v.horario) + '</span>' : '') + (promos.length ? '<span>🔥 ' + promos.length + (promos.length === 1 ? ' promoción' : ' promociones') + '</span>' : '') + '</div>'
+      + '<div class="ctas">'
+      + (pedir ? '<a class="btn btn-acc" href="' + esc(pedir) + '">🛵 Pedir a domicilio</a>' : '')
+      + (wa ? '<a class="btn btn-wa" href="' + esc(waLink('Hola ' + n.nombre + ', vi su vitrina y quiero hacer una consulta.')) + '" target="_blank" rel="noopener">💬 WhatsApp</a>' : '')
+      + (mapa ? '<a class="btn btn-glass" href="' + esc(mapa) + '" target="_blank" rel="noopener">📍 Cómo llegar</a>' : '')
+      + '</div>'
+      + ((ig || fb) ? '<div class="redes">'
+          + (ig ? '<a href="' + esc(ig) + '" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#fff"/></svg></a>' : '')
+          + (fb ? '<a href="' + esc(fb) + '" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="#fff"><path d="M14 8.5V6.8c0-.8.2-1.3 1.4-1.3H17V2.3c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1v2.2H8v3.6h2.6V22H14v-9.9h2.6l.4-3.6z"/></svg></a>' : '')
+          + '</div>' : '')
+      + '</div></header>';
+
+    h += '<div class="barra"><div class="wrap">'
+      + '<label class="buscar"><span aria-hidden="true">🔎</span><input id="buscar" type="search" placeholder="Buscar producto" aria-label="Buscar producto"></label>'
+      + '<div class="chips">'
+      + (promos.length ? '<button class="chip" data-ir="sec-promos">🔥 Promociones</button>' : '')
+      + (recos.length ? '<button class="chip" data-ir="sec-recos">★ Recomendados</button>' : '')
+      + cats.map(function(c, i){ return '<button class="chip" data-ir="cat-' + i + '">' + esc(c) + '</button>'; }).join('')
+      + '</div></div></div>';
+
+    h += '<main class="wrap">';
+    if (promos.length) {
+      h += '<section class="sec" id="sec-promos"><div class="sec-tit"><h2>🔥 Promociones</h2><small>Precio especial por tiempo limitado</small></div><div class="promos">'
+        + promos.map(function(p){
+            return '<article class="promo"><div class="foto">' + foto(p) + '<span class="badge">-' + Math.round((1 - p.precio_promo / p.precio) * 100) + '%</span></div>'
+              + '<div class="promo-in"><h3>' + esc(p.nombre) + '</h3>'
+              + (p.descripcion ? '<p class="desc">' + esc(p.descripcion) + '</p>' : '')
+              + '<div class="precios"><span class="ahora">' + cop(p.precio_promo) + '</span><span class="antes">' + cop(p.precio) + '</span></div>'
+              + (p.promo_hasta ? '<span class="hasta">' + hasta(p.promo_hasta) + '</span>' : '')
+              + '<div class="pie-acc">' + (pedir ? '<a class="mini" href="' + esc(pedir) + '">Pedir ahora</a>' : '')
+              + (wa ? '<a class="mini wa" href="' + esc(waLink('Hola, quiero la promoción de ' + p.nombre + ' a ' + cop(p.precio_promo))) + '" target="_blank" rel="noopener">Pedir por WhatsApp</a>' : '') + '</div>'
+              + '</div></article>';
+          }).join('') + '</div></section>';
+    }
+    if (recos.length) {
+      h += '<section class="sec" id="sec-recos"><div class="sec-tit"><h2>★ Recomendados de la casa</h2></div><div class="grid">' + recos.map(tarjeta).join('') + '</div></section>';
+    }
+    cats.forEach(function(c, i){
+      var lista = prods.filter(function(p){ return p.categoria === c; });
+      h += '<section class="sec cat" id="cat-' + i + '"><div class="sec-tit"><h2>' + esc(c) + '</h2><small>' + lista.length + (lista.length === 1 ? ' producto' : ' productos') + '</small></div><div class="grid">' + lista.map(tarjeta).join('') + '</div></section>';
+    });
+    if (!prods.length) h += '<p class="vacio">Pronto verás aquí nuestros productos.</p>';
+    h += '<p class="vacio oculto" id="sin-res">No encontramos productos con esa búsqueda.</p>';
+    h += '</main>';
+
+    h += '<footer><div class="wrap"><div><b>' + esc(n.nombre) + '</b>'
+      + (dir ? '<br>' + esc(dir) : '') + (n.telefono ? '<br>Tel. ' + esc(n.telefono) : '') + (v.horario ? '<br>' + esc(v.horario) : '')
+      + '</div><a class="djpos" href="https://djmpos.com/" target="_blank" rel="noopener">Vitrina creada con DJPOS</a></div></footer>';
+    if (wa) h += '<a class="wa-float" href="' + esc(waLink('Hola ' + n.nombre + ', vi su vitrina y quiero hacer una consulta.')) + '" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">' + ICON_WA + '</a>';
+
+    var app = $('app');
+    app.innerHTML = h;
+    var ban = url(v.banner_url);
+    if (!ban) $('hero').classList.add('sin-ban');
+    if (ban) $('hero').style.backgroundImage = 'url("' + ban.replace(/["\\]/g, '') + '")';
+    $('estado').remove();
+    app.classList.remove('oculto');
+
+    app.querySelectorAll('[data-ir]').forEach(function(b){
+      b.addEventListener('click', function(){ var t = $(b.dataset.ir); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    });
+    var inp = $('buscar');
+    inp.addEventListener('input', function(){
+      var t = inp.value.trim().toLowerCase(), hay = false;
+      ['sec-promos', 'sec-recos'].forEach(function(id){ var s = $(id); if (s) s.classList.toggle('oculto', !!t); });
+      app.querySelectorAll('.cat').forEach(function(sec){
+        var vis = 0;
+        sec.querySelectorAll('.card').forEach(function(c){ var ok = !t || c.dataset.buscar.indexOf(t) >= 0; c.classList.toggle('oculto', !ok); if (ok) vis++; });
+        sec.classList.toggle('oculto', !vis); if (vis) hay = true;
+      });
+      $('sin-res').classList.toggle('oculto', hay || !t);
+    });
+  }
+})();
+</script>
+</body>
+</html>

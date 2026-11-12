@@ -12,6 +12,7 @@
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="admin" data-claves="bdj_adm_token" data-otro="/pos-restaurante.html"></script>
 <script src="/js/tabla-tarjetas.js"></script>
+<script src="/js/vitrina-admin.js"></script>
 <script src="/js/comprobantes.js"></script>
 <script src="/js/inv-tarjetas.js"></script>
 <meta charset="UTF-8">
@@ -378,6 +379,7 @@ tr:hover td{background:var(--bg2)}
         <div class="nav-label" style="font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;padding-bottom:5px;text-align:center">Idioma</div>
         <div id="lang-btns" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center"></div>
       </div>
+      <button class="nav-btn" onclick="abrirVitrina(token)" title="Vitrina publicitaria"><span class="nav-icon">🪟</span><span class="nav-btn-label">Vitrina</span></button>
       <button class="nav-btn" onclick="toggleFullscreenPOS()" title="Pantalla completa"><span class="nav-icon">⛶</span><span class="nav-btn-label">Pantalla</span></button>
       <button class="nav-btn" onclick="abrirCambiarPassword()" title="Cambiar contraseña"><span class="nav-icon">🔑</span><span class="nav-btn-label">Contraseña</span></button>
       <button class="nav-btn" onclick="doLogout()" title="Salir"><span class="nav-icon">🚪</span><span class="nav-btn-label">Salir</span></button>

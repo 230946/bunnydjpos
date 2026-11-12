@@ -6,6 +6,7 @@
 <script src="/js/login-2fa.js"></script>
 <script src="/js/ambito.js" data-ambito="admin" data-claves="bdj_bar_token" data-otro="/pos-bar.html"></script>
 <script src="/js/tabla-tarjetas.js"></script>
+<script src="/js/vitrina-admin.js"></script>
 <script src="/js/comprobantes.js"></script>
 <script src="/js/elegir-foto.js"></script>
 <meta charset="UTF-8">
@@ -423,6 +424,7 @@ table tr:hover td{background:var(--bg2)}
         <div class="sb-user-rol" id="sb-user-rol"></div>
         <div class="sb-user-negocio" id="sb-negocio-nombre"></div>
       </div>
+      <button class="nav-btn" onclick="abrirVitrina(token)" title="Vitrina publicitaria"><span class="nav-icon">🪟</span><span class="nav-btn-label">Vitrina</span></button>
       <button class="nav-btn" onclick="toggleFullscreenBar()"><span class="nav-icon">⛶</span><span class="nav-btn-label">Pantalla</span></button>
       <button class="nav-btn" onclick="abrirCambiarPassword()"><span class="nav-icon">🔑</span><span class="nav-btn-label">Contraseña</span></button>
       <button class="nav-btn" onclick="doLogout()"><span class="nav-icon">🚪</span><span class="nav-btn-label">Salir</span></button>

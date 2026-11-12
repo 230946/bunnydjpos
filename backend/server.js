@@ -35,6 +35,7 @@ const soporteRouter     = require('./routes/soporte');
 const motoratonRouter   = require('./routes/motoraton');
 const atrilRouter       = require('./routes/atril');
 const boldRouter        = require('./routes/bold');
+const vitrinaRouter     = require('./routes/vitrina');
 
 const app    = express();
 const server = http.createServer(app);
@@ -94,6 +95,42 @@ app.get('/portal',           (_, res) => res.sendFile(path.join(frontendPath, 'p
 app.get('/portal-empleado',  (_, res) => res.sendFile(path.join(frontendPath, 'portal-empleado.html')));
 app.get('/turno',            (_, res) => res.sendFile(path.join(frontendPath, 'portal-turno.html')));
 app.get('/reservas',         (_, res) => res.sendFile(path.join(frontendPath, 'reservas-peluqueria.html')));
+// Vitrina pública del negocio: se sirve con las etiquetas Open Graph del
+// negocio (nombre, eslogan, portada) para que el link se vea bonito al
+// compartirlo por WhatsApp, Facebook o Instagram.
+app.get('/vitrina', async (req, res) => {
+  const fs = require('fs');
+  let html;
+  try { html = fs.readFileSync(path.join(frontendPath, 'vitrina.html'), 'utf8'); }
+  catch { return res.status(404).end(); }
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  let og = '';
+  const n = String(req.query.n || '');
+  if (/^[\w-]{8,64}$/.test(n)) {
+    try {
+      const { rows } = await pool.query(`SELECT nombre, logo_url FROM negocios WHERE id=? AND activo=1 LIMIT 1`, [n]);
+      const cfg = await vitrinaRouter.configDe(n);
+      if (rows[0] && cfg.activo && vitrinaRouter.PLANES_VITRINA.includes(await vitrinaRouter.planDe(n))) {
+        const proto = String(req.get('x-forwarded-proto') || req.protocol).split(',')[0];
+        const base = `${proto}://${req.get('host')}`;
+        const img = cfg.banner_url || rows[0].logo_url || '/img/logo.png';
+        const desc = cfg.eslogan || `Productos, promociones y pedidos de ${rows[0].nombre}`;
+        og = [
+          `<title>${esc(rows[0].nombre)}</title>`,
+          `<meta name="description" content="${esc(desc)}">`,
+          `<meta property="og:type" content="website">`,
+          `<meta property="og:title" content="${esc(rows[0].nombre)}">`,
+          `<meta property="og:description" content="${esc(desc)}">`,
+          `<meta property="og:image" content="${esc(/^https?:/.test(img) ? img : base + img)}">`,
+          `<meta property="og:url" content="${esc(base + '/vitrina?n=' + n)}">`,
+          `<meta name="twitter:card" content="summary_large_image">`,
+        ].join('\n');
+      }
+    } catch (_) {}
+  }
+  if (!og) og = '<title>Vitrina</title>';
+  res.type('html').send(html.replace('<!--OG-->', og));
+});
 
 // ── Multer para logos ─────────────────────────────────────────────
 const storage = multer.diskStorage({
@@ -146,6 +183,7 @@ app.use('/api/turno',     turnoRouter);
 app.use('/api/soporte',   soporteRouter);
 app.use('/api/motoraton', motoratonRouter);
 app.use('/api/bold',      boldRouter);
+app.use('/api/vitrina',   vitrinaRouter);
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {

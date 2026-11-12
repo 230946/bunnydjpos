@@ -193,7 +193,7 @@ async function obtenerMenuData(nid) {
               mi.precio, COALESCE(mi.foto_url, mi.emoji) AS imagen_url,
               COALESCE(mc.nombre, 'General') AS categoria, 0 AS iva_pct, NULL AS unidad,
               mi.disponible, mi.stock AS item_stock,
-              mi.promo_activo, mi.destacado, mi.destacado_texto,
+              mi.promo_activo, mi.promo_hasta, mi.destacado, mi.destacado_texto,
               ${PROMO_VIGENTE_SQL} AS promo_vigente,
               ${PRECIO_EFECTIVO_SQL} AS precio_efectivo,
               inv.stock AS inv_stock,
@@ -1186,3 +1186,5 @@ router.post('/pedido/:id/calificar', async (req, res) => {
 });
 
 module.exports = router;
+// La vitrina (routes/vitrina.js) muestra los mismos productos y precios.
+module.exports.obtenerMenuData = obtenerMenuData;
