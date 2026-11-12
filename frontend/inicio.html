@@ -481,6 +481,14 @@ p{margin:0}
 .price-feat li{display:flex;gap:9px;align-items:flex-start;font-size:.86rem;color:var(--ink-soft);line-height:1.4}
 .price-check{flex-shrink:0;width:16px;height:16px;border-radius:5px;background:var(--forest-tint);color:var(--forest);display:flex;align-items:center;justify-content:center;margin-top:1px}
 .price-check svg{width:9px;height:9px}
+.price-feat li.price-hl{display:block;margin:0 -10px 4px}
+.price-hl a{display:flex;gap:11px;align-items:flex-start;text-decoration:none;color:var(--ink);background:var(--lime-tint);border:1.5px solid var(--lime);border-radius:14px;padding:11px 12px;transition:transform .15s,box-shadow .15s}
+.price-hl a:hover{transform:translateY(-1px);box-shadow:0 8px 20px -10px rgba(122,153,0,.6)}
+.price-hl-ic{flex:none;width:32px;height:32px;border-radius:9px;background:var(--paper-raised);display:grid;place-items:center;font-size:1.05rem}
+.price-hl b{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:.92rem}
+.price-hl em{font-style:normal;font-size:.66rem;font-weight:700;background:var(--lime-bright);color:#102A24;border-radius:100px;padding:2px 8px}
+.price-hl small{display:block;margin-top:3px;font-size:.78rem;color:var(--ink-soft);line-height:1.4}
+@media (prefers-reduced-motion: reduce){.price-hl a{transition:none}}
 .price-fine{margin-top:26px;font-size:.78rem;color:var(--ink-soft);text-align:center;max-width:60ch;margin-left:auto;margin-right:auto}
 
 /* ── SIMULADOR DE COSTO ──────────────────────────── */
@@ -708,11 +716,11 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <div class="price-tag"><span class="price-num">7%</span><span class="price-unit">por venta mensual</span></div>
       <a class="btn btn-forest" href="#contacto">Agendar una demo</a>
       <ul class="price-feat">
+        <li class="price-hl"><a href="#vitrina"><span class="price-hl-ic" aria-hidden="true">🪟</span><span><b>Vitrina publicitaria <em>✨ Nuevo</em></b><small>Tus productos y promociones en una página tipo anuncio, con link y QR para compartir.</small></span></a></li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Todo lo de Básico</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Cajas y usuarios ilimitados</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Portal para tu equipo — horarios, citas, comisiones</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reservas online, autopedido por QR y domicilios</li>
-        <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Vitrina publicitaria: tus productos y promociones en una página para compartir</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reportes avanzados y alertas de inventario</li>
       </ul>
     </article>
@@ -723,6 +731,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <div class="price-tag"><span class="price-num">5%</span><span class="price-unit">por venta mensual</span></div>
       <a class="btn btn-ghost" href="#contacto">Agendar una demo</a>
       <ul class="price-feat">
+        <li class="price-hl"><a href="#vitrina"><span class="price-hl-ic" aria-hidden="true">🪟</span><span><b>Vitrina publicitaria <em>✨ Nuevo</em></b><small>Con los tres estilos y tu marca, para atraer clientes por WhatsApp y redes.</small></span></a></li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Todo lo de Plus</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Chat con IA para pedidos de domicilio</li>
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Soporte prioritario</li>
