@@ -333,6 +333,9 @@ router.post('/mesas/:id/liberar', async (req, res) => {
 // MENÚ — CATEGORÍAS
 // ════════════════════════════════════════════════════════════════
 
+// % de participación del arrendador: número entre 0 y 100, 0 si no aplica.
+const pctValido = v => { const n = +v; return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0; };
+
 router.get('/menu/categorias', async (req, res) => {
   try {
     const { modulo } = req.query;
@@ -347,12 +350,12 @@ router.get('/menu/categorias', async (req, res) => {
 
 router.post('/menu/categorias', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
-    const { nombre, descripcion, icono, orden, modulo } = req.body;
+    const { nombre, descripcion, icono, orden, modulo, participacion_pct } = req.body;
     const id = uuid();
     await pool.query(
-      `INSERT INTO menu_categorias (id,negocio_id,nombre,descripcion,icono,orden,modulo)
-       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)})`,
-      [id, nid(req), nombre, descripcion||null, icono||null, orden||0, modulo||null]
+      `INSERT INTO menu_categorias (id,negocio_id,nombre,descripcion,icono,orden,modulo,participacion_pct)
+       VALUES (${ph(1)},${ph(2)},${ph(3)},${ph(4)},${ph(5)},${ph(6)},${ph(7)},${ph(8)})`,
+      [id, nid(req), nombre, descripcion||null, icono||null, orden||0, modulo||null, pctValido(participacion_pct)]
     );
     res.status(201).json({ id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -360,11 +363,13 @@ router.post('/menu/categorias', requirePermiso(['pos_menu','personal']), async (
 
 router.put('/menu/categorias/:id', requirePermiso(['pos_menu','personal']), async (req, res) => {
   try {
-    const { nombre, descripcion, icono, orden, activa, modulo } = req.body;
+    const { nombre, descripcion, icono, orden, activa, modulo, participacion_pct } = req.body;
     await pool.query(
       `UPDATE menu_categorias SET nombre=${ph(1)},descripcion=${ph(2)},icono=${ph(3)},
-       orden=${ph(4)},activa=${ph(5)},modulo=${ph(6)} WHERE id=${ph(7)} AND negocio_id=${ph(8)}`,
-      [nombre, descripcion, icono, orden||0, activa!==false, modulo||null, req.params.id, nid(req)]
+       orden=${ph(4)},activa=${ph(5)},modulo=${ph(6)},participacion_pct=COALESCE(${ph(7)},participacion_pct) WHERE id=${ph(8)} AND negocio_id=${ph(9)}`,
+      // Si no mandan el % (p. ej. el admin del bar) se deja el que tenía
+      [nombre, descripcion, icono, orden||0, activa!==false, modulo||null,
+       participacion_pct === undefined ? null : pctValido(participacion_pct), req.params.id, nid(req)]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

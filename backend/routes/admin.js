@@ -929,6 +929,68 @@ router.put('/pedidos-proveedor/:id/registrar-gasto', requirePermiso('proveedores
 // REPORTES ADMINISTRATIVOS
 // ════════════════════════════════════════════════════════════════
 
+// Participación del arrendador: las categorías del menú marcadas con un %
+// (p. ej. comidas rápidas en un local arrendado al 40%) suman aparte lo
+// vendido de sus productos. Cada producto cuenta por su valor dentro de la
+// cuenta; si la cuenta tuvo descuento, se le reparte en proporción. No entran
+// impuestos, propinas ni ventas anuladas. La categoría es la que el producto
+// tiene hoy en el menú.
+router.get('/reportes/participacion', requirePermiso('reportes'), async (req, res) => {
+  try {
+    const { desde, hasta } = req.query;
+    const d = desde || localDate(req.user.zona_horaria);
+    const h = hasta  || d;
+    const unDia = d === h;
+    const ventana = unDia ? await ventanaDelDia(nid(req), d, req.user.zona_horaria) : null;
+    const condV = unDia ? `v.creado >= ${ph(2)} AND v.creado <= ${ph(3)}` : `DATE(v.creado) BETWEEN ${ph(2)} AND ${ph(3)}`;
+    const { rows } = await pool.query(`
+      SELECT mc.id AS categoria_id, mc.nombre AS categoria, mc.icono, COALESCE(mc.participacion_pct,0) AS pct,
+             vi.nombre, SUM(vi.cantidad) AS cantidad,
+             SUM(vi.subtotal_item * CASE WHEN v.subtotal > 0
+                 THEN GREATEST(0, v.subtotal - COALESCE(v.descuento,0)) / v.subtotal ELSE 1 END) AS ventas
+      FROM venta_items vi
+      JOIN ventas v ON v.id = vi.venta_id
+      LEFT JOIN menu_items mi ON mi.id = vi.menu_item_id
+      LEFT JOIN menu_categorias mc ON mc.id = mi.categoria_id
+      WHERE vi.negocio_id=${ph(1)} AND v.estado!='anulada' AND ${condV}
+      GROUP BY mc.id, mc.nombre, mc.icono, mc.participacion_pct, vi.nombre`,
+      [nid(req), unDia ? ventana.inicio : d, unDia ? ventana.fin : h]);
+
+    const r2 = n => Math.round(n * 100) / 100;
+    let totalVentas = 0;
+    const cats = new Map();
+    for (const r of rows) {
+      const ventas = +r.ventas || 0;
+      totalVentas += ventas;
+      const pct = +r.pct || 0;
+      if (pct <= 0) continue;
+      if (!cats.has(r.categoria_id))
+        cats.set(r.categoria_id, { categoria: r.categoria, icono: r.icono, pct, ventas: 0, productos: [] });
+      const c = cats.get(r.categoria_id);
+      c.ventas += ventas;
+      c.productos.push({ nombre: r.nombre, cantidad: +r.cantidad || 0, ventas: r2(ventas) });
+    }
+    const categorias = [...cats.values()].map(c => ({
+      ...c, ventas: r2(c.ventas), participacion: r2(c.ventas * c.pct / 100),
+      productos: c.productos.sort((a, b) => b.ventas - a.ventas),
+    })).sort((a, b) => b.ventas - a.ventas);
+    const ventasConPart = categorias.reduce((a, c) => a + c.ventas, 0);
+    const participacion = categorias.reduce((a, c) => a + c.participacion, 0);
+    const { rows: hayCats } = await pool.query(
+      `SELECT COUNT(*) AS n FROM menu_categorias WHERE negocio_id=${ph(1)} AND activa=1 AND participacion_pct>0`, [nid(req)]);
+    res.json({
+      desde: d, hasta: h,
+      configurado: +hayCats[0].n > 0,
+      total_ventas: r2(totalVentas),
+      ventas_con_participacion: r2(ventasConPart),
+      ventas_sin_participacion: r2(totalVentas - ventasConPart),
+      participacion: r2(participacion),
+      neto_negocio: r2(ventasConPart - participacion),
+      categorias,
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/reportes/resumen', requirePermiso('reportes'), async (req, res) => {
   try {
     const { desde, hasta, tipo } = req.query;

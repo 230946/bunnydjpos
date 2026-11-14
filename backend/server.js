@@ -396,6 +396,8 @@ async function runMigrations() {
     { table: 'pedidos_proveedor', column: 'gasto_id', sql: `ALTER TABLE pedidos_proveedor ADD COLUMN gasto_id VARCHAR(36) NULL` },
     { table: 'proveedores', column: 'catalogo_url', sql: `ALTER TABLE proveedores ADD COLUMN catalogo_url VARCHAR(300) NULL` },
     { table: 'ventas', column: 'comanda_id', sql: `ALTER TABLE ventas ADD COLUMN comanda_id VARCHAR(36) NULL` },
+    // % de las ventas de la categoría que se le paga al arrendador (0 = no aplica)
+    { table: 'menu_categorias', column: 'participacion_pct', sql: `ALTER TABLE menu_categorias ADD COLUMN participacion_pct DECIMAL(5,2) NOT NULL DEFAULT 0` },
     { table: 'menu_items', column: 'nombre_zh',    sql: `ALTER TABLE menu_items ADD COLUMN nombre_zh VARCHAR(200) NULL` },
     { table: 'menu_items', column: 'descripcion_zh', sql: `ALTER TABLE menu_items ADD COLUMN descripcion_zh TEXT NULL` },
     { table: 'domicilios_pedidos', column: 'pago_estado', sql: `ALTER TABLE domicilios_pedidos ADD COLUMN pago_estado VARCHAR(20) NOT NULL DEFAULT 'pendiente'` },

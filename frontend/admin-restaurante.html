@@ -504,6 +504,12 @@ tr:hover td{background:var(--bg2)}
           <div class="card-body" id="dash-caja"></div>
         </div>
 
+        <!-- Participación del arrendador (solo si alguna categoría tiene %) -->
+        <div class="card" style="margin-top:14px;display:none" id="dash-part-card">
+          <div class="card-header"><h3>🏠 Participación del arrendador</h3><button class="btn btn-sm btn-outline" onclick="imprimirParticipacion()">🖨️ Imprimir / PDF</button></div>
+          <div class="card-body" id="dash-part"></div>
+        </div>
+
         <!-- Domicilios y calificaciones -->
         <div class="card" style="margin-top:14px">
           <div class="card-header"><h3>🛵 Domicilios y calificaciones</h3></div>
@@ -1385,8 +1391,8 @@ tr:hover td{background:var(--bg2)}
 
 <!-- Menú: categoría -->
 <div class="modal-bg" id="cat-menu-modal" style="display:none">
-  <div class="modal" style="max-width:360px">
-    <h3>Nueva categoría</h3>
+  <div class="modal" style="max-width:380px">
+    <h3 id="cm-titulo">Nueva categoría</h3>
     <div class="field"><label>Nombre</label><input id="cm-nombre" placeholder="Entradas, Platos fuertes..."></div>
     <div class="field"><label>Icono (emoji)</label><input id="cm-icono" placeholder="🍽️" maxlength="4"></div>
     <div class="field"><label>Módulo</label>
@@ -1395,6 +1401,10 @@ tr:hover td{background:var(--bg2)}
         <option value="pos">Solo POS (restaurante)</option>
         <option value="bar">Solo Bar</option>
       </select>
+    </div>
+    <div class="field"><label>Participación del arrendador (%)</label>
+      <input id="cm-part" type="number" min="0" max="100" step="0.5" placeholder="0">
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.4">Si las ventas de esta categoría pagan un % al dueño del local (p. ej. 40 para comidas rápidas), escríbelo aquí. Déjalo en 0 si no aplica. Se calcula en el Dashboard.</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('cat-menu-modal')">Cancelar</button>
@@ -2407,6 +2417,7 @@ async function loadDashboard(){
     api(`/admin/reportes/resumen?desde=2000-01-01&hasta=${today()}`).catch(()=>null),
     api(`/domicilios/reportes/resumen?desde=${desde}&hasta=${hasta}`).catch(()=>null),
   ]);
+  cargarParticipacion(desde, hasta);
 
   // Totales con animación de contador
   if(r){
@@ -2697,6 +2708,53 @@ function renderCharts(r, gr, horas, dias, desde, hasta){
   }
 }
 function stopDashTimer(){ clearInterval(dashTimer); dashTimer = null; }
+
+// ─── PARTICIPACIÓN DEL ARRENDADOR ─────────────────────────────
+function escP(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let _partData=null;
+async function cargarParticipacion(desde, hasta){
+  const card=$('dash-part-card'); if(!card) return;
+  const p=await api(`/admin/reportes/participacion?desde=${desde}&hasta=${hasta}`).catch(()=>null);
+  _partData=p;
+  if(!p||!p.configurado){ card.style.display='none'; return; }
+  card.style.display='';
+  const fila=(a,b,st='')=>`<div class="caja-row" style="${st}"><span>${a}</span><span>${b}</span></div>`;
+  let html=fila('Ventas totales del período', `<b>${fmt(p.total_ventas)}</b>`);
+  html+=fila('Sin participación', fmt(p.ventas_sin_participacion), 'padding-left:12px;color:var(--text2)');
+  for(const c of p.categorias)
+    html+=fila(`${c.icono||''} ${escP(c.categoria)} <span style="font-size:11px;color:var(--text2)">(${c.pct}%)</span>`, fmt(c.ventas), 'padding-left:12px');
+  if(!p.categorias.length) html+=`<div style="font-size:12px;color:var(--text2);padding:4px 0 0 12px">Sin ventas de las categorías con participación en este período.</div>`;
+  html+=fila('🏠 Para el arrendador', `<b style="color:var(--red)">${fmt(p.participacion)}</b>`, 'border-top:1px dashed var(--border2);margin-top:8px;padding-top:8px;font-weight:600');
+  html+=fila('Le queda al negocio (de esas ventas)', `<b style="color:var(--green-d)">${fmt(p.neto_negocio)}</b>`, 'font-weight:600');
+  $('dash-part').innerHTML=html;
+}
+function imprimirParticipacion(){
+  const p=_partData; if(!p) return;
+  const f=s=>{ const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; };
+  const periodo=p.desde===p.hasta?f(p.desde):`${f(p.desde)} al ${f(p.hasta)}`;
+  const neg=escP(negocioNombreActual||'Negocio');
+  const filas=p.categorias.map(c=>`
+    <tr class="cat"><td colspan="2">${c.icono||''} ${escP(c.categoria)}</td><td>${fmt(c.ventas)}</td></tr>
+    ${c.productos.map(x=>`<tr><td class="ind">${escP(x.nombre)}</td><td class="n">${x.cantidad}</td><td>${fmt(x.ventas)}</td></tr>`).join('')}
+    <tr class="sub"><td colspan="2">Participación ${c.pct}%</td><td>${fmt(c.participacion)}</td></tr>`).join('')
+    || '<tr><td colspan="3" style="text-align:center;color:#666">Sin ventas en el período</td></tr>';
+  const w=window.open('','_blank'); if(!w) return toast('Permite las ventanas emergentes para imprimir');
+  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Participación ${periodo}</title>
+<style>body{font-family:system-ui,sans-serif;color:#111;max-width:720px;margin:30px auto;padding:0 20px}
+h1{font-size:20px;margin:0}p{color:#555;margin:4px 0 18px}table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid #e5e5e5;text-align:left}th:last-child,td:last-child{text-align:right}
+td.n,th.n{text-align:center}.ind{padding-left:22px}.cat td{font-weight:700;background:#f4f4f4}.sub td{font-weight:600;color:#a33}
+.tot{margin-top:20px;border:2px solid #111;border-radius:8px;padding:12px 16px;font-size:15px}
+.tot div{display:flex;justify-content:space-between;padding:3px 0}.tot b{font-size:17px}
+.nota{font-size:11px;color:#777;margin-top:18px;line-height:1.5}@media print{body{margin:0}}</style></head><body>
+<h1>Liquidación de participación — ${neg}</h1><p>Período: ${periodo}</p>
+<table><thead><tr><th>Producto</th><th class="n">Cant.</th><th>Ventas</th></tr></thead><tbody>${filas}</tbody></table>
+<div class="tot"><div><span>Ventas con participación</span><span>${fmt(p.ventas_con_participacion)}</span></div>
+<div><span><b>Total para el arrendador</b></span><b>${fmt(p.participacion)}</b></div></div>
+<div class="nota">Valores de lo cobrado por cada producto. Si una cuenta tuvo descuento, se repartió en proporción entre sus productos. No incluye impuestos, propinas ni ventas anuladas. Generado por DJPOS el ${new Date().toLocaleString('es-CO')}</div>
+<script>window.onload=function(){window.print()}<\/script></body></html>`);
+  w.document.close();
+}
 
 // ─── CAJA ────────────────────────────────────────────────────
 async function loadCaja(){
@@ -4451,9 +4509,10 @@ async function loadEditarMenu(){
   try {
     const [cats,items]=await Promise.all([api('/pos/menu/categorias'),api('/pos/menu/items')]);
     _menuMap=Object.fromEntries(items.map(i=>[i.id,i]));
+    _catsMenu=Object.fromEntries(cats.map(c=>[c.id,c]));
     $('editar-menu-cats').innerHTML=cats.map(c=>`
       <div style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px">
-        ${c.icono||''} ${c.nombre}
+        <button onclick="openCatMenuModal('${c.id}')" title="Editar categoría" style="background:none;border:none;cursor:pointer;color:inherit;font:inherit;padding:0;display:flex;gap:6px;align-items:center">${c.icono||''} ${escP(c.nombre)}${+c.participacion_pct>0?`<span style="font-size:10px;font-weight:600;background:var(--amber-l);color:var(--amber-d);padding:1px 6px;border-radius:8px">🏠 ${+c.participacion_pct}%</span>`:''}</button>
         <button onclick="deleteCatMenu('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;line-height:1">×</button>
       </div>`).join('') || '<span style="font-size:13px;color:var(--text2)">Sin categorías</span>';
     $('editar-menu-items').innerHTML=items.map(item=>{
@@ -4687,11 +4746,27 @@ async function saveMenuItem(){
   } catch(e){ toast('Error: '+e.message); }
 }
 
-function openCatMenuModal(){ $('cm-nombre').value=''; $('cm-icono').value=''; $('cm-modulo').value=''; $('cat-menu-modal').style.display='flex'; }
+let _catsMenu={}, _catMenuEditId=null;
+function openCatMenuModal(id){
+  const c=id?_catsMenu[id]:null;
+  _catMenuEditId=c?c.id:null;
+  $('cm-titulo').textContent=c?'Editar categoría':'Nueva categoría';
+  $('cm-nombre').value=c?c.nombre:''; $('cm-icono').value=c?(c.icono||''):''; $('cm-modulo').value=c?(c.modulo||''):'';
+  $('cm-part').value=c&&+c.participacion_pct>0?+c.participacion_pct:'';
+  $('cat-menu-modal').style.display='flex';
+}
 async function saveCatMenu(){
+  const nombre=$('cm-nombre').value.trim();
+  if(!nombre) return toast('Escribe el nombre de la categoría');
+  const pct=+$('cm-part').value||0;
+  if(pct<0||pct>100) return toast('La participación debe estar entre 0 y 100%');
+  const body={nombre,icono:$('cm-icono').value,modulo:$('cm-modulo').value||null,participacion_pct:pct};
   try {
-    await api('/pos/menu/categorias',{method:'POST',body:JSON.stringify({nombre:$('cm-nombre').value,icono:$('cm-icono').value,modulo:$('cm-modulo').value||null})});
-    closeModal('cat-menu-modal'); toast('Categoría creada ✓'); loadEditarMenu();
+    if(_catMenuEditId){
+      const c=_catsMenu[_catMenuEditId];
+      await api(`/pos/menu/categorias/${_catMenuEditId}`,{method:'PUT',body:JSON.stringify({...body,descripcion:c.descripcion||null,orden:c.orden||0,activa:true})});
+    } else await api('/pos/menu/categorias',{method:'POST',body:JSON.stringify(body)});
+    closeModal('cat-menu-modal'); toast(_catMenuEditId?'Categoría actualizada ✓':'Categoría creada ✓'); loadEditarMenu();
   } catch(e){ toast('Error: '+e.message); }
 }
 
