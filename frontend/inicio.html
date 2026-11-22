@@ -607,6 +607,41 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
 .foot-brand .brand-tag{font-size:.56rem;margin-top:2px}
 .foot-links{display:flex;gap:22px;font-size:.82rem;color:var(--ink-soft)}
 .foot-fine{margin-top:22px;font-size:.76rem;color:var(--ink-soft)}
+
+/* ===== Tienda en línea + ERP con IA: sección destacada (la primera después de la portada) ===== */
+.hero-nuevo{display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:7px 14px;border-radius:100px;background:var(--lime-bright);color:var(--lime-ink);font-weight:700;font-size:.86rem;text-decoration:none;box-shadow:0 6px 18px -8px rgba(122,153,0,.7)}
+.hero-nuevo span{transition:transform .2s}.hero-nuevo:hover span{transform:translateX(3px)}
+.nav-links a.nav-nuevo{color:var(--forest);font-weight:700}
+.nav-links a.nav-nuevo::after{content:"Nuevo";margin-left:6px;padding:1px 7px;border-radius:100px;background:var(--lime-bright);color:var(--lime-ink);font-size:.66rem;font-weight:800;vertical-align:2px}
+.vit.vit-destacada{background:radial-gradient(120% 140% at 0% 0%,#0E9A66 0%,#0B6B4A 45%,#08402E 100%);border:2px solid var(--lime-bright);color:#fff;box-shadow:0 30px 70px -30px rgba(8,64,46,.75);position:relative;overflow:hidden}
+.vit.vit-destacada::before{content:"";position:absolute;right:-120px;top:-120px;width:340px;height:340px;border-radius:50%;background:rgba(198,241,53,.12);pointer-events:none}
+.vit-destacada h2{color:#fff}
+.vit-destacada .vit-p{color:rgba(255,255,255,.86)}
+.vit-destacada .vit-tag{background:var(--lime-bright);color:var(--lime-ink);font-size:.8rem}
+.vit-destacada .vfeat-list li{color:rgba(255,255,255,.95)}
+.vit-destacada .vfeat-check{background:var(--lime-bright);color:var(--lime-ink)}
+.vit-destacada .btn-forest{background:var(--lime-bright);color:var(--lime-ink);border-color:var(--lime-bright)}
+.vit-destacada .btn-forest:hover{filter:brightness(1.05)}
+.vit-destacada .btn-ghost{color:#fff;border-color:rgba(255,255,255,.55);background:transparent}
+.vit-destacada .btn-ghost:hover{background:rgba(255,255,255,.1)}
+.vit-destacada .vit-ph{box-shadow:0 30px 60px -20px rgba(0,0,0,.6)}
+
+/* menú: nada se parte en dos líneas; pasa a ☰ antes de que deje de caber */
+.nav-links a,.brand-text{white-space:nowrap}
+@media (min-width:1341px) and (max-width:1460px){.nav-links{gap:16px;font-size:.84rem}}
+/* Tienda en línea: beneficios rápidos y globos flotantes */
+.tl-pills{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 16px}
+.tl-pills span{padding:6px 12px;border-radius:100px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:.8rem;font-weight:600}
+.tl-visual{position:relative}
+.tl-float{position:absolute;z-index:2;display:flex;align-items:center;gap:10px;max-width:230px;background:#fff;color:#102A24;border-radius:16px;padding:10px 14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.55);animation:tl-flota 5.5s ease-in-out infinite}
+.tl-float b{display:block;font-size:.8rem}.tl-float small{display:block;font-size:.72rem;color:#5b6b66}
+.tl-ico{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#E3F4EB;flex:none;font-size:.95rem}
+.tl-ico.ok{background:#C6F135;color:#102A24;font-weight:800}
+.tl-f1{left:-34px;top:1%}
+.tl-f2{right:-14px;bottom:16%;animation-delay:-2.7s}
+@keyframes tl-flota{50%{transform:translateY(-9px)}}
+@media (prefers-reduced-motion:reduce){.tl-float{animation:none}}
+@media (max-width:900px){.tl-f1{left:0;top:4%}.tl-f2{right:0;bottom:6%}}
 </style>
 </head>
 <body>
@@ -626,13 +661,10 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     </a>
     <input type="checkbox" id="nav-toggle" class="nav-toggle-check">
     <nav class="nav-links">
+      <a class="nav-nuevo" href="#tienda-en-linea">Tienda en línea</a>
       <a href="#precios">Precios</a>
       <a href="#vitrina">Vitrina</a>
-      <a href="#tienda-en-linea">Tienda en línea</a>
-      <a href="#peluqueria">Peluquería</a>
-      <a href="#restaurante">Restaurante</a>
-      <a href="#bar">Bar</a>
-      <a href="#minimercado">Minimercado</a>
+      <a href="#verticales">Negocios</a>
       <a href="#plataforma">Plataforma</a>
       <a href="#seguridad">Seguridad</a>
       <a href="#nosotros">Nosotros</a>
@@ -654,6 +686,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
 <header class="hero shell">
   <div class="hero-grid">
     <div>
+      <a class="hero-nuevo" href="#tienda-en-linea">✨ Nuevo: Tienda en línea + ERP con IA <span aria-hidden="true">→</span></a>
       <div class="eyebrow">¿Te suena familiar?</div>
       <h1>Cierras la caja y el número nunca cuadra. Otra vez.</h1>
       <p class="hero-sub">Si manejas una peluquería, un restaurante, un bar o un minimercado, sabes lo que es no confiar del todo en tus números al final del día. DJPOS existe para que dejes de adivinar — cada negocio con su propia caja, controlada, sin sorpresas.</p>
@@ -688,6 +721,49 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     </div>
   </div>
 </header>
+
+<!-- Ordena ERP: tienda en línea + ERP con agente de IA (cada tienda en su subdominio, p. ej. maryvelas.djmpos.com) -->
+<section class="section shell" id="tienda-en-linea">
+  <div class="vit vit-destacada">
+    <div>
+      <span class="vit-tag">✨ Nuevo · Tienda en línea + ERP con IA</span>
+      <h2>Vende por internet con tu propia tienda, y que una IA atienda a tus clientes.</h2>
+      <div class="tl-pills"><span>🤖 Atiende 24/7</span><span>💳 Pagos en línea</span><span>📸 Vende en Instagram</span></div>
+      <p class="vit-p">Ordena ERP es la tienda en línea y el sistema de gestión para negocios que venden por internet. Tus productos con fotos y precios, pedidos y pagos en línea, y Sofía, un asistente de inteligencia artificial que responde el chat, muestra los productos y te avisa cuando un cliente necesita a una persona. Pedidos, clientes, inventario y ventas quedan en un solo lugar.</p>
+      <ul class="vfeat-list">
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tienda propia con tu marca, tu logo y tu dirección web, pensada para el celular</li>
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Pagos en línea con Bold (tarjeta, PSE, Nequi), transferencia o contraentrega</li>
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Chat con inteligencia artificial que atiende a cualquier hora, muestra fotos y precios y registra al cliente</li>
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Catálogo listo para Google, Instagram y Facebook, para vender desde tus redes</li>
+        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Dashboard de ventas, pedidos, inventario y clientes en un solo sistema; solo pagas un porcentaje de lo que vendes</li>
+      </ul>
+      <div class="vit-ctas">
+        <a class="btn btn-forest btn-lg" href="https://wa.me/573228848989?text=Hola%2C%20quiero%20mi%20tienda%20en%20l%C3%ADnea%20con%20Ordena%20ERP" target="_blank" rel="noopener">Quiero mi tienda</a>
+        <a class="btn btn-ghost btn-lg" href="https://maryvelas.djmpos.com/tienda" target="_blank" rel="noopener">Ver una tienda real ↗</a>
+      </div>
+    </div>
+    <div>
+      <div class="tl-visual">
+      <div class="tl-float tl-f1" aria-hidden="true"><span class="tl-ico">💬</span><span><b>Sofía respondió</b><small>en segundos, con fotos y precios</small></span></div>
+      <div class="tl-float tl-f2" aria-hidden="true"><span class="tl-ico ok">✓</span><span><b>Pedido pagado con Bold</b><small>Arbolito puntas · $14.000</small></span></div>
+      <div class="vit-ph" aria-hidden="true">
+        <div class="vit-sc" data-e="claro">
+          <div class="vit-hero"><b>MaryVelas</b><i>Velas artesanales en cera de soya</i><div class="vit-hb"><span>🛒 Comprar</span><span>💬 Chat</span></div></div>
+          <div class="vit-bd">
+            <div class="vit-h3">🎄 Navideñas</div>
+            <div class="vit-grid">
+              <div class="vit-card"><div>🎄</div><p><b>Arbolito puntas</b>$14.000</p></div>
+              <div class="vit-card"><div>🕯️</div><p><b>Velas onduladas</b>$30.500</p></div>
+            </div>
+            <div class="vit-h3" style="margin-top:12px">💬 Sofía · asistente IA</div>
+            <div class="vit-promo" style="display:block;padding:10px 12px"><b style="display:block;font-size:12px">¡Hola! ¿Te muestro las velas navideñas?</b><span style="font-size:11px;opacity:.75">Te envío fotos y precios aquí mismo.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+      </div>
+  </div>
+</section>
 
 <section class="section shell" id="precios">
   <div class="section-head">
@@ -820,43 +896,6 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   </div>
 </section>
 
-<!-- Ordena ERP: tienda en línea + ERP con agente de IA (cada tienda en su subdominio, p. ej. maryvelas.djmpos.com) -->
-<section class="section shell" id="tienda-en-linea">
-  <div class="vit">
-    <div>
-      <span class="vit-tag">✨ Nuevo · Tienda en línea + ERP con IA</span>
-      <h2>Vende por internet con tu propia tienda, y que una IA atienda a tus clientes.</h2>
-      <p class="vit-p">Ordena ERP es la tienda en línea y el sistema de gestión para negocios que venden por internet. Tus productos con fotos y precios, pedidos y pagos en línea, y Sofía, un asistente de inteligencia artificial que responde el chat, muestra los productos y te avisa cuando un cliente necesita a una persona. Pedidos, clientes, inventario y ventas quedan en un solo lugar.</p>
-      <ul class="vfeat-list">
-        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tienda propia con tu marca, tu logo y tu dirección web, pensada para el celular</li>
-        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Pagos en línea con Bold (tarjeta, PSE, Nequi), transferencia o contraentrega</li>
-        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Chat con inteligencia artificial que atiende a cualquier hora, muestra fotos y precios y registra al cliente</li>
-        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Catálogo listo para Google, Instagram y Facebook, para vender desde tus redes</li>
-        <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Dashboard de ventas, pedidos, inventario y clientes en un solo sistema; solo pagas un porcentaje de lo que vendes</li>
-      </ul>
-      <div class="vit-ctas">
-        <a class="btn btn-forest btn-lg" href="https://wa.me/573228848989?text=Hola%2C%20quiero%20mi%20tienda%20en%20l%C3%ADnea%20con%20Ordena%20ERP" target="_blank" rel="noopener">Quiero mi tienda</a>
-        <a class="btn btn-ghost btn-lg" href="https://maryvelas.djmpos.com/tienda" target="_blank" rel="noopener">Ver una tienda real ↗</a>
-      </div>
-    </div>
-    <div>
-      <div class="vit-ph" aria-hidden="true">
-        <div class="vit-sc" data-e="claro">
-          <div class="vit-hero"><b>MaryVelas</b><i>Velas artesanales en cera de soya</i><div class="vit-hb"><span>🛒 Comprar</span><span>💬 Chat</span></div></div>
-          <div class="vit-bd">
-            <div class="vit-h3">🎄 Navideñas</div>
-            <div class="vit-grid">
-              <div class="vit-card"><div>🎄</div><p><b>Arbolito puntas</b>$14.000</p></div>
-              <div class="vit-card"><div>🕯️</div><p><b>Velas onduladas</b>$30.500</p></div>
-            </div>
-            <div class="vit-h3" style="margin-top:12px">💬 Sofía · asistente IA</div>
-            <div class="vit-promo" style="display:block;padding:10px 12px"><b style="display:block;font-size:12px">¡Hola! ¿Te muestro las velas navideñas?</b><span style="font-size:11px;opacity:.75">Te envío fotos y precios aquí mismo.</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <section class="section shell" id="verticales">
   <div class="section-head">
