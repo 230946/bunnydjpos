@@ -630,6 +630,20 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
     </div>
+    <!-- Ventas desde Ordena ERP (tiendas en línea): sus pedidos pagados entran en la comisión según el plan -->
+    <div id="neg-ordena-box" style="display:none;margin-top:16px;padding:14px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg2)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Ventas desde Ordena ERP</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Para negocios que venden con su tienda de Ordena: sus <b>pedidos pagados</b> (sin el envío) se suman a sus ventas y la comisión se calcula con su plan. La clave se genera en Ordena → Administración → Tienda en línea → Conexión con el POS.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field" style="margin:0"><label>Dirección de su Ordena</label><input id="neg-ordena-url" placeholder="https://maryvelas.djmpos.com"></div>
+        <div class="field" style="margin:0"><label>Clave del POS</label><input id="neg-ordena-key" type="password" autocomplete="new-password" placeholder="Pegar clave"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button type="button" class="btn btn-primary btn-sm" onclick="guardarOrdena()">Conectar y probar</button>
+        <button type="button" class="btn btn-outline btn-sm" id="neg-ordena-quitar" onclick="quitarOrdena()" style="display:none">Quitar conexión</button>
+        <span id="neg-ordena-estado" style="font-size:12px;color:var(--text2)"></span>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('negocio-modal')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="saveNegocio()">Guardar</button>
@@ -1186,6 +1200,39 @@ function openNegocioModal(id){
     ph.style.display = '';
   }
   document.getElementById('negocio-modal').style.display='flex';
+  cargarOrdena(id);
+}
+
+// ── Conexión con Ordena ERP (solo al editar un negocio existente) ──
+async function cargarOrdena(id){
+  const box = document.getElementById('neg-ordena-box'), est = document.getElementById('neg-ordena-estado');
+  box.style.display = id ? '' : 'none'; if (!id) return;
+  document.getElementById('neg-ordena-url').value = ''; document.getElementById('neg-ordena-key').value = '';
+  document.getElementById('neg-ordena-quitar').style.display = 'none'; est.textContent = 'Cargando…';
+  try {
+    const o = await api(`/superadmin/negocios/${id}/ordena`);
+    document.getElementById('neg-ordena-url').value = o.url || '';
+    document.getElementById('neg-ordena-key').placeholder = o.tiene_clave ? 'Guardada · pega otra solo para cambiarla' : 'Pegar clave';
+    document.getElementById('neg-ordena-quitar').style.display = o.tiene_clave ? '' : 'none';
+    est.textContent = o.tiene_clave ? '✅ Conectado' : 'Sin conectar';
+  } catch (e) { est.textContent = 'Error: ' + e.message; }
+}
+async function guardarOrdena(){
+  const id = editingNegocioId, est = document.getElementById('neg-ordena-estado'); if (!id) return;
+  est.textContent = 'Probando la conexión…';
+  try {
+    const r = await api(`/superadmin/negocios/${id}/ordena`, { method:'PUT', body: JSON.stringify({
+      url: document.getElementById('neg-ordena-url').value.trim(), api_key: document.getElementById('neg-ordena-key').value.trim() }) });
+    const m = r.mes || {};
+    est.textContent = `✅ Conectado · este mes: ${m.total_ventas||0} pedidos pagados por $ ${Math.round(m.ingresos||0).toLocaleString('es-CO')}`;
+    document.getElementById('neg-ordena-key').value = ''; document.getElementById('neg-ordena-quitar').style.display = '';
+    showToast('Conectado con Ordena');
+  } catch (e) { est.textContent = '❌ ' + e.message; }
+}
+async function quitarOrdena(){
+  const id = editingNegocioId; if (!id || !confirm('¿Quitar la conexión con Ordena? Sus ventas dejarán de sumarse a la comisión.')) return;
+  try { await api(`/superadmin/negocios/${id}/ordena`, { method:'DELETE' }); cargarOrdena(id); showToast('Conexión con Ordena quitada'); }
+  catch (e) { showToast('Error: ' + e.message); }
 }
 
 function previewLogoNeg(input) {

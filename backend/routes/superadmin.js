@@ -75,7 +75,36 @@ const _runDDL = async (sql) => {
     INDEX idx_nc_neg (negocio_id),
     INDEX idx_nc_estado (estado)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  // Negocios que venden con Ordena ERP (p. ej. una tienda en línea): sus ventas se consultan a su Ordena
+  await _runDDL(`CREATE TABLE IF NOT EXISTS neg_ordena (
+    negocio_id VARCHAR(36) NOT NULL COLLATE utf8mb4_unicode_ci PRIMARY KEY,
+    url VARCHAR(300) NOT NULL,
+    api_key VARCHAR(200) NOT NULL,
+    actualizado DATETIME DEFAULT NOW() ON UPDATE NOW()
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
 })();
+
+// ── Ventas de los negocios que usan Ordena ERP ─────────────────
+// Ordena responde GET /api/pos/resumen?desde&hasta (con la clave del POS): pedidos PAGADOS en el rango,
+// base = valor de los productos sin el envío. El plan del negocio (neg_planes) define el porcentaje.
+async function _resumenOrdena(url, api_key, desde, hasta) {
+  const r = await fetch(`${url.replace(/\/+$/, '')}/api/pos/resumen?desde=${desde}&hasta=${hasta}`,
+    { headers: { Authorization: 'Bearer ' + api_key }, signal: AbortSignal.timeout(6000) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || ('Ordena respondió ' + r.status));
+  return j;
+}
+async function _ventasOrdena(desde, hasta) {
+  const { rows } = await pool.query('SELECT negocio_id, url, api_key FROM neg_ordena').catch(() => ({ rows: [] }));
+  const out = {};
+  await Promise.all(rows.map(async o => {
+    try {
+      const j = await _resumenOrdena(o.url, o.api_key, desde, hasta);
+      out[o.negocio_id] = { total_ventas: parseInt(j.total_ventas) || 0, ingresos: parseFloat(j.ingresos) || 0, ultima_venta: j.ultima_venta || null };
+    } catch (e) { out[o.negocio_id] = { total_ventas: 0, ingresos: 0, ultima_venta: null, error: e.message }; }
+  }));
+  return out;
+}
 
 async function logAct(negocio_id, negocio_nombre, usuario_id, usuario_nombre, accion, detalle, ip) {
   try {
@@ -189,6 +218,35 @@ async function tablasConNegocioId(q) {
 }
 
 // Cuántos registros tiene el negocio en cada tabla (para decidir si se puede borrar)
+// ── Conexión de un negocio con su Ordena ERP (para la comisión) ──
+router.get('/negocios/:id/ordena', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT url, actualizado FROM neg_ordena WHERE negocio_id=?', [req.params.id]);
+    res.json(rows[0] ? { url: rows[0].url, tiene_clave: true, actualizado: rows[0].actualizado } : { url: '', tiene_clave: false });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.put('/negocios/:id/ordena', async (req, res) => {
+  try {
+    const url = String(req.body.url || '').trim().replace(/\/+$/, ''), clave = String(req.body.api_key || '').trim();
+    if (!/^https?:\/\/[\w.-]+(:\d+)?$/.test(url)) return res.status(400).json({ error: 'La dirección debe ser como https://tienda.djmpos.com (sin rutas).' });
+    const { rows: prev } = await pool.query('SELECT api_key FROM neg_ordena WHERE negocio_id=?', [req.params.id]);
+    const api_key = clave || prev[0]?.api_key;
+    if (!api_key) return res.status(400).json({ error: 'Pega la clave del POS que se genera en Ordena → Administración → Tienda en línea.' });
+    const hoy = new Date(Date.now() - 5*60*60*1000).toISOString().slice(0, 10);
+    const prueba = await _resumenOrdena(url, api_key, hoy.slice(0, 8) + '01', hoy).catch(e => ({ error: e.message }));
+    if (prueba.error) return res.status(400).json({ error: 'No se pudo conectar con Ordena: ' + prueba.error });
+    await pool.query(`INSERT INTO neg_ordena (negocio_id,url,api_key) VALUES (?,?,?)
+      ON DUPLICATE KEY UPDATE url=VALUES(url), api_key=VALUES(api_key), actualizado=NOW()`, [req.params.id, url, api_key]);
+    const { rows: neg } = await pool.query('SELECT nombre FROM negocios WHERE id=?', [req.params.id]);
+    logAct(req.params.id, neg[0]?.nombre, req.user?.id, req.user?.nombre, 'ordena_conectado', url, req.ip);
+    res.json({ ok: true, url, mes: prueba });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.delete('/negocios/:id/ordena', async (req, res) => {
+  try { await pool.query('DELETE FROM neg_ordena WHERE negocio_id=?', [req.params.id]); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/negocios/:id/uso', async (req, res) => {
   try {
     const q = async (sql, params) => (await pool.query(sql, params)).rows;
@@ -431,6 +489,17 @@ router.get('/reportes', async (req, res) => {
       GROUP BY n.id, n.nombre, n.tipo, np.plan
       ORDER BY ingresos DESC
     `, [desde, hasta]);
+
+    // sumar las ventas pagadas de los negocios que venden con Ordena ERP
+    const ord = await _ventasOrdena(desde, hasta);
+    for (const r of rows) {
+      const o = ord[r.negocio_id]; if (!o) continue;
+      r.total_ventas = (parseInt(r.total_ventas) || 0) + o.total_ventas;
+      r.ingresos = (parseFloat(r.ingresos) || 0) + o.ingresos;
+      if (o.ultima_venta && (!r.ultima_venta || new Date(o.ultima_venta) > new Date(r.ultima_venta))) r.ultima_venta = o.ultima_venta;
+      r.fuente = 'ordena'; if (o.error) r.ordena_error = o.error;
+    }
+    rows.sort((a, b) => (parseFloat(b.ingresos) || 0) - (parseFloat(a.ingresos) || 0));
 
     const rate = { basic:0.09, plus:0.07, premium:0.05, personalizado:0.07 };
     const totalIngresos = rows.reduce((s,r) => s + parseFloat(r.ingresos||0), 0);
