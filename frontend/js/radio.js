@@ -39,8 +39,11 @@
   // ── Estilos ───────────────────────────────────────────────────────────
   const css = document.createElement('style');
   css.textContent = `
-  .djr-btn{position:fixed;left:14px;bottom:14px;z-index:9990;width:48px;height:48px;border-radius:50%;border:none;
+  .djr-btn{position:fixed;left:14px;bottom:14px;z-index:9990;height:48px;padding:0 18px 0 14px;border-radius:999px;border:none;gap:8px;
     background:#0B8457;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}
+  .djr-lbl{font:700 14px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.01em;white-space:nowrap}
+  .djr-btn .djr-eq,.djr-btn .djr-emoji{width:26px;justify-content:center}
+  .djr-btn .djr-emoji{display:flex}
   .djr-btn.sonando{animation:djrPulso 1.6s infinite}
   .djr-eq{display:none;align-items:flex-end;gap:3px;height:20px}
   .djr-eq i{display:block;width:4px;border-radius:2px;background:#fff;height:30%;animation:djrEq .9s ease-in-out infinite}
@@ -93,13 +96,13 @@
   const btn = document.createElement('button');
   btn.className = 'djr-btn'; btn.type = 'button'; btn.title = 'Radio';
   const EQ = '<span class="djr-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
-  btn.innerHTML = '<span class="djr-emoji">📻</span>' + EQ;
+  btn.innerHTML = '<span class="djr-emoji">📻</span>' + EQ + '<span class="djr-lbl">Radio DJMPOS</span>';
   const panel = document.createElement('div');
   panel.className = 'djr-panel';
   panel.innerHTML = `
     <div class="djr-cab">
       <div class="djr-ico" data-r="logo">📻</div>
-      <div class="djr-actual"><b data-r="nombre">Elige una emisora</b><span class="djr-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><small data-r="estado">Radio por internet</small></div>
+      <div class="djr-actual"><b data-r="nombre">Elige una emisora</b><span class="djr-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><small data-r="estado">Radio DJMPOS</small></div>
       <button class="djr-play" data-r="play" type="button" disabled>▶</button>
     </div>
     <div class="djr-vol"><span>🔈</span><input data-r="vol" type="range" min="0" max="1" step="0.05"><span>🔊</span></div>
@@ -122,7 +125,7 @@
   function pintarCabecera(txt) {
     const e = estado.ultima;
     $('nombre').textContent = e ? corto(e.nombre) : 'Elige una emisora';
-    $('estado').textContent = txt || (e ? (sonando ? 'En vivo' : 'En pausa') : 'Radio por internet');
+    $('estado').textContent = txt || (e ? (sonando ? 'En vivo' : 'En pausa') : 'Radio DJMPOS');
     const logo = $('logo');
     logo.outerHTML = e && e.logo
       ? `<img data-r="logo" src="${esc(e.logo)}" alt="" onerror="this.outerHTML='<div class=&quot;djr-ico&quot; data-r=&quot;logo&quot;>📻</div>'">`
@@ -131,7 +134,7 @@
     $('play').textContent = sonando ? '⏸' : '▶';
     btn.classList.toggle('sonando', sonando);
     panel.classList.toggle('sonando', sonando);
-    btn.title = sonando && e ? `Sonando: ${corto(e.nombre)}` : 'Radio';
+    btn.title = sonando && e ? `Radio DJMPOS · sonando: ${corto(e.nombre)}` : 'Radio DJMPOS';
   }
 
   function tocar(emisora) {
