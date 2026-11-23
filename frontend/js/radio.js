@@ -42,6 +42,18 @@
   .djr-btn{position:fixed;left:14px;bottom:14px;z-index:9990;width:48px;height:48px;border-radius:50%;border:none;
     background:#0B8457;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}
   .djr-btn.sonando{animation:djrPulso 1.6s infinite}
+  .djr-eq{display:none;align-items:flex-end;gap:3px;height:20px}
+  .djr-eq i{display:block;width:4px;border-radius:2px;background:#fff;height:30%;animation:djrEq .9s ease-in-out infinite}
+  .djr-eq i:nth-child(2){animation-duration:.7s;animation-delay:-.3s}
+  .djr-eq i:nth-child(3){animation-duration:1.1s;animation-delay:-.5s}
+  .djr-eq i:nth-child(4){animation-duration:.8s;animation-delay:-.2s}
+  @keyframes djrEq{0%,100%{height:25%}50%{height:100%}}
+  .djr-btn.sonando .djr-eq{display:flex}
+  .djr-btn.sonando .djr-emoji{display:none}
+  .djr-cab .djr-eq{display:inline-flex;height:12px;gap:2px;margin-right:6px;vertical-align:middle}
+  .djr-cab .djr-eq i{width:3px}
+  .djr-panel:not(.sonando) .djr-cab .djr-eq{display:none}
+  @media (prefers-reduced-motion:reduce){.djr-eq i{animation:none;height:60%}.djr-btn.sonando{animation:none}}
   @keyframes djrPulso{0%,100%{box-shadow:0 0 0 0 rgba(11,132,87,.5)}50%{box-shadow:0 0 0 9px rgba(11,132,87,0)}}
   .djr-panel{position:fixed;left:14px;bottom:72px;z-index:9991;width:340px;max-width:calc(100vw - 28px);max-height:min(560px,calc(100vh - 100px));
     background:#fff;color:#111827;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.35);display:none;flex-direction:column;overflow:hidden;
@@ -79,13 +91,15 @@
 
   // ── Estructura ────────────────────────────────────────────────────────
   const btn = document.createElement('button');
-  btn.className = 'djr-btn'; btn.type = 'button'; btn.title = 'Radio'; btn.textContent = '📻';
+  btn.className = 'djr-btn'; btn.type = 'button'; btn.title = 'Radio';
+  const EQ = '<span class="djr-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
+  btn.innerHTML = '<span class="djr-emoji">📻</span>' + EQ;
   const panel = document.createElement('div');
   panel.className = 'djr-panel';
   panel.innerHTML = `
     <div class="djr-cab">
       <div class="djr-ico" data-r="logo">📻</div>
-      <div class="djr-actual"><b data-r="nombre">Elige una emisora</b><small data-r="estado">Radio por internet</small></div>
+      <div class="djr-actual"><b data-r="nombre">Elige una emisora</b><span class="djr-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><small data-r="estado">Radio por internet</small></div>
       <button class="djr-play" data-r="play" type="button" disabled>▶</button>
     </div>
     <div class="djr-vol"><span>🔈</span><input data-r="vol" type="range" min="0" max="1" step="0.05"><span>🔊</span></div>
@@ -116,6 +130,7 @@
     $('play').disabled = !e;
     $('play').textContent = sonando ? '⏸' : '▶';
     btn.classList.toggle('sonando', sonando);
+    panel.classList.toggle('sonando', sonando);
     btn.title = sonando && e ? `Sonando: ${corto(e.nombre)}` : 'Radio';
   }
 
