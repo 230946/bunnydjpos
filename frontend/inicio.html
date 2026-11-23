@@ -773,14 +773,14 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   <div class="section-head">
     <div class="eyebrow">Pago a la medida</div>
     <h2 class="h2-oneline">Solo pagas por lo que vendes — nunca una cuota fija.</h2>
-    <p>Nada de mensualidades ni contratos. Un porcentaje sobre tus ventas de cada mes, y entre más completo el plan, menor el porcentaje.</p>
+    <p>Nada de mensualidades ni contratos. Un porcentaje sobre tus ventas de cada mes, según las herramientas que necesites.</p>
   </div>
   <div class="pricing-grid">
     <article class="price-card">
       <div class="price-ic"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.6"/></svg></div>
       <h3>Básico</h3>
       <p class="price-desc">Para empezar a cobrar y controlar tu caja sin complicarte.</p>
-      <div class="price-tag"><span class="price-num">9%</span><span class="price-unit">por venta mensual</span></div>
+      <div class="price-tag"><span class="price-num">5%</span><span class="price-unit">por venta mensual</span></div>
       <a class="btn btn-ghost" href="#contacto">Agendar una demo</a>
       <ul class="price-feat">
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1 caja, con 1 administrador y 2 cajeros</li>
@@ -809,7 +809,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <div class="price-ic"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2.5l2.1 4.4 4.9.7-3.5 3.4.8 4.9-4.3-2.3-4.3 2.3.8-4.9-3.5-3.4 4.9-.7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
       <h3>Premium</h3>
       <p class="price-desc">Para negocios que quieren todo, incluido lo que aún no has pensado pedir.</p>
-      <div class="price-tag"><span class="price-num">5%</span><span class="price-unit">por venta mensual</span></div>
+      <div class="price-tag"><span class="price-num">9%</span><span class="price-unit">por venta mensual</span></div>
       <a class="btn btn-ghost" href="#contacto">Agendar una demo</a>
       <ul class="price-feat">
         <li class="price-hl"><a href="#vitrina"><span class="price-hl-ic" aria-hidden="true">🪟</span><span><b>Vitrina publicitaria <em>✨ Nuevo</em></b><small>Con los tres estilos y tu marca, para atraer clientes por WhatsApp y redes.</small></span></a></li>
@@ -848,9 +848,9 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       </div>
     </div>
     <div class="sim-res" aria-live="polite">
-      <div class="sim-plan" id="sim-plan">Tu plan: Básico · 9%</div>
-      <div class="sim-total"><span id="sim-total">$1.350.000</span> <small>al mes</small></div>
-      <div class="sim-dia" id="sim-dia">Unos $45.000 por día</div>
+      <div class="sim-plan" id="sim-plan">Tu plan: Básico · 5%</div>
+      <div class="sim-total"><span id="sim-total">$750.000</span> <small>al mes</small></div>
+      <div class="sim-dia" id="sim-dia">Unos $25.000 por día</div>
       <div class="sim-bars" id="sim-bars"></div>
       <a class="btn btn-forest btn-lg" id="sim-cta" href="#contacto" target="_blank" rel="noopener">Quiero este plan</a>
       <div class="sim-nota">Valor de referencia: sin mensualidad fija ni contrato. Si no vendes, no pagas.</div>
@@ -1174,7 +1174,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
 <!-- Simulador de costo (sección Precios) -->
 <script>
 (function(){
-  var PLANES=[{n:'Básico',p:9},{n:'Plus',p:7},{n:'Premium',p:5}];
+  var PLANES=[{n:'Básico',p:5},{n:'Plus',p:7},{n:'Premium',p:9}];
   var MAX=1e11;
   var $=function(id){return document.getElementById(id)};
   var inp=$('sim-ventas'), rng=$('sim-range');
@@ -1190,7 +1190,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
     $('sim-plan').textContent='Tu plan: '+plan.n+' · '+plan.p+'%';
     $('sim-total').textContent=cop(costo);
     $('sim-dia').textContent=v?'Unos '+cop(costo/30)+' por día':'Escribe tus ventas del mes';
-    var tope=v*PLANES[0].p/100||1;
+    var tope=v*Math.max.apply(null,PLANES.map(function(x){return x.p}))/100||1;
     $('sim-bars').innerHTML=PLANES.map(function(pl,i){
       var c=v*pl.p/100, ok=i>=minPlan;
       return '<div class="sim-row '+(i===minPlan?'on':ok?'':'off')+'"><div class="sim-bar-top"><span>'+pl.n+' ('+pl.p+'%)'+(ok?'':' <em>· no incluye lo que marcaste</em>')+'</span><b>'+cop(c)+'</b></div>'

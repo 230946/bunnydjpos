@@ -501,13 +501,13 @@ router.get('/reportes', async (req, res) => {
     }
     rows.sort((a, b) => (parseFloat(b.ingresos) || 0) - (parseFloat(a.ingresos) || 0));
 
-    const rate = { basic:0.09, plus:0.07, premium:0.05, personalizado:0.07 };
+    const rate = { basic:0.05, plus:0.07, premium:0.09, personalizado:0.07 };
     const totalIngresos = rows.reduce((s,r) => s + parseFloat(r.ingresos||0), 0);
     const totalVentas   = rows.reduce((s,r) => s + parseInt(r.total_ventas||0), 0);
     const conVentas     = rows.filter(r => parseInt(r.total_ventas||0) > 0).length;
-    const comBasic      = rows.filter(r=>r.plan==='basic').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.09,0);
+    const comBasic      = rows.filter(r=>r.plan==='basic').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.05,0);
     const comPlus       = rows.filter(r=>r.plan==='plus'||r.plan==='personalizado').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.07,0);
-    const comPremium    = rows.filter(r=>r.plan==='premium').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.05,0);
+    const comPremium    = rows.filter(r=>r.plan==='premium').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.09,0);
     const totalComision = comBasic + comPlus + comPremium;
     res.json({ rows, totalIngresos, totalVentas, conVentas, comBasic, comPlus, comPremium, totalComision, desde, hasta });
   } catch(e) { res.status(500).json({ error: e.message }); }
