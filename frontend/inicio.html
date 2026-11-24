@@ -9,23 +9,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="DJPOS es el sistema de punto de venta para peluquerías, restaurantes, bares y minimercados en Colombia. Agenda, caja, inventario y reportes en un solo lugar — cada negocio 100% independiente.">
+  <meta name="description" content="DJMPOS (DJPOS) es el software POS en la nube para restaurantes, bares, minimercados y peluquerías en Colombia: caja, inventario, domicilios, citas y tienda en línea. Pruébalo 15 días gratis.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://djmpos.com/">
-  <title>DJPOS — un sistema, cuatro negocios, cero descuadres</title>
+  <title>DJMPOS | Sistema POS para restaurantes, bares, minimercados y peluquerías</title>
   <link rel="icon" href="/img/logo.png">
 
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_CO">
   <meta property="og:url" content="https://djmpos.com/">
-  <meta property="og:site_name" content="DJPOS">
-  <meta property="og:title" content="DJPOS — un sistema, cuatro negocios, cero descuadres">
+  <meta property="og:site_name" content="DJMPOS">
+  <meta property="og:title" content="DJMPOS | Sistema POS para restaurantes, bares, minimercados y peluquerías">
   <meta property="og:description" content="El punto de venta para peluquerías, restaurantes, bares y minimercados en Colombia. Agenda, caja, inventario y reportes — cada negocio 100% independiente.">
   <meta property="og:image" content="https://djmpos.com/img/logo.png">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="DJPOS — un sistema, cuatro negocios, cero descuadres">
+  <meta name="twitter:title" content="DJMPOS | Sistema POS para restaurantes, bares, minimercados y peluquerías">
   <meta name="twitter:description" content="El punto de venta para peluquerías, restaurantes, bares y minimercados en Colombia. Cada negocio 100% independiente.">
   <meta name="twitter:image" content="https://djmpos.com/img/logo.png">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://djmpos.com/#org","name":"DJMPOS","alternateName":["DJPOS","DJM POS"],"url":"https://djmpos.com/","logo":"https://djmpos.com/img/logo.png","contactPoint":{"@type":"ContactPoint","telephone":"+57-322-884-8989","contactType":"sales","areaServed":"CO","availableLanguage":"es"}},{"@type":"WebSite","@id":"https://djmpos.com/#web","name":"DJMPOS","alternateName":"DJPOS","url":"https://djmpos.com/","inLanguage":"es-CO","publisher":{"@id":"https://djmpos.com/#org"}},{"@type":"SoftwareApplication","name":"DJMPOS","alternateName":"DJPOS","applicationCategory":"BusinessApplication","applicationSubCategory":"Punto de venta (POS)","operatingSystem":"Web, Android, iOS, Windows","url":"https://djmpos.com/","description":"Sistema POS en la nube para restaurantes, bares, minimercados y peluquerías: caja, inventario, domicilios, citas, comisiones y tienda en línea con IA.","publisher":{"@id":"https://djmpos.com/#org"},"offers":{"@type":"AggregateOffer","priceCurrency":"COP","lowPrice":"55000","offerCount":"3","description":"Planes Básico, Plus y Premium: porcentaje sobre las ventas del mes, con un mínimo de $55.000 mensuales. 15 días de prueba gratis."}}]}</script>
   <style>
 @font-face{font-family:'Fraunces Disp';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/fraunces-disp-600.woff2') format('woff2');}
 @font-face{font-family:'Fraunces Disp';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/fraunces-disp-700.woff2') format('woff2');}
@@ -248,8 +249,9 @@ p{margin:0}
 @media (max-width:900px){.hero-grid{grid-template-columns:1fr;gap:40px}}
 .hero .eyebrow{margin-bottom:18px;display:flex;align-items:center;gap:9px}
 .hero .eyebrow::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--forest);flex-shrink:0}
-.hero h1{font-size:clamp(2.3rem,4.6vw,3.6rem);line-height:1.06}
-.hero h1 em{font-style:italic;color:var(--forest);font-weight:600}
+.hero .hero-h{font-size:clamp(2.3rem,4.6vw,3.6rem);line-height:1.06}
+.hero h1.eyebrow{line-height:1.45;text-wrap:balance}
+.hero .hero-h em{font-style:italic;color:var(--forest);font-weight:600}
 .hero-sub{margin-top:22px;font-size:1.12rem;color:var(--ink-soft);max-width:46ch;line-height:1.6}
 .hero-pills{margin-top:24px;display:flex;gap:12px;flex-wrap:wrap}
 .hero-pill{
@@ -267,7 +269,8 @@ p{margin:0}
 @media (max-width:640px){
   .hero{padding:40px 0 48px;text-align:center}
   .hero .eyebrow{font-size:.66rem;margin-bottom:16px;justify-content:center}
-  .hero h1{font-size:1.95rem;line-height:1.22;letter-spacing:-.015em}
+  .hero h1.eyebrow::before{display:none}
+  .hero .hero-h{font-size:1.95rem;line-height:1.22;letter-spacing:-.015em}
   .hero-sub{margin:20px auto 0;font-size:.96rem;line-height:1.6;text-align:justify;text-justify:inter-word}
   .hero-pills{margin-top:22px;gap:10px;justify-content:center}
   .hero-pill{font-size:.8rem;padding:9px 15px}
@@ -691,8 +694,8 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   <div class="hero-grid">
     <div>
       <a class="hero-nuevo" href="#tienda-en-linea">✨ Nuevo: Tienda en línea + ERP con IA <span aria-hidden="true">→</span></a>
-      <div class="eyebrow">¿Te suena familiar?</div>
-      <h1>Cierras la caja y el número nunca cuadra. Otra vez.</h1>
+      <h1 class="eyebrow">Software POS para restaurantes, bares, minimercados y peluquerías</h1>
+      <p class="disp hero-h">Cierras la caja y el número nunca cuadra. Otra vez.</p>
       <p class="hero-sub">Si manejas una peluquería, un restaurante, un bar o un minimercado, sabes lo que es no confiar del todo en tus números al final del día. DJPOS existe para que dejes de adivinar — cada negocio con su propia caja, controlada, sin sorpresas.</p>
       <div class="hero-pills">
         <span class="hero-pill hero-pill-forest">🎯 Software a la medida</span>

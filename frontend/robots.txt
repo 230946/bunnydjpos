@@ -1,8 +1,10 @@
 User-agent: *
 Allow: /$
+Allow: /registro$
 Allow: /sitemap.xml
 Allow: /img/
 Allow: /fonts/
+Allow: /js/radio.js
 Disallow: /
 
 Sitemap: https://djmpos.com/sitemap.xml
