@@ -26,6 +26,10 @@ const uploadLogo = multer({ storage: logoStorage, limits: { fileSize: 5 * 1024 *
 
 router.use(authMiddleware, superadminOnly);
 
+// Tarifas de DJPOS: % sobre las ventas del mes según el plan, con un cobro mínimo mensual.
+const TASAS_PLAN   = { basic: 0.05, plus: 0.07, premium: 0.09, personalizado: 0.07 };
+const COBRO_MINIMO = 55000;
+
 // ── Auto-migrate ──────────────────────────────────────────────
 const _runDDL = async (sql) => {
   try { await pool.query(sql); } catch(e) { console.error('DDL Error:', e.message); }
@@ -474,6 +478,7 @@ router.get('/reportes', async (req, res) => {
           np.plan,
           'free'
         ) AS plan,
+        COALESCE((SELECT prueba FROM neg_contratos WHERE negocio_id=n.id AND estado='activo' ORDER BY fecha_fin DESC LIMIT 1), 0) AS en_prueba,
         COUNT(v.id) AS total_ventas,
         COALESCE(SUM(v.total),0) AS ingresos,
         COALESCE(AVG(v.total),0) AS promedio,
@@ -501,15 +506,28 @@ router.get('/reportes', async (req, res) => {
     }
     rows.sort((a, b) => (parseFloat(b.ingresos) || 0) - (parseFloat(a.ingresos) || 0));
 
-    const rate = { basic:0.05, plus:0.07, premium:0.09, personalizado:0.07 };
+    // Comisión por negocio: % del plan sobre las ventas, con un cobro mínimo
+    // mensual. El mínimo solo se aplica si el rango es un único mes calendario
+    // (en rangos largos no se sabe cuántos meses estuvo activo cada negocio), y
+    // nunca durante la prueba gratis.
+    const unMes = String(desde).slice(0,7) === String(hasta).slice(0,7);
+    for (const r of rows) {
+      const tasa = TASAS_PLAN[r.plan] || 0;
+      const pct  = (parseFloat(r.ingresos) || 0) * tasa;
+      r.en_prueba = !!Number(r.en_prueba);
+      r.tasa = tasa;
+      r.minimo_aplicado = tasa > 0 && !r.en_prueba && unMes && pct < COBRO_MINIMO;
+      r.comision = r.en_prueba || !tasa ? 0 : (r.minimo_aplicado ? COBRO_MINIMO : pct);
+    }
     const totalIngresos = rows.reduce((s,r) => s + parseFloat(r.ingresos||0), 0);
     const totalVentas   = rows.reduce((s,r) => s + parseInt(r.total_ventas||0), 0);
     const conVentas     = rows.filter(r => parseInt(r.total_ventas||0) > 0).length;
-    const comBasic      = rows.filter(r=>r.plan==='basic').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.05,0);
-    const comPlus       = rows.filter(r=>r.plan==='plus'||r.plan==='personalizado').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.07,0);
-    const comPremium    = rows.filter(r=>r.plan==='premium').reduce((s,r)=>s+parseFloat(r.ingresos||0)*0.09,0);
+    const sumaCom = planes => rows.filter(r => planes.includes(r.plan)).reduce((s,r) => s + r.comision, 0);
+    const comBasic      = sumaCom(['basic']);
+    const comPlus       = sumaCom(['plus','personalizado']);
+    const comPremium    = sumaCom(['premium']);
     const totalComision = comBasic + comPlus + comPremium;
-    res.json({ rows, totalIngresos, totalVentas, conVentas, comBasic, comPlus, comPremium, totalComision, desde, hasta });
+    res.json({ rows, totalIngresos, totalVentas, conVentas, comBasic, comPlus, comPremium, totalComision, desde, hasta, cobro_minimo: COBRO_MINIMO, minimo_aplica: unMes });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

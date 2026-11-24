@@ -209,13 +209,9 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
       );
       if (cr[0]) {
         let { id: cid, estado, fecha_fin, fecha_inicio, tipo, valor } = cr[0];
-        // mysql2 entrega DATE como objeto Date y String(fecha).slice(0,10) da
-        // "Wed Dec 09": la fecha queda inválida y el contrato nunca vence ni avisa.
-        // Por ahora se corrige solo en las pruebas gratis; los contratos de antes
-        // siguen igual hasta revisarlos (corregirlo para todos los bloquearía).
-        const aFecha = cr[0].prueba
-          ? (v => v instanceof Date ? v.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }) : String(v).slice(0,10))
-          : (v => String(v).slice(0,10));
+        // mysql2 entrega DATE como objeto Date y String(fecha).slice(0,10) daba
+        // "Wed Dec 09": la fecha quedaba inválida y ningún contrato vencía ni avisaba.
+        const aFecha = v => v instanceof Date ? v.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }) : String(v).slice(0,10);
         const hoy = new Date();
         // Auto-activar: pendiente → activo si fecha_inicio llegó y fecha_fin no ha pasado aún
         if (estado === 'pendiente' && fecha_inicio) {

@@ -474,6 +474,7 @@ p{margin:0}
 .price-card h3{font-size:1.2rem}
 .price-desc{margin-top:8px;font-size:.85rem;color:var(--ink-soft);line-height:1.5;min-height:2.6em}
 .price-tag{margin-top:18px;display:flex;align-items:baseline;justify-content:center;gap:6px}
+.price-min{font-size:.82rem;color:var(--ink-soft);margin:-6px 0 14px}
 .price-num{font-family:'Fraunces Disp';font-size:2.6rem;font-weight:700;color:var(--ink)}
 .price-unit{font-size:.85rem;color:var(--ink-soft)}
 .price-card .btn{margin-top:18px;width:100%;justify-content:center}
@@ -740,7 +741,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
         <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Catálogo listo para Google, Instagram y Facebook, para vender desde tus redes</li>
         <li><span class="vfeat-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Dashboard de ventas, pedidos, inventario y clientes en un solo sistema</li>
       </ul>
-      <div class="tl-precio"><span class="tl-precio-num">9%</span><span class="tl-precio-txt"><b>por venta, incluido en el plan Premium</b><small>Sin mensualidad ni contrato. Si no vendes, no pagas.</small></span></div>
+      <div class="tl-precio"><span class="tl-precio-num">9%</span><span class="tl-precio-txt"><b>por venta, incluido en el plan Premium</b><small>Mínimo $55.000 al mes. Sin contrato: cancelas cuando quieras.</small></span></div>
       <div class="vit-ctas">
         <a class="btn btn-forest btn-lg" href="https://wa.me/573228848989?text=Hola%2C%20quiero%20mi%20tienda%20en%20l%C3%ADnea%20con%20Ordena%20ERP" target="_blank" rel="noopener">Quiero mi tienda</a>
         <a class="btn btn-ghost btn-lg" href="https://maryvelas.djmpos.com/tienda" target="_blank" rel="noopener">Ver una tienda real ↗</a>
@@ -772,8 +773,8 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
 <section class="section shell" id="precios">
   <div class="section-head">
     <div class="eyebrow">Pago a la medida</div>
-    <h2 class="h2-oneline">Solo pagas por lo que vendes — nunca una cuota fija.</h2>
-    <p>Nada de mensualidades ni contratos. Un porcentaje sobre tus ventas de cada mes, según las herramientas que necesites.</p>
+    <h2 class="h2-oneline">Pagas según lo que vendes, desde $55.000 al mes.</h2>
+    <p>Sin contratos. Un porcentaje sobre tus ventas de cada mes, según las herramientas que necesites, con un mínimo de $55.000 mensuales.</p>
   </div>
   <div class="pricing-grid">
     <article class="price-card">
@@ -781,6 +782,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <h3>Básico</h3>
       <p class="price-desc">Para empezar a cobrar y controlar tu caja sin complicarte.</p>
       <div class="price-tag"><span class="price-num">5%</span><span class="price-unit">por venta mensual</span></div>
+      <div class="price-min">Mínimo $55.000 al mes</div>
       <a class="btn btn-ghost" href="/registro?plan=basic">Empieza gratis</a>
       <ul class="price-feat">
         <li><span class="price-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>1 caja, con 1 administrador y 2 cajeros</li>
@@ -795,6 +797,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <h3>Plus</h3>
       <p class="price-desc">Para un equipo completo con agenda, domicilios y reportes de verdad.</p>
       <div class="price-tag"><span class="price-num">7%</span><span class="price-unit">por venta mensual</span></div>
+      <div class="price-min">Mínimo $55.000 al mes</div>
       <a class="btn btn-forest" href="/registro?plan=plus">Empieza gratis</a>
       <ul class="price-feat">
         <li class="price-hl"><a href="#vitrina"><span class="price-hl-ic" aria-hidden="true">🪟</span><span><b>Vitrina publicitaria <em>✨ Nuevo</em></b><small>Tus productos y promociones en una página tipo anuncio, con link y QR para compartir.</small></span></a></li>
@@ -810,6 +813,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <h3>Premium</h3>
       <p class="price-desc">Para negocios que quieren todo, incluido lo que aún no has pensado pedir.</p>
       <div class="price-tag"><span class="price-num">9%</span><span class="price-unit">por venta mensual</span></div>
+      <div class="price-min">Mínimo $55.000 al mes</div>
       <a class="btn btn-ghost" href="/registro?plan=premium">Empieza gratis</a>
       <ul class="price-feat">
         <li class="price-hl"><a href="#vitrina"><span class="price-hl-ic" aria-hidden="true">🪟</span><span><b>Vitrina publicitaria <em>✨ Nuevo</em></b><small>Con los tres estilos y tu marca, para atraer clientes por WhatsApp y redes.</small></span></a></li>
@@ -853,10 +857,10 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
       <div class="sim-dia" id="sim-dia">Unos $25.000 por día</div>
       <div class="sim-bars" id="sim-bars"></div>
       <a class="btn btn-forest btn-lg" id="sim-cta" href="#contacto" target="_blank" rel="noopener">Quiero este plan</a>
-      <div class="sim-nota">Valor de referencia: sin mensualidad fija ni contrato. Si no vendes, no pagas.</div>
+      <div class="sim-nota">Valor de referencia: el porcentaje de tu plan sobre las ventas, con un mínimo de $55.000 al mes. Sin contrato.</div>
     </div>
   </div>
-  <p class="price-fine">*Porcentajes de referencia — el plan final se ajusta según el volumen y las necesidades de tu negocio. Sin letra chiquita: te lo confirmamos antes de empezar.</p>
+  <p class="price-fine">*Porcentajes sobre las ventas del mes, con un cobro mínimo de $55.000 mensuales. Valores de referencia — el plan final se ajusta según el volumen y las necesidades de tu negocio. Sin letra chiquita: te lo confirmamos antes de empezar.</p>
 </section>
 
 <section class="section shell" id="vitrina">
@@ -1175,6 +1179,8 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
 <script>
 (function(){
   var PLANES=[{n:'Básico',p:5},{n:'Plus',p:7},{n:'Premium',p:9}];
+  var MINIMO=55000; // cobro mínimo mensual
+  var cobro=function(v,p){return Math.max(v*p/100,MINIMO)};
   var MAX=1e11;
   var $=function(id){return document.getElementById(id)};
   var inp=$('sim-ventas'), rng=$('sim-range');
@@ -1186,13 +1192,13 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);margin-top:20px
   function calcular(){
     var v=leer();
     var minPlan=needs.reduce(function(m,c){return c.checked?Math.max(m,+c.dataset.plan):m},0);
-    var plan=PLANES[minPlan], costo=v*plan.p/100;
+    var plan=PLANES[minPlan], costo=cobro(v,plan.p);
     $('sim-plan').textContent='Tu plan: '+plan.n+' · '+plan.p+'%';
     $('sim-total').textContent=cop(costo);
     $('sim-dia').textContent=v?'Unos '+cop(costo/30)+' por día':'Escribe tus ventas del mes';
-    var tope=v*Math.max.apply(null,PLANES.map(function(x){return x.p}))/100||1;
+    var tope=Math.max.apply(null,PLANES.map(function(x){return cobro(v,x.p)}))||1;
     $('sim-bars').innerHTML=PLANES.map(function(pl,i){
-      var c=v*pl.p/100, ok=i>=minPlan;
+      var c=cobro(v,pl.p), ok=i>=minPlan;
       return '<div class="sim-row '+(i===minPlan?'on':ok?'':'off')+'"><div class="sim-bar-top"><span>'+pl.n+' ('+pl.p+'%)'+(ok?'':' <em>· no incluye lo que marcaste</em>')+'</span><b>'+cop(c)+'</b></div>'
         +'<div class="sim-track"><div class="sim-fill" style="width:'+(c/tope*100)+'%"></div></div></div>';
     }).join('');

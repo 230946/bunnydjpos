@@ -1150,6 +1150,7 @@ async function guardarCambiarPassword(){
     showToast('Contraseña actualizada. Entra de nuevo.'); setTimeout(salir, 1500);
   }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
 }
+const _COBRO_MINIMO = 55000; // cobro mínimo mensual de DJPOS (fuera de la prueba gratis)
 const _PEL_PLAN_RATES  = {free:0,basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
 const _PEL_PLAN_LABELS = {free:'Free (demo)',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
 const _PEL_PLAN_COLORS = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
@@ -1161,6 +1162,7 @@ async function checkContrato(negocioId){
     if(!r.ok) return;
     const d=await r.json();
     window._negPlan = d.plan || 'free';
+    window._negPrueba = !!(d.contrato && d.contrato.prueba);
     try{
       const idiomas=d.idiomas?(typeof d.idiomas==='string'?JSON.parse(d.idiomas):d.idiomas):['es'];
       if(window.initLangSwitcher) window.initLangSwitcher(idiomas);
@@ -1364,13 +1366,17 @@ async function renderDashboard(){
     ]);
     if(!d)return;
     if(pubData?.plan) window._negPlan = pubData.plan;
+    if(pubData) window._negPrueba = !!(pubData.contrato && pubData.contrato.prueba);
     const fmtV=n=>'$'+(Math.round(n)||0).toLocaleString('es-CO');
     const _plan      = window._negPlan || 'free';
     const _planRate  = _PEL_PLAN_RATES[_plan]  ?? 0;
     const _planLabel = _PEL_PLAN_LABELS[_plan] || _plan;
     const _planColor = _PEL_PLAN_COLORS[_plan] || '#9e9e9e';
     const _planPct   = Math.round(_planRate * 100);
-    const _planCom   = (+(rTotal?.ventas?.total_ventas)||0) * _planRate;
+    const _planComPct = (+(rTotal?.ventas?.total_ventas)||0) * _planRate;
+    const _enPrueba  = !!window._negPrueba;
+    const _planMin   = _planRate>0 && !_enPrueba && _planComPct < _COBRO_MINIMO;
+    const _planCom   = _planRate>0 && !_enPrueba ? Math.max(_planComPct, _COBRO_MINIMO) : 0;
     document.getElementById('content').innerHTML=`
     <div class="stat-grid">
       <div class="stat-card"><div class="label">Citas hoy</div><div class="value" style="color:var(--acc)">${d.citasHoy||0}</div></div>
@@ -1411,7 +1417,7 @@ async function renderDashboard(){
         <div class="stat-card"><div class="label">Gastos</div><div class="value" style="font-size:18px;color:var(--red)">${fmtV(r?.gastos?.total_gastos)}</div></div>
         <div class="stat-card"><div class="label">Utilidad</div><div class="value" style="font-size:18px;color:${(r?.utilidad||0)>=0?'var(--green)':'var(--red)'}">${fmtV(r?.utilidad)}</div></div>
         <div class="stat-card"><div class="label">Citas cobradas</div><div class="value" style="font-size:18px">${r?.ventas?.pedidos||0}</div></div>
-        <div class="stat-card" style="text-align:center"><div class="label" style="text-align:left">Comisión total ventas del mes</div><div style="position:relative;height:88px;margin:4px 0"><canvas id="pel-chart-comision"></canvas><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none"><span style="font-size:20px;font-weight:700;color:${_planColor}">${_planPct}%</span></div></div><span style="background:${_planColor}1a;color:${_planColor};padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600">${_planLabel}</span><div style="font-size:11px;color:var(--text2);margin-top:4px">${_planRate>0?`Comisión: <b>${fmtV(_planCom)}</b>`:'Sin comisión (demo)'}</div></div>
+        <div class="stat-card" style="text-align:center"><div class="label" style="text-align:left">Comisión total ventas del mes</div><div style="position:relative;height:88px;margin:4px 0"><canvas id="pel-chart-comision"></canvas><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none"><span style="font-size:20px;font-weight:700;color:${_planColor}">${_planPct}%</span></div></div><span style="background:${_planColor}1a;color:${_planColor};padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600">${_planLabel}</span><div style="font-size:11px;color:var(--text2);margin-top:4px">${_enPrueba?'Prueba gratis: sin cobro':_planRate>0?`Comisión: <b>${fmtV(_planCom)}</b>${_planMin?' (mínimo mensual)':''}`:'Sin comisión (demo)'}</div></div>
       </div>
       <div class="chart-row">
         <div class="stat-card" style="padding:12px"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">📊 VENTAS POR HORA</div><div style="height:150px"><canvas id="pel-chart-horas"></canvas></div></div>

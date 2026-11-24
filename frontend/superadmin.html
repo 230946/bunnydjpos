@@ -926,7 +926,7 @@ function renderComPorNegocioCompacto(elId, repData){
   el.innerHTML = rows.length ? rows.map(r => {
     const rate    = _PLAN_RATE[r.plan] ?? 0;
     const ingresos= parseFloat(r.ingresos||0);
-    const com     = ingresos * rate;
+    const com     = r.comision ?? ingresos * rate;
     const pct     = Math.round(rate * 100);
     const color   = _PLAN_COLOR[r.plan] || '#9e9e9e';
     return `<div style="font-size:12px;padding-bottom:8px;border-bottom:0.5px solid var(--border)">
@@ -1012,13 +1012,13 @@ async function loadDashboard(){
       // Se muestran TODOS los negocios activos que devuelve el backend
       // (antes se ocultaban los de plan free sin ventas en el período).
       const rows = rep.rows;
-      const coms = rows.map(r => parseFloat(r.ingresos||0) * (_R[r.plan]??0));
+      const coms = rows.map(r => r.comision ?? parseFloat(r.ingresos||0) * (_R[r.plan]??0));
       const maxCom = Math.max(...coms, 1);
 
       // Mini-cards por negocio
       document.getElementById('dash-com-cards').innerHTML = rows.map((r,i) => {
         const rate  = _R[r.plan] ?? 0;
-        const com   = parseFloat(r.ingresos||0) * rate;
+        const com   = r.comision ?? parseFloat(r.ingresos||0) * rate;
         const pct   = Math.round(rate * 100);
         const color = _C[r.plan] || '#9e9e9e';
         const label = _L[r.plan] || r.plan;
@@ -1449,8 +1449,8 @@ async function loadReportes(){
     document.getElementById('rep-tbody').innerHTML = d.rows.map(r=>{
       const ing = parseFloat(r.ingresos)||0;
       const tasa = _rate[r.plan]||0;
-      const com = ing * tasa;
-      const tasaLbl = tasa>0 ? `${(tasa*100).toFixed(0)}%` : '0%';
+      const com = r.comision ?? ing * tasa;
+      const tasaLbl = r.en_prueba ? 'prueba gratis' : r.minimo_aplicado ? 'mínimo' : tasa>0 ? `${(tasa*100).toFixed(0)}%` : '0%';
       return `<tr>
         <td><b>${r.nombre}</b></td>
         <td><span class="badge ${r.tipo==='minimercado'?'tipo-mini':r.tipo==='peluqueria'?'tipo-pel':r.tipo==='bar'?'tipo-bar':'tipo-rest'}">${r.tipo}</span></td>

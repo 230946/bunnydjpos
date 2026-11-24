@@ -2152,6 +2152,7 @@ async function guardarCambiarPassword(){
 }
 
 // ─── Contrato ────────────────────────────────────────────────
+const _COBRO_MINIMO = 55000; // cobro mínimo mensual de DJPOS (fuera de la prueba gratis)
 const _PLAN_RATES  = {free:0,basic:0.05,plus:0.07,premium:0.09,personalizado:0.07};
 const _PLAN_LABELS = {free:'Free (demo)',basic:'Basic',plus:'Plus',premium:'Premium',personalizado:'Plus'};
 const _PLAN_COLORS = {free:'#9e9e9e',basic:'#1976d2',plus:'#e65c00',premium:'#7b1fa2'};
@@ -2162,13 +2163,16 @@ function updatePlanComCard(totalVenta){
   const label = _PLAN_LABELS[plan] || plan;
   const color = _PLAN_COLORS[plan] || '#9e9e9e';
   const pct   = Math.round(rate * 100);
-  const com   = totalVenta * rate;
+  const enPrueba = !!window._negPrueba;
+  const comPct   = totalVenta * rate;
+  const minimo = rate>0 && !enPrueba && comPct < _COBRO_MINIMO;
+  const com   = rate>0 && !enPrueba ? Math.max(comPct, _COBRO_MINIMO) : 0;
   const pctEl = $('d-plan-pct');
   const badge = $('d-plan-badge');
   const trend = $('d-plan-com');
   if(pctEl) pctEl.innerHTML = `<span style="color:${color}">${pct}%</span>`;
   if(badge) badge.innerHTML = `<span style="background:${color}1a;color:${color};padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600">${label}</span>`;
-  if(trend) trend.innerHTML = rate>0 ? `Comisión: <b>${fmt(com)}</b>` : `<span style="color:var(--text2)">Sin comisión (demo)</span>`;
+  if(trend) trend.innerHTML = enPrueba ? `<span style="color:var(--text2)">Prueba gratis: sin cobro</span>` : rate>0 ? `Comisión: <b>${fmt(com)}</b>${minimo?' <span style="color:var(--text2)">(mínimo mensual)</span>':''}` : `<span style="color:var(--text2)">Sin comisión (demo)</span>`;
   const canvas = $('chart-comision');
   if(!canvas) return;
   if(_comChart){ _comChart.destroy(); _comChart=null; }
@@ -2213,6 +2217,7 @@ async function checkContrato(negocioId){
     if(!r.ok) return;
     const d=await r.json();
     window._negPlan = d.plan || 'free';
+    window._negPrueba = !!(d.contrato && d.contrato.prueba);
     NEG_MONEDA = d.moneda || 'COP';
     NEG_ZONA = d.zona_horaria || 'America/Bogota';
     updatePlanComCard(0);
