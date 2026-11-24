@@ -170,4 +170,19 @@ async function enviarAvisoClaveCambiada({ to, nombre }) {
   });
 }
 
-module.exports = { enviarFactura, enviarEnlaceRecuperacion, enviarAvisoClaveCambiada };
+async function enviarBienvenidaRegistro({ to, nombre, negocio, login, diasPrueba }) {
+  const base = (process.env.PUBLIC_URL || 'https://djmpos.com').replace(/\/+$/, '');
+  await enviarCorreoCuenta({
+    to,
+    subject: 'Tu negocio ya está en DJPOS',
+    cuerpo: `<p>Hola${nombre ? ' ' + escHtml(nombre) : ''},</p>
+            <p><b>${escHtml(negocio)}</b> ya quedó creado en DJPOS, con ${diasPrueba} días de prueba gratis.</p>
+            <p>Entra con tu usuario <b>${escHtml(login)}</b> y la contraseña que elegiste. La primera vez te pediremos activar el código de seguridad con una app como Google Authenticator.</p>
+            <p style="text-align:center;margin:24px 0">
+              <a href="${base}/login" style="display:inline-block;padding:12px 24px;background:#0B8457;border-radius:8px;color:#fff;font-weight:700;text-decoration:none">Entrar a DJPOS</a>
+            </p>
+            <p style="color:#999;font-size:12px">Si no fuiste tú quien creó esta cuenta, ignora este correo.</p>`,
+  });
+}
+
+module.exports = { enviarFactura, enviarEnlaceRecuperacion, enviarAvisoClaveCambiada, enviarBienvenidaRegistro };

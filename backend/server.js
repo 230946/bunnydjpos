@@ -36,6 +36,7 @@ const motoratonRouter   = require('./routes/motoraton');
 const atrilRouter       = require('./routes/atril');
 const boldRouter        = require('./routes/bold');
 const vitrinaRouter     = require('./routes/vitrina');
+const registroRouter    = require('./routes/registro');
 
 const app    = express();
 const server = http.createServer(app);
@@ -69,6 +70,7 @@ app.use(express.static(frontendPath, { etag: false, lastModified: false }));
 // Rutas directas para cada panel
 app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'inicio.html')));
 app.get('/login',            (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
+app.get('/registro',         (_, res) => res.sendFile(path.join(frontendPath, 'registro.html')));
 app.get('/restablecer',      (_, res) => res.sendFile(path.join(frontendPath, 'restablecer.html')));
 // POS
 app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'pos-restaurante.html')));
@@ -184,6 +186,7 @@ app.use('/api/soporte',   soporteRouter);
 app.use('/api/motoraton', motoratonRouter);
 app.use('/api/bold',      boldRouter);
 app.use('/api/vitrina',   vitrinaRouter);
+app.use('/api/registro',  registroRouter);
 
 // ── Info pública de negocio (para mostrar nombre en login) ────────
 app.get('/api/negocio-pub/:id', async (req, res) => {
@@ -198,7 +201,7 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
     let contrato = null;
     try {
       const { rows: cr } = await pool.query(
-        `SELECT id, estado, fecha_inicio, fecha_fin, tipo, valor FROM neg_contratos
+        `SELECT * FROM neg_contratos
          WHERE negocio_id=?
          ORDER BY FIELD(estado,'activo','pendiente','vencido','cancelado'), fecha_fin DESC
          LIMIT 1`,
@@ -206,11 +209,18 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
       );
       if (cr[0]) {
         let { id: cid, estado, fecha_fin, fecha_inicio, tipo, valor } = cr[0];
+        // mysql2 entrega DATE como objeto Date y String(fecha).slice(0,10) da
+        // "Wed Dec 09": la fecha queda inválida y el contrato nunca vence ni avisa.
+        // Por ahora se corrige solo en las pruebas gratis; los contratos de antes
+        // siguen igual hasta revisarlos (corregirlo para todos los bloquearía).
+        const aFecha = cr[0].prueba
+          ? (v => v instanceof Date ? v.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }) : String(v).slice(0,10))
+          : (v => String(v).slice(0,10));
         const hoy = new Date();
         // Auto-activar: pendiente → activo si fecha_inicio llegó y fecha_fin no ha pasado aún
         if (estado === 'pendiente' && fecha_inicio) {
-          const inicio = new Date(String(fecha_inicio).slice(0,10)+'T12:00:00');
-          const fin2 = fecha_fin ? new Date(String(fecha_fin).slice(0,10)+'T12:00:00') : null;
+          const inicio = new Date(aFecha(fecha_inicio)+'T12:00:00');
+          const fin2 = fecha_fin ? new Date(aFecha(fecha_fin)+'T12:00:00') : null;
           if (inicio <= hoy && (!fin2 || fin2 >= hoy)) {
             await pool.query(`UPDATE neg_contratos SET estado='activo', actualizado=NOW() WHERE id=?`, [cid]);
             estado = 'activo';
@@ -219,7 +229,7 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
         // Auto-vencer: activo → pendiente (renovación) si fecha_fin ya pasó
         let renovacion = false;
         if (estado === 'activo' && fecha_fin) {
-          const fin2 = new Date(String(fecha_fin).slice(0,10)+'T12:00:00');
+          const fin2 = new Date(aFecha(fecha_fin)+'T12:00:00');
           if (fin2 < hoy) {
             await pool.query(`UPDATE neg_contratos SET estado='pendiente', actualizado=NOW() WHERE id=?`, [cid]);
             estado = 'pendiente';
@@ -229,15 +239,17 @@ app.get('/api/negocio-pub/:id', async (req, res) => {
         const fin = fecha_fin;
         let dias = null;
         if (fin) {
-          const ms = new Date(String(fin).slice(0,10)+'T12:00:00') - hoy;
+          const ms = new Date(aFecha(fin)+'T12:00:00') - hoy;
           dias = Math.ceil(ms / (1000*60*60*24));
         }
         contrato = {
           estado,
-          fecha_fin: fin ? String(fin).slice(0,10) : null,
+          fecha_fin: fin ? aFecha(fin) : null,
           dias_para_vencer: dias,
           renovacion,
-          tipo: tipo || 'mensual',
+          // La prueba gratis no es una "factura": las pantallas usan el texto de contrato.
+          tipo: cr[0].prueba ? 'prueba' : (tipo || 'mensual'),
+          prueba: !!cr[0].prueba,
           valor: parseFloat(valor) || 0
         };
       }

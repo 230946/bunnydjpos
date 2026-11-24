@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><!-- src:JMFR-BUNNYDJPOS-2026 -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crea tu negocio gratis — DJPOS</title>
+<meta name="description" content="Registra tu restaurante, bar, minimercado o peluquería en DJPOS y pruébalo gratis. Sin mensualidad ni contrato.">
+<link rel="icon" href="/favicon.ico">
+<style>
+@font-face{font-family:'Fraunces Disp';font-weight:700;font-display:swap;src:url('/fonts/fraunces-disp-700.woff2') format('woff2')}
+@font-face{font-family:'Work Sans Body';font-weight:400;font-display:swap;src:url('/fonts/work-sans-body-400.woff2') format('woff2')}
+@font-face{font-family:'Work Sans Body';font-weight:600;font-display:swap;src:url('/fonts/work-sans-body-600.woff2') format('woff2')}
+@font-face{font-family:'Work Sans Body';font-weight:700;font-display:swap;src:url('/fonts/work-sans-body-700.woff2') format('woff2')}
+:root{--ink:#102A24;--ink-soft:#4B635B;--paper:#F5FAF6;--card:#fff;--line:#D6E6DC;--forest:#0B8457;--forest-deep:#086644;--tint:#E3F4EB;--err:#B42318}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 'Work Sans Body',system-ui,sans-serif}
+a{color:var(--forest)}
+.top{display:flex;align-items:center;justify-content:space-between;max-width:760px;margin:0 auto;padding:18px 16px}
+.top a.marca{font:700 1.35rem 'Fraunces Disp',Georgia,serif;color:var(--ink);text-decoration:none}
+.top small{color:var(--ink-soft)}
+main{max-width:760px;margin:0 auto;padding:0 16px 60px}
+h1{font:700 clamp(1.8rem,5vw,2.5rem)/1.1 'Fraunces Disp',Georgia,serif;margin:10px 0 8px}
+.sub{color:var(--ink-soft);margin:0 0 26px}
+.paso{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:16px}
+.paso h2{font-size:1.05rem;margin:0 0 14px;display:flex;align-items:center;gap:10px}
+.paso h2 span{width:26px;height:26px;border-radius:50%;background:var(--forest);color:#fff;font-size:.85rem;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.opciones{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.op{position:relative;display:block;border:1.5px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;background:#fff}
+.op input{position:absolute;opacity:0;pointer-events:none}
+.op b{display:block}
+.op small{color:var(--ink-soft);display:block;line-height:1.35}
+.op .ico{font-size:1.5rem;display:block;margin-bottom:4px}
+.op .pct{font:700 1.6rem 'Fraunces Disp',Georgia,serif;display:block;margin:2px 0}
+.op:has(input:checked){border-color:var(--forest);background:var(--tint);box-shadow:0 0 0 2px var(--forest) inset}
+.op:has(input:focus-visible){outline:2px solid var(--forest);outline-offset:2px}
+.campos{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+.campos .full{grid-column:1/-1}
+label.c{display:block;font-weight:600;font-size:.92rem}
+label.c small{font-weight:400;color:var(--ink-soft)}
+label.c input{display:block;width:100%;margin-top:5px;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+label.c input:focus{outline:none;border-color:var(--forest)}
+.clave{position:relative}
+.clave button{position:absolute;right:8px;bottom:8px;border:none;background:none;cursor:pointer;font-size:1rem}
+.acepta{display:flex;gap:10px;align-items:flex-start;font-size:.92rem;color:var(--ink-soft);margin:6px 0 16px}
+.acepta input{margin-top:4px;accent-color:var(--forest);width:18px;height:18px;flex:none}
+.trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.btn{display:inline-flex;align-items:center;justify-content:center;width:100%;padding:15px 20px;border:none;border-radius:999px;background:var(--forest);color:#fff;font:700 1.05rem 'Work Sans Body',sans-serif;cursor:pointer}
+.btn:hover{background:var(--forest-deep)}
+.btn:disabled{opacity:.6;cursor:default}
+.error{display:none;background:#FEF3F2;border:1px solid #FECDCA;color:var(--err);padding:12px 14px;border-radius:12px;margin-bottom:14px;font-size:.95rem}
+.nota{color:var(--ink-soft);font-size:.88rem;text-align:center;margin-top:12px}
+.listo{display:none;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:34px 22px}
+.listo .ok{width:64px;height:64px;border-radius:50%;background:var(--tint);color:var(--forest);font-size:2rem;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.listo ol{text-align:left;max-width:460px;margin:18px auto;padding-left:20px;color:var(--ink-soft)}
+.listo ol li{margin-bottom:8px}
+.listo .btn{max-width:320px}
+@media (max-width:560px){.campos{grid-template-columns:1fr}.paso{padding:18px}}
+</style>
+</head>
+<body>
+<div class="top"><a class="marca" href="/">DJPOS</a><small>¿Ya tienes cuenta? <a href="/login">Ingresar</a></small></div>
+<main>
+  <section id="form-wrap">
+    <h1>Crea tu negocio y pruébalo gratis</h1>
+    <p class="sub"><b id="dias-txt">15 días gratis</b>, sin tarjeta y sin contrato. Después pagas solo un porcentaje de lo que vendes.</p>
+
+    <form id="f" novalidate>
+      <div class="paso">
+        <h2><span>1</span>¿Qué tipo de negocio tienes?</h2>
+        <div class="opciones">
+          <label class="op"><input type="radio" name="tipo" value="restaurante" checked><span class="ico">🍽️</span><b>Restaurante</b><small>Mesas, cocina y domicilios</small></label>
+          <label class="op"><input type="radio" name="tipo" value="bar"><span class="ico">🍺</span><b>Bar</b><small>Barra, mesas y cuentas abiertas</small></label>
+          <label class="op"><input type="radio" name="tipo" value="minimercado"><span class="ico">🛒</span><b>Minimercado</b><small>Caja rápida e inventario</small></label>
+          <label class="op"><input type="radio" name="tipo" value="peluqueria"><span class="ico">💈</span><b>Peluquería</b><small>Citas, servicios y comisiones</small></label>
+        </div>
+      </div>
+
+      <div class="paso">
+        <h2><span>2</span>Elige tu plan</h2>
+        <div class="opciones">
+          <label class="op"><input type="radio" name="plan" value="basic"><b>Básico</b><span class="pct">5%</span><small>1 caja, 1 administrador y 2 cajeros</small></label>
+          <label class="op"><input type="radio" name="plan" value="plus" checked><b>Plus</b><span class="pct">7%</span><small>Equipo completo, reservas, QR, domicilios y vitrina</small></label>
+          <label class="op"><input type="radio" name="plan" value="premium"><b>Premium</b><span class="pct">9%</span><small>Todo lo de Plus, IA, tienda en línea y soporte prioritario</small></label>
+        </div>
+        <p class="nota" style="text-align:left;margin:10px 0 0">Porcentaje sobre tus ventas del mes. Puedes cambiar de plan cuando quieras.</p>
+      </div>
+
+      <div class="paso">
+        <h2><span>3</span>Datos del negocio</h2>
+        <div class="campos">
+          <label class="c full">Nombre del negocio<input name="neg_nombre" maxlength="120" autocomplete="organization" required></label>
+          <label class="c">Ciudad<input name="neg_ciudad" maxlength="80" autocomplete="address-level2"></label>
+          <label class="c">Teléfono / WhatsApp<input name="neg_telefono" type="tel" maxlength="30" autocomplete="tel" inputmode="tel" required></label>
+          <label class="c full">NIT o cédula <small>(opcional)</small><input name="neg_nit" maxlength="30"></label>
+        </div>
+      </div>
+
+      <div class="paso">
+        <h2><span>4</span>Tu cuenta de administrador</h2>
+        <div class="campos">
+          <label class="c full">Tu nombre<input name="adm_nombre" maxlength="120" autocomplete="name" required></label>
+          <label class="c">Correo<input name="adm_email" type="email" maxlength="120" autocomplete="email" required></label>
+          <label class="c">Usuario <small>(opcional, si no, entras con el correo)</small><input name="adm_username" maxlength="40" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+          <label class="c full clave">Contraseña <small>(mínimo 8, con letras y números)</small><input name="adm_password" type="password" minlength="8" autocomplete="new-password" required><button type="button" id="ver" aria-label="Mostrar contraseña">👁</button></label>
+        </div>
+        <div class="trampa" aria-hidden="true"><label>Sitio web<input name="sitio" tabindex="-1" autocomplete="off"></label></div>
+      </div>
+
+      <div id="error" class="error" role="alert"></div>
+      <label class="acepta"><input type="checkbox" name="acepta">Acepto que DJPOS cobre el porcentaje del plan sobre mis ventas cuando termine la prueba, y el tratamiento de mis datos para prestar el servicio.</label>
+      <button class="btn" id="enviar" type="submit">Crear mi negocio gratis</button>
+      <p class="nota">Al terminar la prueba te contactamos para activar tu plan. Si no lo activas, tu cuenta se pausa: no se cobra nada.</p>
+    </form>
+  </section>
+
+  <section class="listo" id="listo" aria-live="polite">
+    <div class="ok">✓</div>
+    <h1 style="margin-top:0">¡Tu negocio está listo!</h1>
+    <p class="sub" style="margin:0"><b id="l-negocio"></b> tiene prueba gratis hasta el <b id="l-fecha"></b>.</p>
+    <ol>
+      <li>Entra con tu usuario <b id="l-login"></b> y tu contraseña.</li>
+      <li>La primera vez te pediremos activar el código de seguridad con una app como Google Authenticator o Microsoft Authenticator. Tenla a mano en tu celular.</li>
+      <li>Crea tus productos, tus cajeros y empieza a vender.</li>
+    </ol>
+    <a class="btn" href="/login">Entrar a mi negocio</a>
+    <p class="nota">¿Dudas? Escríbenos por <a href="https://wa.me/573228848989?text=Hola%2C%20acabo%20de%20crear%20mi%20negocio%20en%20DJPOS" target="_blank" rel="noopener">WhatsApp</a>.</p>
+  </section>
+</main>
+<script>
+(function () {
+  const f = document.getElementById('f');
+  const err = document.getElementById('error');
+  const btn = document.getElementById('enviar');
+
+  // ?plan=basic|plus|premium y ?tipo=… desde la página de inicio
+  const qs = new URLSearchParams(location.search);
+  ['plan', 'tipo'].forEach(k => {
+    const v = qs.get(k);
+    const r = v && f.querySelector(`input[name="${k}"][value="${CSS.escape(v)}"]`);
+    if (r) r.checked = true;
+  });
+
+  fetch('/api/registro/info').then(r => r.ok ? r.json() : null).then(d => {
+    if (d && d.dias_prueba) document.getElementById('dias-txt').textContent = d.dias_prueba + ' días gratis';
+  }).catch(() => {});
+
+  document.getElementById('ver').onclick = () => {
+    const i = f.adm_password; i.type = i.type === 'password' ? 'text' : 'password';
+  };
+
+  const mostrarError = m => { err.textContent = m; err.style.display = 'block'; err.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+
+  f.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    err.style.display = 'none';
+    const v = n => (f[n].value || '').trim();
+    if (v('neg_nombre').length < 2) return mostrarError('Escribe el nombre del negocio.');
+    if (!/^[0-9+ ()-]{7,30}$/.test(v('neg_telefono'))) return mostrarError('Escribe un teléfono válido.');
+    if (v('adm_nombre').length < 2) return mostrarError('Escribe tu nombre.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v('adm_email'))) return mostrarError('Escribe un correo válido.');
+    const clave = f.adm_password.value;
+    if (clave.length < 8 || !/[a-zA-Z]/.test(clave) || !/\d/.test(clave)) return mostrarError('La contraseña debe tener al menos 8 caracteres, con letras y números.');
+    if (!f.acepta.checked) return mostrarError('Debes aceptar los términos para continuar.');
+
+    btn.disabled = true; btn.textContent = 'Creando tu negocio…';
+    try {
+      const r = await fetch('/api/registro', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: f.plan.value,
+          negocio: { tipo: f.tipo.value, nombre: v('neg_nombre'), ciudad: v('neg_ciudad'), telefono: v('neg_telefono'), nit: v('neg_nit') },
+          admin: { nombre: v('adm_nombre'), email: v('adm_email'), username: v('adm_username'), password: clave },
+          acepta: true,
+          sitio: f.sitio.value,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'No se pudo crear el negocio.');
+      document.getElementById('l-negocio').textContent = v('neg_nombre');
+      document.getElementById('l-login').textContent = d.login;
+      document.getElementById('l-fecha').textContent =
+        new Date(d.prueba_hasta + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('form-wrap').style.display = 'none';
+      document.getElementById('listo').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      mostrarError(e.message);
+      btn.disabled = false; btn.textContent = 'Crear mi negocio gratis';
+    }
+  });
+})();
+</script>
+</body>
+</html>
