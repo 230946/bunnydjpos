@@ -1,6 +1,10 @@
 User-agent: *
 Allow: /$
 Allow: /registro$
+Allow: /software-para-restaurantes$
+Allow: /software-para-bares$
+Allow: /software-para-minimercados$
+Allow: /software-para-peluquerias$
 Allow: /sitemap.xml
 Allow: /img/
 Allow: /fonts/

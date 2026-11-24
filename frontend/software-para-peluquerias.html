@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><!-- src:JMFR-BUNNYDJPOS-2026 -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Software para peluquerías, barberías y spa | DJMPOS</title>
+<meta name="description" content="Software para peluquerías, barberías y centros de estética: agenda y reservas online, comisiones por empleado, paquetes de sesiones y caja. Pruébalo 15 días gratis.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://djmpos.com/software-para-peluquerias">
+<link rel="icon" href="/img/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CO">
+<meta property="og:url" content="https://djmpos.com/software-para-peluquerias">
+<meta property="og:site_name" content="DJMPOS">
+<meta property="og:title" content="Software para peluquerías, barberías y spa | DJMPOS">
+<meta property="og:description" content="Software para peluquerías, barberías y centros de estética: agenda y reservas online, comisiones por empleado, paquetes de sesiones y caja. Pruébalo 15 días gratis.">
+<meta property="og:image" content="https://djmpos.com/img/logo.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"DJMPOS","item":"https://djmpos.com/"},{"@type":"ListItem","position":2,"name":"Software para peluquerías, barberías y estética","item":"https://djmpos.com/software-para-peluquerias"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"¿Mis clientes pueden reservar solos?","acceptedAnswer":{"@type":"Answer","text":"Sí. Compartes un enlace de reservas y eligen servicio, estilista y hora disponible, a cualquier hora."}},{"@type":"Question","name":"¿Cómo calcula las comisiones?","acceptedAnswer":{"@type":"Answer","text":"Configuras el porcentaje de cada empleado y la comisión se suma sola cada vez que cobras un servicio."}},{"@type":"Question","name":"¿Sirve para barberías, spa y uñas?","acceptedAnswer":{"@type":"Answer","text":"Sí. Sirve para cualquier negocio de servicios con agenda y empleados por comisión."}},{"@type":"Question","name":"¿Cuánto cuesta?","acceptedAnswer":{"@type":"Answer","text":"Pagas un porcentaje de lo que vendes en el mes según tu plan (Básico 5 %, Plus 7 %, Premium 9 %), con un mínimo de $55.000 al mes. Sin contrato."}},{"@type":"Question","name":"¿Puedo probarlo antes de pagar?","acceptedAnswer":{"@type":"Answer","text":"Sí. Creas tu negocio en 2 minutos y lo usas 15 días gratis, sin tarjeta."}}]}]}</script>
+<style>
+@font-face{font-family:'Fraunces Disp';font-weight:700;font-display:swap;src:url('/fonts/fraunces-disp-700.woff2') format('woff2')}
+@font-face{font-family:'Work Sans Body';font-weight:400;font-display:swap;src:url('/fonts/work-sans-body-400.woff2') format('woff2')}
+@font-face{font-family:'Work Sans Body';font-weight:600;font-display:swap;src:url('/fonts/work-sans-body-600.woff2') format('woff2')}
+@font-face{font-family:'Work Sans Body';font-weight:700;font-display:swap;src:url('/fonts/work-sans-body-700.woff2') format('woff2')}
+:root{--ink:#102A24;--ink-soft:#4B635B;--paper:#F5FAF6;--card:#fff;--line:#D6E6DC;--forest:#0B8457;--forest-deep:#086644;--tint:#E3F4EB;--lime:#C8E330}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 'Work Sans Body',system-ui,sans-serif}
+a{color:var(--forest)}
+.shell{max-width:1080px;margin:0 auto;padding:0 20px}
+.top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;max-width:1080px;margin:0 auto}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font:700 1.25rem 'Fraunces Disp',Georgia,serif}
+.marca img{width:40px;height:40px;border-radius:50%}
+.top nav{display:flex;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 24px;border-radius:999px;background:var(--forest);color:#fff;font-weight:700;text-decoration:none;border:none}
+.btn:hover{background:var(--forest-deep)}
+.btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn-ghost:hover{background:#fff}
+.btn-sm{padding:9px 18px;font-size:.92rem}
+.miga{font-size:.85rem;color:var(--ink-soft);margin:10px 0 0}
+.miga a{color:var(--ink-soft)}
+.hero{padding:34px 0 46px}
+.hero .ico{font-size:2.6rem}
+h1,h2,h3{font-family:'Fraunces Disp',Georgia,serif;font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.08;margin:6px 0 14px}
+.lead{font-size:1.15rem;color:var(--ink-soft);max-width:60ch;margin:0 0 26px}
+.ctas{display:flex;gap:12px;flex-wrap:wrap}
+.nota{font-size:.88rem;color:var(--ink-soft);margin-top:12px}
+section{padding:44px 0;border-top:1px solid var(--line)}
+h2{font-size:clamp(1.6rem,3.4vw,2.2rem);margin-bottom:22px}
+.dolor{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));padding:0;margin:0;list-style:none}
+.dolor li{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--ink-soft)}
+.dolor li::before{content:'✕';color:#C2410C;font-weight:700;margin-right:8px}
+.funciones{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.f{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px}
+.f h3{font-size:1.15rem;margin-bottom:6px}
+.f p{margin:0;color:var(--ink-soft);font-size:.98rem}
+.pasos{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));counter-reset:paso}
+.paso{background:var(--tint);border-radius:16px;padding:20px}
+.paso b{display:block;font:700 1.6rem 'Fraunces Disp',Georgia,serif;color:var(--forest)}
+.planes{display:grid;gap:12px;grid-template-columns:repeat(3,1fr);max-width:640px;margin-bottom:18px}
+.plan{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:16px;text-align:center}
+.plan.rec{border-color:var(--forest);box-shadow:0 0 0 2px var(--forest) inset}
+.plan span{display:block;font-weight:700}
+.plan strong{display:block;font:700 2rem 'Fraunces Disp',Georgia,serif}
+.plan small{color:var(--ink-soft)}
+.plan em{display:block;font-style:normal;font-size:.75rem;color:var(--forest);font-weight:700;margin-top:4px}
+details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:10px}
+summary{font-weight:700;cursor:pointer}
+details p{margin:10px 0 0;color:var(--ink-soft)}
+.cierre{background:var(--forest-deep);color:#fff;border-radius:22px;padding:36px 28px;text-align:center;margin:10px 0 40px}
+.cierre h2{color:#fff;margin-bottom:10px}
+.cierre p{color:rgba(255,255,255,.85);margin:0 0 22px}
+.cierre .btn{background:var(--lime);color:var(--ink)}
+.otras{display:flex;flex-wrap:wrap;gap:10px}
+.otras a{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 16px;text-decoration:none;color:var(--ink);font-weight:600;font-size:.95rem}
+footer{padding:26px 0 40px;color:var(--ink-soft);font-size:.85rem;border-top:1px solid var(--line)}
+@media (max-width:620px){.top nav .btn-ghost{display:none}.planes{grid-template-columns:1fr 1fr 1fr;gap:8px}.plan{padding:12px 6px}.plan strong{font-size:1.5rem}}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="marca" href="/"><img src="/img/logo.png" alt="DJMPOS">DJMPOS</a>
+  <nav><a class="btn btn-ghost btn-sm" href="/login">Ingresar</a><a class="btn btn-sm" href="/registro?tipo=peluqueria&amp;plan=plus">Prueba gratis</a></nav>
+</header>
+<main class="shell">
+  <p class="miga"><a href="/">DJMPOS</a> › Software para peluquerías, barberías y estética</p>
+  <div class="hero">
+    <div class="ico" aria-hidden="true">💈</div>
+    <h1>Software para peluquerías, barberías y estética</h1>
+    <p class="lead">Agenda, comisiones y paquetes en un solo lugar, sin cuaderno ni WhatsApp. Tus clientes reservan desde un enlace y las comisiones se calculan solas al cobrar.</p>
+    <div class="ctas">
+      <a class="btn" href="/registro?tipo=peluqueria&amp;plan=plus">Pruébalo 15 días gratis</a>
+      <a class="btn btn-ghost" href="https://wa.me/573228848989?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20de%20DJMPOS%20para%20peluquer%C3%ADas" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+    </div>
+    <p class="nota">Sin tarjeta y sin contrato. Funciona en el celular, la tablet o el computador que ya tienes.</p>
+  </div>
+
+  <section>
+    <h2>¿Te pasa esto en tu negocio?</h2>
+    <ul class="dolor"><li>Citas por WhatsApp que se cruzan o se olvidan</li><li>Comisiones calculadas a mano cada quincena</li><li>Paquetes de sesiones que nadie sabe cuántas quedan</li><li>Clientes que llaman a cualquier hora para reservar</li></ul>
+  </section>
+
+  <section>
+    <h2>Lo que hace DJMPOS por tus peluquerías</h2>
+    <div class="funciones"><div class="f"><h3>Reservas online 24/7</h3><p>Tus clientes reservan desde un enlace, sin llamadas ni mensajes.</p></div><div class="f"><h3>Agenda por estilista</h3><p>Cada empleado ve su propia agenda del día.</p></div><div class="f"><h3>Comisiones automáticas</h3><p>La comisión de cada empleado se calcula al cobrar el servicio.</p></div><div class="f"><h3>Paquetes y membresías</h3><p>Paquetes de sesiones (5 manicures, 10 masajes) con su vigencia y saldo.</p></div><div class="f"><h3>Portal del empleado</h3><p>Cada quien ve sus citas, horarios y pagos desde su celular.</p></div><div class="f"><h3>Cobro con QR</h3><p>Cobra por Nequi o con el QR de Bold, con foto del comprobante.</p></div></div>
+  </section>
+
+  <section>
+    <h2>Empieza en 3 pasos</h2>
+    <div class="pasos">
+      <div class="paso"><b>1</b>Crea tu cuenta en djmpos.com/registro. Toma 2 minutos.</div>
+      <div class="paso"><b>2</b>Carga tus productos o servicios y crea a tu equipo.</div>
+      <div class="paso"><b>3</b>Empieza a vender. Tienes 15 días gratis para probarlo todo.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Precios</h2>
+    <div class="planes">
+      <div class="plan"><span>Básico</span><strong>5%</strong><small>por venta</small></div><div class="plan rec"><span>Plus</span><strong>7%</strong><small>por venta</small><em>Recomendado</em></div><div class="plan"><span>Premium</span><strong>9%</strong><small>por venta</small></div>
+    </div>
+    <p>Pagas un porcentaje de tus ventas del mes, con un mínimo de $55.000 mensuales. Para reservas online, portal del equipo y comisiones recomendamos <b>Plus</b>. Si solo necesitas caja y servicios, el <b>Básico</b> alcanza.</p>
+    <p class="nota"><a href="/#precios">Ver todos los detalles de los planes y el simulador de costo</a></p>
+  </section>
+
+  <section>
+    <h2>Preguntas frecuentes</h2>
+    <details><summary>¿Mis clientes pueden reservar solos?</summary><p>Sí. Compartes un enlace de reservas y eligen servicio, estilista y hora disponible, a cualquier hora.</p></details>
+    <details><summary>¿Cómo calcula las comisiones?</summary><p>Configuras el porcentaje de cada empleado y la comisión se suma sola cada vez que cobras un servicio.</p></details>
+    <details><summary>¿Sirve para barberías, spa y uñas?</summary><p>Sí. Sirve para cualquier negocio de servicios con agenda y empleados por comisión.</p></details>
+    <details><summary>¿Cuánto cuesta?</summary><p>Pagas un porcentaje de lo que vendes en el mes según tu plan (Básico 5 %, Plus 7 %, Premium 9 %), con un mínimo de $55.000 al mes. Sin contrato.</p></details>
+    <details><summary>¿Puedo probarlo antes de pagar?</summary><p>Sí. Creas tu negocio en 2 minutos y lo usas 15 días gratis, sin tarjeta.</p></details>
+  </section>
+
+  <div class="cierre">
+    <h2>Prueba DJMPOS en tu peluquería</h2>
+    <p>15 días gratis, sin tarjeta. Después, desde $55.000 al mes.</p>
+    <a class="btn" href="/registro?tipo=peluqueria&amp;plan=plus">Crear mi negocio gratis</a>
+  </div>
+
+  <section>
+    <h2>DJMPOS también es para</h2>
+    <div class="otras"><a href="/software-para-restaurantes">🍽️ Software para restaurantes</a><a href="/software-para-bares">🍺 Software para bares</a><a href="/software-para-minimercados">🛒 Software para minimercados</a></div>
+  </section>
+</main>
+<footer class="shell">© 2026 DJMPOS (DJPOS). Software POS para negocios en Colombia. <a href="/">Inicio</a> · <a href="/registro">Prueba gratis</a></footer>
+</body>
+</html>

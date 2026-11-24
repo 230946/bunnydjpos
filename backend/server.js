@@ -71,6 +71,8 @@ app.use(express.static(frontendPath, { etag: false, lastModified: false }));
 app.get('/',                 (_, res) => res.sendFile(path.join(frontendPath, 'inicio.html')));
 app.get('/login',            (_, res) => res.sendFile(path.join(frontendPath, 'login.html')));
 app.get('/registro',         (_, res) => res.sendFile(path.join(frontendPath, 'registro.html')));
+// Páginas de aterrizaje por tipo de negocio (SEO)
+for (const p of ["software-para-restaurantes","software-para-bares","software-para-minimercados","software-para-peluquerias"]) app.get('/' + p, (_, res) => res.sendFile(path.join(frontendPath, p + '.html')));
 app.get('/restablecer',      (_, res) => res.sendFile(path.join(frontendPath, 'restablecer.html')));
 // POS
 app.get('/pos',              (_, res) => res.sendFile(path.join(frontendPath, 'pos-restaurante.html')));
